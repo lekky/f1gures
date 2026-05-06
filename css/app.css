@@ -83,8 +83,10 @@ html.light .topbar-mobile {
   border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
 }
 .theme-opt {
-  background: transparent; border: none; padding: 4px 9px;
-  font-size: 14px; line-height: 1; cursor: pointer;
+  background: transparent; border: none; padding: 4px 10px;
+  font-family: var(--f-display); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  line-height: 1; cursor: pointer;
   color: var(--fg-3);
   transition: background .15s, color .15s;
 }
