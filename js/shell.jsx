@@ -113,7 +113,7 @@ function YearPicker({ compact }) {
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', height: '100%' }}>
+    <div ref={ref} style={{ position: 'relative' }}>
       <button className="nav-season" onClick={() => setOpen(o => !o)}>
         {label} {compact ? '▾' : <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>}
       </button>
@@ -170,12 +170,14 @@ function TopNav({ onThemeToggle }) {
            href={urlFor({ name: 'circuits' })}>Circuits</a>
       </div>
       <div className="nav-spacer"></div>
-      <div className="theme-toggle-wrap" title="Toggle light/dark">
-        <span className="theme-icon theme-icon-moon" onClick={onThemeToggle}>☾</span>
-        <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
-        <span className="theme-icon theme-icon-sun" onClick={onThemeToggle}>☀</span>
+      <div className="nav-controls">
+        <div className="theme-toggle-wrap" title="Toggle light/dark">
+          <span className="theme-icon theme-icon-moon" onClick={onThemeToggle}>☾</span>
+          <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
+          <span className="theme-icon theme-icon-sun" onClick={onThemeToggle}>☀</span>
+        </div>
+        <YearPicker />
       </div>
-      <YearPicker />
     </nav>
   );
 }
@@ -189,12 +191,14 @@ function MobileTopBar({ onThemeToggle }) {
         <span className="nav-version">v{APP_VERSION}</span>
       </a>
       <div className="spacer"></div>
-      <div className="theme-toggle-wrap" title="Toggle light/dark">
-        <span className="theme-icon theme-icon-moon" onClick={onThemeToggle}>☾</span>
-        <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
-        <span className="theme-icon theme-icon-sun" onClick={onThemeToggle}>☀</span>
+      <div className="nav-controls">
+        <div className="theme-toggle-wrap" title="Toggle light/dark">
+          <span className="theme-icon theme-icon-moon" onClick={onThemeToggle}>☾</span>
+          <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
+          <span className="theme-icon theme-icon-sun" onClick={onThemeToggle}>☀</span>
+        </div>
+        <YearPicker compact />
       </div>
-      <YearPicker compact />
     </div>
   );
 }

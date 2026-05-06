@@ -48,7 +48,8 @@ function HomeScreen() {
 
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
-      <div className="panel" style={{ position: 'relative', overflow: 'hidden' }}>
+      <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+           onClick={() => navigate({ name: 'race', round: next.round })}>
         <div className="kbd-corner kbd-tl"></div>
         <div className="kbd-corner kbd-tr"></div>
         <div className="kbd-corner kbd-bl"></div>
