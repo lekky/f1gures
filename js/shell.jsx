@@ -195,7 +195,7 @@ function SprintBadge() {
 
 function DriverCell({ driver, showCode = true }) {
   const D = window.F1_DATA;
-  const team = D.teamById(driver.team);
+  const team = D.teamById(driver.team) || { color: '#888888', short: '—', name: '—' };
   return (
     <div className="driver-cell" style={{ '--team-color': team.color }}>
       <span className="driver-flag">{driver.flag}</span>

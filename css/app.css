@@ -142,13 +142,14 @@ button { font-family: inherit; }
   min-width: 160px; padding: 4px;
   box-shadow: 0 12px 32px rgba(0,0,0,0.5);
 }
-.nav-dropdown button {
+.nav-dropdown a, .nav-dropdown button {
   display: block; width: 100%; text-align: left;
   background: transparent; border: 0; color: var(--fg-2);
   padding: 8px 12px; font-family: var(--f-display); font-weight: 600;
   font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  text-decoration: none;
 }
-.nav-dropdown button:hover { background: var(--bg-hover); color: var(--fg-1); }
+.nav-dropdown a:hover, .nav-dropdown button:hover { background: var(--bg-hover); color: var(--fg-1); }
 
 /* Mobile bottom nav */
 .botnav {
