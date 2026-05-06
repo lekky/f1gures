@@ -8,6 +8,8 @@
 
 const { useState, useEffect, useMemo } = React;
 
+const APP_VERSION = '1.000';
+
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
   const p = window.location.pathname;
@@ -66,6 +68,7 @@ function TopNav() {
     <nav className="nav nav-desktop">
       <a className="nav-logo" href={urlFor({ name: 'home' })}>
         <span className="dot"></span>F1GURES
+        <span className="nav-version">v{APP_VERSION}</span>
       </a>
       <div className="nav-items">
         <a className={`nav-item ${route === 'home' ? 'active' : ''}`} href={urlFor({ name: 'home' })}>Home</a>
@@ -103,6 +106,7 @@ function MobileTopBar() {
     <div className="topbar-mobile">
       <a className="nav-logo" href={urlFor({ name: 'home' })}>
         <span className="dot"></span>F1GURES
+        <span className="nav-version">v{APP_VERSION}</span>
       </a>
       <div className="spacer"></div>
       <button className="nav-season">{(window.F1_DATA && window.F1_DATA.seasonYear) || '2026'} ▾</button>
