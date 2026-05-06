@@ -17,8 +17,8 @@
   /* Text */
   --fg-1: #f5f5f5;
   --fg-2: #b8b9bd;
-  --fg-3: #75767b;
-  --fg-4: #4d4e53;
+  --fg-3: #9a9ba1;
+  --fg-4: #636469;
 
   /* Accent — F1 red */
   --accent: #E8002D;
@@ -122,6 +122,11 @@ button { font-family: inherit; }
   height: 2px; background: var(--accent);
 }
 .nav-item .caret { font-size: 10px; opacity: 0.5; margin-left: 6px; }
+.nav-version {
+  font-family: var(--f-mono); font-size: 10px; font-weight: 400;
+  color: var(--fg-4); letter-spacing: 0.06em;
+  align-self: flex-end; padding-bottom: 2px;
+}
 .nav-spacer { flex: 1; }
 .nav-season {
   display: flex; align-items: center; gap: 8px;
