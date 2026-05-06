@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Constructor Standings - f1gures</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+
+  <div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:#666;font-family:system-ui,sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;">Loading…</div></div>
+
+  <script src="vendor/react.production.min.js"></script>
+  <script src="vendor/react-dom.production.min.js"></script>
+  <script src="vendor/babel.min.js"></script>
+  <script src="vendor/prop-types.min.js"></script>
+  <script src="vendor/Recharts.js"></script>
+
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script type="text/babel" src="js/shell.jsx"></script>
+  <script type="text/babel" src="js/screens/standings.jsx"></script>
+
+  <script type="text/babel">
+    window.F1_READY.then(function () {
+      ReactDOM.createRoot(document.getElementById('root')).render(
+        <Chrome>
+          <ConstructorStandingsScreen />
+        </Chrome>
+      );
+    });
+  </script>
+
+</body>
+</html>
