@@ -259,10 +259,14 @@
   }
 
   function patchCalendarStatus(calendar, results) {
-    const completedSet = new Set(Object.keys(results).map(Number));
+    // A race is completed if its date has passed — regardless of whether we
+    // successfully fetched its results. Historic seasons would otherwise show
+    // every round as "upcoming" if the per-round result fetches got rate-limited.
+    const todayISO = new Date().toISOString().slice(0, 10);
     let nextSet = false;
     return calendar.map(r => {
-      if (completedSet.has(r.round)) return Object.assign({}, r, { status: 'completed' });
+      const isPast = r.date && r.date < todayISO;
+      if (isPast) return Object.assign({}, r, { status: 'completed' });
       if (!nextSet) { nextSet = true; return Object.assign({}, r, { status: 'next' }); }
       return Object.assign({}, r, { status: 'upcoming' });
     });

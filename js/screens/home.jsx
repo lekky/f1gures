@@ -10,7 +10,9 @@ function HomeScreen() {
 
   // Next race = the calendar entry flagged 'next', or fall back
   const next = cal.find(r => r.status === 'next') || cal[6];
-  const prev = cal.filter(r => r.status === 'completed').slice(-1)[0];
+  // Latest completed race we actually have results for (rate-limited fetches
+  // can leave a 'completed' race without a result entry).
+  const prev = [...cal].reverse().find(r => r.status === 'completed' && D.results[r.round]);
 
   // Countdown target: a fake offset to keep it lively
   const target = useMemo(() => {
