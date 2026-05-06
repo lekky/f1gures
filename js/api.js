@@ -356,6 +356,18 @@
     };
   }
 
+  // ---------- Local static bundle (past seasons) ----------
+  // For any non-current year, we prefer a pre-fetched data/<year>.json bundle
+  // over hitting the Jolpica API. The bundle is generated once by running:
+  //   node scripts/fetch-season.mjs <year>
+  // It has the same shape that loadFromAPI() returns, so buildF1Data() works
+  // on both without any changes.
+  async function loadFromLocal(year) {
+    const res = await fetch('data/' + year + '.json');
+    if (!res.ok) throw new Error('no local bundle for ' + year);
+    return res.json();
+  }
+
   // ---------- Main loader ----------
   async function loadFromAPI() {
     // Schedule
@@ -610,25 +622,25 @@
   // ---------- Boot ----------
   window.F1_READY = new Promise((resolve) => {
     const offline = /[?&]offline=1\b/.test(window.location.search || '');
-    if (offline) {
-      // F1_DATA is already set to the bundled fallback by data.js
-      resolve(window.F1_DATA);
-      return;
-    }
+    if (offline) { resolve(window.F1_DATA); return; }
 
-    loadFromAPI()
-      .then(raw => {
+    const load = async () => {
+      // Past seasons: prefer the local static bundle — zero API calls.
+      // Falls through to the live API if no bundle exists yet.
+      if (SELECTED_YEAR !== 'current') {
         try {
-          const built = buildF1Data(raw);
-          window.F1_DATA = built;
-          resolve(built);
-        } catch (err) {
-          console.warn('[f1gures] reshape failed, keeping bundled fallback:', err);
-          resolve(window.F1_DATA);
+          return buildF1Data(await loadFromLocal(SELECTED_YEAR));
+        } catch (e) {
+          console.info('[f1gures] no local bundle for', SELECTED_YEAR, '— fetching from API');
         }
-      })
+      }
+      return buildF1Data(await loadFromAPI());
+    };
+
+    load()
+      .then(built => { window.F1_DATA = built; resolve(built); })
       .catch(err => {
-        console.warn('[f1gures] API fetch failed, keeping bundled fallback:', err);
+        console.warn('[f1gures] load failed, keeping bundled fallback:', err);
         resolve(window.F1_DATA);
       });
   });
