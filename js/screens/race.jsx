@@ -1,8 +1,7 @@
 // Race Detail screen — round read from ?round=N
 
-const F_race = window.F1_DATA;
-
 function RaceDetailScreen() {
+  const F_race = window.F1_DATA;
   const mob = useIsMobile();
   const round = parseInt(getParam('round'), 10);
   const race = F_race.calendar.find(r => r.round === round);

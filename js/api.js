@@ -201,6 +201,33 @@
     });
   }
 
+  // Synthesize a circuits map from the API schedule response. Every race
+  // carries enough Circuit metadata for a baseline entry — name, city,
+  // country. Rich fields (length, corners, lap record, blurb) stay '—' / 0
+  // and the static map can override per circuit when we have richer data.
+  function buildCircuitsFromSchedule(scheduleTable) {
+    const races = scheduleTable.MRData.RaceTable.Races;
+    const out = {};
+    races.forEach(r => {
+      const key = CIRCUIT_ID_ALIASES[r.Circuit.circuitId] || r.Circuit.circuitId;
+      if (out[key]) return;
+      const loc = r.Circuit.Location || {};
+      out[key] = {
+        name: r.Circuit.circuitName || r.Circuit.circuitId,
+        city: loc.locality || '—',
+        country: loc.country || '—',
+        firstYear: 0, races: 0,
+        length: 0, laps: 0, corners: 0,
+        longestStraight: 0, drsZones: 0,
+        type: '—', tyreDeg: '—', overtaking: '—',
+        weather: '—',
+        lapRecord: { driver: '—', time: '—', year: 0 },
+        blurb: '',
+      };
+    });
+    return out;
+  }
+
   function reshapeCalendar(scheduleTable) {
     const races = scheduleTable.MRData.RaceTable.Races;
     return races.map(r => {
@@ -330,6 +357,7 @@
     // Schedule
     const scheduleData = await fetchJSON('/' + SELECTED_YEAR + '/?limit=100');
     const calendarRaw = reshapeCalendar(scheduleData);
+    const circuitsFromAPI = buildCircuitsFromSchedule(scheduleData);
     const seasonYear = scheduleData.MRData.RaceTable.season;
 
     // Drivers, constructors, driver standings (the latter gives us driver→team)
@@ -419,21 +447,34 @@
 
     const calendar = patchCalendarStatus(calendarRaw, cleanResults);
 
-    return { seasonYear, teams, drivers, calendar, results: cleanResults };
+    return { seasonYear, teams, drivers, calendar, results: cleanResults, circuitsFromAPI };
   }
 
   // ---------- Build the F1_DATA contract from a raw season payload ----------
   function buildF1Data(raw) {
     const statics = (window.F1_DATA && window.F1_DATA.__statics) || {};
-    const circuits = statics.circuits || {};
+    const staticCircuits = statics.circuits || {};
     const POINTS = statics.POINTS || [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
     const fmtLap = statics.fmtLap || function (s) { return String(s); };
     const fmtGap = statics.fmtGap || function () { return ''; };
 
-    const { teams, drivers, calendar, results, seasonYear } = raw;
+    const { teams, drivers, calendar, results, seasonYear, circuitsFromAPI } = raw;
 
-    function driverById(code) { return drivers.find(d => d.id === code); }
-    function teamById(id) { return teams.find(t => t.id === id); }
+    // Merge: API-synthesized circuits as the base, static map overrides for
+    // any circuit we have rich data for. Static-only circuits (e.g. Madrid
+    // before its first race) still appear so the index page lists them.
+    const circuits = Object.assign({}, circuitsFromAPI || {}, staticCircuits);
+
+    // Lookups always return an object — historic seasons have teams/drivers
+    // not in the static maps, and screens shouldn't crash on a missing key.
+    function driverById(code) {
+      return drivers.find(d => d.id === code) ||
+        { id: code, code: code || '—', first: '', last: code || 'Unknown', num: 0, flag: '🏳', team: '' };
+    }
+    function teamById(id) {
+      return teams.find(t => t.id === id) ||
+        { id: id || 'unknown', name: '—', short: '—', color: '#888888' };
+    }
     function genQuali(round) {
       const r = results[round];
       if (!r) return null;

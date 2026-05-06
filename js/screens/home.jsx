@@ -40,9 +40,9 @@ function HomeScreen() {
   const p2 = standings.drivers[1];
   const teamLeader = standings.teams[0];
   const lastRace = prev;
-  const lastResult = D.results[lastRace.round];
-  const lastWinner = D.driverById(lastResult.order[0]);
-  const lastWinnerTeam = D.teamById(lastWinner.team);
+  const lastResult = lastRace ? D.results[lastRace.round] : null;
+  const lastWinner = lastResult ? D.driverById(lastResult.order[0]) : null;
+  const lastWinnerTeam = lastWinner ? D.teamById(lastWinner.team) : null;
 
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
@@ -106,12 +106,19 @@ function HomeScreen() {
           sub={`${teamLeader.wins} wins · ${teamLeader.podiums} podiums`}
           href={urlFor({ name: 'standings-c' })}
         />
-        <SummaryWidget kicker="Last Race"
-          driver={lastWinner}
-          big={`P1`}
-          sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
-          href={urlFor({ name: 'race', round: lastRace.round })}
-        />
+        {lastRace && lastWinner ? (
+          <SummaryWidget kicker="Last Race"
+            driver={lastWinner}
+            big={`P1`}
+            sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
+            href={urlFor({ name: 'race', round: lastRace.round })}
+          />
+        ) : (
+          <SummaryWidget kicker="Last Race"
+            big="—"
+            sub="No results yet"
+          />
+        )}
       </div>
 
       <SectionHead title="Driver Standings" right={
