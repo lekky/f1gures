@@ -199,10 +199,16 @@ function reshapeSprint(raceTable) {
   return { winner: driverCode(sorted[0].Driver), order: sorted.map(r => driverCode(r.Driver)), detail };
 }
 
-// ── HTTP helper ───────────────────────────────────────────────
-async function get(path) {
-  process.stdout.write(`  GET ${path} ... `);
+// ── HTTP helper (retries on 429) ──────────────────────────────
+async function get(path, attempt = 0) {
+  process.stdout.write(attempt === 0 ? `  GET ${path} ... ` : `  retry ${path} ... `);
   const res = await fetch(BASE + path, { headers: { Accept: 'application/json' } });
+  if (res.status === 429) {
+    const wait = (attempt + 1) * 10000;
+    console.log(`rate-limited, waiting ${wait / 1000}s...`);
+    await new Promise(r => setTimeout(r, wait));
+    return get(path, attempt + 1);
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   console.log('ok');
@@ -253,7 +259,7 @@ async function main() {
       } catch (e) { console.warn(`  ⚠ round ${round} sprint: ${e.message}`); }
     }
 
-    await new Promise(r => setTimeout(r, 150)); // be gentle with the API
+    await new Promise(r => setTimeout(r, 500)); // be gentle with the API
   }
 
   const results = {};
