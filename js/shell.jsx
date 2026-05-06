@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.004';
+const APP_VERSION = '1.005';
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
@@ -76,12 +76,30 @@ function useIsMobile(breakpoint = 720) {
   return isMob;
 }
 
+// ─── Click-outside helper ─────────────────────────────────────
+// Calls onClose if the user clicks anywhere outside the ref'd element.
+// Used by the dropdowns so they dismiss when you click away.
+function useClickOutside(ref, onClose) {
+  useEffect(() => {
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [ref, onClose]);
+}
+
 // ─── Year picker ──────────────────────────────────────────────
 // Dropdown listing 1950..currentRealYear plus "Current Season" at the top.
 // Selecting a year writes to localStorage and reloads to index.html so the
 // new season's data loads cleanly (deep pages might not have matching state).
+// Click-driven (not hover) — works on touch devices and is less twitchy than
+// the previous hover-only behaviour.
 function YearPicker({ compact }) {
   const [open, setOpen] = useState(false);
+  const ref = React.useRef(null);
+  useClickOutside(ref, () => setOpen(false));
+
   const selected = (typeof window !== 'undefined' && window.F1_SELECTED_YEAR) || 'current';
   const liveYear = (window.F1_DATA && window.F1_DATA.seasonYear) || (new Date()).getFullYear();
   const label = selected === 'current' ? liveYear : selected;
@@ -95,10 +113,8 @@ function YearPicker({ compact }) {
   };
 
   return (
-    <div style={{ position: 'relative', height: '100%' }}
-         onMouseEnter={() => setOpen(true)}
-         onMouseLeave={() => setOpen(false)}>
-      <button className="nav-season">
+    <div ref={ref} style={{ position: 'relative', height: '100%' }}>
+      <button className="nav-season" onClick={() => setOpen(o => !o)}>
         {label} {compact ? '▾' : <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>}
       </button>
       {open && (
@@ -123,6 +139,8 @@ function YearPicker({ compact }) {
 // ─── Top nav (desktop) ────────────────────────────────────────
 function TopNav({ onThemeToggle }) {
   const [openStandings, setOpenStandings] = useState(false);
+  const standingsRef = React.useRef(null);
+  useClickOutside(standingsRef, () => setOpenStandings(false));
   const route = currentRouteName();
   return (
     <nav className="nav nav-desktop">
@@ -133,10 +151,9 @@ function TopNav({ onThemeToggle }) {
       <div className="nav-items">
         <a className={`nav-item ${route === 'home' ? 'active' : ''}`} href={urlFor({ name: 'home' })}>Home</a>
 
-        <div style={{ position: 'relative', height: '100%' }}
-             onMouseEnter={() => setOpenStandings(true)}
-             onMouseLeave={() => setOpenStandings(false)}>
-          <button className={`nav-item ${route.startsWith('standings') ? 'active' : ''}`}>
+        <div ref={standingsRef} style={{ position: 'relative', height: '100%' }}>
+          <button className={`nav-item ${route.startsWith('standings') ? 'active' : ''}`}
+                  onClick={() => setOpenStandings(o => !o)}>
             Standings<span className="caret">▼</span>
           </button>
           {openStandings && (
@@ -153,10 +170,10 @@ function TopNav({ onThemeToggle }) {
            href={urlFor({ name: 'circuits' })}>Circuits</a>
       </div>
       <div className="nav-spacer"></div>
-      <div className="theme-toggle-wrap" onClick={onThemeToggle} title="Toggle light/dark">
-        <span className="theme-icon theme-icon-moon">☾</span>
-        <button className="theme-toggle" />
-        <span className="theme-icon theme-icon-sun">☀</span>
+      <div className="theme-toggle-wrap" title="Toggle light/dark">
+        <span className="theme-icon theme-icon-moon" onClick={onThemeToggle}>☾</span>
+        <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
+        <span className="theme-icon theme-icon-sun" onClick={onThemeToggle}>☀</span>
       </div>
       <YearPicker />
     </nav>
@@ -172,10 +189,10 @@ function MobileTopBar({ onThemeToggle }) {
         <span className="nav-version">v{APP_VERSION}</span>
       </a>
       <div className="spacer"></div>
-      <div className="theme-toggle-wrap" onClick={onThemeToggle} title="Toggle light/dark">
-        <span className="theme-icon theme-icon-moon">☾</span>
-        <button className="theme-toggle" />
-        <span className="theme-icon theme-icon-sun">☀</span>
+      <div className="theme-toggle-wrap" title="Toggle light/dark">
+        <span className="theme-icon theme-icon-moon" onClick={onThemeToggle}>☾</span>
+        <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
+        <span className="theme-icon theme-icon-sun" onClick={onThemeToggle}>☀</span>
       </div>
       <YearPicker compact />
     </div>
