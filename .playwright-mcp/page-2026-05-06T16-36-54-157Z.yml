@@ -1,0 +1,46 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - link "F1GURES v1.006" [ref=e5] [cursor=pointer]:
+      - /url: index.html
+      - text: F1GURES
+      - generic [ref=e7]: v1.006
+    - generic [ref=e8]:
+      - link "Home" [ref=e9] [cursor=pointer]:
+        - /url: index.html
+      - button "Standings ▼" [ref=e11] [cursor=pointer]:
+        - text: Standings
+        - generic [ref=e12]: ▼
+      - link "Calendar" [ref=e13] [cursor=pointer]:
+        - /url: calendar.html
+      - link "Circuits" [ref=e14] [cursor=pointer]:
+        - /url: circuits.html
+    - generic [ref=e15]:
+      - generic "Toggle light/dark" [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: ☾
+        - button "Toggle theme" [ref=e18]
+        - generic [ref=e19]: ☀
+      - button "2026 ▾" [ref=e21] [cursor=pointer]:
+        - text: "2026"
+        - generic [ref=e22]: ▾
+  - generic [ref=e23]:
+    - link "← Calendar" [ref=e24] [cursor=pointer]:
+      - /url: calendar.html
+    - generic [ref=e25]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e32]: Round 05
+          - generic [ref=e33]: next
+          - generic [ref=e34]: Sprint
+        - generic [ref=e35]:
+          - generic [ref=e36]: 🇨🇦
+          - heading "Canadian Grand Prix" [level=1] [ref=e37]
+        - generic [ref=e38]: CIRCUIT GILLES VILLENEUVE · Sun, 24 May 2026
+      - generic [ref=e39]:
+        - button "FP1" [ref=e40] [cursor=pointer]
+        - button "Sprint Quali" [ref=e41] [cursor=pointer]
+        - button "Sprint" [ref=e42] [cursor=pointer]
+        - button "Qualifying" [ref=e43] [cursor=pointer]
+        - button "Race PENDING" [ref=e44]:
+          - text: Race
+          - generic [ref=e45]: PENDING
+    - generic [ref=e48]: Results pending — session not yet run.
