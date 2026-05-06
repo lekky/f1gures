@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.002';
+const APP_VERSION = '1.003';
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
@@ -45,6 +45,22 @@ function currentRouteName() {
   return 'home';
 }
 
+// ─── Theme ────────────────────────────────────────────────────
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    const saved = (typeof localStorage !== 'undefined' && localStorage.getItem('f1-theme')) || 'dark';
+    document.documentElement.classList.toggle('light', saved === 'light');
+    return saved;
+  });
+  const toggle = () => setTheme(t => {
+    const next = t === 'dark' ? 'light' : 'dark';
+    document.documentElement.classList.toggle('light', next === 'light');
+    localStorage.setItem('f1-theme', next);
+    return next;
+  });
+  return { theme, toggle };
+}
+
 // ─── Viewport hook ────────────────────────────────────────────
 // Returns true when the viewport is narrow enough to use mobile layouts.
 // Screens use this to flip between desktop/mobile grid layouts inline.
@@ -61,7 +77,7 @@ function useIsMobile(breakpoint = 720) {
 }
 
 // ─── Top nav (desktop) ────────────────────────────────────────
-function TopNav() {
+function TopNav({ onThemeToggle }) {
   const [openStandings, setOpenStandings] = useState(false);
   const route = currentRouteName();
   return (
@@ -93,6 +109,11 @@ function TopNav() {
            href={urlFor({ name: 'circuits' })}>Circuits</a>
       </div>
       <div className="nav-spacer"></div>
+      <div className="theme-toggle-wrap" onClick={onThemeToggle} title="Toggle light/dark">
+        <span className="theme-icon theme-icon-moon">☾</span>
+        <button className="theme-toggle" />
+        <span className="theme-icon theme-icon-sun">☀</span>
+      </div>
       <button className="nav-season">
         {(window.F1_DATA && window.F1_DATA.seasonYear) || '2026'} <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
       </button>
@@ -101,7 +122,7 @@ function TopNav() {
 }
 
 // ─── Mobile top bar ───────────────────────────────────────────
-function MobileTopBar() {
+function MobileTopBar({ onThemeToggle }) {
   return (
     <div className="topbar-mobile">
       <a className="nav-logo" href={urlFor({ name: 'home' })}>
@@ -109,6 +130,11 @@ function MobileTopBar() {
         <span className="nav-version">v{APP_VERSION}</span>
       </a>
       <div className="spacer"></div>
+      <div className="theme-toggle-wrap" onClick={onThemeToggle} title="Toggle light/dark">
+        <span className="theme-icon theme-icon-moon">☾</span>
+        <button className="theme-toggle" />
+        <span className="theme-icon theme-icon-sun">☀</span>
+      </div>
       <button className="nav-season">{(window.F1_DATA && window.F1_DATA.seasonYear) || '2026'} ▾</button>
     </div>
   );
@@ -143,10 +169,11 @@ function BotNav() {
 
 // ─── Chrome: wraps every page ─────────────────────────────────
 function Chrome({ children }) {
+  const { toggle } = useTheme();
   return (
     <div className="f1-app">
-      <TopNav />
-      <MobileTopBar />
+      <TopNav onThemeToggle={toggle} />
+      <MobileTopBar onThemeToggle={toggle} />
       {children}
       <BotNav />
     </div>
