@@ -180,9 +180,16 @@ window.F1_DATA = (function() {
     return `+${gap.toFixed(3)}s`;
   }
 
-  // Expose helpers
-  function driverById(code) { return drivers.find(d => d.id === code); }
-  function teamById(id) { return teams.find(t => t.id === id); }
+  // Expose helpers — always return an object so screens don't crash on
+  // unknown ids (historic data, transient API states, etc.).
+  function driverById(code) {
+    return drivers.find(d => d.id === code) ||
+      { id: code, code: code || '—', first: '', last: code || 'Unknown', num: 0, flag: '🏳', team: '' };
+  }
+  function teamById(id) {
+    return teams.find(t => t.id === id) ||
+      { id: id || 'unknown', name: '—', short: '—', color: '#888888' };
+  }
 
   // Compute season standings from results
   function computeStandings() {

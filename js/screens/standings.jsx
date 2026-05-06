@@ -1,8 +1,7 @@
 // Driver and Constructor standings — adapted from the prototype.
 
-const DD = window.F1_DATA;
-
 function DriverStandingsScreen() {
+  const DD = window.F1_DATA;
   const mob = useIsMobile();
   const standings = React.useMemo(() => DD.computeStandings(), []);
   const [sortKey, setSortKey] = React.useState('position');
@@ -126,12 +125,16 @@ function PointsChart({ series, drivers, height = 320 }) {
 }
 
 function HeadToHead({ standings, mob }) {
-  const [a, setA] = React.useState('NOR');
-  const [b, setB] = React.useState('VER');
+  const DD = window.F1_DATA;
+  // Default to top 2 in current standings — historic seasons don't have NOR/VER.
+  const defaultA = (standings.drivers[0] && standings.drivers[0].driver.id) || DD.drivers[0]?.id;
+  const defaultB = (standings.drivers[1] && standings.drivers[1].driver.id) || DD.drivers[1]?.id || defaultA;
+  const [a, setA] = React.useState(defaultA);
+  const [b, setB] = React.useState(defaultB);
   const driverA = DD.driverById(a);
   const driverB = DD.driverById(b);
-  const rowA = standings.drivers.find(r => r.driver.id === a);
-  const rowB = standings.drivers.find(r => r.driver.id === b);
+  const rowA = standings.drivers.find(r => r.driver.id === a) || { points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0 };
+  const rowB = standings.drivers.find(r => r.driver.id === b) || { points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0 };
   const teamA = DD.teamById(driverA.team) || { color: '#888888', short: '—' };
   const teamB = DD.teamById(driverB.team) || { color: '#888888', short: '—' };
   const avgFinish = (id) => {
@@ -185,6 +188,7 @@ function HeadToHead({ standings, mob }) {
 }
 
 function DriverPicker({ label, value, onChange }) {
+  const DD = window.F1_DATA;
   return (
     <div>
       <div className="t-eyebrow" style={{ marginBottom: 6 }}>{label}</div>
@@ -198,6 +202,7 @@ function DriverPicker({ label, value, onChange }) {
 }
 
 function ConstructorStandingsScreen() {
+  const DD = window.F1_DATA;
   const mob = useIsMobile();
   const standings = React.useMemo(() => DD.computeStandings(), []);
   return (

@@ -1,8 +1,7 @@
 // Circuits index + Circuit detail
 
-const F_cir = window.F1_DATA;
-
 function CircuitsIndexScreen() {
+  const F_cir = window.F1_DATA;
   const mob = useIsMobile();
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
@@ -21,7 +20,7 @@ function CircuitsIndexScreen() {
                style={{ textDecoration: 'none', color: 'inherit' }}
                href={urlFor({ name: 'circuit', id: race.circuit })}>
               <div className="race-card-head">
-                <div className="race-round">RD {String(race.round).padStart(2,'0')} · {c.type.toUpperCase()}</div>
+                <div className="race-round">RD {String(race.round).padStart(2,'0')}{c.type && c.type !== '—' ? ` · ${c.type.toUpperCase()}` : ''}</div>
                 <span style={{ fontSize: 18 }}>{race.flag}</span>
               </div>
               <div>
@@ -29,9 +28,9 @@ function CircuitsIndexScreen() {
                 <div className="race-circuit">{c.city}, {c.country}</div>
               </div>
               <div className="race-card-foot">
-                <div className="race-mini-row"><span className="lbl">Length</span><span className="val">{c.length.toFixed(3)} km</span></div>
-                <div className="race-mini-row"><span className="lbl">Corners</span><span className="val">{c.corners}</span></div>
-                <div className="race-mini-row"><span className="lbl">Lap Record</span><span className="val">{c.lapRecord.time}</span></div>
+                {c.length ? <div className="race-mini-row"><span className="lbl">Length</span><span className="val">{c.length.toFixed(3)} km</span></div> : null}
+                {c.corners ? <div className="race-mini-row"><span className="lbl">Corners</span><span className="val">{c.corners}</span></div> : null}
+                {c.lapRecord && c.lapRecord.time !== '—' ? <div className="race-mini-row"><span className="lbl">Lap Record</span><span className="val">{c.lapRecord.time}</span></div> : null}
               </div>
             </a>
           );
@@ -42,6 +41,7 @@ function CircuitsIndexScreen() {
 }
 
 function CircuitDetailScreen() {
+  const F_cir = window.F1_DATA;
   const mob = useIsMobile();
   const id = getParam('id');
   const circuit = F_cir.circuits[id];
@@ -56,16 +56,18 @@ function CircuitDetailScreen() {
   }
 
   const ratingFill = { Low: 33, Medium: 66, High: 100 };
+  // Skip rows whose underlying value is missing — historic circuits synthesized
+  // from the API only have name/city/country, no length/corners/etc.
   const stats = [
-    { lbl: 'Length', val: `${circuit.length.toFixed(3)} km`, type: 'val' },
-    { lbl: 'Laps', val: circuit.laps, type: 'val' },
-    { lbl: 'Corners', val: circuit.corners, type: 'val' },
-    { lbl: 'Longest Straight', val: `${circuit.longestStraight} m`, type: 'val' },
-    { lbl: 'DRS Zones', val: circuit.drsZones, type: 'val' },
-    { lbl: 'Track Type', val: circuit.type, type: 'val' },
-    { lbl: 'Tyre Degradation', val: circuit.tyreDeg, type: 'rating' },
-    { lbl: 'Overtaking', val: circuit.overtaking, type: 'rating' },
-  ];
+    circuit.length && { lbl: 'Length', val: `${circuit.length.toFixed(3)} km`, type: 'val' },
+    circuit.laps && { lbl: 'Laps', val: circuit.laps, type: 'val' },
+    circuit.corners && { lbl: 'Corners', val: circuit.corners, type: 'val' },
+    circuit.longestStraight && { lbl: 'Longest Straight', val: `${circuit.longestStraight} m`, type: 'val' },
+    circuit.drsZones && { lbl: 'DRS Zones', val: circuit.drsZones, type: 'val' },
+    circuit.type && circuit.type !== '—' && { lbl: 'Track Type', val: circuit.type, type: 'val' },
+    ratingFill[circuit.tyreDeg] && { lbl: 'Tyre Degradation', val: circuit.tyreDeg, type: 'rating' },
+    ratingFill[circuit.overtaking] && { lbl: 'Overtaking', val: circuit.overtaking, type: 'rating' },
+  ].filter(Boolean);
 
   // Generate fake historical winners (last 5)
   const winnerPool = ['VER','HAM','LEC','NOR','PIA','RUS','ALO','SAI'];
@@ -89,9 +91,11 @@ function CircuitDetailScreen() {
             <span className="t-mono" style={{ fontSize: 13 }}>{circuit.city.toUpperCase()}, {circuit.country.toUpperCase()}</span>
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-            <span className="pill">First F1: {circuit.firstYear}</span>
-            <span className="pill">{circuit.races} races held</span>
-            <span className="pill" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>{circuit.weather}</span>
+            {circuit.firstYear ? <span className="pill">First F1: {circuit.firstYear}</span> : null}
+            {circuit.races ? <span className="pill">{circuit.races} races held</span> : null}
+            {circuit.weather && circuit.weather !== '—'
+              ? <span className="pill" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>{circuit.weather}</span>
+              : null}
           </div>
           <p style={{ color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.6, textWrap: 'pretty' }}>{circuit.blurb}</p>
         </div>
@@ -126,14 +130,16 @@ function CircuitDetailScreen() {
       </Panel>
 
       <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : '1fr 1fr', marginTop: 16, gap: 16 }}>
-        <div className="callout">
-          <div className="callout-icon">◷</div>
-          <div className="callout-body">
-            <div className="callout-lbl">Lap Record</div>
-            <div className="callout-driver">{circuit.lapRecord.driver}</div>
-            <div className="callout-time">{circuit.lapRecord.time} · {circuit.lapRecord.year}</div>
+        {circuit.lapRecord && circuit.lapRecord.driver !== '—' ? (
+          <div className="callout">
+            <div className="callout-icon">◷</div>
+            <div className="callout-body">
+              <div className="callout-lbl">Lap Record</div>
+              <div className="callout-driver">{circuit.lapRecord.driver}</div>
+              <div className="callout-time">{circuit.lapRecord.time} · {circuit.lapRecord.year}</div>
+            </div>
           </div>
-        </div>
+        ) : null}
         <div className="stat">
           <div className="stat-lbl">Next Race</div>
           <div className="stat-val" style={{ fontSize: 22 }}>{race.name.replace(' Grand Prix','')}</div>

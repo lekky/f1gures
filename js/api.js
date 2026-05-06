@@ -40,6 +40,23 @@
   const TTL_MS = 60 * 60 * 1000;
   const CACHE_PREFIX = 'f1gures.api.v1.';
 
+  // ---------- Selected season ----------
+  // Either 'current' (live) or a 4-digit year string. Stored in localStorage so
+  // it survives page navigations. URL ?year=YYYY overrides for one-shot links.
+  function getSelectedYear() {
+    try {
+      const url = new URLSearchParams(window.location.search).get('year');
+      if (url && /^(current|\d{4})$/.test(url)) return url;
+    } catch (e) {}
+    try {
+      const stored = localStorage.getItem('f1-year');
+      if (stored && /^(current|\d{4})$/.test(stored)) return stored;
+    } catch (e) {}
+    return 'current';
+  }
+  const SELECTED_YEAR = getSelectedYear();
+  window.F1_SELECTED_YEAR = SELECTED_YEAR;
+
   // ---------- localStorage cache (gracefully no-op if unavailable) ----------
   function cacheGet(key) {
     try {
@@ -139,17 +156,26 @@
   };
 
   // ---------- Reshape helpers ----------
+  // Drivers before ~2014 don't have a `code` — fall back to first 3 letters of
+  // surname so we always have a stable id for indexing into results/standings.
+  function driverCode(d) {
+    if (d.code) return d.code;
+    const src = d.familyName || d.driverId || 'XXX';
+    return src.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3) || 'XXX';
+  }
+
   function reshapeDrivers(driversTable) {
     const drivers = driversTable.MRData.DriverTable.Drivers;
     return drivers.map(d => {
       const cc = COUNTRY_BY_NATIONALITY[d.nationality] || '';
+      const code = driverCode(d);
       return {
-        id: d.code,
+        id: code,
         jolpicaId: d.driverId,
         num: parseInt(d.permanentNumber, 10) || 0,
         first: d.givenName,
         last: d.familyName,
-        code: d.code,
+        code,
         country: cc,
         flag: FLAG_BY_COUNTRY[cc] || '🏳',
         team: '', // filled in once we know constructor for each driver
@@ -173,6 +199,33 @@
         nationality: c.nationality,
       };
     });
+  }
+
+  // Synthesize a circuits map from the API schedule response. Every race
+  // carries enough Circuit metadata for a baseline entry — name, city,
+  // country. Rich fields (length, corners, lap record, blurb) stay '—' / 0
+  // and the static map can override per circuit when we have richer data.
+  function buildCircuitsFromSchedule(scheduleTable) {
+    const races = scheduleTable.MRData.RaceTable.Races;
+    const out = {};
+    races.forEach(r => {
+      const key = CIRCUIT_ID_ALIASES[r.Circuit.circuitId] || r.Circuit.circuitId;
+      if (out[key]) return;
+      const loc = r.Circuit.Location || {};
+      out[key] = {
+        name: r.Circuit.circuitName || r.Circuit.circuitId,
+        city: loc.locality || '—',
+        country: loc.country || '—',
+        firstYear: 0, races: 0,
+        length: 0, laps: 0, corners: 0,
+        longestStraight: 0, drsZones: 0,
+        type: '—', tyreDeg: '—', overtaking: '—',
+        weather: '—',
+        lapRecord: { driver: '—', time: '—', year: 0 },
+        blurb: '',
+      };
+    });
+    return out;
   }
 
   function reshapeCalendar(scheduleTable) {
@@ -206,10 +259,14 @@
   }
 
   function patchCalendarStatus(calendar, results) {
-    const completedSet = new Set(Object.keys(results).map(Number));
+    // A race is completed if its date has passed — regardless of whether we
+    // successfully fetched its results. Historic seasons would otherwise show
+    // every round as "upcoming" if the per-round result fetches got rate-limited.
+    const todayISO = new Date().toISOString().slice(0, 10);
     let nextSet = false;
     return calendar.map(r => {
-      if (completedSet.has(r.round)) return Object.assign({}, r, { status: 'completed' });
+      const isPast = r.date && r.date < todayISO;
+      if (isPast) return Object.assign({}, r, { status: 'completed' });
       if (!nextSet) { nextSet = true; return Object.assign({}, r, { status: 'next' }); }
       return Object.assign({}, r, { status: 'upcoming' });
     });
@@ -227,20 +284,20 @@
       return (isNaN(ap) ? 99 : ap) - (isNaN(bp) ? 99 : bp);
     });
 
-    const order = results.map(r => r.Driver.code);
+    const order = results.map(r => driverCode(r.Driver));
     const grid = results.slice()
       .sort((a, b) => parseInt(a.grid, 10) - parseInt(b.grid, 10))
-      .map(r => r.Driver.code);
+      .map(r => driverCode(r.Driver));
     const dnfs = results
       .filter(r => r.positionText === 'R' || r.positionText === 'D')
-      .map(r => r.Driver.code);
+      .map(r => driverCode(r.Driver));
 
     const polesitter = results.find(r => parseInt(r.grid, 10) === 1);
     const fastestLap = results.find(r => r.FastestLap && r.FastestLap.rank === '1');
 
     const detail = {};
     results.forEach(r => {
-      detail[r.Driver.code] = {
+      detail[driverCode(r.Driver)] = {
         position: r.positionText,
         grid: parseInt(r.grid, 10) || null,
         points: parseFloat(r.points) || 0,
@@ -253,8 +310,8 @@
     });
 
     return {
-      pole: polesitter ? polesitter.Driver.code : null,
-      fastest: fastestLap ? fastestLap.Driver.code : null,
+      pole: polesitter ? driverCode(polesitter.Driver) : null,
+      fastest: fastestLap ? driverCode(fastestLap.Driver) : null,
       order, grid, dnfs, detail,
     };
   }
@@ -266,7 +323,7 @@
     if (!qr || !qr.length) return null;
     const out = {};
     qr.forEach(q => {
-      out[q.Driver.code] = {
+      out[driverCode(q.Driver)] = {
         q1: q.Q1 || null,
         q2: q.Q2 || null,
         q3: q.Q3 || null,
@@ -284,7 +341,7 @@
     const sorted = sr.slice().sort((a, b) => parseInt(a.position, 10) - parseInt(b.position, 10));
     const detail = {};
     sorted.forEach(r => {
-      detail[r.Driver.code] = {
+      detail[driverCode(r.Driver)] = {
         position: r.positionText,
         grid: parseInt(r.grid, 10) || null,
         points: parseFloat(r.points) || 0,
@@ -293,8 +350,8 @@
       };
     });
     return {
-      winner: sorted[0].Driver.code,
-      order: sorted.map(r => r.Driver.code),
+      winner: driverCode(sorted[0].Driver),
+      order: sorted.map(r => driverCode(r.Driver)),
       detail,
     };
   }
@@ -302,15 +359,16 @@
   // ---------- Main loader ----------
   async function loadFromAPI() {
     // Schedule
-    const scheduleData = await fetchJSON('/current/?limit=100');
+    const scheduleData = await fetchJSON('/' + SELECTED_YEAR + '/?limit=100');
     const calendarRaw = reshapeCalendar(scheduleData);
+    const circuitsFromAPI = buildCircuitsFromSchedule(scheduleData);
     const seasonYear = scheduleData.MRData.RaceTable.season;
 
     // Drivers, constructors, driver standings (the latter gives us driver→team)
     const [driversData, constructorsData, driverStandingsData] = await Promise.all([
-      fetchJSON('/current/drivers/?limit=100'),
-      fetchJSON('/current/constructors/?limit=100'),
-      fetchJSON('/current/driverstandings/?limit=100'),
+      fetchJSON('/' + SELECTED_YEAR + '/drivers/?limit=100'),
+      fetchJSON('/' + SELECTED_YEAR + '/constructors/?limit=100'),
+      fetchJSON('/' + SELECTED_YEAR + '/driverstandings/?limit=100'),
     ]);
 
     // Per-round race / qualifying / sprint for completed rounds
@@ -329,19 +387,19 @@
     const fetches = [];
     completedRounds.forEach(round => {
       fetches.push(
-        fetchJSON('/current/' + round + '/results/')
+        fetchJSON('/' + SELECTED_YEAR + '/' + round + '/results/')
           .then(j => ({ round, kind: 'race', data: j }))
           .catch(() => null)
       );
       fetches.push(
-        fetchJSON('/current/' + round + '/qualifying/')
+        fetchJSON('/' + SELECTED_YEAR + '/' + round + '/qualifying/')
           .then(j => ({ round, kind: 'quali', data: j }))
           .catch(() => null)
       );
       const isSprint = calendarRaw.find(r => r.round === round && r.sprint);
       if (isSprint) {
         fetches.push(
-          fetchJSON('/current/' + round + '/sprint/')
+          fetchJSON('/' + SELECTED_YEAR + '/' + round + '/sprint/')
             .then(j => ({ round, kind: 'sprint', data: j }))
             .catch(() => null)
         );
@@ -356,7 +414,7 @@
     const standingsList = driverStandingsData.MRData.StandingsTable.StandingsLists[0];
     const driverStandingsRows = (standingsList && standingsList.DriverStandings) || [];
     driverStandingsRows.forEach(ds => {
-      const code = ds.Driver.code;
+      const code = driverCode(ds.Driver);
       const c = ds.Constructors && ds.Constructors[ds.Constructors.length - 1];
       if (c) teamByDriverCode[code] = TEAM_ID_MAP[c.constructorId] || c.constructorId;
     });
@@ -393,21 +451,34 @@
 
     const calendar = patchCalendarStatus(calendarRaw, cleanResults);
 
-    return { seasonYear, teams, drivers, calendar, results: cleanResults };
+    return { seasonYear, teams, drivers, calendar, results: cleanResults, circuitsFromAPI };
   }
 
   // ---------- Build the F1_DATA contract from a raw season payload ----------
   function buildF1Data(raw) {
     const statics = (window.F1_DATA && window.F1_DATA.__statics) || {};
-    const circuits = statics.circuits || {};
+    const staticCircuits = statics.circuits || {};
     const POINTS = statics.POINTS || [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
     const fmtLap = statics.fmtLap || function (s) { return String(s); };
     const fmtGap = statics.fmtGap || function () { return ''; };
 
-    const { teams, drivers, calendar, results, seasonYear } = raw;
+    const { teams, drivers, calendar, results, seasonYear, circuitsFromAPI } = raw;
 
-    function driverById(code) { return drivers.find(d => d.id === code); }
-    function teamById(id) { return teams.find(t => t.id === id); }
+    // Merge: API-synthesized circuits as the base, static map overrides for
+    // any circuit we have rich data for. Static-only circuits (e.g. Madrid
+    // before its first race) still appear so the index page lists them.
+    const circuits = Object.assign({}, circuitsFromAPI || {}, staticCircuits);
+
+    // Lookups always return an object — historic seasons have teams/drivers
+    // not in the static maps, and screens shouldn't crash on a missing key.
+    function driverById(code) {
+      return drivers.find(d => d.id === code) ||
+        { id: code, code: code || '—', first: '', last: code || 'Unknown', num: 0, flag: '🏳', team: '' };
+    }
+    function teamById(id) {
+      return teams.find(t => t.id === id) ||
+        { id: id || 'unknown', name: '—', short: '—', color: '#888888' };
+    }
     function genQuali(round) {
       const r = results[round];
       if (!r) return null;

@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.003';
+const APP_VERSION = '1.004';
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
@@ -76,6 +76,50 @@ function useIsMobile(breakpoint = 720) {
   return isMob;
 }
 
+// ─── Year picker ──────────────────────────────────────────────
+// Dropdown listing 1950..currentRealYear plus "Current Season" at the top.
+// Selecting a year writes to localStorage and reloads to index.html so the
+// new season's data loads cleanly (deep pages might not have matching state).
+function YearPicker({ compact }) {
+  const [open, setOpen] = useState(false);
+  const selected = (typeof window !== 'undefined' && window.F1_SELECTED_YEAR) || 'current';
+  const liveYear = (window.F1_DATA && window.F1_DATA.seasonYear) || (new Date()).getFullYear();
+  const label = selected === 'current' ? liveYear : selected;
+  const maxYear = (new Date()).getFullYear();
+  const years = [];
+  for (let y = maxYear; y >= 1950; y--) years.push(String(y));
+
+  const pick = (year) => {
+    try { localStorage.setItem('f1-year', year); } catch (e) {}
+    window.location.href = urlFor({ name: 'home' });
+  };
+
+  return (
+    <div style={{ position: 'relative', height: '100%' }}
+         onMouseEnter={() => setOpen(true)}
+         onMouseLeave={() => setOpen(false)}>
+      <button className="nav-season">
+        {label} {compact ? '▾' : <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>}
+      </button>
+      {open && (
+        <div className="nav-dropdown nav-dropdown-years" style={{ top: 'calc(100% - 1px)', right: 0, left: 'auto' }}>
+          <button onClick={() => pick('current')}
+                  className={selected === 'current' ? 'active' : ''}>
+            Current Season
+          </button>
+          <div className="dropdown-divider" />
+          {years.map(y => (
+            <button key={y} onClick={() => pick(y)}
+                    className={selected === y ? 'active' : ''}>
+              {y}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Top nav (desktop) ────────────────────────────────────────
 function TopNav({ onThemeToggle }) {
   const [openStandings, setOpenStandings] = useState(false);
@@ -114,9 +158,7 @@ function TopNav({ onThemeToggle }) {
         <button className="theme-toggle" />
         <span className="theme-icon theme-icon-sun">☀</span>
       </div>
-      <button className="nav-season">
-        {(window.F1_DATA && window.F1_DATA.seasonYear) || '2026'} <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
-      </button>
+      <YearPicker />
     </nav>
   );
 }
@@ -135,7 +177,7 @@ function MobileTopBar({ onThemeToggle }) {
         <button className="theme-toggle" />
         <span className="theme-icon theme-icon-sun">☀</span>
       </div>
-      <button className="nav-season">{(window.F1_DATA && window.F1_DATA.seasonYear) || '2026'} ▾</button>
+      <YearPicker compact />
     </div>
   );
 }

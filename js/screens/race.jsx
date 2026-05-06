@@ -1,8 +1,7 @@
 // Race Detail screen — round read from ?round=N
 
-const F_race = window.F1_DATA;
-
 function RaceDetailScreen() {
+  const F_race = window.F1_DATA;
   const mob = useIsMobile();
   const round = parseInt(getParam('round'), 10);
   const race = F_race.calendar.find(r => r.round === round);
@@ -74,6 +73,7 @@ function RaceDetailScreen() {
 }
 
 function RaceResultsTable({ round, race, result, mob }) {
+  const F_race = window.F1_DATA;
   const winner = F_race.driverById(result.order[0]);
   const winnerTeam = F_race.teamById(winner.team);
   const fastestDriver = F_race.driverById(result.fastest);
@@ -150,6 +150,7 @@ function RaceResultsTable({ round, race, result, mob }) {
 }
 
 function QualifyingTable({ round, result, mob }) {
+  const F_race = window.F1_DATA;
   const quali = F_race.genQuali(round);
   return (
     <Panel title="Qualifying" tight>
@@ -189,6 +190,7 @@ function QualifyingTable({ round, result, mob }) {
 }
 
 function SprintResultsTable({ result, mob }) {
+  const F_race = window.F1_DATA;
   const SPRINT_PTS = [8,7,6,5,4,3,2,1];
   return (
     <Panel title="Sprint Result" tight>

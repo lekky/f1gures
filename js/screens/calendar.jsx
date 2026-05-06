@@ -1,8 +1,7 @@
 // Calendar screen — adapted from prototype, links via urlFor()
 
-const F_cal = window.F1_DATA;
-
 function CalendarScreen() {
+  const F_cal = window.F1_DATA;
   const mob = useIsMobile();
   const cal = F_cal.calendar;
   return (

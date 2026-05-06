@@ -1,8 +1,7 @@
 // Driver Profile screen — driver id read from ?id=
 
-const F_drv = window.F1_DATA;
-
 function DriverProfileScreen() {
+  const F_drv = window.F1_DATA;
   const mob = useIsMobile();
   const standings = React.useMemo(() => F_drv.computeStandings(), []);
 

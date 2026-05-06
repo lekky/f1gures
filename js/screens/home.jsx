@@ -10,7 +10,9 @@ function HomeScreen() {
 
   // Next race = the calendar entry flagged 'next', or fall back
   const next = cal.find(r => r.status === 'next') || cal[6];
-  const prev = cal.filter(r => r.status === 'completed').slice(-1)[0];
+  // Latest completed race we actually have results for (rate-limited fetches
+  // can leave a 'completed' race without a result entry).
+  const prev = [...cal].reverse().find(r => r.status === 'completed' && D.results[r.round]);
 
   // Countdown target: a fake offset to keep it lively
   const target = useMemo(() => {
@@ -40,9 +42,9 @@ function HomeScreen() {
   const p2 = standings.drivers[1];
   const teamLeader = standings.teams[0];
   const lastRace = prev;
-  const lastResult = D.results[lastRace.round];
-  const lastWinner = D.driverById(lastResult.order[0]);
-  const lastWinnerTeam = D.teamById(lastWinner.team);
+  const lastResult = lastRace ? D.results[lastRace.round] : null;
+  const lastWinner = lastResult ? D.driverById(lastResult.order[0]) : null;
+  const lastWinnerTeam = lastWinner ? D.teamById(lastWinner.team) : null;
 
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
@@ -106,12 +108,19 @@ function HomeScreen() {
           sub={`${teamLeader.wins} wins · ${teamLeader.podiums} podiums`}
           href={urlFor({ name: 'standings-c' })}
         />
-        <SummaryWidget kicker="Last Race"
-          driver={lastWinner}
-          big={`P1`}
-          sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
-          href={urlFor({ name: 'race', round: lastRace.round })}
-        />
+        {lastRace && lastWinner ? (
+          <SummaryWidget kicker="Last Race"
+            driver={lastWinner}
+            big={`P1`}
+            sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
+            href={urlFor({ name: 'race', round: lastRace.round })}
+          />
+        ) : (
+          <SummaryWidget kicker="Last Race"
+            big="—"
+            sub="No results yet"
+          />
+        )}
       </div>
 
       <SectionHead title="Driver Standings" right={
