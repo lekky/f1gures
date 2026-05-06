@@ -109,7 +109,11 @@ function TopNav({ onThemeToggle }) {
            href={urlFor({ name: 'circuits' })}>Circuits</a>
       </div>
       <div className="nav-spacer"></div>
-      <button className="theme-toggle" onClick={onThemeToggle} title="Toggle light/dark" />
+      <div className="theme-toggle-wrap" onClick={onThemeToggle} title="Toggle light/dark">
+        <span className="theme-icon theme-icon-moon">☾</span>
+        <button className="theme-toggle" />
+        <span className="theme-icon theme-icon-sun">☀</span>
+      </div>
       <button className="nav-season">
         {(window.F1_DATA && window.F1_DATA.seasonYear) || '2026'} <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
       </button>
@@ -126,7 +130,11 @@ function MobileTopBar({ onThemeToggle }) {
         <span className="nav-version">v{APP_VERSION}</span>
       </a>
       <div className="spacer"></div>
-      <button className="theme-toggle" onClick={onThemeToggle} title="Toggle light/dark" />
+      <div className="theme-toggle-wrap" onClick={onThemeToggle} title="Toggle light/dark">
+        <span className="theme-icon theme-icon-moon">☾</span>
+        <button className="theme-toggle" />
+        <span className="theme-icon theme-icon-sun">☀</span>
+      </div>
       <button className="nav-season">{(window.F1_DATA && window.F1_DATA.seasonYear) || '2026'} ▾</button>
     </div>
   );

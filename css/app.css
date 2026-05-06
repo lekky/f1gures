@@ -77,6 +77,21 @@ html.light .topbar-mobile {
   border-bottom-color: var(--line-1);
 }
 
+/* Theme toggle wrapper with moon/sun icons */
+.theme-toggle-wrap {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; user-select: none;
+}
+.theme-icon {
+  font-size: 13px; line-height: 1;
+  color: var(--fg-4);
+  transition: color .2s, opacity .2s;
+}
+.theme-icon-moon  { color: var(--fg-2); }
+.theme-icon-sun   { color: var(--fg-4); }
+html.light .theme-icon-moon { color: var(--fg-4); }
+html.light .theme-icon-sun  { color: var(--accent); }
+
 /* Theme toggle pill */
 .theme-toggle {
   width: 36px; height: 20px; border-radius: 10px;
