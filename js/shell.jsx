@@ -113,7 +113,7 @@ function YearPicker({ compact }) {
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', height: '100%' }}>
+    <div ref={ref} style={{ position: 'relative' }}>
       <button className="nav-season" onClick={() => setOpen(o => !o)}>
         {label} {compact ? '▾' : <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>}
       </button>

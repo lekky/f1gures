@@ -196,7 +196,7 @@ button { font-family: inherit; }
   align-self: flex-end; padding-bottom: 2px;
 }
 .nav-spacer { flex: 1; }
-.nav-controls { display: flex; align-items: center; gap: 8px; height: 100%; }
+.nav-controls { display: flex; align-items: center; gap: 8px; }
 .nav-season {
   display: flex; align-items: center; gap: 8px;
   font-family: var(--f-display); font-weight: 600; font-size: 13px;
