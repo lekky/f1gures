@@ -17,7 +17,7 @@ function CalendarScreen() {
 
       <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))' }}>
         {cal.map(race => {
-          const circuit = F_cal.circuits[race.circuit];
+          const circuit = F_cal.circuits[race.circuit] || { name: race.circuit };
           const result = F_cal.results[race.round];
           const winner = result ? F_cal.driverById(result.order[0]) : null;
           const fastest = result ? F_cal.driverById(result.fastest) : null;

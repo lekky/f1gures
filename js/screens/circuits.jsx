@@ -15,7 +15,7 @@ function CircuitsIndexScreen() {
       </div>
       <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))' }}>
         {F_cir.calendar.map(race => {
-          const c = F_cir.circuits[race.circuit];
+          const c = F_cir.circuits[race.circuit] || { name: race.circuit, city: '—', country: '—', type: '—', length: 0, corners: 0, lapRecord: { time: '—' } };
           return (
             <a key={race.round} className="race-card"
                style={{ textDecoration: 'none', color: 'inherit' }}

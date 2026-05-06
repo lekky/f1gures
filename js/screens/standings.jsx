@@ -40,7 +40,7 @@ function DriverStandingsScreen() {
         <div>
           <div className="t-eyebrow" style={{ marginBottom: 6 }}>{(window.F1_DATA && window.F1_DATA.seasonYear) || '2026'} World Championship</div>
           <h1 className="page-title">Driver Standings</h1>
-          <div className="page-sub">After Round {standings.lastRound} · {DD.calendar.find(r => r.round === standings.lastRound).name}</div>
+          <div className="page-sub">After Round {standings.lastRound} · {(DD.calendar.find(r => r.round === standings.lastRound) || {}).name}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary btn-sm">Export CSV</button>
@@ -70,7 +70,7 @@ function DriverStandingsScreen() {
                     <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
                     <td><ChangeIndicator change={row.change} /></td>
                     <td><DriverCell driver={row.driver} /></td>
-                    <td>{team.name}</td>
+                    <td>{team ? team.name : '—'}</td>
                     <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 16 }}>{row.points}</strong></td>
                     <td className="right num">{row.wins}</td>
                     <td className="right num">{row.podiums}</td>
@@ -132,8 +132,8 @@ function HeadToHead({ standings, mob }) {
   const driverB = DD.driverById(b);
   const rowA = standings.drivers.find(r => r.driver.id === a);
   const rowB = standings.drivers.find(r => r.driver.id === b);
-  const teamA = DD.teamById(driverA.team);
-  const teamB = DD.teamById(driverB.team);
+  const teamA = DD.teamById(driverA.team) || { color: '#888888', short: '—' };
+  const teamB = DD.teamById(driverB.team) || { color: '#888888', short: '—' };
   const avgFinish = (id) => {
     const rounds = Object.keys(DD.results).map(Number);
     const positions = rounds.map(r => DD.results[r].order.indexOf(id) + 1);
@@ -190,7 +190,7 @@ function DriverPicker({ label, value, onChange }) {
       <div className="t-eyebrow" style={{ marginBottom: 6 }}>{label}</div>
       <select className="sel" style={{ width: '100%' }} value={value} onChange={e => onChange(e.target.value)}>
         {DD.drivers.map(d => (
-          <option key={d.id} value={d.id}>{d.first} {d.last} · {DD.teamById(d.team).short}</option>
+          <option key={d.id} value={d.id}>{d.first} {d.last} · {(DD.teamById(d.team) || { short: '—' }).short}</option>
         ))}
       </select>
     </div>
