@@ -4,15 +4,15 @@
   /* Surfaces */
   --bg-0: #050505;
   --bg-1: #0a0a0a;
-  --bg-2: #111113;
-  --bg-3: #15161a;
-  --bg-hover: #1a1c20;
-  --bg-elevated: #18191d;
+  --bg-2: #1c1d22;
+  --bg-3: #252629;
+  --bg-hover: #2d2f36;
+  --bg-elevated: #22232a;
 
   /* Borders */
-  --line-1: #1f2024;
-  --line-2: #2a2c32;
-  --line-3: #3a3d44;
+  --line-1: #2c2e36;
+  --line-2: #383a44;
+  --line-3: #484c56;
 
   /* Text */
   --fg-1: #f5f5f5;
@@ -196,6 +196,7 @@ button { font-family: inherit; }
   align-self: flex-end; padding-bottom: 2px;
 }
 .nav-spacer { flex: 1; }
+.nav-controls { display: flex; align-items: center; gap: 8px; }
 .nav-season {
   display: flex; align-items: center; gap: 8px;
   font-family: var(--f-display); font-weight: 600; font-size: 13px;
