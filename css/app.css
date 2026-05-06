@@ -482,10 +482,33 @@ button { font-family: inherit; }
   min-height: 200px;
 }
 .race-card:hover { border-color: var(--line-3); background: var(--bg-elevated); }
-.race-card.is-next { border-color: var(--accent); }
+
+/* Completed — recede into history */
+.race-card.is-completed {
+  opacity: 0.45;
+  border-color: var(--line-1);
+}
+.race-card.is-completed:hover { opacity: 0.75; border-color: var(--line-2); }
+
+/* Next — dominant focal point */
+.race-card.is-next {
+  border: 2px solid var(--accent);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 1px rgba(232,0,45,0.2), 0 8px 32px rgba(232,0,45,0.14);
+}
 .race-card.is-next::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(60% 50% at 100% 0%, rgba(232,0,45,0.08) 0%, transparent 60%);
+  background: radial-gradient(80% 70% at 50% 0%, rgba(232,0,45,0.1) 0%, transparent 65%);
+}
+.race-card.is-next:hover {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 1px rgba(232,0,45,0.35), 0 8px 40px rgba(232,0,45,0.2);
+}
+
+/* Upcoming — clean, forward-looking */
+.race-card.is-upcoming {
+  border-color: var(--line-1);
 }
 .race-card-head {
   display: flex; justify-content: space-between; align-items: flex-start;
