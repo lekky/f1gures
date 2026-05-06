@@ -23,7 +23,7 @@ function CalendarScreen() {
           const fastest = result ? F_cal.driverById(result.fastest) : null;
           return (
             <a key={race.round}
-               className={`race-card ${race.status === 'next' ? 'is-next' : ''}`}
+               className={`race-card is-${race.status}`}
                style={{ textDecoration: 'none', color: 'inherit' }}
                href={urlFor({ name: 'race', round: race.round })}>
               <div className="race-card-head">
