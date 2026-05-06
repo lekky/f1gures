@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.008';
+const APP_VERSION = '1.009';
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
@@ -113,7 +113,7 @@ function YearPicker({ compact }) {
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
       <button className="nav-season" onClick={() => setOpen(o => !o)}>
         {label} {compact ? '▾' : <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>}
       </button>
@@ -186,19 +186,12 @@ function TopNav({ onThemeToggle }) {
 function MobileTopBar({ onThemeToggle }) {
   return (
     <div className="topbar-mobile">
-      <a className="nav-logo" href={urlFor({ name: 'home' })}>
+      <a className="nav-logo topbar-logo" href={urlFor({ name: 'home' })}>
         <span className="dot"></span>F1GURES
-        <span className="nav-version">v{APP_VERSION}</span>
       </a>
-      <div className="spacer"></div>
-      <div className="nav-controls">
-        <div className="theme-toggle-wrap" title="Toggle light/dark">
-          <span className="theme-icon theme-icon-moon" onClick={onThemeToggle}>☾</span>
-          <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
-          <span className="theme-icon theme-icon-sun" onClick={onThemeToggle}>☀</span>
-        </div>
-        <YearPicker compact />
-      </div>
+      <div style={{ flex: 1 }}></div>
+      <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
+      <YearPicker compact />
     </div>
   );
 }

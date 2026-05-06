@@ -38,12 +38,9 @@ a { color: inherit; }
   backdrop-filter: blur(12px); border-bottom: 1px solid var(--line-1);
   align-items: center; padding: 0 14px; gap: 10px;
 }
-.topbar-mobile .nav-logo { font-size: 18px; }
-.topbar-mobile .nav-version { display: none; }
-.topbar-mobile .spacer   { flex: 1; }
-.topbar-mobile .theme-icon { display: none; }
-.topbar-mobile .nav-controls { flex-shrink: 0; }
-.topbar-mobile .nav-season { padding: 4px 10px; font-size: 11px; }
+.topbar-mobile .topbar-logo { font-size: 18px; flex-shrink: 0; }
+.topbar-mobile .theme-toggle { flex-shrink: 0; }
+.topbar-mobile .nav-season { padding: 4px 10px; font-size: 11px; flex-shrink: 0; }
 
 /* ──────────────────────────────────────────────────────────
    Additional utilities & responsive page-specific layouts
