@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.011';
+const APP_VERSION = '1.012';
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
@@ -140,9 +140,9 @@ function ThemeSwitcher({ theme, setMode }) {
   return (
     <div className="theme-switcher" role="group" aria-label="Theme">
       <button className={`theme-opt ${theme === 'light' ? 'active' : ''}`}
-              onClick={() => setMode('light')} title="Light mode">☀</button>
+              onClick={() => setMode('light')}>Light</button>
       <button className={`theme-opt ${theme === 'dark' ? 'active' : ''}`}
-              onClick={() => setMode('dark')} title="Dark mode">☾</button>
+              onClick={() => setMode('dark')}>Dark</button>
     </div>
   );
 }
