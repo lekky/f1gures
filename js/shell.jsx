@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.010';
+const APP_VERSION = '1.011';
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
@@ -48,17 +48,16 @@ function currentRouteName() {
 // ─── Theme ────────────────────────────────────────────────────
 function useTheme() {
   const [theme, setTheme] = useState(() => {
-    const saved = (typeof localStorage !== 'undefined' && localStorage.getItem('f1-theme')) || 'dark';
+    const saved = (typeof localStorage !== 'undefined' && localStorage.getItem('f1-theme')) || 'light';
     document.documentElement.classList.toggle('light', saved === 'light');
     return saved;
   });
-  const toggle = () => setTheme(t => {
-    const next = t === 'dark' ? 'light' : 'dark';
+  const setMode = (next) => setTheme(() => {
     document.documentElement.classList.toggle('light', next === 'light');
     localStorage.setItem('f1-theme', next);
     return next;
   });
-  return { theme, toggle };
+  return { theme, setMode };
 }
 
 // ─── Viewport hook ────────────────────────────────────────────
@@ -136,8 +135,20 @@ function YearPicker({ compact }) {
   );
 }
 
+// ─── Theme switcher ───────────────────────────────────────────
+function ThemeSwitcher({ theme, setMode }) {
+  return (
+    <div className="theme-switcher" role="group" aria-label="Theme">
+      <button className={`theme-opt ${theme === 'light' ? 'active' : ''}`}
+              onClick={() => setMode('light')} title="Light mode">☀</button>
+      <button className={`theme-opt ${theme === 'dark' ? 'active' : ''}`}
+              onClick={() => setMode('dark')} title="Dark mode">☾</button>
+    </div>
+  );
+}
+
 // ─── Top nav (desktop) ────────────────────────────────────────
-function TopNav({ onThemeToggle }) {
+function TopNav({ theme, setMode }) {
   const [openStandings, setOpenStandings] = useState(false);
   const standingsRef = React.useRef(null);
   useClickOutside(standingsRef, () => setOpenStandings(false));
@@ -171,11 +182,7 @@ function TopNav({ onThemeToggle }) {
       </div>
       <div className="nav-spacer"></div>
       <div className="nav-controls">
-        <div className="theme-toggle-wrap" title="Toggle light/dark">
-          <span className="theme-icon theme-icon-moon" onClick={onThemeToggle}>☾</span>
-          <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
-          <span className="theme-icon theme-icon-sun" onClick={onThemeToggle}>☀</span>
-        </div>
+        <ThemeSwitcher theme={theme} setMode={setMode} />
         <YearPicker />
       </div>
     </nav>
@@ -183,14 +190,14 @@ function TopNav({ onThemeToggle }) {
 }
 
 // ─── Mobile top bar ───────────────────────────────────────────
-function MobileTopBar({ onThemeToggle }) {
+function MobileTopBar({ theme, setMode }) {
   return (
     <div className="topbar-mobile">
       <a className="nav-logo topbar-logo" href={urlFor({ name: 'home' })}>
         <span className="dot"></span>F1GURES
       </a>
       <div style={{ flex: 1 }}></div>
-      <button className="theme-toggle" onClick={onThemeToggle} aria-label="Toggle theme" />
+      <ThemeSwitcher theme={theme} setMode={setMode} />
       <YearPicker compact />
     </div>
   );
@@ -225,11 +232,11 @@ function BotNav() {
 
 // ─── Chrome: wraps every page ─────────────────────────────────
 function Chrome({ children }) {
-  const { toggle } = useTheme();
+  const { theme, setMode } = useTheme();
   return (
     <div className="f1-app">
-      <TopNav onThemeToggle={toggle} />
-      <MobileTopBar onThemeToggle={toggle} />
+      <TopNav theme={theme} setMode={setMode} />
+      <MobileTopBar theme={theme} setMode={setMode} />
       {children}
       <BotNav />
     </div>
