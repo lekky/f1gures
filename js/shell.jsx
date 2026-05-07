@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.014';
+const APP_VERSION = '1.015';
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
