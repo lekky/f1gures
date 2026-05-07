@@ -5,6 +5,39 @@ function RaceDetailScreen() {
   const mob = useIsMobile();
   const round = parseInt(getParam('round'), 10);
   const race = F_race.calendar.find(r => r.round === round);
+  const circuitForSeo = race ? F_race.circuits[race.circuit] : null;
+  const seasonYear = race && race.date ? String(race.date).slice(0, 4) : '';
+
+  useSeo({
+    title: race
+      ? `${seasonYear} ${race.name} — Results, Qualifying${race.sprint ? ' & Sprint' : ''} | f1gures`
+      : 'F1 Grand Prix — Results & Qualifying | f1gures',
+    description: race
+      ? `${race.name} ${seasonYear}: Formula 1 race results, qualifying times${race.sprint ? ', sprint results' : ''}, fastest lap and championship impact at ${circuitForSeo ? circuitForSeo.name : race.circuit}.`
+      : 'Full Formula 1 race weekend: race results, qualifying times, sprint results and championship impact for every Grand Prix.',
+    canonicalPath: race ? `/race.html?round=${race.round}` : '/race.html',
+    ogType: 'article',
+    jsonLd: race ? {
+      '@context': 'https://schema.org',
+      '@type': 'SportsEvent',
+      'name': `${seasonYear} ${race.name}`.trim(),
+      'sport': 'Formula 1',
+      'startDate': race.date,
+      'eventStatus': 'https://schema.org/EventScheduled',
+      'eventAttendanceMode': 'https://schema.org/OfflineEventAttendanceMode',
+      'location': circuitForSeo ? {
+        '@type': 'Place',
+        'name': circuitForSeo.name,
+        'address': {
+          '@type': 'PostalAddress',
+          'addressLocality': circuitForSeo.city,
+          'addressCountry': circuitForSeo.country
+        }
+      } : undefined,
+      'organizer': { '@type': 'SportsOrganization', 'name': 'FIA Formula One World Championship' },
+      'url': `https://f1gures.app/race.html?round=${race.round}`
+    } : null
+  });
 
   if (!race) {
     return (

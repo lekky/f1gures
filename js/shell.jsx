@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.030';
+const APP_VERSION = '1.031';
 // Buy Me a Coffee — script tag in each *.html injects #bmc-wbtn (a fixed
 // floating button) and #bmc-iframe (the modal). We restyle the FAB into a
 // flatter rectangle in css/app.css so it reads as a Support CTA, not a
@@ -49,6 +49,69 @@ function currentRouteName() {
   if (path === 'driver.html')                 return 'driver';
   if (path === 'team.html')                   return 'team';
   return 'home';
+}
+
+// ─── SEO helpers ──────────────────────────────────────────────
+// Detail screens (driver/race/circuit/team) call useSeo() to swap document
+// title, meta description, canonical URL, OG/Twitter tags, and to inject a
+// schema.org JSON-LD <script> for the entity on the page. Crawlers (Googlebot,
+// Bingbot) execute JS, so updating the head after data loads still feeds the
+// indexer richer signals than the static stub.
+const SITE_ORIGIN = 'https://f1gures.app';
+
+function setMetaTag(name, content, attr) {
+  attr = attr || 'name';
+  if (content == null) return;
+  let el = document.head.querySelector('meta[' + attr + '="' + name + '"]');
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attr, name);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', String(content));
+}
+function setLinkTag(rel, href) {
+  let el = document.head.querySelector('link[rel="' + rel + '"]');
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', rel);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', href);
+}
+function useSeo({ title, description, canonicalPath, ogType, jsonLd }) {
+  useEffect(() => {
+    if (title) document.title = title;
+    if (title) {
+      setMetaTag('og:title', title, 'property');
+      setMetaTag('twitter:title', title);
+    }
+    if (description) {
+      setMetaTag('description', description);
+      setMetaTag('og:description', description, 'property');
+      setMetaTag('twitter:description', description);
+    }
+    if (canonicalPath) {
+      const url = SITE_ORIGIN + canonicalPath;
+      setLinkTag('canonical', url);
+      setMetaTag('og:url', url, 'property');
+    }
+    if (ogType) setMetaTag('og:type', ogType, 'property');
+
+    const ID = 'f1gures-entity-jsonld';
+    let script = document.getElementById(ID);
+    if (jsonLd) {
+      if (!script) {
+        script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.id = ID;
+        document.head.appendChild(script);
+      }
+      script.textContent = JSON.stringify(jsonLd);
+    } else if (script) {
+      script.remove();
+    }
+  }, [title, description, canonicalPath, ogType, JSON.stringify(jsonLd || null)]);
 }
 
 // ─── Theme ────────────────────────────────────────────────────

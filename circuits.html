@@ -3,18 +3,64 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Circuits - f1gures</title>
+
+  <title>F1 Circuits 2026 — All Tracks, Maps &amp; Lap Records | f1gures</title>
+  <meta name="description" content="Every circuit on the 2026 Formula 1 calendar. Track maps, lap records, length, corners, DRS zones and tyre characteristics for all 24 Grands Prix." />
+  <meta name="keywords" content="F1 circuits, formula 1 tracks 2026, F1 track maps, F1 lap records, Grand Prix circuits, F1 DRS zones" />
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <link rel="canonical" href="https://f1gures.app/circuits.html" />
+
+  <meta property="og:site_name" content="f1gures" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="F1 Circuits 2026 — All Tracks, Maps &amp; Lap Records" />
+  <meta property="og:description" content="Every circuit on the 2026 Formula 1 calendar. Track maps, lap records, length, corners and DRS zones." />
+  <meta property="og:url" content="https://f1gures.app/circuits.html" />
+  <meta property="og:image" content="https://f1gures.app/images/og-default.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="F1 Circuits 2026 — All Tracks, Maps &amp; Lap Records" />
+  <meta name="twitter:description" content="Every circuit on the 2026 Formula 1 calendar with track maps and lap records." />
+  <meta name="twitter:image" content="https://f1gures.app/images/og-default.png" />
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/site.webmanifest" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://api.jolpi.ca" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/app.css?v=1.030" />
-  <link rel="stylesheet" href="css/site.css?v=1.030" />
+  <link rel="stylesheet" href="css/app.css?v=1.031" />
+  <link rel="stylesheet" href="css/site.css?v=1.031" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://f1gures.app/" },
+      { "@type": "ListItem", "position": 2, "name": "Circuits", "item": "https://f1gures.app/circuits.html" }
+    ]
+  }
+  </script>
 </head>
 <body>
 
-  <div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:#666;font-family:system-ui,sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;">Loading…</div></div>
+  <div id="root">
+    <header class="boot-skeleton">
+      <h1>F1 Circuits 2026</h1>
+      <p>Every circuit on the 2026 Formula 1 calendar — track maps, lap records, length, corners, DRS zones and tyre characteristics.</p>
+      <p style="display:flex;align-items:center;justify-content:center;min-height:40vh;color:#666;font-family:system-ui,sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;">Loading…</p>
+    </header>
+    <noscript>
+      <p style="font-family:system-ui,sans-serif;padding:24px;">JavaScript is required to view circuit data. <a href="/">Return home</a>.</p>
+    </noscript>
+  </div>
 
   <script src="vendor/react.production.min.js"></script>
   <script src="vendor/react-dom.production.min.js"></script>

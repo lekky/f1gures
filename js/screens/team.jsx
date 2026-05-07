@@ -9,6 +9,24 @@ function TeamProfileScreen() {
   const team = F.teamById(id);
   const row = standings.teams.find(r => r.team.id === id);
 
+  useSeo({
+    title: team && team.name !== '—'
+      ? `${team.name} — F1 Team Profile, Drivers & 2026 Form | f1gures`
+      : 'F1 Team Profile — Constructor History | f1gures',
+    description: team && team.name !== '—'
+      ? `${team.name} Formula 1 team: drivers, points, wins, podiums and 2026 season trajectory in the Constructors' Championship.`
+      : 'Formula 1 team profiles: constructor titles, race wins, drivers and 2026 season performance.',
+    canonicalPath: id ? `/team.html?id=${encodeURIComponent(id)}` : '/team.html',
+    ogType: 'article',
+    jsonLd: team && team.name !== '—' ? {
+      '@context': 'https://schema.org',
+      '@type': 'SportsTeam',
+      'name': team.name,
+      'sport': 'Formula 1',
+      'url': `https://f1gures.app/team.html?id=${encodeURIComponent(id)}`
+    } : null
+  });
+
   if (!team || team.name === '—' || !row) {
     return (
       <div className={`page ${mob ? 'page-mob' : ''}`}>
