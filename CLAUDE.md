@@ -2,6 +2,8 @@
 
 Plain HTML/CSS/JSX multi-page F1 stats app. No build step — files are served directly. React is loaded via CDN; JSX is compiled at runtime.
 
+For higher-level docs (per-page features, the API/cache/static decision tree, retry behaviour, live driver-career fetch path) see [docs/](docs/README.md). Update those alongside any change to the data flow.
+
 ## Key files
 - `js/shell.jsx` — shared Chrome (nav, mobile bar, bot nav), theme/year hooks, reusable components
 - `css/app.css` — design tokens (CSS vars) and global styles
