@@ -1,5 +1,20 @@
 // Driver and Constructor standings — adapted from the prototype.
 
+function StandingsTypeToggle({ active }) {
+  return (
+    <div className="standings-toggle" role="group" aria-label="Standings type">
+      <a className={`standings-toggle-opt ${active === 'd' ? 'active' : ''}`}
+         href={urlFor({ name: 'standings-d' })} aria-current={active === 'd' ? 'page' : undefined}>
+        Drivers
+      </a>
+      <a className={`standings-toggle-opt ${active === 'c' ? 'active' : ''}`}
+         href={urlFor({ name: 'standings-c' })} aria-current={active === 'c' ? 'page' : undefined}>
+        Constructors
+      </a>
+    </div>
+  );
+}
+
 function DriverStandingsScreen() {
   const DD = window.F1_DATA;
   const mob = useIsMobile();
@@ -45,6 +60,8 @@ function DriverStandingsScreen() {
           <button className="btn btn-secondary btn-sm">Export CSV</button>
         </div>
       </div>
+
+      {mob && <StandingsTypeToggle active="d" />}
 
       <Panel tight>
         <div className="tbl-wrap">
@@ -214,6 +231,8 @@ function ConstructorStandingsScreen() {
           <div className="page-sub">After Round {standings.lastRound}</div>
         </div>
       </div>
+
+      {mob && <StandingsTypeToggle active="c" />}
 
       <Panel tight>
         <div className="tbl-wrap">

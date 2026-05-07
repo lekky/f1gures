@@ -94,6 +94,24 @@ html.light .topbar-mobile {
 .theme-opt.active { background: var(--bg-3); color: var(--fg-1); }
 .theme-opt:hover:not(.active) { background: var(--bg-hover); color: var(--fg-2); }
 
+/* Drivers/Constructors switcher (mobile standings pages) */
+.standings-toggle {
+  display: flex;
+  margin: 0 0 16px;
+  border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden;
+}
+.standings-toggle-opt {
+  flex: 1; text-align: center;
+  padding: 10px 12px;
+  font-family: var(--f-display); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  line-height: 1; color: var(--fg-3); text-decoration: none;
+  transition: background .15s, color .15s;
+}
+.standings-toggle-opt + .standings-toggle-opt { border-left: 1px solid var(--line-2); }
+.standings-toggle-opt.active { background: var(--bg-3); color: var(--fg-1); }
+.standings-toggle-opt:hover:not(.active) { background: var(--bg-hover); color: var(--fg-2); }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
