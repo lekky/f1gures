@@ -92,11 +92,14 @@ function CircuitDetailScreen() {
     ratingFill[circuit.overtaking] && { lbl: 'Overtaking', val: circuit.overtaking, type: 'rating' },
   ].filter(Boolean);
 
-  // Generate fake historical winners (last 5)
+  // Generate fake historical winners (last 5). Hash uses the round number when
+  // we have one, else 0 — circuits not in the current calendar (e.g. dropped
+  // historically) still get rendered.
   const winnerPool = ['VER','HAM','LEC','NOR','PIA','RUS','ALO','SAI'];
   const historic = [];
+  const hashSeed = race ? race.round : 0;
   for (let y = 2025; y >= 2021; y--) {
-    const wcode = winnerPool[(y * 7 + race.round) % winnerPool.length];
+    const wcode = winnerPool[(y * 7 + hashSeed) % winnerPool.length];
     const w = F_cir.driverById(wcode);
     historic.push({ year: y, driver: w, team: F_cir.teamById(w.team), time: `1:${30 + ((y * 3) % 10)}:${String((y * 7) % 60).padStart(2, '0')}.${String((y * 11) % 1000).padStart(3, '0')}` });
   }
@@ -110,7 +113,7 @@ function CircuitDetailScreen() {
           <div className="t-eyebrow" style={{ color: 'var(--accent)', marginBottom: 6 }}>Circuit Profile</div>
           <h1 className="page-title" style={{ fontSize: mob ? 32 : 42, marginBottom: 8 }}>{circuit.name}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg-2)', marginBottom: 14 }}>
-            <span style={{ fontSize: 18 }}>{race.flag}</span>
+            {race && <span style={{ fontSize: 18 }}>{race.flag}</span>}
             <span className="t-mono" style={{ fontSize: 13 }}>{circuit.city.toUpperCase()}, {circuit.country.toUpperCase()}</span>
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -175,11 +178,13 @@ function CircuitDetailScreen() {
             </div>
           </div>
         ) : null}
-        <div className="stat">
-          <div className="stat-lbl">Next Race</div>
-          <div className="stat-val" style={{ fontSize: 22 }}>{race.name.replace(' Grand Prix','')}</div>
-          <div className="stat-sub">{fmtDateLong(race.date)} · Round {race.round}</div>
-        </div>
+        {race ? (
+          <div className="stat">
+            <div className="stat-lbl">Next Race</div>
+            <div className="stat-val" style={{ fontSize: 22 }}>{race.name.replace(' Grand Prix','')}</div>
+            <div className="stat-sub">{fmtDateLong(race.date)} · Round {race.round}</div>
+          </div>
+        ) : null}
       </div>
 
       <SectionHead title="Historical Winners" />
