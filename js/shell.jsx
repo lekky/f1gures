@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.021';
+const APP_VERSION = '1.022';
 // Buy Me a Coffee — script tag in each *.html injects #bmc-wbtn (a fixed
 // floating button) and #bmc-iframe (the modal). We restyle the FAB into a
 // flatter rectangle in css/app.css so it reads as a Support CTA, not a
@@ -332,10 +332,24 @@ function Countdown({ target }) {
   );
 }
 
-// ─── Driver silhouette placeholder ────────────────────────────
+// ─── Driver silhouette / headshot ─────────────────────────────
+// When a real headshot exists at images/drivers/<jolpicaId>.webp, render it.
+// Otherwise (or on load error) fall back to the team-coloured SVG silhouette
+// with the driver's code/number — the historic placeholder still works for
+// drivers we don't have photos of yet.
 function DriverSilhouette({ driver, height = 200 }) {
   const D = window.F1_DATA;
   const team = D.teamById(driver.team);
+  const [imgFailed, setImgFailed] = useState(false);
+  const src = driver.jolpicaId ? 'images/drivers/' + driver.jolpicaId + '.webp' : null;
+
+  if (src && !imgFailed) {
+    return (
+      <div className="silhouette silhouette-photo" style={{ height, '--team-color': team.color }}>
+        <img src={src} alt={driver.first + ' ' + driver.last} onError={() => setImgFailed(true)} />
+      </div>
+    );
+  }
   return (
     <div className="silhouette" style={{ height, '--team-color': team.color }}>
       <svg viewBox="0 0 100 120" preserveAspectRatio="xMidYMax meet">
