@@ -699,8 +699,27 @@
   //     championships by iterating the driver's participating seasons and
   //     checking each one's standings.
   //   - The fastest-lap endpoint must end in /results.json (not just /1.json).
+  // Cross-user cache: a nightly GitHub Actions cron runs scripts/fetch-careers.mjs
+  // and commits data/careers/<id>.json files. We try those first — same origin,
+  // browser-cached, zero Jolpica calls — and only fan out to the live API if the
+  // static file is missing or corrupt. So 99% of visitors share the same pre-built
+  // payload, capping API load on Jolpica.
+  async function fetchStaticCareer(jolpicaId) {
+    try {
+      const res = await fetch('data/careers/' + jolpicaId + '.json');
+      if (!res.ok) return null;
+      const j = await res.json();
+      const need = ['seasons','races','wins','podiums','poles','fl','champs'];
+      if (!need.every(k => typeof j[k] === 'number')) return null;
+      return { seasons: j.seasons, races: j.races, wins: j.wins, podiums: j.podiums, poles: j.poles, fl: j.fl, champs: j.champs };
+    } catch (e) { return null; }
+  }
+
   async function fetchDriverCareer(jolpicaId) {
     if (!jolpicaId) throw new Error('fetchDriverCareer: missing jolpicaId');
+    const fromStatic = await fetchStaticCareer(jolpicaId);
+    if (fromStatic) return fromStatic;
+
     const base = '/drivers/' + jolpicaId;
     const totalOf = async (path) => {
       const j = await fetchJSON(path);

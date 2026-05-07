@@ -85,22 +85,32 @@ This was added because cold-cache loads on mobile networks were occasionally see
 
 ## Live driver career stats
 
-The per-driver Career Stats panel on `driver.html` is **always live from Jolpica**, never hardcoded. It's the only place screens reach for the API outside of `loadFromAPI`.
+The per-driver Career Stats panel on `driver.html` is **never hardcoded**. It tries a static cross-user cache first, then falls back to live Jolpica.
 
-`window.F1_API.fetchDriverCareer(jolpicaId)` (in [js/api.js](../js/api.js)) does:
+`window.F1_API.fetchDriverCareer(jolpicaId)` (in [js/api.js](../js/api.js)):
 
-1. **Phase 1** — eight cheap `total`-count endpoints in parallel:
-   - `/drivers/{id}/seasons/?limit=1`
-   - `/drivers/{id}/races/?limit=1`
-   - `/drivers/{id}/results/{1,2,3}/?limit=1` (wins, P2s, P3s — podiums = sum)
-   - `/drivers/{id}/qualifying/1/?limit=1` (poles)
-   - `/drivers/{id}/fastest/1/results/?limit=1` (fastest laps)
-   - `/drivers/{id}/seasons/?limit=100` (the full list of years they've raced)
-2. **Phase 2** — one `/{year}/drivers/{id}/driverstandings/?limit=1` per participating season, in parallel. Counts seasons where `position === '1'` to derive the championship total. Jolpica diverges from classic Ergast by requiring `season_year` for cross-season standings, so this fan-out is necessary.
+1. **Static cross-user cache** — `fetch('data/careers/<jolpicaId>.json')`. Same origin, browser-cached, zero Jolpica calls. The file is one of ~25 pre-fetched payloads committed to the repo, refreshed nightly by [.github/workflows/refresh-careers.yml](../.github/workflows/refresh-careers.yml). This is the path 99% of visitors take.
+2. **Live fan-out** — only if the static file is missing or malformed (e.g. a brand-new driver not yet in the curated list). Two phases:
+   - **Phase A** — eight cheap `total`-count endpoints in parallel:
+     - `/drivers/{id}/seasons/?limit=1`
+     - `/drivers/{id}/races/?limit=1`
+     - `/drivers/{id}/results/{1,2,3}/?limit=1` (wins, P2s, P3s — podiums = sum)
+     - `/drivers/{id}/qualifying/1/?limit=1` (poles)
+     - `/drivers/{id}/fastest/1/results/?limit=1` (fastest laps)
+     - `/drivers/{id}/seasons/?limit=100` (the full list of years they've raced)
+   - **Phase B** — one `/{year}/drivers/{id}/driverstandings/?limit=1` per participating season, in parallel. Counts seasons where `position === '1'` to derive the championship total. Jolpica diverges from classic Ergast by requiring `season_year` for cross-season standings, so this fan-out is necessary.
 
-For Hamilton (the heaviest case, 20 seasons) that's 8 + 1 + 20 ≈ 29 requests. The concurrency gate keeps it polite; the cache makes repeat visits free for an hour.
+For Hamilton (the heaviest live case, 20 seasons) that's 8 + 1 + 20 ≈ 29 requests. The concurrency gate keeps it polite; the in-memory cache makes repeat visits free for an hour.
 
 The driver page waits for `F1_READY` to resolve before kicking off the career fetch, so it doesn't compete with the boot fan-out for slots in the gate.
+
+## Nightly refresh
+
+[.github/workflows/refresh-careers.yml](../.github/workflows/refresh-careers.yml) runs at 05:00 UTC each night and on `workflow_dispatch`. It checks out the repo, runs `node scripts/fetch-careers.mjs`, and commits any changes to `data/careers/` — which the existing `deploy.yml` then FTPs to production.
+
+[scripts/fetch-careers.mjs](../scripts/fetch-careers.mjs) processes drivers **sequentially** (one at a time, with an 750ms pause between drivers) to be polite to Jolpica's rate limit. Within each driver, the same fan-out as the client runs in parallel through a 4-deep concurrency gate. Driver IDs are the union of `js/data.js` (current grid) and every `data/<year>.json` (recent seasons), deduped.
+
+If the new payload matches the existing file (excluding `updatedAt`), the file is left alone — no noisy commits when nothing changed. To run by hand: `node scripts/fetch-careers.mjs`.
 
 ## Failure modes
 
