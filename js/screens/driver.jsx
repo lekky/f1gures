@@ -19,18 +19,35 @@ function DriverProfileScreen() {
   const team = F_drv.teamById(driver.team);
   const row = standings.drivers.find(r => r.driver.id === id);
 
-  // Career stats (illustrative)
-  const careerByDriver = {
-    VER: { seasons: 12, races: 224, wins: 64, podiums: 113, poles: 41, fl: 33, champs: 4 },
-    HAM: { seasons: 19, races: 367, wins: 105, podiums: 202, poles: 104, fl: 67, champs: 7 },
-    LEC: { seasons: 8, races: 152, wins: 9, podiums: 41, poles: 28, fl: 11, champs: 0 },
-    NOR: { seasons: 8, races: 148, wins: 12, podiums: 35, poles: 14, fl: 10, champs: 0 },
-    ALO: { seasons: 23, races: 415, wins: 32, podiums: 106, poles: 22, fl: 24, champs: 2 },
-    PIA: { seasons: 4, races: 76, wins: 6, podiums: 21, poles: 5, fl: 7, champs: 0 },
-    RUS: { seasons: 7, races: 144, wins: 4, podiums: 16, poles: 6, fl: 7, champs: 0 },
-    SAI: { seasons: 12, races: 228, wins: 4, podiums: 28, poles: 7, fl: 4, champs: 0 },
+  // Career stats — always pulled live from Jolpica via window.F1_API.fetchDriverCareer.
+  // Cached per-endpoint (1 h TTL) by api.js. While loading or on error, cells show '—'.
+  const [career, setCareer] = React.useState(null);
+  const [careerErr, setCareerErr] = React.useState(false);
+  React.useEffect(() => {
+    let cancelled = false;
+    setCareer(null); setCareerErr(false);
+    const jId = driver && driver.jolpicaId;
+    if (!jId || !(window.F1_API && window.F1_API.fetchDriverCareer)) {
+      setCareerErr(true);
+      return;
+    }
+    // Wait for the season boot fetches (~10 calls) to finish before fanning out
+    // career calls — otherwise we share concurrency with boot and trip 429s.
+    Promise.resolve(window.F1_READY)
+      .then(() => window.F1_API.fetchDriverCareer(jId))
+      .then(c => { if (!cancelled) setCareer(c); })
+      .catch(err => {
+        if (cancelled) return;
+        console.warn('[f1gures] career fetch failed for', jId, err);
+        setCareerErr(true);
+      });
+    return () => { cancelled = true; };
+  }, [driver && driver.jolpicaId]);
+  const careerVal = (key) => {
+    if (career) return career[key];
+    if (careerErr) return '—';
+    return '…';
   };
-  const career = careerByDriver[id] || { seasons: 2, races: 28, wins: 0, podiums: 1, poles: 0, fl: 0, champs: 0 };
 
   // Round-by-round results
   const rounds = F_drv.calendar.map(race => {
@@ -73,13 +90,13 @@ function DriverProfileScreen() {
 
       <SectionHead title="Career Stats" />
       <div className="grid" style={{ gridTemplateColumns: mob ? 'repeat(2, 1fr)' : 'repeat(7, 1fr)' }}>
-        <div className="stat"><div className="stat-lbl">Seasons</div><div className="stat-val">{career.seasons}</div></div>
-        <div className="stat"><div className="stat-lbl">Races</div><div className="stat-val">{career.races}</div></div>
-        <div className="stat"><div className="stat-lbl">Wins</div><div className="stat-val">{career.wins}</div></div>
-        <div className="stat"><div className="stat-lbl">Podiums</div><div className="stat-val">{career.podiums}</div></div>
-        <div className="stat"><div className="stat-lbl">Poles</div><div className="stat-val">{career.poles}</div></div>
-        <div className="stat"><div className="stat-lbl">Fastest Laps</div><div className="stat-val">{career.fl}</div></div>
-        <div className="stat" style={{ borderColor: career.champs ? 'var(--accent)' : 'var(--line-1)' }}><div className="stat-lbl" style={{ color: career.champs ? 'var(--accent)' : undefined }}>WDC</div><div className="stat-val" style={{ color: career.champs ? 'var(--accent)' : undefined }}>{career.champs}</div></div>
+        <div className="stat"><div className="stat-lbl">Seasons</div><div className="stat-val">{careerVal('seasons')}</div></div>
+        <div className="stat"><div className="stat-lbl">Races</div><div className="stat-val">{careerVal('races')}</div></div>
+        <div className="stat"><div className="stat-lbl">Wins</div><div className="stat-val">{careerVal('wins')}</div></div>
+        <div className="stat"><div className="stat-lbl">Podiums</div><div className="stat-val">{careerVal('podiums')}</div></div>
+        <div className="stat"><div className="stat-lbl">Poles</div><div className="stat-val">{careerVal('poles')}</div></div>
+        <div className="stat"><div className="stat-lbl">Fastest Laps</div><div className="stat-val">{careerVal('fl')}</div></div>
+        <div className="stat" style={{ borderColor: career && career.champs ? 'var(--accent)' : 'var(--line-1)' }}><div className="stat-lbl" style={{ color: career && career.champs ? 'var(--accent)' : undefined }}>WDC</div><div className="stat-val" style={{ color: career && career.champs ? 'var(--accent)' : undefined }}>{careerVal('champs')}</div></div>
       </div>
 
       <SectionHead title={((window.F1_DATA && window.F1_DATA.seasonYear) || '2026') + ' Season'} />
