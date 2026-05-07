@@ -8,7 +8,7 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.025';
+const APP_VERSION = '1.026';
 // Buy Me a Coffee — script tag in each *.html injects #bmc-wbtn (a fixed
 // floating button) and #bmc-iframe (the modal). We restyle the FAB into a
 // flatter rectangle in css/app.css so it reads as a Support CTA, not a
@@ -32,6 +32,7 @@ function urlFor(target) {
     case 'race':         return `race.html?round=${target.round}`;
     case 'circuit':      return `circuit.html?id=${encodeURIComponent(target.id)}`;
     case 'driver':       return `driver.html?id=${encodeURIComponent(target.id)}`;
+    case 'team':         return `team.html?id=${encodeURIComponent(target.id)}`;
     default:             return 'index.html';
   }
 }
@@ -46,6 +47,7 @@ function currentRouteName() {
   if (path === 'race.html')                   return 'race';
   if (path === 'circuit.html')                return 'circuit';
   if (path === 'driver.html')                 return 'driver';
+  if (path === 'team.html')                   return 'team';
   return 'home';
 }
 

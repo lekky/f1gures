@@ -230,7 +230,8 @@ function ConstructorStandingsScreen() {
             </thead>
             <tbody>
               {standings.teams.map(row => (
-                <tr key={row.team.id}>
+                <tr key={row.team.id} className="clickable"
+                    onClick={() => navigate({ name: 'team', id: row.team.id })}>
                   <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
