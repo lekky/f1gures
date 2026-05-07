@@ -663,6 +663,14 @@ button { font-family: inherit; }
   object-fit: contain; object-position: bottom center;
 }
 
+/* Race header — circuit name links to the circuit detail page. Subtle dotted
+   underline and ↗ arrow hint at clickability without breaking the eyebrow's
+   monospaced look. */
+.race-circuit-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+.race-circuit-link:hover { color: var(--fg-1); border-bottom-color: var(--accent); }
+.race-circuit-link:hover .race-circuit-link-arrow { color: var(--accent); }
+.race-circuit-link-arrow { margin-left: 4px; opacity: 0.6; font-size: 0.9em; }
+
 /* Circuit track map — render both variants and let CSS pick by theme. */
 .circuit-track {
   width: 100%; display: flex; align-items: center; justify-content: center;
