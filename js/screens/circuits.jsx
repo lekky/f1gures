@@ -1,5 +1,23 @@
 // Circuits index + Circuit detail
 
+// Weather pill needs a glyph so it reads as weather, not some unrelated tag.
+// Map covers every value used in js/data.js — if a new one's added there,
+// add it here too. Unknown values fall back to no icon so the text still
+// reads on its own.
+const WEATHER_ICON = {
+  'Changeable':     '🌦',
+  'Coastal':        '🌊',
+  'Cold Night':     '❄',
+  'High Altitude':  '🏔',
+  'Hot & Dry':      '☀',
+  'Hot & Humid':    '💧',
+  'Hot Night':      '☀',
+  'Mild':           '🌤',
+  'Mild & Dry':     '🌤',
+  'Mild Night':     '🌙',
+  'Wet & Variable': '🌧',
+};
+
 function CircuitsIndexScreen() {
   const F_cir = window.F1_DATA;
   const mob = useIsMobile();
@@ -94,7 +112,10 @@ function CircuitDetailScreen() {
             {circuit.firstYear ? <span className="pill">First F1: {circuit.firstYear}</span> : null}
             {circuit.races ? <span className="pill">{circuit.races} races held</span> : null}
             {circuit.weather && circuit.weather !== '—'
-              ? <span className="pill" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>{circuit.weather}</span>
+              ? <span className="pill" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
+                  {WEATHER_ICON[circuit.weather] ? <span style={{ marginRight: 6 }}>{WEATHER_ICON[circuit.weather]}</span> : null}
+                  {circuit.weather}
+                </span>
               : null}
           </div>
           <p style={{ color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.6, textWrap: 'pretty' }}>{circuit.blurb}</p>
