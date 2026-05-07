@@ -48,6 +48,42 @@ function DriverStandingsScreen() {
   };
   const SortInd = ({ k }) => sortKey === k ? <span className="sort-ind">{sortDir === 'asc' ? '▲' : '▼'}</span> : null;
 
+  const exportCSV = () => {
+    const headers = ['Position', 'Driver', 'Code', 'Nationality', 'Team', 'Points', 'Wins', 'Podiums', 'Poles', 'Fastest Laps', 'DNFs'];
+    const rows = sorted.map(row => {
+      const team = DD.teamById(row.driver.team);
+      return [
+        row.position,
+        `${row.driver.first} ${row.driver.last}`,
+        row.driver.code,
+        row.driver.nationality || '',
+        team ? team.name : '',
+        row.points,
+        row.wins,
+        row.podiums,
+        row.poles,
+        row.fastestLaps,
+        row.dnfs,
+      ];
+    });
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => {
+        const s = v == null ? '' : String(v);
+        return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(','))
+      .join('\r\n');
+    const year = (DD && DD.seasonYear) || new Date().getFullYear();
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `f1-driver-standings-${year}-r${standings.lastRound}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
       <div className="page-head">
@@ -57,7 +93,7 @@ function DriverStandingsScreen() {
           <div className="page-sub">After Round {standings.lastRound} · {(DD.calendar.find(r => r.round === standings.lastRound) || {}).name}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-secondary btn-sm">Export CSV</button>
+          <button className="btn btn-secondary btn-sm" onClick={exportCSV}>Export CSV</button>
         </div>
       </div>
 
