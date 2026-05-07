@@ -94,11 +94,21 @@
     if (cached) return cached;
     await acquire();
     try {
-      // Retry on 429/503 with exponential backoff. Honors Retry-After when present.
+      // Retry on transient failures (network errors, 429, 503) with
+      // exponential backoff. Honors Retry-After when present. Mobile networks
+      // drop fetches as `TypeError: Failed to fetch` — without retry that's
+      // enough to tank the whole career-stats fan-out on first load.
       const url = pickBase() + path;
       let lastErr;
-      for (let attempt = 0; attempt < 4; attempt++) {
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      for (let attempt = 0; attempt < 5; attempt++) {
+        let res;
+        try {
+          res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        } catch (e) {
+          lastErr = e;
+          await sleep(Math.min(500 * Math.pow(2, attempt), 4000));
+          continue;
+        }
         if (res.ok) {
           const json = await res.json();
           cacheSet(path, json);
