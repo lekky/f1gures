@@ -168,16 +168,25 @@ function CircuitDetailScreen() {
       </Panel>
 
       <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : '1fr 1fr', marginTop: 16, gap: 16 }}>
-        {circuit.lapRecord && circuit.lapRecord.driver !== '—' ? (
-          <div className="callout">
-            <div className="callout-icon">◷</div>
-            <div className="callout-body">
-              <div className="callout-lbl">Lap Record</div>
-              <div className="callout-driver">{circuit.lapRecord.driver}</div>
-              <div className="callout-time">{circuit.lapRecord.time} · {circuit.lapRecord.year}</div>
+        {circuit.lapRecord && circuit.lapRecord.driver !== '—' ? (() => {
+          const lrName = circuit.lapRecord.driver;
+          const lrDriver = F_cir.drivers.find(d => `${d.first} ${d.last}` === lrName);
+          const driverEl = lrDriver
+            ? <a className="inline-link" href={urlFor({ name: 'driver', id: lrDriver.id })}>
+                {lrName}<span className="inline-link-arrow" aria-hidden="true">↗</span>
+              </a>
+            : lrName;
+          return (
+            <div className="callout">
+              <div className="callout-icon">◷</div>
+              <div className="callout-body">
+                <div className="callout-lbl">Lap Record</div>
+                <div className="callout-driver">{driverEl}</div>
+                <div className="callout-time">{circuit.lapRecord.time} · {circuit.lapRecord.year}</div>
+              </div>
             </div>
-          </div>
-        ) : null}
+          );
+        })() : null}
         {race ? (
           <div className="stat">
             <div className="stat-lbl">Next Race</div>
