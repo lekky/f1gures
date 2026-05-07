@@ -17,27 +17,29 @@ window.F1_DATA = (function() {
   ];
 
   // Drivers — 2026 speculative grid. Names/numbers are illustrative.
+  // jolpicaId matches Jolpica/Ergast's driverId — used by api.js to fetch live
+  // career stats. Keep in sync if a driver is added/replaced.
   const drivers = [
-    { id: 'NOR', num: 4,  first: 'Lando',     last: 'Norris',     code: 'NOR', country: 'GB',  flag: '🇬🇧', team: 'mclaren'  },
-    { id: 'PIA', num: 81, first: 'Oscar',     last: 'Piastri',    code: 'PIA', country: 'AU',  flag: '🇦🇺', team: 'mclaren'  },
-    { id: 'LEC', num: 16, first: 'Charles',   last: 'Leclerc',    code: 'LEC', country: 'MC',  flag: '🇲🇨', team: 'ferrari'  },
-    { id: 'HAM', num: 44, first: 'Lewis',     last: 'Hamilton',   code: 'HAM', country: 'GB',  flag: '🇬🇧', team: 'ferrari'  },
-    { id: 'RUS', num: 63, first: 'George',    last: 'Russell',    code: 'RUS', country: 'GB',  flag: '🇬🇧', team: 'mercedes' },
-    { id: 'ANT', num: 12, first: 'Andrea K.', last: 'Antonelli',  code: 'ANT', country: 'IT',  flag: '🇮🇹', team: 'mercedes' },
-    { id: 'VER', num: 1,  first: 'Max',       last: 'Verstappen', code: 'VER', country: 'NL',  flag: '🇳🇱', team: 'redbull'  },
-    { id: 'TSU', num: 22, first: 'Yuki',      last: 'Tsunoda',    code: 'TSU', country: 'JP',  flag: '🇯🇵', team: 'redbull'  },
-    { id: 'ALO', num: 14, first: 'Fernando',  last: 'Alonso',     code: 'ALO', country: 'ES',  flag: '🇪🇸', team: 'aston'    },
-    { id: 'STR', num: 18, first: 'Lance',     last: 'Stroll',     code: 'STR', country: 'CA',  flag: '🇨🇦', team: 'aston'    },
-    { id: 'GAS', num: 10, first: 'Pierre',    last: 'Gasly',      code: 'GAS', country: 'FR',  flag: '🇫🇷', team: 'alpine'   },
-    { id: 'DOO', num: 7,  first: 'Jack',      last: 'Doohan',     code: 'DOO', country: 'AU',  flag: '🇦🇺', team: 'alpine'   },
-    { id: 'ALB', num: 23, first: 'Alex',      last: 'Albon',      code: 'ALB', country: 'TH',  flag: '🇹🇭', team: 'williams' },
-    { id: 'SAI', num: 55, first: 'Carlos',    last: 'Sainz',      code: 'SAI', country: 'ES',  flag: '🇪🇸', team: 'williams' },
-    { id: 'LAW', num: 30, first: 'Liam',      last: 'Lawson',     code: 'LAW', country: 'NZ',  flag: '🇳🇿', team: 'rb'       },
-    { id: 'HAD', num: 6,  first: 'Isack',     last: 'Hadjar',     code: 'HAD', country: 'FR',  flag: '🇫🇷', team: 'rb'       },
-    { id: 'HUL', num: 27, first: 'Nico',      last: 'Hülkenberg', code: 'HUL', country: 'DE',  flag: '🇩🇪', team: 'sauber'   },
-    { id: 'BOR', num: 5,  first: 'Gabriel',   last: 'Bortoleto',  code: 'BOR', country: 'BR',  flag: '🇧🇷', team: 'sauber'   },
-    { id: 'OCO', num: 31, first: 'Esteban',   last: 'Ocon',       code: 'OCO', country: 'FR',  flag: '🇫🇷', team: 'haas'     },
-    { id: 'BEA', num: 87, first: 'Oliver',    last: 'Bearman',    code: 'BEA', country: 'GB',  flag: '🇬🇧', team: 'haas'     },
+    { id: 'NOR', num: 4,  first: 'Lando',     last: 'Norris',     code: 'NOR', country: 'GB',  flag: '🇬🇧', team: 'mclaren',  jolpicaId: 'norris'         },
+    { id: 'PIA', num: 81, first: 'Oscar',     last: 'Piastri',    code: 'PIA', country: 'AU',  flag: '🇦🇺', team: 'mclaren',  jolpicaId: 'piastri'        },
+    { id: 'LEC', num: 16, first: 'Charles',   last: 'Leclerc',    code: 'LEC', country: 'MC',  flag: '🇲🇨', team: 'ferrari',  jolpicaId: 'leclerc'        },
+    { id: 'HAM', num: 44, first: 'Lewis',     last: 'Hamilton',   code: 'HAM', country: 'GB',  flag: '🇬🇧', team: 'ferrari',  jolpicaId: 'hamilton'       },
+    { id: 'RUS', num: 63, first: 'George',    last: 'Russell',    code: 'RUS', country: 'GB',  flag: '🇬🇧', team: 'mercedes', jolpicaId: 'russell'        },
+    { id: 'ANT', num: 12, first: 'Andrea K.', last: 'Antonelli',  code: 'ANT', country: 'IT',  flag: '🇮🇹', team: 'mercedes', jolpicaId: 'antonelli'      },
+    { id: 'VER', num: 1,  first: 'Max',       last: 'Verstappen', code: 'VER', country: 'NL',  flag: '🇳🇱', team: 'redbull',  jolpicaId: 'max_verstappen' },
+    { id: 'TSU', num: 22, first: 'Yuki',      last: 'Tsunoda',    code: 'TSU', country: 'JP',  flag: '🇯🇵', team: 'redbull',  jolpicaId: 'tsunoda'        },
+    { id: 'ALO', num: 14, first: 'Fernando',  last: 'Alonso',     code: 'ALO', country: 'ES',  flag: '🇪🇸', team: 'aston',    jolpicaId: 'alonso'         },
+    { id: 'STR', num: 18, first: 'Lance',     last: 'Stroll',     code: 'STR', country: 'CA',  flag: '🇨🇦', team: 'aston',    jolpicaId: 'stroll'         },
+    { id: 'GAS', num: 10, first: 'Pierre',    last: 'Gasly',      code: 'GAS', country: 'FR',  flag: '🇫🇷', team: 'alpine',   jolpicaId: 'gasly'          },
+    { id: 'DOO', num: 7,  first: 'Jack',      last: 'Doohan',     code: 'DOO', country: 'AU',  flag: '🇦🇺', team: 'alpine',   jolpicaId: 'doohan'         },
+    { id: 'ALB', num: 23, first: 'Alex',      last: 'Albon',      code: 'ALB', country: 'TH',  flag: '🇹🇭', team: 'williams', jolpicaId: 'albon'          },
+    { id: 'SAI', num: 55, first: 'Carlos',    last: 'Sainz',      code: 'SAI', country: 'ES',  flag: '🇪🇸', team: 'williams', jolpicaId: 'sainz'          },
+    { id: 'LAW', num: 30, first: 'Liam',      last: 'Lawson',     code: 'LAW', country: 'NZ',  flag: '🇳🇿', team: 'rb',       jolpicaId: 'lawson'         },
+    { id: 'HAD', num: 6,  first: 'Isack',     last: 'Hadjar',     code: 'HAD', country: 'FR',  flag: '🇫🇷', team: 'rb',       jolpicaId: 'hadjar'         },
+    { id: 'HUL', num: 27, first: 'Nico',      last: 'Hülkenberg', code: 'HUL', country: 'DE',  flag: '🇩🇪', team: 'sauber',   jolpicaId: 'hulkenberg'     },
+    { id: 'BOR', num: 5,  first: 'Gabriel',   last: 'Bortoleto',  code: 'BOR', country: 'BR',  flag: '🇧🇷', team: 'sauber',   jolpicaId: 'bortoleto'      },
+    { id: 'OCO', num: 31, first: 'Esteban',   last: 'Ocon',       code: 'OCO', country: 'FR',  flag: '🇫🇷', team: 'haas',     jolpicaId: 'ocon'           },
+    { id: 'BEA', num: 87, first: 'Oliver',    last: 'Bearman',    code: 'BEA', country: 'GB',  flag: '🇬🇧', team: 'haas',     jolpicaId: 'bearman'        },
   ];
 
   // 2026 calendar — partial set, 24 rounds. First 6 completed.

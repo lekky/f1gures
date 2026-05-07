@@ -25,6 +25,8 @@ node serve.js
 ```
 Serves from repo root on http://localhost:8080/
 
+The user works across two machines: one has Node installed, one doesn't. If `node` isn't on PATH, fall back to the PowerShell static server: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude\serve.ps1 -Port 8080`. Same root, same port, same behavior — fine for previews.
+
 ## Adding a historic season
 ```
 node scripts/fetch-season.mjs 2024

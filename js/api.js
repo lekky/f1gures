@@ -73,14 +73,50 @@
       localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), v: value }));
     } catch (e) { /* quota or private mode — fine */ }
   }
+  // Concurrency gate — Jolpica rate-limits aggressive bursts. Cap inflight
+  // requests so the season-page boot (~20 parallel calls) and driver-career
+  // fan-out (~30 calls) don't trip 429s.
+  const MAX_INFLIGHT = 4;
+  let inflight = 0;
+  const queue = [];
+  function acquire() {
+    if (inflight < MAX_INFLIGHT) { inflight++; return Promise.resolve(); }
+    return new Promise(res => queue.push(res));
+  }
+  function release() {
+    inflight--;
+    if (queue.length) { inflight++; queue.shift()(); }
+  }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
   async function fetchJSON(path) {
     const cached = cacheGet(path);
     if (cached) return cached;
-    const res = await fetch(pickBase() + path, { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) throw new Error('Jolpica ' + path + ' returned HTTP ' + res.status);
-    const json = await res.json();
-    cacheSet(path, json);
-    return json;
+    await acquire();
+    try {
+      // Retry on 429/503 with exponential backoff. Honors Retry-After when present.
+      const url = pickBase() + path;
+      let lastErr;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          const json = await res.json();
+          cacheSet(path, json);
+          return json;
+        }
+        if (res.status === 429 || res.status === 503) {
+          const ra = parseFloat(res.headers.get('Retry-After'));
+          const wait = (isFinite(ra) && ra > 0) ? Math.min(ra * 1000, 8000) : Math.min(500 * Math.pow(2, attempt), 4000);
+          await sleep(wait);
+          lastErr = new Error('Jolpica ' + path + ' returned HTTP ' + res.status);
+          continue;
+        }
+        throw new Error('Jolpica ' + path + ' returned HTTP ' + res.status);
+      }
+      throw lastErr || new Error('Jolpica ' + path + ' exhausted retries');
+    } finally {
+      release();
+    }
   }
 
   // ---------- ID translations (Jolpica → our domain) ----------
@@ -645,6 +681,48 @@
       });
   });
 
+  // ---------- Driver career stats (always live from Jolpica) ----------
+  // Counts are pulled from the API on demand and cached per-endpoint via the
+  // shared fetchJSON cache (1 h TTL). Jolpica diverges from classic Ergast in
+  // two ways we work around here:
+  //   - /drivers/{id}/driverstandings/1.json requires season_year, so we count
+  //     championships by iterating the driver's participating seasons and
+  //     checking each one's standings.
+  //   - The fastest-lap endpoint must end in /results.json (not just /1.json).
+  async function fetchDriverCareer(jolpicaId) {
+    if (!jolpicaId) throw new Error('fetchDriverCareer: missing jolpicaId');
+    const base = '/drivers/' + jolpicaId;
+    const totalOf = async (path) => {
+      const j = await fetchJSON(path);
+      return parseInt(j.MRData.total, 10) || 0;
+    };
+    const [seasons, races, wins, p2, p3, poles, fl, seasonsListJson] = await Promise.all([
+      totalOf(base + '/seasons/?limit=1'),
+      totalOf(base + '/races/?limit=1'),
+      totalOf(base + '/results/1/?limit=1'),
+      totalOf(base + '/results/2/?limit=1'),
+      totalOf(base + '/results/3/?limit=1'),
+      totalOf(base + '/qualifying/1/?limit=1'),
+      totalOf(base + '/fastest/1/results/?limit=1'),
+      fetchJSON(base + '/seasons/?limit=100'),
+    ]);
+    const seasonYears = ((seasonsListJson.MRData.SeasonTable && seasonsListJson.MRData.SeasonTable.Seasons) || [])
+      .map(s => s.season);
+    const standings = await Promise.all(seasonYears.map(y =>
+      fetchJSON('/' + y + '/drivers/' + jolpicaId + '/driverstandings/?limit=1').catch(() => null)
+    ));
+    let champs = 0;
+    standings.forEach(s => {
+      if (!s) return;
+      const list = s.MRData.StandingsTable.StandingsLists[0];
+      const ds = list && list.DriverStandings && list.DriverStandings[0];
+      if (ds && ds.position === '1') champs++;
+    });
+    return { seasons, races, wins, podiums: wins + p2 + p3, poles, fl, champs };
+  }
+
+  // Public surface
+  window.F1_API = { fetchDriverCareer };
   // Expose for debugging
-  window.__F1_API_DEBUG__ = { fetchJSON, buildF1Data, loadFromAPI };
+  window.__F1_API_DEBUG__ = { fetchJSON, buildF1Data, loadFromAPI, fetchDriverCareer };
 })();
