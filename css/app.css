@@ -520,6 +520,9 @@ button { font-family: inherit; }
 }
 .callout-driver { font-family: var(--f-display); font-weight: 700; font-size: 18px; }
 .callout-time { font-family: var(--f-mono); font-size: 14px; color: var(--fg-2); margin-top: 2px; }
+a.callout { color: inherit; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
+a.callout:hover { border-color: var(--accent); transform: translateY(-1px); }
+a.callout:hover .callout-driver { color: var(--accent); }
 
 /* ============================================================
    BARS / RATINGS

@@ -86,22 +86,24 @@ function RaceResultsTable({ round, race, result, mob }) {
   return (
     <>
       <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : '1fr 1fr', marginBottom: 16 }}>
-        <div className="callout">
+        <a className="callout" href={urlFor({ name: 'driver', id: poleDriver.id })}
+           title={`${poleDriver.first} ${poleDriver.last} driver profile`}>
           <div className="callout-icon">◈</div>
           <div className="callout-body">
             <div className="callout-lbl">Pole Position</div>
             <div className="callout-driver">{poleDriver.flag} {poleDriver.first} {poleDriver.last}</div>
             <div className="callout-time">{quali[poleDriver.id].q3}</div>
           </div>
-        </div>
-        <div className="callout">
+        </a>
+        <a className="callout" href={urlFor({ name: 'driver', id: fastestDriver.id })}
+           title={`${fastestDriver.first} ${fastestDriver.last} driver profile`}>
           <div className="callout-icon">⚡</div>
           <div className="callout-body">
             <div className="callout-lbl">Fastest Lap</div>
             <div className="callout-driver">{fastestDriver.flag} {fastestDriver.first} {fastestDriver.last}</div>
             <div className="callout-time">{F_race.fmtLap(78.5 + Math.random() * 0.4)} · L{Math.floor(40 + Math.random() * 15)}</div>
           </div>
-        </div>
+        </a>
       </div>
 
       <Panel title="Race Result" tight>
