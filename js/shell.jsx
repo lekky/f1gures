@@ -8,7 +8,11 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.017';
+const APP_VERSION = '1.021';
+// Buy Me a Coffee — script tag in each *.html injects #bmc-wbtn (a fixed
+// floating button) and #bmc-iframe (the modal). We restyle the FAB into a
+// flatter rectangle in css/app.css so it reads as a Support CTA, not a
+// circular badge.
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {

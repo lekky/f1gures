@@ -175,6 +175,32 @@ button { font-family: inherit; }
   height: 2px; background: var(--accent);
 }
 .nav-item .caret { font-size: 10px; opacity: 0.5; margin-left: 6px; }
+
+/* BMC widget — restyle the floating button from a 64x64 circle into a
+   flatter rectangle so it reads as a 'Support' CTA rather than a circular
+   badge. The widget script sets these via inline styles, so we need
+   !important to win. A ::after label adds a 'Support' wordmark next to the
+   coffee-cup icon. */
+#bmc-wbtn {
+  width: auto !important;
+  height: 40px !important;
+  border-radius: 6px !important;
+  padding: 0 14px !important;
+  gap: 8px !important;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+#bmc-wbtn img { height: 20px !important; width: 20px !important; }
+#bmc-wbtn::after { content: 'Support'; }
+@media (max-width: 720px) {
+  /* On mobile keep it a touch smaller and out of the way of the bottom nav. */
+  #bmc-wbtn { height: 36px !important; padding: 0 12px !important; bottom: 80px !important; }
+  #bmc-wbtn img { height: 18px !important; width: 18px !important; }
+  #bmc-wbtn::after { font-size: 11px; }
+}
 .nav-version {
   font-family: var(--f-mono); font-size: 10px; font-weight: 400;
   color: var(--fg-4); letter-spacing: 0.06em;
