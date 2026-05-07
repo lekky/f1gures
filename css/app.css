@@ -663,6 +663,17 @@ button { font-family: inherit; }
   object-fit: contain; object-position: bottom center;
 }
 
+/* Circuit track map — render both variants and let CSS pick by theme. */
+.circuit-track {
+  width: 100%; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-1);
+}
+.circuit-track img { width: 100%; height: 100%; object-fit: contain; padding: 12px; }
+.circuit-track .circuit-track-dark { display: block; }
+.circuit-track .circuit-track-light { display: none; }
+html.light .circuit-track .circuit-track-dark { display: none; }
+html.light .circuit-track .circuit-track-light { display: block; }
+
 /* Recharts dark theme tweaks */
 .recharts-cartesian-axis-tick text { fill: var(--fg-3) !important; font-family: var(--f-mono) !important; font-size: 11px !important; }
 .recharts-cartesian-grid line { stroke: var(--line-1) !important; }

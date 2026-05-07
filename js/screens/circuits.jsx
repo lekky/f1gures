@@ -64,6 +64,11 @@ function CircuitDetailScreen() {
   const id = getParam('id');
   const circuit = F_cir.circuits[id];
   const race = F_cir.calendar.find(r => r.circuit === id);
+  // Track SVG comes from data/circuits/black-outline (light theme) or
+  // data/circuits/white-outline (dark theme). Either may be missing for
+  // circuits we don't have a map for yet (e.g. imola) — onError flips back
+  // to the original placeholder.
+  const [trackFailed, setTrackFailed] = React.useState(false);
 
   if (!circuit) {
     return (
@@ -122,9 +127,18 @@ function CircuitDetailScreen() {
         </div>
 
         <div>
-          <div className="image-placeholder" style={{ width: '100%', height: mob ? 200 : 280 }}>
-            Circuit map / aerial<br />{circuit.name}
-          </div>
+          {trackFailed ? (
+            <div className="image-placeholder" style={{ width: '100%', height: mob ? 200 : 280 }}>
+              Circuit map<br />{circuit.name}
+            </div>
+          ) : (
+            <div className="circuit-track" style={{ height: mob ? 200 : 280 }}>
+              <img className="circuit-track-light" src={`images/circuits/black-outline/${id}.svg`}
+                   alt={`${circuit.name} track map`} onError={() => setTrackFailed(true)} />
+              <img className="circuit-track-dark" src={`images/circuits/white-outline/${id}.svg`}
+                   alt="" aria-hidden="true" onError={() => setTrackFailed(true)} />
+            </div>
+          )}
         </div>
       </div>
 
