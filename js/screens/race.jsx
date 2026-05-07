@@ -41,9 +41,9 @@ function RaceDetailScreen() {
             <h1 className="page-title" style={{ fontSize: mob ? 30 : 44 }}>{race.name}</h1>
           </div>
           <div className="t-mono" style={{ fontSize: 13, color: 'var(--fg-3)', marginTop: 6 }}>
-            <a className="race-circuit-link" href={urlFor({ name: 'circuit', id: race.circuit })}
+            <a className="inline-link" href={urlFor({ name: 'circuit', id: race.circuit })}
                title={`${circuit.name} circuit profile`}>
-              {circuit.name.toUpperCase()}<span className="race-circuit-link-arrow" aria-hidden="true">↗</span>
+              {circuit.name.toUpperCase()}<span className="inline-link-arrow" aria-hidden="true">↗</span>
             </a> · {fmtDateLong(race.date)}
           </div>
         </div>

@@ -68,7 +68,13 @@ function DriverProfileScreen() {
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '220px 1fr auto', gap: 20, padding: mob ? 16 : 20, alignItems: 'center' }}>
           <DriverSilhouette driver={driver} height={mob ? 180 : 220} />
           <div>
-            <div className="t-eyebrow" style={{ color: team.color, marginBottom: 6 }}>{driver.flag} {team.name.toUpperCase()}</div>
+            <div className="t-eyebrow" style={{ color: team.color, marginBottom: 6 }}>
+              {driver.flag}{' '}
+              <a className="inline-link" href={urlFor({ name: 'team', id: team.id })}
+                 style={{ color: 'inherit' }} title={`${team.name} constructor profile`}>
+                {team.name.toUpperCase()}<span className="inline-link-arrow" aria-hidden="true">↗</span>
+              </a>
+            </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
               <h1 className="page-title" style={{ fontSize: mob ? 36 : 56 }}>{driver.first} {driver.last}</h1>
             </div>
