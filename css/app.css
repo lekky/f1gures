@@ -175,16 +175,6 @@ button { font-family: inherit; }
   height: 2px; background: var(--accent);
 }
 .nav-item .caret { font-size: 10px; opacity: 0.5; margin-left: 6px; }
-.nav-support { color: var(--accent); }
-.nav-support:hover { color: var(--accent); opacity: 0.85; }
-.topbar-support {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; font-size: 16px;
-  text-decoration: none; color: var(--fg-2);
-  border: 1px solid var(--line-2); border-radius: 4px;
-  margin-right: 6px;
-}
-.topbar-support:hover { color: var(--accent); border-color: var(--accent); }
 .nav-version {
   font-family: var(--f-mono); font-size: 10px; font-weight: 400;
   color: var(--fg-4); letter-spacing: 0.06em;

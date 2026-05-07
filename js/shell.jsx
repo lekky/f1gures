@@ -8,8 +8,9 @@
 
 const { useState, useEffect, useMemo } = React;
 
-const APP_VERSION = '1.018';
-const SUPPORT_URL = 'https://buymeacoffee.com/f1gures';
+const APP_VERSION = '1.019';
+// Buy Me a Coffee floating widget is loaded via a script tag in each *.html
+// (data-id="f1gures"). It renders a fixed button on the page — no nav item.
 
 // ─── URL helpers ──────────────────────────────────────────────
 function currentPath() {
@@ -180,10 +181,6 @@ function TopNav({ theme, setMode }) {
            href={urlFor({ name: 'calendar' })}>Calendar</a>
         <a className={`nav-item ${route === 'circuits' || route === 'circuit' ? 'active' : ''}`}
            href={urlFor({ name: 'circuits' })}>Circuits</a>
-        <a className="nav-item nav-support" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer"
-           title="Support f1gures on Buy Me a Coffee">
-          <span style={{ marginRight: 6 }}>☕</span>Support
-        </a>
       </div>
       <div className="nav-spacer"></div>
       <div className="nav-controls">
@@ -202,8 +199,6 @@ function MobileTopBar({ theme, setMode }) {
         <span className="dot"></span>F1GURES
       </a>
       <div style={{ flex: 1 }}></div>
-      <a className="topbar-support" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer"
-         title="Support f1gures on Buy Me a Coffee" aria-label="Support">☕</a>
       <ThemeSwitcher theme={theme} setMode={setMode} />
       <YearPicker compact />
     </div>
