@@ -16,10 +16,18 @@ export function urlFor(target) {
     case 'calendar':     return '/calendar/';
     case 'circuits':     return '/circuits/';
     case 'race': {
-      // PR 2b prerenders /races/<year>/<round>/. Pass year+round for direct
-      // links; round-only falls back to /race.html?round=… which the legacy
-      // redirect resolves via the user's selected year.
-      if (target.year && target.round) return `/races/${target.year}/${target.round}/`;
+      // PR 2b prerenders /races/<year>/<round>/, but only for years in the
+      // Ergast archive (1950–2024). The 2026 fallback grid and 2025 hand-
+      // curated bundle have race data but no prerendered pages, so direct
+      // links to those years 404. Guard with the archive's max year — past
+      // that, fall through to /race.html?round=…&year=… which validates
+      // against _races-index.json and lands on /calendar/ on miss.
+      const ARCHIVE_MAX_YEAR = 2024;
+      const y = target.year ? Number(target.year) : null;
+      if (y && target.round && y <= ARCHIVE_MAX_YEAR) {
+        return `/races/${target.year}/${target.round}/`;
+      }
+      if (target.year) return `/race.html?round=${target.round}&year=${target.year}`;
       return `/race.html?round=${target.round}`;
     }
     case 'circuit': {
