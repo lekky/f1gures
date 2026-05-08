@@ -53,6 +53,9 @@ interface Props {
   };
 }
 
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 const { driver } = Astro.props;
 const fullName = `${driver.forename} ${driver.surname}`;
 const yearsLabel = driver.career.firstYear === driver.career.lastYear
@@ -60,6 +63,12 @@ const yearsLabel = driver.career.firstYear === driver.career.lastYear
   : `${driver.career.firstYear}–${driver.career.lastYear}`;
 const fmtNum = (n: number | null | undefined) => (n == null ? '—' : String(n));
 const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
+
+// Headshot lookup — only ~32 modern drivers have a curated WebP in
+// public/images/drivers/. For everyone else (most of the 862 drivers in
+// the archive), fall back to a CSS-rendered silhouette placeholder.
+const headshotPath = `images/drivers/${driver.driverRef}.webp`;
+const hasHeadshot = existsSync(resolve(process.cwd(), 'public', headshotPath));
 
 // Show races newest-first
 const racesDesc = [...driver.perRace].sort((a, b) =>
@@ -71,7 +80,17 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-drivers/">← Standings</a>
 
   <div class="panel driver-hero">
-    <div class="driver-hero-grid">
+    <div class={`driver-hero-grid ${hasHeadshot ? 'has-headshot' : ''}`}>
+      {hasHeadshot ? (
+        <img class="driver-hero-photo" src={`/${headshotPath}`} alt={fullName} loading="lazy" width="180" height="220" />
+      ) : (
+        <div class="driver-hero-photo driver-hero-silhouette" aria-hidden="true">
+          <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="35" r="20" fill="currentColor" opacity="0.25"/>
+            <path d="M 18 120 Q 18 70 50 70 Q 82 70 82 120 Z" fill="currentColor" opacity="0.25"/>
+          </svg>
+        </div>
+      )}
       <div class="driver-hero-meta">
         <div class="t-eyebrow driver-hero-team">
           {driver.nationality || '—'}
@@ -186,10 +205,24 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
   .driver-hero { padding: 20px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
   .driver-hero-grid {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 180px 1fr auto;
     gap: 20px;
     align-items: center;
   }
+  .driver-hero-photo {
+    width: 180px;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--bg-2);
+    color: var(--fg-3);
+  }
+  .driver-hero-silhouette {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .driver-hero-silhouette svg { width: 70%; height: 70%; }
   .driver-hero-team { color: var(--fg-3); margin-bottom: 6px; }
   .driver-hero-name { margin: 0 0 8px 0; font-size: 56px; line-height: 1.05; }
   .driver-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
@@ -207,8 +240,9 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
   .driver-career-grid { grid-template-columns: repeat(7, 1fr); }
   @media (max-width: 720px) {
     .driver-hero-name { font-size: 32px; }
-    .driver-hero-grid { grid-template-columns: 1fr; }
-    .driver-hero-champ { text-align: left; }
+    .driver-hero-grid { grid-template-columns: 120px 1fr; }
+    .driver-hero-photo { width: 120px; height: 150px; }
+    .driver-hero-champ { grid-column: 1 / -1; text-align: left; padding-top: 8px; border-top: 1px solid var(--line-1); }
     .driver-career-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
