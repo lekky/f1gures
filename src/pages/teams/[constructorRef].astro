@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TeamPage from '../../components/TeamPage.astro';
+import { getTeamsIndex, getTeam } from '../../data/archive.js';
+
+export async function getStaticPaths() {
+  const index = getTeamsIndex();
+  return index.map(entry => ({
+    params: { constructorRef: entry.constructorRef },
+    props: { team: getTeam(entry.constructorRef) },
+  }));
+}
+
+const { team } = Astro.props;
+const yearsLabel = team.career.firstYear === team.career.lastYear
+  ? `${team.career.firstYear}`
+  : `${team.career.firstYear}–${team.career.lastYear}`;
+
+const title = `${team.name} — F1 Constructor History, Wins & Championships | f1gures`;
+const description = `${team.name} (${team.nationality}, F1 ${yearsLabel}). ${team.career.races} races, ${team.career.wins} wins, ${team.career.podiums} podiums, ${team.career.championships} constructors' championships. Full season-by-season history and notable drivers.`;
+const canonicalPath = `/teams/${team.constructorRef}/`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SportsTeam',
+  name: team.name,
+  sport: 'Formula 1',
+  identifier: team.constructorRef,
+  url: `https://f1gures.app${canonicalPath}`,
+};
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Constructors', path: '/standings-constructors/' },
+  { name: team.name, path: canonicalPath },
+];
+---
+<BaseLayout {title} {description} {canonicalPath} ogType="article" {jsonLd} {breadcrumb}>
+  <TeamPage {team} />
+</BaseLayout>

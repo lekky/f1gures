@@ -56,3 +56,12 @@ export function getCircuitsIndex() {
 export function getCircuit(circuitRef) {
   return readJson(join(ARCHIVE, 'circuits', `${circuitRef}.json`));
 }
+
+let _teamsIdx = null;
+export function getTeamsIndex() {
+  if (!_teamsIdx) _teamsIdx = readJson(join(ARCHIVE, '_teams-index.json'));
+  return _teamsIdx;
+}
+export function getTeam(constructorRef) {
+  return readJson(join(ARCHIVE, 'teams', `${constructorRef}.json`));
+}

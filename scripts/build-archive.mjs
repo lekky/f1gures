@@ -827,3 +827,164 @@ for (const c of circuits) {
 
 writeFileSync(join(OUT, '_circuits-index.json'), JSON.stringify(circuitsIndex));
 console.log(`[archive] wrote ${circuitsWritten} circuit detail bundles → ${join(OUT, 'circuits')}`);
+
+// ─── Teams (constructors) ────────────────────────────────────────────
+mkdirSync(join(OUT, 'teams'), { recursive: true });
+
+const constructorStandings = readCsv('constructor_standings');
+const standingsByConstructor = new Map();
+for (const s of constructorStandings) {
+  if (!standingsByConstructor.has(s.constructorId)) standingsByConstructor.set(s.constructorId, []);
+  standingsByConstructor.get(s.constructorId).push(s);
+}
+
+// Group results by constructor for fast iteration
+const resultsByConstructor = new Map();
+for (const r of results) {
+  if (!r.constructorId) continue;
+  if (!resultsByConstructor.has(r.constructorId)) resultsByConstructor.set(r.constructorId, []);
+  resultsByConstructor.get(r.constructorId).push(r);
+}
+
+const teamsIndex = [];
+let teamsWritten = 0;
+for (const c of constructors) {
+  const teamResults = (resultsByConstructor.get(c.constructorId) || [])
+    .map(r => {
+      const race = racesById.get(r.raceId);
+      if (!race) return null;
+      return {
+        raceId: r.raceId,
+        year: toInt(race.year),
+        round: toInt(race.round),
+        raceName: race.name,
+        date: race.date,
+        driverId: r.driverId,
+        position: toInt(r.position),
+        positionText: r.positionText,
+        points: toFloat(r.points) || 0,
+        statusId: r.statusId,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a.year - b.year) || (a.round - b.round));
+
+  // Career totals
+  const wins = teamResults.filter(r => r.position === 1).length;
+  const podiums = teamResults.filter(r => r.position != null && r.position <= 3).length;
+  const yearsSet = new Set(teamResults.map(r => r.year));
+  const seasons = yearsSet.size;
+  const racesEntered = new Set(teamResults.map(r => r.raceId)).size;
+  const driverIds = new Set(teamResults.map(r => r.driverId));
+
+  // Constructors' championships — final-round position === 1 in each year's standings
+  let championships = 0;
+  const finalStandingByYear = new Map();
+  for (const s of standingsByConstructor.get(c.constructorId) || []) {
+    const race = racesById.get(s.raceId);
+    if (!race) continue;
+    const year = toInt(race.year);
+    const final = finalRaceIdByYear.get(year);
+    if (!final || final.raceId !== s.raceId) continue;
+    const pos = toInt(s.position);
+    finalStandingByYear.set(year, {
+      position: pos,
+      points: toFloat(s.points) || 0,
+      wins: toInt(s.wins) || 0,
+    });
+    if (pos === 1) championships += 1;
+  }
+
+  // Per-season summary
+  const byYear = new Map();
+  for (const r of teamResults) {
+    if (!byYear.has(r.year)) byYear.set(r.year, []);
+    byYear.get(r.year).push(r);
+  }
+  const perSeason = [...byYear.entries()]
+    .map(([year, rows]) => {
+      const seasonDrivers = [...new Set(rows.map(r => r.driverId))]
+        .map(driverId => {
+          const d = driversById.get(driverId);
+          if (!d) return null;
+          return {
+            driverRef: d.driverRef,
+            name: `${d.forename} ${d.surname}`,
+            code: deriveCode(d),
+          };
+        })
+        .filter(Boolean);
+      const seasonWins = rows.filter(r => r.position === 1).length;
+      const final = finalStandingByYear.get(year) || { position: null, points: null };
+      return {
+        year,
+        drivers: seasonDrivers,
+        position: final.position,
+        points: final.points,
+        wins: seasonWins,
+        races: new Set(rows.map(r => r.raceId)).size,
+      };
+    })
+    .sort((a, b) => b.year - a.year);
+
+  // Top drivers (ever raced for this constructor) by wins
+  const driverWinCounts = new Map();
+  const driverRaceCounts = new Map();
+  for (const r of teamResults) {
+    driverRaceCounts.set(r.driverId, (driverRaceCounts.get(r.driverId) || 0) + 1);
+    if (r.position === 1) driverWinCounts.set(r.driverId, (driverWinCounts.get(r.driverId) || 0) + 1);
+  }
+  const topDrivers = [...driverIds]
+    .map(driverId => {
+      const d = driversById.get(driverId);
+      if (!d) return null;
+      return {
+        driverRef: d.driverRef,
+        name: `${d.forename} ${d.surname}`,
+        races: driverRaceCounts.get(driverId) || 0,
+        wins: driverWinCounts.get(driverId) || 0,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.wins - a.wins || b.races - a.races)
+    .slice(0, 10);
+
+  const firstYear = yearsSet.size ? Math.min(...yearsSet) : null;
+  const lastYear = yearsSet.size ? Math.max(...yearsSet) : null;
+
+  const teamDoc = {
+    constructorRef: c.constructorRef,
+    constructorId: c.constructorId,
+    name: c.name,
+    nationality: c.nationality && c.nationality.trim(),
+    url: c.url,
+    color: teamColor(c.constructorRef),
+    short: constructorShort(c.constructorRef, c.name),
+    career: {
+      seasons,
+      firstYear,
+      lastYear,
+      races: racesEntered,
+      wins,
+      podiums,
+      championships,
+      driverCount: driverIds.size,
+    },
+    perSeason,
+    topDrivers,
+  };
+
+  writeFileSync(join(OUT, 'teams', `${c.constructorRef}.json`), JSON.stringify(teamDoc));
+  teamsIndex.push({
+    constructorRef: c.constructorRef,
+    name: c.name,
+    nationality: c.nationality && c.nationality.trim(),
+    firstYear, lastYear, races: racesEntered, wins, championships,
+    color: teamColor(c.constructorRef),
+  });
+  teamsWritten++;
+}
+
+teamsIndex.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+writeFileSync(join(OUT, '_teams-index.json'), JSON.stringify(teamsIndex));
+console.log(`[archive] wrote ${teamsWritten} team detail bundles → ${join(OUT, 'teams')}`);
