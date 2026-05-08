@@ -70,6 +70,16 @@ const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
 const headshotPath = `images/drivers/${driver.driverRef}.webp`;
 const hasHeadshot = existsSync(resolve(process.cwd(), 'public', headshotPath));
 
+// /races/<y>/<r>/ pages exist only for archived years (Ergast: 1950-2024).
+// Hand-curated 2025+ data has races but no prerendered detail page; route
+// those via /race.html which falls back to /calendar/ on miss.
+const ARCHIVE_MAX_YEAR = 2024;
+function raceUrl(year: number | null, round: number | null): string | null {
+  if (year == null || round == null) return null;
+  if (year <= ARCHIVE_MAX_YEAR) return `/races/${year}/${round}/`;
+  return `/race.html?round=${round}&year=${year}`;
+}
+
 // Show races newest-first
 const racesDesc = [...driver.perRace].sort((a, b) =>
   (b.year - a.year) || ((b.round ?? 0) - (a.round ?? 0))
@@ -181,7 +191,7 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
           </thead>
           <tbody>
             {racesDesc.map(r => {
-              const raceHref = (r.year != null && r.round != null) ? `/races/${r.year}/${r.round}/` : null;
+              const raceHref = raceUrl(r.year, r.round);
               return (
                 <tr>
                   <td class="t-mono">{raceHref ? <a href={raceHref}>{r.year}</a> : r.year}</td>
