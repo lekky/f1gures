@@ -8,4 +8,4 @@
 // They need a matching bump until PR 2b/2c ports them to Astro routes and
 // they get deleted.
 
-export const APP_VERSION = '2.004';
+export const APP_VERSION = '2.005';

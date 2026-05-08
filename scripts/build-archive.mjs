@@ -485,7 +485,14 @@ for (const year of allYears) {
     const primaryCid = driverPrimaryConstructor.get(driverId);
     const primaryConstructor = primaryCid ? constructorsById.get(primaryCid) : null;
     return {
-      id: code,
+      // `id` must be unique within a season — used as the key in
+      // computeStandings.progression and as the dataKey in PointsChart.
+      // The 3-letter `code` collides for surnames like Hill / Schumacher
+      // / Brabham / Andretti when multiple drivers from the same family
+      // raced together (1961 had Phil Hill + Graham Hill, etc.), which
+      // caused undefined-array-access crashes in the chart. Use the
+      // always-unique driverRef instead. `code` stays for display only.
+      id: d.driverRef,
       jolpicaId: d.driverRef,
       num: toInt(d.number),
       first: d.forename,
@@ -500,10 +507,12 @@ for (const year of allYears) {
   }).filter(Boolean);
 
   // Map driverId → display code (matches drivers[].id) for results lookups
-  const driverIdToCode = new Map();
+  // Map Ergast driverId → driverRef (unique). Used as the `id` in the
+  // season's results.order/grid arrays so they match drivers[].id.
+  const driverIdToRef = new Map();
   for (const driverId of yearDriverIds) {
     const d = driversById.get(driverId);
-    if (d) driverIdToCode.set(driverId, deriveCode(d));
+    if (d) driverIdToRef.set(driverId, d.driverRef);
   }
 
   // Build calendar[] + results{}
@@ -533,20 +542,20 @@ for (const year of allYears) {
     if (raceResults.length === 0) continue;
 
     // Order: finishing order by positionOrder
-    const order = raceResults.map(r => driverIdToCode.get(r.driverId)).filter(Boolean);
+    const order = raceResults.map(r => driverIdToRef.get(r.driverId)).filter(Boolean);
     // Grid: starting order; drivers with grid 0 (pit-lane / didn't qualify) tail
     const gridSorted = raceResults.slice().sort((a, b) => {
       const ga = toInt(a.grid) || 99;
       const gb = toInt(b.grid) || 99;
       return ga - gb;
     });
-    const grid = gridSorted.map(r => driverIdToCode.get(r.driverId)).filter(Boolean);
+    const grid = gridSorted.map(r => driverIdToRef.get(r.driverId)).filter(Boolean);
     // Pole: grid === 1
     const poleRow = raceResults.find(r => toInt(r.grid) === 1);
-    const pole = poleRow ? driverIdToCode.get(poleRow.driverId) : null;
+    const pole = poleRow ? driverIdToRef.get(poleRow.driverId) : null;
     // Fastest lap: rank === 1 (CSV's "rank" column = fastest-lap rank)
     const flRow = raceResults.find(r => toInt(r.rank) === 1);
-    const fastest = flRow ? driverIdToCode.get(flRow.driverId) : null;
+    const fastest = flRow ? driverIdToRef.get(flRow.driverId) : null;
     // DNFs: status not "Finished" or +N Lap(s)
     const finishedStatuses = new Set(['Finished']);
     const dnfs = raceResults
@@ -554,7 +563,7 @@ for (const year of allYears) {
         const s = statusById.get(r.statusId) || '';
         return !finishedStatuses.has(s) && !/^\+\d+ Lap/.test(s);
       })
-      .map(r => driverIdToCode.get(r.driverId))
+      .map(r => driverIdToRef.get(r.driverId))
       .filter(Boolean);
 
     resultsObj[round] = { pole, fastest, order, grid, dnfs };
