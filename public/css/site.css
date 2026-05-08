@@ -144,3 +144,29 @@ a { color: inherit; }
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
 }
+
+/* Mobile responsive overrides for SSR'd Astro islands.
+   The home/calendar/circuits/standings screens use useIsMobile() to swap
+   inline gridTemplateColumns between desktop and mobile, but Astro SSR
+   has no `window` so prerender always emits the desktop grid. On real
+   phones that's what gets shipped first — and stays visible until React
+   hydrates (sometimes seconds on slow networks, never if JS fails). These
+   selectors override the inline desktop grid styles below 720px so the
+   prerendered HTML works on mobile without depending on hydration. */
+@media (max-width: 720px) {
+  .grid[style*="repeat(3,"],
+  .grid[style*="repeat(5,"],
+  .grid[style*="repeat(auto-fill"] {
+    grid-template-columns: 1fr !important;
+  }
+  .panel > div[style*="grid-template-columns:1fr 1fr"],
+  .panel > div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+    gap: 20px !important;
+  }
+  .t-display[style*="font-size:56px"],
+  .t-display[style*="font-size: 56px"] {
+    font-size: 38px !important;
+  }
+}
