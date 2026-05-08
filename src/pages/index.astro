@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeIsland from '../components/islands/HomeIsland.jsx';
 
 const title = 'F1 2026 Live Standings, Calendar & Stats — f1gures';
 const description = 'Live Formula 1 2026 driver and constructor standings, full race calendar, circuit profiles and driver career stats. Free, fast, no ads, no signup.';
@@ -42,28 +43,5 @@ const jsonLd = {
   ogType="website"
   jsonLd={jsonLd}
 >
-  <main class="page" style="padding: 32px 24px;">
-    <header style="max-width: 760px; margin: 0 auto 32px;">
-      <h1 style="font-family: 'Barlow Condensed', sans-serif; font-size: clamp(32px, 6vw, 56px); font-weight: 800; letter-spacing: -0.01em; text-transform: uppercase; margin: 0 0 16px;">
-        F1 2026 Live Standings, Calendar &amp; Stats
-      </h1>
-      <p style="font-size: 17px; line-height: 1.5; color: var(--fg-2); max-width: 60ch;">
-        Live Formula 1 driver and constructor standings, the full 2026 race calendar, circuit profiles and driver career stats — updated every race weekend.
-      </p>
-    </header>
-
-    <section style="max-width: 760px; margin: 0 auto;">
-      <div class="panel" style="padding: 20px;">
-        <p style="margin: 0; color: var(--fg-3); font-size: 14px;">
-          <strong>Astro migration in progress.</strong> Full home dashboard coming back in the next commit on this branch. Browse:
-        </p>
-        <ul style="margin: 12px 0 0; padding-left: 20px; line-height: 2;">
-          <li><a href="/standings-drivers/">Driver standings</a></li>
-          <li><a href="/standings-constructors/">Constructor standings</a></li>
-          <li><a href="/calendar/">Race calendar</a></li>
-          <li><a href="/circuits/">Circuits</a></li>
-        </ul>
-      </div>
-    </section>
-  </main>
+  <HomeIsland client:load />
 </BaseLayout>

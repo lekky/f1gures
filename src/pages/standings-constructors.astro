@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ConstructorStandingsIsland from '../components/islands/ConstructorStandingsIsland.jsx';
+
+const title = "F1 2026 Constructor Standings — Live Team Championship | f1gures";
+const description = "Live 2026 Formula 1 World Constructors' Championship table. Team points, wins, podiums and season trajectory for every F1 team, updated every race.";
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Constructor Standings', path: '/standings-constructors/' },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/standings-constructors/"
+  ogType="website"
+  breadcrumb={breadcrumb}
+>
+  <ConstructorStandingsIsland client:visible />
+</BaseLayout>
