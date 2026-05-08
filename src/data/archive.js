@@ -6,11 +6,13 @@
 // these reads will fail.
 
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve, join } from 'node:path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ARCHIVE = resolve(__dirname, '..', '..', 'public', 'data', 'archive');
+// process.cwd() is the project root during astro build/dev. Don't use
+// import.meta.url + __dirname here — Vite bundles this module into dist/
+// during the build, which throws the relative path off (looking for
+// dist/public/data/archive instead of public/data/archive).
+const ARCHIVE = resolve(process.cwd(), 'public', 'data', 'archive');
 
 function readJson(path) {
   if (!existsSync(path)) {
