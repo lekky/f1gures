@@ -766,3 +766,32 @@ html.light .circuit-track .circuit-track-light { display: block; }
 
 /* Hide visually but keep in DOM */
 .sr { position: absolute; left: -9999px; }
+
+/* Boot skeleton — visible until React's createRoot().render() replaces #root.
+   Gives crawlers (and JS-disabled users) a real H1 + intro on first paint. */
+.boot-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 48px 24px;
+  text-align: center;
+  font-family: 'Barlow', system-ui, sans-serif;
+  color: var(--fg-2);
+}
+.boot-skeleton h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(28px, 6vw, 48px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+  color: var(--fg-1);
+}
+.boot-skeleton p {
+  margin: 0 0 10px;
+  max-width: 620px;
+  line-height: 1.5;
+  font-size: 15px;
+}

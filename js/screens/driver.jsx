@@ -7,6 +7,31 @@ function DriverProfileScreen() {
 
   const id = getParam('id');
   const driver = F_drv.driverById(id);
+  const teamForSeo = driver ? F_drv.teamById(driver.team) : null;
+
+  useSeo({
+    title: driver
+      ? `${driver.first} ${driver.last} — F1 Driver Stats, Wins & Podiums | f1gures`
+      : 'F1 Driver Profile — Career Stats | f1gures',
+    description: driver
+      ? `${driver.first} ${driver.last} (#${driver.num}, ${driver.country}${teamForSeo ? `, ${teamForSeo.name}` : ''}) — Formula 1 career stats: wins, podiums, pole positions, fastest laps and 2026 season performance.`
+      : 'Formula 1 driver profiles with career wins, podiums, pole positions, fastest laps and 2026 season performance.',
+    canonicalPath: id ? `/driver.html?id=${encodeURIComponent(id)}` : '/driver.html',
+    ogType: 'profile',
+    jsonLd: driver ? {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      'name': `${driver.first} ${driver.last}`,
+      'givenName': driver.first,
+      'familyName': driver.last,
+      'nationality': driver.country,
+      'jobTitle': 'Formula 1 Driver',
+      'identifier': driver.code,
+      'url': `https://f1gures.app/driver.html?id=${encodeURIComponent(id)}`,
+      'image': `https://f1gures.app/images/drivers/${driver.jolpicaId}.webp`,
+      'memberOf': teamForSeo ? { '@type': 'SportsTeam', 'name': teamForSeo.name, 'sport': 'Formula 1' } : undefined
+    } : null
+  });
 
   if (!driver) {
     return (

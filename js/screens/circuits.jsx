@@ -64,6 +64,29 @@ function CircuitDetailScreen() {
   const id = getParam('id');
   const circuit = F_cir.circuits[id];
   const race = F_cir.calendar.find(r => r.circuit === id);
+
+  useSeo({
+    title: circuit
+      ? `${circuit.name} — Track Map, Lap Record & DRS Zones | f1gures`
+      : 'F1 Circuit Profile — Track Map & Lap Record | f1gures',
+    description: circuit
+      ? `${circuit.name} (${circuit.city}, ${circuit.country}) — F1 track profile: ${circuit.length ? circuit.length + ' km, ' : ''}${circuit.corners ? circuit.corners + ' corners, ' : ''}${circuit.drsZones ? circuit.drsZones + ' DRS zones, ' : ''}lap record and Grand Prix history.`
+      : 'Detailed Formula 1 circuit profile: track map, length, corners, DRS zones, lap record and Grand Prix history.',
+    canonicalPath: id ? `/circuit.html?id=${encodeURIComponent(id)}` : '/circuit.html',
+    ogType: 'article',
+    jsonLd: circuit ? {
+      '@context': 'https://schema.org',
+      '@type': 'Place',
+      'name': circuit.name,
+      'address': {
+        '@type': 'PostalAddress',
+        'addressLocality': circuit.city,
+        'addressCountry': circuit.country
+      },
+      'url': `https://f1gures.app/circuit.html?id=${encodeURIComponent(id)}`,
+      'description': circuit.blurb
+    } : null
+  });
   // Track SVG comes from data/circuits/black-outline (light theme) or
   // data/circuits/white-outline (dark theme). Either may be missing for
   // circuits we don't have a map for yet (e.g. imola) — onError flips back
