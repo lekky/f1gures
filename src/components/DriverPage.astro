@@ -161,17 +161,20 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
             </tr>
           </thead>
           <tbody>
-            {racesDesc.map(r => (
-              <tr>
-                <td class="t-mono">{r.year}</td>
-                <td>{r.raceName || '—'}</td>
-                <td>{r.constructorName || '—'}</td>
-                <td class="right t-mono">{fmtNum(r.grid)}</td>
-                <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || ord(r.position)}</td>
-                <td class="right t-mono">{r.points || 0}</td>
-                <td>{r.status || '—'}</td>
-              </tr>
-            ))}
+            {racesDesc.map(r => {
+              const raceHref = (r.year != null && r.round != null) ? `/races/${r.year}/${r.round}/` : null;
+              return (
+                <tr>
+                  <td class="t-mono">{raceHref ? <a href={raceHref}>{r.year}</a> : r.year}</td>
+                  <td>{raceHref ? <a href={raceHref}>{r.raceName || '—'}</a> : (r.raceName || '—')}</td>
+                  <td>{r.constructorName || '—'}</td>
+                  <td class="right t-mono">{fmtNum(r.grid)}</td>
+                  <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || ord(r.position)}</td>
+                  <td class="right t-mono">{r.points || 0}</td>
+                  <td>{r.status || '—'}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

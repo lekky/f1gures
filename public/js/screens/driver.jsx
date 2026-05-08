@@ -149,7 +149,7 @@ function DriverProfileScreen() {
             <tbody>
               {rounds.map(r => (
                 <tr key={r.race.round} className={r.status === 'pending' ? '' : 'clickable'}
-                    onClick={() => r.status !== 'pending' && navigate({ name: 'race', round: r.race.round })}
+                    onClick={() => r.status !== 'pending' && navigate({ name: 'race', year: F_drv.seasonYear, round: r.race.round })}
                     style={{ opacity: r.status === 'pending' ? 0.5 : 1 }}>
                   <td className="num t-mono" style={{ color: 'var(--fg-3)' }}>{String(r.race.round).padStart(2,'0')}</td>
                   <td><span style={{ marginRight: 6 }}>{r.race.flag}</span><span style={{ fontFamily: 'var(--f-display)', fontWeight: 600, textTransform: 'uppercase', fontSize: 13, letterSpacing: '0.06em' }}>{r.race.name.replace(' Grand Prix', '')}</span></td>

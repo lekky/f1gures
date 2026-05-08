@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CircuitPage from '../../components/CircuitPage.astro';
+import { getCircuitsIndex, getCircuit } from '../../data/archive.js';
+
+export async function getStaticPaths() {
+  const index = getCircuitsIndex();
+  return index.map(entry => ({
+    params: { circuitRef: entry.circuitRef },
+    props: { circuit: getCircuit(entry.circuitRef) },
+  }));
+}
+
+const { circuit } = Astro.props;
+const yearsLabel = circuit.firstYear === circuit.lastYear
+  ? `${circuit.firstYear}`
+  : `${circuit.firstYear}–${circuit.lastYear}`;
+
+const title = `${circuit.name} — F1 Race History, Winners & Lap Records | f1gures`;
+const description = `${circuit.name} in ${circuit.location}, ${circuit.countryName}. ${circuit.raceCount} Formula 1 races held ${yearsLabel}. Full results history, all-time most wins and pole positions.`;
+const canonicalPath = `/circuits/${circuit.circuitRef}/`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Place',
+  name: circuit.name,
+  address: circuit.location ? `${circuit.location}, ${circuit.countryName}` : circuit.countryName,
+  geo: (circuit.lat != null && circuit.lng != null) ? {
+    '@type': 'GeoCoordinates',
+    latitude: circuit.lat,
+    longitude: circuit.lng,
+  } : undefined,
+  url: `https://f1gures.app${canonicalPath}`,
+};
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Circuits', path: '/circuits/' },
+  { name: circuit.name, path: canonicalPath },
+];
+---
+<BaseLayout {title} {description} {canonicalPath} ogType="place" {jsonLd} {breadcrumb}>
+  <CircuitPage {circuit} />
+</BaseLayout>

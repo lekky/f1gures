@@ -581,3 +581,249 @@ for (const year of allYears) {
 }
 
 console.log(`[archive] wrote ${seasonsWritten} season bundles to ${SEASONS_OUT}, skipped ${seasonsSkipped} (hand-curated)`);
+
+// ─── Per-race + per-circuit detail bundles ───────────────────────────────
+// PR 2b: prerender /races/<year>/<round>/ and /circuits/<circuitRef>/
+// from the Ergast archive. Each race gets a JSON with full results,
+// qualifying, sprint (where applicable), navigation neighbours. Each
+// circuit gets a JSON with its full race history.
+
+mkdirSync(join(OUT, 'races'), { recursive: true });
+mkdirSync(join(OUT, 'circuits'), { recursive: true });
+
+const qualifying = readCsv('qualifying');
+const sprintResults = readCsv('sprint_results');
+
+// Group qualifying + sprint results by raceId
+const qualifyingByRace = new Map();
+for (const q of qualifying) {
+  if (!qualifyingByRace.has(q.raceId)) qualifyingByRace.set(q.raceId, []);
+  qualifyingByRace.get(q.raceId).push(q);
+}
+const sprintByRace = new Map();
+for (const s of sprintResults) {
+  if (!sprintByRace.has(s.raceId)) sprintByRace.set(s.raceId, []);
+  sprintByRace.get(s.raceId).push(s);
+}
+
+// Helper: build a result-row entry for race detail tables
+function buildResultRow(r) {
+  const d = driversById.get(r.driverId);
+  const c = constructorsById.get(r.constructorId);
+  return {
+    position: toInt(r.position),
+    positionText: r.positionText,
+    positionOrder: toInt(r.positionOrder),
+    driverRef: d ? d.driverRef : null,
+    driverName: d ? `${d.forename} ${d.surname}` : null,
+    code: d ? deriveCode(d) : null,
+    constructorRef: c ? c.constructorRef : null,
+    constructorName: c ? c.name : null,
+    constructorColor: c ? teamColor(c.constructorRef) : null,
+    grid: toInt(r.grid),
+    points: toFloat(r.points) || 0,
+    laps: toInt(r.laps),
+    time: r.time || null,
+    status: statusById.get(r.statusId) || null,
+    fastestLapTime: r.fastestLapTime || null,
+    fastestLapRank: toInt(r.rank),
+  };
+}
+
+// Sort races by year+round once for navigation
+const racesSorted = races.slice().sort((a, b) => {
+  const ya = toInt(a.year), yb = toInt(b.year);
+  if (ya !== yb) return ya - yb;
+  return toInt(a.round) - toInt(b.round);
+});
+const raceIndexByRaceId = new Map();
+racesSorted.forEach((r, i) => raceIndexByRaceId.set(r.raceId, i));
+
+const racesIndex = [];
+let racesWritten = 0;
+for (const race of racesSorted) {
+  const year = toInt(race.year);
+  const round = toInt(race.round);
+  const circuit = circuitsById.get(race.circuitId);
+  const cInfo = circuit ? countryInfo(circuit.country) : { code: '', flag: '🏳' };
+
+  // Race results — sorted by positionOrder (handles DNFs, finished-by-laps, etc.)
+  const raceResultsRaw = (resultsByRace.get(race.raceId) || []).slice()
+    .sort((a, b) => (toInt(a.positionOrder) || 9999) - (toInt(b.positionOrder) || 9999));
+  const raceResults = raceResultsRaw.map(buildResultRow);
+
+  // Qualifying — sorted by position
+  const qualiRaw = (qualifyingByRace.get(race.raceId) || []).slice()
+    .sort((a, b) => (toInt(a.position) || 9999) - (toInt(b.position) || 9999));
+  const qualifyingRows = qualiRaw.map(q => {
+    const d = driversById.get(q.driverId);
+    const c = constructorsById.get(q.constructorId);
+    return {
+      position: toInt(q.position),
+      driverRef: d ? d.driverRef : null,
+      driverName: d ? `${d.forename} ${d.surname}` : null,
+      code: d ? deriveCode(d) : null,
+      constructorRef: c ? c.constructorRef : null,
+      constructorName: c ? c.name : null,
+      q1: q.q1 || null, q2: q.q2 || null, q3: q.q3 || null,
+    };
+  });
+
+  // Sprint results (where applicable)
+  const sprintRaw = (sprintByRace.get(race.raceId) || []).slice()
+    .sort((a, b) => (toInt(a.positionOrder) || 9999) - (toInt(b.positionOrder) || 9999));
+  const sprint = sprintRaw.length === 0 ? null : sprintRaw.map(s => {
+    const d = driversById.get(s.driverId);
+    const c = constructorsById.get(s.constructorId);
+    return {
+      position: toInt(s.position),
+      positionText: s.positionText,
+      driverRef: d ? d.driverRef : null,
+      driverName: d ? `${d.forename} ${d.surname}` : null,
+      code: d ? deriveCode(d) : null,
+      constructorRef: c ? c.constructorRef : null,
+      grid: toInt(s.grid),
+      points: toFloat(s.points) || 0,
+      time: s.time || null,
+      status: statusById.get(s.statusId) || null,
+    };
+  });
+
+  // Pole / winner / fastest
+  const poleRow = raceResultsRaw.find(r => toInt(r.grid) === 1);
+  const flRow = raceResultsRaw.find(r => toInt(r.rank) === 1);
+  const winnerRow = raceResultsRaw.find(r => toInt(r.position) === 1);
+  const refOf = (row) => row && driversById.get(row.driverId)?.driverRef;
+
+  // Prev/next navigation by global race order
+  const idx = raceIndexByRaceId.get(race.raceId);
+  const prev = idx > 0 ? racesSorted[idx - 1] : null;
+  const next = idx < racesSorted.length - 1 ? racesSorted[idx + 1] : null;
+
+  const raceDoc = {
+    raceId: race.raceId,
+    year, round,
+    name: race.name,
+    date: race.date,
+    time: race.time,
+    url: race.url,
+    circuit: circuit ? {
+      circuitRef: circuit.circuitRef,
+      circuitId: circuit.circuitId,
+      name: circuit.name,
+      location: circuit.location,
+      country: cInfo.code,
+      countryName: circuit.country,
+      flag: cInfo.flag,
+    } : null,
+    pole: refOf(poleRow),
+    fastest: refOf(flRow),
+    fastestLapTime: flRow ? flRow.fastestLapTime : null,
+    winner: refOf(winnerRow),
+    results: raceResults,
+    qualifying: qualifyingRows,
+    sprint,
+    prev: prev ? { year: toInt(prev.year), round: toInt(prev.round), name: prev.name } : null,
+    next: next ? { year: toInt(next.year), round: toInt(next.round), name: next.name } : null,
+  };
+
+  const yearDir = join(OUT, 'races', String(year));
+  mkdirSync(yearDir, { recursive: true });
+  writeFileSync(join(yearDir, `${round}.json`), JSON.stringify(raceDoc));
+  racesIndex.push({ year, round, name: race.name, date: race.date, circuitRef: circuit ? circuit.circuitRef : null });
+  racesWritten++;
+}
+
+writeFileSync(join(OUT, '_races-index.json'), JSON.stringify(racesIndex));
+console.log(`[archive] wrote ${racesWritten} race detail bundles → ${join(OUT, 'races')}`);
+
+// ─── Circuits ─────────────────────────────────────────────────────────
+const circuitsIndex = [];
+let circuitsWritten = 0;
+for (const c of circuits) {
+  const cInfo = countryInfo(c.country);
+  const circuitRaces = racesSorted.filter(r => r.circuitId === c.circuitId);
+
+  const racesAtCircuit = circuitRaces.map(race => {
+    const raceResultsRaw = (resultsByRace.get(race.raceId) || []);
+    const winnerRow = raceResultsRaw.find(r => toInt(r.position) === 1);
+    const poleRow = raceResultsRaw.find(r => toInt(r.grid) === 1);
+    const flRow = raceResultsRaw.find(r => toInt(r.rank) === 1);
+    const refOf = (row) => row && driversById.get(row.driverId)?.driverRef;
+    const nameOf = (row) => {
+      if (!row) return null;
+      const d = driversById.get(row.driverId);
+      return d ? `${d.forename} ${d.surname}` : null;
+    };
+    const teamOf = (row) => {
+      if (!row) return null;
+      const k = constructorsById.get(row.constructorId);
+      return k ? k.name : null;
+    };
+    return {
+      year: toInt(race.year),
+      round: toInt(race.round),
+      name: race.name,
+      date: race.date,
+      winnerRef: refOf(winnerRow),
+      winnerName: nameOf(winnerRow),
+      winnerTeam: teamOf(winnerRow),
+      poleRef: refOf(poleRow),
+      poleName: nameOf(poleRow),
+      fastestLapRef: refOf(flRow),
+      fastestLapTime: flRow ? flRow.fastestLapTime : null,
+    };
+  });
+
+  // Tally most wins / poles by driver
+  const winCounts = new Map();
+  const poleCounts = new Map();
+  for (const r of racesAtCircuit) {
+    if (r.winnerRef) winCounts.set(r.winnerRef, (winCounts.get(r.winnerRef) || 0) + 1);
+    if (r.poleRef) poleCounts.set(r.poleRef, (poleCounts.get(r.poleRef) || 0) + 1);
+  }
+  const tallyTop = (m) => [...m.entries()]
+    .map(([driverRef, count]) => {
+      const d = drivers.find(dr => dr.driverRef === driverRef);
+      return { driverRef, count, name: d ? `${d.forename} ${d.surname}` : driverRef };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const circuitDoc = {
+    circuitRef: c.circuitRef,
+    circuitId: c.circuitId,
+    name: c.name,
+    location: c.location,
+    country: cInfo.code,
+    countryName: c.country,
+    flag: cInfo.flag,
+    lat: toFloat(c.lat),
+    lng: toFloat(c.lng),
+    alt: toInt(c.alt),
+    url: c.url,
+    raceCount: racesAtCircuit.length,
+    firstYear: racesAtCircuit.length ? Math.min(...racesAtCircuit.map(r => r.year)) : null,
+    lastYear: racesAtCircuit.length ? Math.max(...racesAtCircuit.map(r => r.year)) : null,
+    races: racesAtCircuit.sort((a, b) => b.year - a.year || b.round - a.round),
+    mostWins: tallyTop(winCounts),
+    mostPoles: tallyTop(poleCounts),
+  };
+
+  writeFileSync(join(OUT, 'circuits', `${c.circuitRef}.json`), JSON.stringify(circuitDoc));
+  circuitsIndex.push({
+    circuitRef: c.circuitRef,
+    name: c.name,
+    location: c.location,
+    country: cInfo.code,
+    countryName: c.country,
+    flag: cInfo.flag,
+    raceCount: racesAtCircuit.length,
+    firstYear: circuitDoc.firstYear,
+    lastYear: circuitDoc.lastYear,
+  });
+  circuitsWritten++;
+}
+
+writeFileSync(join(OUT, '_circuits-index.json'), JSON.stringify(circuitsIndex));
+console.log(`[archive] wrote ${circuitsWritten} circuit detail bundles → ${join(OUT, 'circuits')}`);

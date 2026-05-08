@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import RacePage from '../../../components/RacePage.astro';
+import { getRacesIndex, getRace } from '../../../data/archive.js';
+
+export async function getStaticPaths() {
+  const index = getRacesIndex();
+  return index.map(entry => ({
+    params: { year: String(entry.year), round: String(entry.round) },
+    props: { race: getRace(entry.year, entry.round) },
+  }));
+}
+
+const { race } = Astro.props;
+const winnerName = race.results.find(r => r.position === 1)?.driverName || null;
+const title = `${race.name} ${race.year}${winnerName ? ` — ${winnerName} won` : ''} | f1gures`;
+const description = `${race.name} ${race.year} race results from ${race.circuit?.name || 'the circuit'}. Full grid, finishing order, qualifying times${race.sprint ? ', sprint results' : ''}, points, and pit-stop pace.`;
+const canonicalPath = `/races/${race.year}/${race.round}/`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SportsEvent',
+  name: `${race.name} ${race.year}`,
+  startDate: race.date,
+  sport: 'Formula 1',
+  location: race.circuit ? {
+    '@type': 'Place',
+    name: race.circuit.name,
+    address: race.circuit.location ? `${race.circuit.location}, ${race.circuit.countryName}` : race.circuit.countryName,
+  } : undefined,
+  url: `https://f1gures.app${canonicalPath}`,
+};
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Calendar', path: '/calendar/' },
+  { name: `${race.year}`, path: `/calendar/?year=${race.year}` },
+  { name: race.name, path: canonicalPath },
+];
+---
+<BaseLayout {title} {description} {canonicalPath} ogType="article" {jsonLd} {breadcrumb}>
+  <RacePage {race} />
+</BaseLayout>

@@ -29,7 +29,7 @@ export default function CalendarScreen({ data }) {
             <a key={race.round}
                className={`race-card is-${race.status}`}
                style={{ textDecoration: 'none', color: 'inherit' }}
-               href={urlFor({ name: 'race', round: race.round })}>
+               href={urlFor({ name: 'race', year: F.seasonYear, round: race.round })}>
               <div className="race-card-head">
                 <div>
                   <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>

@@ -67,7 +67,7 @@ function NextRacePanel({ data, cal, mob }) {
 
   return (
     <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-         onClick={() => navigate({ name: 'race', round: next.round })}>
+         onClick={() => navigate({ name: 'race', year: D.seasonYear, round: next.round })}>
       <div className="kbd-corner kbd-tl"></div>
       <div className="kbd-corner kbd-tr"></div>
       <div className="kbd-corner kbd-bl"></div>
@@ -243,7 +243,7 @@ export default function HomeScreen({ data }) {
             driver={lastWinner}
             big={`P1`}
             sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
-            href={urlFor({ name: 'race', round: lastRace.round })}
+            href={urlFor({ name: 'race', year: D.seasonYear, round: lastRace.round })}
           />
         ) : (
           <SummaryWidget data={D} kicker="Last Race"
