@@ -10,7 +10,7 @@ import ThemeToggle from './islands/ThemeToggle.jsx';
 import YearPicker from './islands/YearPicker.jsx';
 import StandingsDropdown from './islands/StandingsDropdown.jsx';
 
-const APP_VERSION = '2.002';
+import { APP_VERSION } from '../lib/version.js';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 function isRoute(prefix: string) {
