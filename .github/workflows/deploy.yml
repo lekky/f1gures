@@ -11,19 +11,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Astro site
+        run: npm run build
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.SFTP_HOST }}
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASSWORD }}
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.claude/**
-            **/README.md
-            data/history/**
-            scripts/**
-            docs/**
-            CLAUDE.md
-            .gitignore
+          local-dir: ./dist/
+          # First deploy from dist/ uploads ~110 files and removes the legacy
+          # repo-root files. Reset state so the diff is computed from scratch.
+          state-name: .ftp-deploy-sync-state-dist.json

@@ -24,16 +24,16 @@ function getParam(name) {
 }
 function urlFor(target) {
   switch (target.name) {
-    case 'home':         return 'index.html';
-    case 'standings-d':  return 'standings-drivers.html';
-    case 'standings-c':  return 'standings-constructors.html';
-    case 'calendar':     return 'calendar.html';
-    case 'circuits':     return 'circuits.html';
-    case 'race':         return `race.html?round=${target.round}`;
-    case 'circuit':      return `circuit.html?id=${encodeURIComponent(target.id)}`;
-    case 'driver':       return `driver.html?id=${encodeURIComponent(target.id)}`;
-    case 'team':         return `team.html?id=${encodeURIComponent(target.id)}`;
-    default:             return 'index.html';
+    case 'home':         return '/';
+    case 'standings-d':  return '/standings-drivers/';
+    case 'standings-c':  return '/standings-constructors/';
+    case 'calendar':     return '/calendar/';
+    case 'circuits':     return '/circuits/';
+    case 'race':         return `/race.html?round=${target.round}`;
+    case 'circuit':      return `/circuit.html?id=${encodeURIComponent(target.id)}`;
+    case 'driver':       return `/driver.html?id=${encodeURIComponent(target.id)}`;
+    case 'team':         return `/team.html?id=${encodeURIComponent(target.id)}`;
+    default:             return '/';
   }
 }
 function navigate(target) { window.location.href = urlFor(target); }

@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CalendarIsland from '../components/islands/CalendarIsland.jsx';
+
+const title = 'F1 2026 Race Calendar — All 24 Grands Prix, Dates & Times | f1gures';
+const description = 'Complete 2026 Formula 1 schedule. All 24 Grand Prix dates, circuits, sprint weekends, qualifying and race times in your local timezone.';
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Calendar', path: '/calendar/' },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/calendar/"
+  ogType="website"
+  breadcrumb={breadcrumb}
+>
+  <CalendarIsland client:load />
+</BaseLayout>

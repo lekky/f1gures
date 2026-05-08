@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CircuitsIndexIsland from '../components/islands/CircuitsIndexIsland.jsx';
+
+const title = 'F1 Circuits 2026 — All Tracks, Maps & Lap Records | f1gures';
+const description = 'Every circuit on the 2026 Formula 1 calendar. Track maps, lap records, length, corners, DRS zones and tyre characteristics for all 24 Grands Prix.';
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Circuits', path: '/circuits/' },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/circuits/"
+  ogType="website"
+  breadcrumb={breadcrumb}
+>
+  <CircuitsIndexIsland client:load />
+</BaseLayout>

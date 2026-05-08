@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import DriverStandingsIsland from '../components/islands/DriverStandingsIsland.jsx';
+
+const title = "F1 2026 Driver Standings — Live Championship Table | f1gures";
+const description = "Live 2026 Formula 1 World Drivers' Championship standings. Points, wins, podiums, poles and head-to-head driver comparison, updated every race.";
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Driver Standings', path: '/standings-drivers/' },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/standings-drivers/"
+  ogType="website"
+  breadcrumb={breadcrumb}
+>
+  <DriverStandingsIsland client:visible />
+</BaseLayout>

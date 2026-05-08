@@ -280,12 +280,12 @@ async function main() {
 
   const bundle = { seasonYear, teams, drivers, calendar: calendarRaw, results, circuitsFromAPI };
 
-  mkdirSync(join(ROOT, 'data'), { recursive: true });
-  const outPath = join(ROOT, 'data', `${year}.json`);
+  mkdirSync(join(ROOT, 'public', 'data'), { recursive: true });
+  const outPath = join(ROOT, 'public', 'data', `${year}.json`);
   writeFileSync(outPath, JSON.stringify(bundle));
 
   const kb = Math.round(Buffer.byteLength(JSON.stringify(bundle)) / 1024);
-  console.log(`\n✓  data/${year}.json  (${kb} KB, ${Object.keys(results).length}/${completedRounds.length} rounds)\n`);
+  console.log(`\n✓  public/data/${year}.json  (${kb} KB, ${Object.keys(results).length}/${completedRounds.length} rounds)\n`);
 }
 
 main().catch(e => { console.error('\n✗', e.message); process.exit(1); });

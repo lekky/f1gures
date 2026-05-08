@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeIsland from '../components/islands/HomeIsland.jsx';
+
+const title = 'F1 2026 Live Standings, Calendar & Stats — f1gures';
+const description = 'Live Formula 1 2026 driver and constructor standings, full race calendar, circuit profiles and driver career stats. Free, fast, no ads, no signup.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://f1gures.app/#website',
+      url: 'https://f1gures.app/',
+      name: 'f1gures',
+      description: 'Live Formula 1 standings, calendar, race results and driver career stats.',
+      inLanguage: 'en-GB',
+      publisher: { '@id': 'https://f1gures.app/#org' },
+    },
+    {
+      '@type': 'Organization',
+      '@id': 'https://f1gures.app/#org',
+      name: 'f1gures',
+      url: 'https://f1gures.app/',
+      logo: 'https://f1gures.app/images/og-default.png',
+    },
+    {
+      '@type': 'WebPage',
+      '@id': 'https://f1gures.app/#webpage',
+      url: 'https://f1gures.app/',
+      name: 'F1 2026 Live Standings, Calendar & Stats',
+      isPartOf: { '@id': 'https://f1gures.app/#website' },
+      about: { '@type': 'Thing', name: 'Formula 1 2026 season' },
+      primaryImageOfPage: 'https://f1gures.app/images/og-default.png',
+    },
+  ],
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/"
+  ogType="website"
+  jsonLd={jsonLd}
+>
+  <HomeIsland client:load />
+</BaseLayout>

@@ -24,12 +24,12 @@ jobs:
 
       - name: Commit and push if anything changed
         run: |
-          if [ -z "$(git status --porcelain data/careers/)" ]; then
+          if [ -z "$(git status --porcelain public/data/careers/)" ]; then
             echo "No career-stats changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/careers/
+          git add public/data/careers/
           git commit -m "chore: refresh driver career stats"
           git push

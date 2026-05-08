@@ -17,7 +17,7 @@ import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = 'https://api.jolpi.ca/ergast/f1';
-const OUT_DIR = join(ROOT, 'data', 'careers');
+const OUT_DIR = join(ROOT, 'public', 'data', 'careers');
 
 // ── Driver ID source ─────────────────────────────────────────
 // Union of:
@@ -26,17 +26,17 @@ const OUT_DIR = join(ROOT, 'data', 'careers');
 function collectJolpicaIds() {
   const ids = new Set();
 
-  // Pull from js/data.js — string scrape, no need for a JS parser
+  // Pull from src/data/buildFallback.js (the ported current-grid module)
   try {
-    const dataJs = readFileSync(join(ROOT, 'js', 'data.js'), 'utf8');
+    const dataJs = readFileSync(join(ROOT, 'src', 'data', 'buildFallback.js'), 'utf8');
     const re = /jolpicaId:\s*'([^']+)'/g;
     let m; while ((m = re.exec(dataJs))) ids.add(m[1]);
   } catch (e) {
-    console.warn('  ⚠ could not read js/data.js:', e.message);
+    console.warn('  ⚠ could not read src/data/buildFallback.js:', e.message);
   }
 
-  // Pull from each season bundle
-  const dataDir = join(ROOT, 'data');
+  // Pull from each season bundle in public/data/
+  const dataDir = join(ROOT, 'public', 'data');
   if (existsSync(dataDir)) {
     for (const f of readdirSync(dataDir)) {
       if (!/^\d{4}\.json$/.test(f)) continue;
