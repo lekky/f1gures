@@ -8,8 +8,10 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build:archive": "node scripts/build-archive.mjs",
-    "prebuild": "npm run build:archive",
-    "predev": "npm run build:archive",
+    "sync:current": "node scripts/sync-current-season.mjs",
+    "fetch:current": "node scripts/fetch-season.mjs $(date +%Y)",
+    "prebuild": "npm run build:archive && npm run sync:current",
+    "predev": "npm run build:archive && npm run sync:current",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
