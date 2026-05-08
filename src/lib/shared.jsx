@@ -39,7 +39,18 @@ export function urlFor(target) {
       if (ref) return `/drivers/${encodeURIComponent(ref)}/`;
       return `/driver.html?id=${encodeURIComponent(target.id)}`;
     }
-    case 'team':         return `/team.html?id=${encodeURIComponent(target.id)}`;
+    case 'team': {
+      // PR 2c prerenders team pages at /teams/<constructorRef>/. Most ids in
+      // buildFallback already match Ergast's constructorRef, but a couple
+      // diverge (buildFallback's `redbull` is Ergast's `red_bull`, and
+      // `aston` is `aston_martin`). Map known aliases so links land on the
+      // right route.
+      const TEAM_ID_ALIAS = { redbull: 'red_bull', aston: 'aston_martin' };
+      const raw = target.ref || target.id;
+      const tref = (raw && TEAM_ID_ALIAS[raw]) || raw;
+      if (tref) return `/teams/${encodeURIComponent(tref)}/`;
+      return `/team.html?id=${encodeURIComponent(target.id)}`;
+    }
     default:             return '/';
   }
 }
