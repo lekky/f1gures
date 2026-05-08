@@ -1,81 +1,107 @@
 # f1gures
 
-Multi-page F1 stats app. **Astro 4 SSG with React 18 islands.** Pages are prerendered at build time; React only hydrates the interactive bits (theme toggle, year picker, sortable standings, charts). FTP-deployed from `dist/`.
+Multi-page F1 stats site. **Astro 4 SSG with React 18 islands.** Every page is prerendered at build time (~2,280 HTMLs covering listing pages plus per-driver/race/circuit/team detail pages from the Ergast 1950–2024 archive). React only hydrates the interactive bits (theme toggle, year picker, sortable standings, charts). FTP-deployed from `dist/`.
 
-For higher-level docs (per-page features, API/cache decision tree, retry behaviour, live driver-career fetch path) see [docs/](docs/README.md). Update those alongside any change to the data flow.
+## Build pipeline
+
+```
+npm install
+npm run build       # runs prebuild → astro build
+npm run preview     # serve dist/ for production-shape preview
+npm run dev         # dev server with HMR at http://localhost:4321/
+```
+
+`prebuild` runs `scripts/build-archive.mjs`, which parses `data/history/*.csv` (Ergast dump) and writes per-entity JSONs into `public/data/archive/` (gitignored). The Astro routes' `getStaticPaths` reads those at build time. Re-runs are idempotent — safe to run repeatedly.
+
+If you only touch the importer and want to skip Astro: `npm run build:archive`.
 
 ## Key files
 
 ### Astro shell
-- `src/layouts/BaseLayout.astro` — shared `<head>` (SEO meta, OG/Twitter, canonical, JSON-LD, theme pre-hydration script). Every page renders inside it.
+- `src/layouts/BaseLayout.astro` — shared `<head>` (SEO meta, OG/Twitter, canonical, JSON-LD, theme pre-hydration script, content-hashed CSS cache-bust). Every page renders inside it.
 - `src/components/Chrome.astro` — desktop top nav + mobile top bar + mobile bottom nav. Static markup; islands slot in for interactivity.
-- `src/lib/shared.jsx` — React helpers + components used inside islands: `Panel`, `SectionHead`, `ChangeIndicator`, `StatusPill`, `SprintBadge`, `DriverCell`, `Countdown`, `DriverSilhouette`, plus `urlFor`, `navigate`, `getParam`, `useIsMobile`, `fmtDate`, `fmtDateLong`.
+- `src/lib/shared.jsx` — React helpers + components used inside islands: `Panel`, `SectionHead`, `ChangeIndicator`, `StatusPill`, `SprintBadge`, `DriverCell`, `Countdown`, `DriverSilhouette`, plus `urlFor`, `navigate`, `getParam`, `useIsMobile`, `fmtDate`, `fmtDateLong`. **`urlFor` holds the team/circuit alias maps and the `ARCHIVE_MAX_YEAR` guard** — see Conventions.
+- `src/lib/version.js` — single source for `APP_VERSION` (chrome label).
+- `src/lib/assetHash.js` — content-hashes a public asset at build time for `?v=<hash>` cache-busts; the URL only changes when the file changes, so HTML stays byte-identical across PRs that don't touch CSS.
+- `src/lib/yearAwareData.js` — `useYearAwareData(fallback)` hook. SSR/initial render uses the 2026 fallback (the prerendered HTML, for SEO); on hydration it reads `?year=` / `localStorage.f1-year` and swaps `data` for the matching `/data/<year>.json`.
 
 ### React islands
-- `src/components/islands/{Theme,Year,Standings}*.jsx` — chrome interactivity (theme toggle, year dropdown, standings dropdown).
-- `src/components/islands/{Home,Calendar,CircuitsIndex,DriverStandings,ConstructorStandings}Island.jsx` — thin wrappers that build the F1 data object once at module load and pass it to a screen component as a `data` prop.
-- `src/components/islands/screens/*.jsx` — the actual screens. Take `data` (full F1_DATA shape) as a prop. **No `window.F1_DATA` reads** — that pattern is gone.
+- `src/components/islands/{ThemeToggle,YearPicker,StandingsDropdown}.jsx` — chrome interactivity.
+- `src/components/islands/{Home,Calendar,CircuitsIndex,DriverStandings,ConstructorStandings}Island.jsx` — thin wrappers; each calls `useYearAwareData(buildFallback())` and passes `data` to the matching screen.
+- `src/components/islands/screens/*.jsx` — the actual screens. Take `data` (full F1_DATA shape) as a prop. **Never read `window.F1_DATA`** — that pattern is gone.
 - `src/components/islands/screens/StandingsCommon.jsx` — shared chart components (`PointsChart`, `TeamProgressionChart`) and `HeadToHead`. Imports Recharts from npm. Auto-chunked by Vite, so Recharts only loads on the two standings pages.
 
 ### Pages
-- `src/pages/{index,calendar,circuits,standings-drivers,standings-constructors}.astro` — one page per route. Each renders BaseLayout + the matching island.
-- `public/{driver,race,circuit,team}.html` — **legacy stack** for detail pages. Still uses the old Babel-in-browser + window.F1_DATA approach until PR 2 ports them. Astro copies them verbatim into `dist/`. They reference `public/vendor/`, `public/js/`, `public/data/` which are also copied verbatim.
+
+**Listing routes** (use the year-aware islands above):
+- `src/pages/{index,calendar,circuits,standings-drivers,standings-constructors}.astro`
+
+**Prerendered detail routes** — pure server-rendered Astro markup, no React island, no client JS:
+- `src/pages/drivers/[driverRef].astro` → `src/components/DriverPage.astro` — ~862 driver pages
+- `src/pages/races/[year]/[round].astro` → `src/components/RacePage.astro` — ~1,125 race pages
+- `src/pages/circuits/[circuitRef].astro` → `src/components/CircuitPage.astro` — ~77 circuits
+- `src/pages/teams/[constructorRef].astro` → `src/components/TeamPage.astro` — ~212 constructors
+- `src/pages/404.astro`
+
+**Legacy URL redirects** in `public/`:
+- `driver.html`, `race.html`, `circuit.html`, `team.html` — small client-side redirect docs that fetch `_*-index.json` from `/data/archive/` to resolve `?id=NOR` → `/drivers/norris/`, etc. Preserves bookmarks and outbound search-engine links.
 
 ### Data
-- `src/data/buildFallback.js` — speculative 2026 grid (was `js/data.js`). Exports `buildFallback()` returning the F1_DATA-shaped object. Used as the default by every island.
-- `public/data/<year>.json` — pre-fetched season bundles (2020-2025 + 2026 snapshot). Served at runtime by the legacy detail pages and (PR 2) imported at build time by Astro's `getStaticPaths`.
-- `public/data/careers/<jolpicaId>.json` — driver career totals; refreshed nightly via GitHub Actions (`scripts/fetch-careers.mjs`).
-- `data/history/*.csv` — Ergast Database CSV dump (1950–2024, ~22 MB, including unused `lap_times.csv`). **Build-time only**, never served. Excluded from `dist/` because it's at repo root, not in `public/`. PR 2 wires the importer (`scripts/build-archive.mjs`).
+- `src/data/buildFallback.js` — speculative 2026 grid + `buildFromYearJson(json)` factory. Used as the default by every island.
+- `public/data/<year>.json` — season bundles. Hand-curated for 2020–2025 (rich session/circuit metadata). 1950–2019 generated by `build-archive.mjs` from the CSVs (matching shape, slimmer). 2026 has no bundle; islands fall back to `buildFallback()`.
+- `public/data/archive/` (**gitignored, generated by prebuild**):
+  - `_drivers-index.json`, `drivers/<driverRef>.json`
+  - `_races-index.json`, `races/<year>/<round>.json`
+  - `_circuits-index.json`, `circuits/<circuitRef>.json`
+  - `_teams-index.json`, `teams/<constructorRef>.json`
+  - `_driver-codes.json` — code→driverRef map for the `/driver.html?id=NOR` redirect
+- `data/history/*.csv` — Ergast Database CSV dump (1950–2024, ~22 MB). Build-time only, never served. Excluded from `dist/` because it's at repo root, not in `public/`.
 
 ### Assets
-- `public/css/{app,site}.css` — design tokens + global styles. Linked from BaseLayout.
-- `public/images/drivers/<jolpicaId>.webp` — headshots. SVG silhouette fallback in `DriverSilhouette`.
-- `public/images/circuits/{black-outline,white-outline}/<id>.svg` — track maps; CSS picks the variant by theme.
+- `public/css/{app,site}.css` — design tokens + global styles. Linked from BaseLayout with content-hashed `?v=<hash>`.
+- `public/images/drivers/<driverRef>.webp` — ~32 modern driver headshots. SVG silhouette fallback when missing.
+- `public/images/circuits/{black-outline,white-outline}/<id>.svg` — track maps; CSS picks the variant by `html.light`. The SVG basenames diverge from Ergast circuitRefs in a few cases — see `SVG_FOR_REF` in `CircuitPage.astro`.
 - `public/favicon.svg`, `public/site.webmanifest`, `public/robots.txt`, `public/images/og-default.png`.
-- `vendor/` was removed from repo root and lives at `public/vendor/` — required by the legacy detail HTMLs only. Deleted in PR 2 once detail pages are ported.
 
 ## Conventions
+
 - **Branch naming**: `fix/`, `feat/`, `chore/` prefixes.
-- **No more `?v=` cache-busting**: Vite hashes built assets in `dist/_astro/*.[hash].js` automatically. The CSS files in `public/css/` are still served from a stable path — if you tweak global tokens, bump a query string on the BaseLayout `<link>` tags.
-- **Never re-introduce `window.F1_DATA` reads in islands** — pass `data` via prop. The Astro page or the island wrapper builds the F1 object; the screen consumes it pure.
-- **Dark mode tokens**: `:root` holds dark defaults; `html.light` overrides for light mode. Pre-hydration `<script is:inline>` in BaseLayout reads `localStorage.f1-theme` and toggles `html.light` *before* paint, killing the dark→light flash.
-- **Buy Me a Coffee widget**: BMC `<script>` tag at the bottom of `BaseLayout.astro`. Restyled in `css/app.css` (`#bmc-wbtn` overrides). Don't `display: none` — breaks the modal.
-- **SEO meta**: every Astro page passes `title`, `description`, `canonicalPath`, optional `ogType`, `jsonLd`, `breadcrumb` to BaseLayout. Origin is hard-coded as `https://f1gures.app`. Sitemap is auto-generated by `@astrojs/sitemap` from the page graph — no manual updates.
+- **Never read `window.F1_DATA` in islands** — pass `data` via prop. The Astro page's island wrapper builds the F1 object; the screen consumes it pure.
+- **Year-aware listing pages**: islands wrap their screen with `useYearAwareData(buildFallback())`. Don't bypass — direct `buildFallback()` consumers won't react to the year picker.
 - **Trailing slash**: Astro is configured `trailingSlash: 'always'`, `build.format: 'directory'` — pages emit `dist/<route>/index.html`. Internal links must end with `/`.
+- **`urlFor` aliases & guards** in `src/lib/shared.jsx`:
+  - `TEAM_ID_ALIAS`: `redbull` → `red_bull`, `aston` → `aston_martin` (buildFallback ↔ Ergast)
+  - `CIRCUIT_ID_ALIAS`: `albert` → `albert_park`, `marina` → `marina_bay`, `lasvegas` → `vegas`, `yas` → `yas_marina`, `montreal` → `villeneuve`, `cota` → `americas`, `spielberg` → `red_bull_ring`
+  - `ARCHIVE_MAX_YEAR = 2024` — race URLs for years past this fall through to `/race.html?round=N&year=Y` (which redirects to `/calendar/` if no detail page exists). The same guard is duplicated in `DriverPage.astro` and `CircuitPage.astro` via local `raceUrl()` helpers — bump in all three when next year's CSV dump lands.
+- **Astro template gotcha**: don't write `r.year <= ARCHIVE_MAX_YEAR` inline in a JSX expression — Astro's compiler parses `<=` as a tag opener and errors with *"Unable to assign attributes when using <> Fragment shorthand syntax"*. Wrap the comparison in a function defined in the frontmatter.
+- **`APP_VERSION`**: bump in `src/lib/version.js` only when the chrome version label should reflect a visible change. CSS cache-busting is already content-hashed via `assetHash.js`, so non-CSS PRs don't need a version bump.
+- **Dark mode tokens**: `:root` holds dark defaults; `html.light` overrides for light mode. Pre-hydration `<script is:inline>` in BaseLayout reads `localStorage.f1-theme` and toggles `html.light` *before* paint, killing the dark→light flash.
+- **Mobile responsive**: prefer CSS `@media (max-width: 720px)` over JS `useIsMobile()` for layout-only decisions. SSR has no `window` so JS-driven layouts emit the desktop variant in HTML and snap to mobile only after hydration — visible flash on slow phones, persistent breakage if JS fails. `css/site.css` has overrides forcing `repeat(N, 1fr)` inline grids back to `1fr` below 720px.
+- **Driver code collisions**: many historic drivers have no Ergast `code` field, so the importer derives one from surname (first 3 chars). For per-season bundles, that collides for shared surnames (1961: Phil Hill + Graham Hill → both `HIL`). Use `driverRef` (always unique slug like `phil_hill`) as `id` in season JSONs; `code` stays as the display label only.
+- **SEO meta**: every Astro page passes `title`, `description`, `canonicalPath`, optional `ogType`, `jsonLd`, `breadcrumb` to BaseLayout. Origin is hard-coded as `https://f1gures.app`. Sitemap is auto-generated by `@astrojs/sitemap` from the page graph — no manual updates.
+- **Buy Me a Coffee widget**: BMC `<script>` tag at the bottom of `BaseLayout.astro`. Restyled in `css/app.css` (`#bmc-wbtn` overrides). Don't `display: none` — breaks the modal.
 
-## Dev server
-```
-npm install
-npm run dev
-```
-Astro dev server at http://localhost:4321/ with hot reload.
+## Adding a historic season bundle
 
-For a production-shaped preview:
-```
-npm run build && npm run preview
-```
-
-The user works across two machines; the no-Node one can serve the prebuilt `dist/` (when committed) via `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude\serve-dist.ps1`.
-
-## Adding a historic season
 ```
 node scripts/fetch-season.mjs 2024
 ```
-Writes `public/data/2024.json`. Once committed, the legacy detail pages and (PR 2) the Astro build will use the local bundle instead of hitting Jolpica.
 
-## Refreshing driver career stats
-```
-node scripts/fetch-careers.mjs
-```
-Writes/updates `public/data/careers/<jolpicaId>.json`. Runs nightly via GitHub Actions; trigger manually with `gh workflow run refresh-careers.yml`. Polite with Jolpica's rate limit (sequential drivers, retries on 429/503/network errors). Skips writes when stats are unchanged.
+Writes `public/data/2024.json` (hand-curated bundle with sessions). Once committed, the year-aware islands and the importer's post-archive merge step (for circuit page race history) will pick it up.
+
+For years already covered by Ergast (≤ 2024), the importer's CSV-derived bundle is generated automatically; only run `fetch-season.mjs` when the CSV is missing data or you want richer session metadata.
 
 ## Deploy
+
 GitHub Actions on push to `main`:
-1. `npm ci && npm run build` — Astro builds to `dist/`
-2. FTP-Deploy uploads `dist/` contents to the live server
+1. `npm ci && npm run build` — runs prebuild (CSV importer) then Astro build
+2. `SamKirkland/FTP-Deploy-Action` syncs `dist/` to the live server, incremental by content hash
 
-No manual steps. Merge the PR and the site updates automatically. The first deploy after this migration uploads ~110 files and removes the legacy repo-root files; the deploy uses a fresh `state-name` to recompute the diff.
+The first deploy after a heavy PR (lots of new routes, or APP_VERSION bump that re-emits every HTML) can take 20+ minutes and occasionally fails with `ECONNRESET` mid-upload — `gh run rerun <id> --failed` is idempotent and usually clears it.
 
-## Useful URL flags (legacy detail pages only — PR 2 will replace these)
-- `?year=YYYY` — load a specific season (e.g. `driver.html?id=norris&year=2019`)
-- `?offline=1` — skip API fetch entirely, use only static fallback data
+## Two-machine setup
+
+The user has Node on one machine, not the other. The no-Node box can serve a prebuilt `dist/` (when present locally) via a static PowerShell HTTP server at `.claude/serve-dist.ps1`. With Node, `npm run preview` is the canonical local server.
+
+## Useful URL flags
+- `?year=YYYY` on any listing page — overrides `localStorage.f1-year`. e.g. `https://f1gures.app/calendar/?year=1990` (the `useYearAwareData` hook checks the URL param first, then falls through to localStorage). Years 1950–2025 have JSON bundles; older or future years silently fall back to the 2026 grid.
