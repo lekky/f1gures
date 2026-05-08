@@ -324,3 +324,124 @@ export function buildFallback() {
     __rawSeason: { teams, drivers, calendar, results },
   };
 }
+
+// Build a data object from a /data/<year>.json bundle (same shape as
+// scripts/fetch-season.mjs writes). Only the home page's historic view
+// (SeasonAtGlance) consumes this currently — other listing pages still
+// use buildFallback's 2026 data. PR 2 wires year-aware data more broadly.
+//
+// Helper closures (driverById/teamById/computeStandings) are duplicated
+// from buildFallback above rather than shared, to keep this change low-risk
+// to the (working) fallback path. Worth deduplicating in PR 2 / 3.
+export function buildFromYearJson(json) {
+  const teams = (json && json.teams) || [];
+  const drivers = (json && json.drivers) || [];
+  const calendar = (json && json.calendar) || [];
+  const results = (json && json.results) || {};
+  const seasonYear = (json && json.seasonYear) || '';
+  const POINTS = [25,18,15,12,10,8,6,4,2,1];
+
+  function driverById(code) {
+    return drivers.find(d => d.id === code) ||
+      { id: code, code: code || '—', first: '', last: code || 'Unknown', num: 0, flag: '🏳', team: '' };
+  }
+  function teamById(id) {
+    return teams.find(t => t.id === id) ||
+      { id: id || 'unknown', name: '—', short: '—', color: '#888888' };
+  }
+
+  function computeStandings() {
+    const driverPts = {}, driverWins = {}, driverPodiums = {}, driverFastest = {}, driverPoles = {}, driverDnfs = {};
+    drivers.forEach(d => {
+      driverPts[d.id] = 0; driverWins[d.id] = 0; driverPodiums[d.id] = 0;
+      driverFastest[d.id] = 0; driverPoles[d.id] = 0; driverDnfs[d.id] = 0;
+    });
+    const completedRounds = Object.keys(results).map(Number).sort((a,b)=>a-b);
+    const lastRound = completedRounds[completedRounds.length - 1];
+    const prevRound = completedRounds[completedRounds.length - 2];
+    const snapshots = {};
+
+    completedRounds.forEach(r => {
+      const res = results[r];
+      (res.order || []).forEach((code, i) => {
+        if (driverPts[code] === undefined) { driverPts[code] = 0; driverWins[code] = 0; driverPodiums[code] = 0; driverFastest[code] = 0; driverPoles[code] = 0; driverDnfs[code] = 0; }
+        if (i < 10) driverPts[code] += POINTS[i];
+        if (i === 0) driverWins[code] += 1;
+        if (i < 3) driverPodiums[code] += 1;
+      });
+      if (res.fastest && (res.order || []).indexOf(res.fastest) < 10) driverPts[res.fastest] = (driverPts[res.fastest] || 0) + 1;
+      if (res.fastest) driverFastest[res.fastest] = (driverFastest[res.fastest] || 0) + 1;
+      if (res.pole) driverPoles[res.pole] = (driverPoles[res.pole] || 0) + 1;
+      if (res.sprintWinner) {
+        const sprintPoints = { [res.sprintWinner]: 8 };
+        const others = (res.order || []).filter(c => c !== res.sprintWinner).slice(0, 7);
+        others.forEach((c, i) => sprintPoints[c] = 7 - i);
+        Object.entries(sprintPoints).forEach(([c, p]) => driverPts[c] = (driverPts[c] || 0) + p);
+      }
+      (res.dnfs || []).forEach(c => driverDnfs[c] = (driverDnfs[c] || 0) + 1);
+      snapshots[r] = { ...driverPts };
+    });
+
+    const ranked = drivers.map(d => ({
+      driver: d,
+      points: driverPts[d.id] || 0,
+      wins: driverWins[d.id] || 0,
+      podiums: driverPodiums[d.id] || 0,
+      fastestLaps: driverFastest[d.id] || 0,
+      poles: driverPoles[d.id] || 0,
+      dnfs: driverDnfs[d.id] || 0,
+    })).sort((a,b) => b.points - a.points || b.wins - a.wins);
+
+    const prevPts = prevRound ? snapshots[prevRound] : null;
+    const prevRanked = prevPts ? drivers.map(d => ({ id: d.id, points: prevPts[d.id] || 0 })).sort((a,b)=> b.points - a.points) : null;
+    const prevRankMap = {};
+    if (prevRanked) prevRanked.forEach((r, i) => prevRankMap[r.id] = i + 1);
+    ranked.forEach((row, i) => {
+      row.position = i + 1;
+      const prevP = prevRankMap[row.driver.id];
+      row.change = prevP ? prevP - row.position : 0;
+    });
+
+    const teamPts = {}, teamWins = {}, teamPodiums = {};
+    teams.forEach(t => { teamPts[t.id] = 0; teamWins[t.id] = 0; teamPodiums[t.id] = 0; });
+    ranked.forEach(r => {
+      teamPts[r.driver.team] = (teamPts[r.driver.team] || 0) + r.points;
+      teamWins[r.driver.team] = (teamWins[r.driver.team] || 0) + r.wins;
+      teamPodiums[r.driver.team] = (teamPodiums[r.driver.team] || 0) + r.podiums;
+    });
+    const teamRanked = teams.map(t => ({
+      team: t,
+      points: teamPts[t.id] || 0,
+      wins: teamWins[t.id] || 0,
+      podiums: teamPodiums[t.id] || 0,
+      drivers: drivers.filter(d => d.team === t.id),
+    })).sort((a,b)=> b.points - a.points || b.wins - a.wins);
+    teamRanked.forEach((t,i) => t.position = i+1);
+
+    const progression = {};
+    drivers.forEach(d => progression[d.id] = []);
+    completedRounds.forEach(r => {
+      drivers.forEach(d => {
+        progression[d.id].push({ round: r, points: (snapshots[r] && snapshots[r][d.id]) || 0 });
+      });
+    });
+    const teamProgression = {};
+    teams.forEach(t => teamProgression[t.id] = []);
+    completedRounds.forEach(r => {
+      const snap = snapshots[r] || {};
+      teams.forEach(t => {
+        const pts = drivers.filter(d => d.team === t.id).reduce((sum, d) => sum + (snap[d.id] || 0), 0);
+        teamProgression[t.id].push({ round: r, points: pts });
+      });
+    });
+
+    return { drivers: ranked, teams: teamRanked, progression, teamProgression, completedRounds, lastRound };
+  }
+
+  return {
+    teams, drivers, calendar, circuits: {}, results, POINTS, seasonYear,
+    driverById, teamById, computeStandings,
+    _source: 'year-json',
+    __rawSeason: { teams, drivers, calendar, results },
+  };
+}
