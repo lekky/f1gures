@@ -7,6 +7,9 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
+    "build:archive": "node scripts/build-archive.mjs",
+    "prebuild": "npm run build:archive",
+    "predev": "npm run build:archive",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"

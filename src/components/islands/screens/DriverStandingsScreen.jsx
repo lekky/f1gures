@@ -112,7 +112,7 @@ export default function DriverStandingsScreen({ data }) {
               {sorted.map(row => {
                 const team = DD.teamById(row.driver.team);
                 return (
-                  <tr key={row.driver.id} className="clickable" onClick={() => navigate({ name: 'driver', id: row.driver.id })}>
+                  <tr key={row.driver.id} className="clickable" onClick={() => navigate({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}>
                     <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
                     <td><ChangeIndicator change={row.change} /></td>
                     <td><DriverCell data={DD} driver={row.driver} /></td>

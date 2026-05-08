@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DriverPage from '../../components/DriverPage.astro';
+import { getDriversIndex, getDriver } from '../../data/archive.js';
+
+export async function getStaticPaths() {
+  const index = getDriversIndex();
+  return index.map(entry => ({
+    params: { driverRef: entry.driverRef },
+    props: { driver: getDriver(entry.driverRef) },
+  }));
+}
+
+const { driver } = Astro.props;
+const fullName = `${driver.forename} ${driver.surname}`;
+const codePart = driver.code ? ` (${driver.code})` : '';
+const yearsPart = driver.career.firstYear === driver.career.lastYear
+  ? `${driver.career.firstYear}`
+  : `${driver.career.firstYear}–${driver.career.lastYear}`;
+
+const title = `${fullName}${codePart} — F1 Driver Stats, Career & Race Results | f1gures`;
+const description = `${fullName} (${driver.nationality}, F1 ${yearsPart}). Career: ${driver.career.races} races, ${driver.career.wins} wins, ${driver.career.podiums} podiums, ${driver.career.poles} poles, ${driver.career.championships} championships. Full season-by-season and race-by-race results.`;
+const canonicalPath = `/drivers/${driver.driverRef}/`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: fullName,
+  givenName: driver.forename,
+  familyName: driver.surname,
+  nationality: driver.nationality,
+  birthDate: driver.dob,
+  jobTitle: 'Formula 1 Driver',
+  identifier: driver.code || driver.driverRef,
+  url: `https://f1gures.app${canonicalPath}`,
+};
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Drivers', path: '/standings-drivers/' },
+  { name: fullName, path: canonicalPath },
+];
+---
+
+<BaseLayout {title} {description} {canonicalPath} ogType="profile" {jsonLd} {breadcrumb}>
+  <DriverPage {driver} />
+</BaseLayout>

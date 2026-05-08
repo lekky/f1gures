@@ -195,7 +195,7 @@ function CircuitDetailScreen() {
           const lrName = circuit.lapRecord.driver;
           const lrDriver = F_cir.drivers.find(d => `${d.first} ${d.last}` === lrName);
           const driverEl = lrDriver
-            ? <a className="inline-link" href={urlFor({ name: 'driver', id: lrDriver.id })}>
+            ? <a className="inline-link" href={urlFor({ name: 'driver', id: lrDriver.id, ref: lrDriver.jolpicaId })}>
                 {lrName}<span className="inline-link-arrow" aria-hidden="true">↗</span>
               </a>
             : lrName;

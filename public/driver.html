@@ -3,76 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <title>F1 Driver Profile — Career Stats, Wins &amp; Podiums | f1gures</title>
-  <meta name="description" content="Formula 1 driver profile with career wins, podiums, pole positions, fastest laps and 2026 season performance. Pick a driver from the standings." />
-  <meta name="keywords" content="F1 driver profile, formula 1 driver stats, F1 career wins, F1 podiums, F1 driver 2026" />
-  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
-  <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
-  <meta name="robots" content="index, follow, max-image-preview:large" />
-  <link rel="canonical" href="https://f1gures.app/driver.html" />
-
-  <meta property="og:site_name" content="f1gures" />
-  <meta property="og:type" content="profile" />
-  <meta property="og:title" content="F1 Driver Profile — Career Stats, Wins &amp; Podiums" />
-  <meta property="og:description" content="Formula 1 driver profile: career wins, podiums, poles, fastest laps and 2026 season performance." />
-  <meta property="og:url" content="https://f1gures.app/driver.html" />
-  <meta property="og:image" content="https://f1gures.app/images/og-default.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:locale" content="en_GB" />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="F1 Driver Profile — Career Stats" />
-  <meta name="twitter:description" content="Formula 1 driver career stats: wins, podiums, poles, fastest laps and 2026 form." />
-  <meta name="twitter:image" content="https://f1gures.app/images/og-default.png" />
-
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="manifest" href="/site.webmanifest" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://api.jolpi.ca" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="css/app.css?v=2.001" />
-  <link rel="stylesheet" href="css/site.css?v=2.001" />
+  <title>Redirecting to driver profile — f1gures</title>
+  <meta name="robots" content="noindex" />
+  <link rel="canonical" href="https://f1gures.app/standings-drivers/" />
+  <style>body{font:14px/1.5 system-ui,sans-serif;margin:40px;color:#444}</style>
+  <script>
+    (function () {
+      var id = new URLSearchParams(location.search).get('id');
+      if (!id) { location.replace('/standings-drivers/'); return; }
+      // Look up the legacy 3-letter code (e.g. NOR, VER, HAM) in the build's
+      // code→driverRef mapping and redirect to the prerendered route. Falls
+      // back to the standings page if the code is unknown.
+      fetch('/data/archive/_driver-codes.json', { cache: 'force-cache' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (map) {
+          var ref = map && map[id];
+          if (ref) location.replace('/drivers/' + encodeURIComponent(ref) + '/' + location.hash);
+          else location.replace('/standings-drivers/');
+        })
+        .catch(function () { location.replace('/standings-drivers/'); });
+    })();
+  </script>
 </head>
 <body>
-
-  <div id="root">
-    <header class="boot-skeleton">
-      <h1>F1 Driver Profile</h1>
-      <p>Career wins, podiums, pole positions, fastest laps and 2026 season performance.</p>
-      <p style="display:flex;align-items:center;justify-content:center;min-height:40vh;color:#666;font-family:system-ui,sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;">Loading…</p>
-    </header>
-    <noscript>
-      <p style="font-family:system-ui,sans-serif;padding:24px;">JavaScript is required to view driver profiles. <a href="/standings-drivers.html">Browse the standings</a>.</p>
-    </noscript>
-  </div>
-
-  <script src="vendor/react.production.min.js"></script>
-  <script src="vendor/react-dom.production.min.js"></script>
-  <script src="vendor/babel.min.js"></script>
-  <script src="vendor/prop-types.min.js"></script>
-  <script src="vendor/Recharts.js"></script>
-
-  <script src="js/data.js"></script>
-  <script src="js/api.js"></script>
-  <script type="text/babel" src="js/shell.jsx"></script>
-  <script type="text/babel" src="js/screens/driver.jsx"></script>
-
-  <script type="text/babel">
-    window.F1_READY.then(function () {
-      ReactDOM.createRoot(document.getElementById('root')).render(
-        <Chrome>
-          <DriverProfileScreen />
-        </Chrome>
-      );
-    });
-  </script>
-
-  <!-- Buy Me a Coffee floating widget -->
-  <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="f1gures" data-description="Support me on Buy me a coffee!" data-message="" data-color="#FF5F5F" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+  <p>Looking up driver profile…</p>
+  <p><a href="/standings-drivers/">Back to standings</a> if you're not redirected.</p>
 </body>
 </html>

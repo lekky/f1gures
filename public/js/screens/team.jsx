@@ -93,7 +93,7 @@ function TeamProfileScreen() {
       <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(2, 1fr)' }}>
         {teamDrivers.map(r => (
           <a key={r.driver.id} className="panel" style={{ borderLeft: `3px solid ${team.color}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block' }}
-             href={urlFor({ name: 'driver', id: r.driver.id })}>
+             href={urlFor({ name: 'driver', id: r.driver.id, ref: r.driver.jolpicaId })}>
             <div className="panel-body" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 36, lineHeight: 1, color: 'var(--fg-3)', minWidth: 56, textAlign: 'center' }}>{r.driver.num || '—'}</div>
               <div style={{ flex: 1 }}>
