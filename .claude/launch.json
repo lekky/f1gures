@@ -1,1 +1,1 @@
-{"version":"0.0.1","configurations":[{"name":"f1gures","runtimeExecutable":"node","runtimeArgs":["serve.js"],"port":8080,"autoPort":true}]}
+{"version":"0.0.1","configurations":[{"name":"f1gures","runtimeExecutable":"npm","runtimeArgs":["run","dev"],"port":4321,"autoPort":true}]}
