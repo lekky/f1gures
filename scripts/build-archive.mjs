@@ -14,6 +14,159 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
 
+// ─── Static lookups ───────────────────────────────────────────────────
+// Hand-curated mappings that the Ergast CSVs don't carry — keep small.
+
+// Nationality → { country (ISO 3166-1 alpha-2), flag (emoji) }. Covers every
+// nationality that's appeared in F1 since 1950. Unknown values fall back to
+// a white flag.
+const NATIONALITY = {
+  'American': { country: 'US', flag: '🇺🇸' },
+  'American-Italian': { country: 'US', flag: '🇺🇸' },
+  'Argentine': { country: 'AR', flag: '🇦🇷' },
+  'Argentine-Italian': { country: 'AR', flag: '🇦🇷' },
+  'Argentinian': { country: 'AR', flag: '🇦🇷' },
+  'Australian': { country: 'AU', flag: '🇦🇺' },
+  'Austrian': { country: 'AT', flag: '🇦🇹' },
+  'Belgian': { country: 'BE', flag: '🇧🇪' },
+  'Brazilian': { country: 'BR', flag: '🇧🇷' },
+  'British': { country: 'GB', flag: '🇬🇧' },
+  'Canadian': { country: 'CA', flag: '🇨🇦' },
+  'Chilean': { country: 'CL', flag: '🇨🇱' },
+  'Chinese': { country: 'CN', flag: '🇨🇳' },
+  'Colombian': { country: 'CO', flag: '🇨🇴' },
+  'Czech': { country: 'CZ', flag: '🇨🇿' },
+  'Danish': { country: 'DK', flag: '🇩🇰' },
+  'Dutch': { country: 'NL', flag: '🇳🇱' },
+  'East German': { country: 'DE', flag: '🇩🇪' },
+  'Finnish': { country: 'FI', flag: '🇫🇮' },
+  'French': { country: 'FR', flag: '🇫🇷' },
+  'German': { country: 'DE', flag: '🇩🇪' },
+  'Hungarian': { country: 'HU', flag: '🇭🇺' },
+  'Indian': { country: 'IN', flag: '🇮🇳' },
+  'Indonesian': { country: 'ID', flag: '🇮🇩' },
+  'Irish': { country: 'IE', flag: '🇮🇪' },
+  'Italian': { country: 'IT', flag: '🇮🇹' },
+  'Japanese': { country: 'JP', flag: '🇯🇵' },
+  'Liechtensteiner': { country: 'LI', flag: '🇱🇮' },
+  'Malaysian': { country: 'MY', flag: '🇲🇾' },
+  'Mexican': { country: 'MX', flag: '🇲🇽' },
+  'Monegasque': { country: 'MC', flag: '🇲🇨' },
+  'New Zealander': { country: 'NZ', flag: '🇳🇿' },
+  'Polish': { country: 'PL', flag: '🇵🇱' },
+  'Portuguese': { country: 'PT', flag: '🇵🇹' },
+  'Rhodesian': { country: 'ZW', flag: '🇿🇼' },
+  'Russian': { country: 'RU', flag: '🇷🇺' },
+  'South African': { country: 'ZA', flag: '🇿🇦' },
+  'Spanish': { country: 'ES', flag: '🇪🇸' },
+  'Swedish': { country: 'SE', flag: '🇸🇪' },
+  'Swiss': { country: 'CH', flag: '🇨🇭' },
+  'Thai': { country: 'TH', flag: '🇹🇭' },
+  'Uruguayan': { country: 'UY', flag: '🇺🇾' },
+  'Venezuelan': { country: 'VE', flag: '🇻🇪' },
+};
+
+// Constructor → team color (hex). Active modern teams use their canonical
+// livery; historic teams default to grey. Display only — doesn't block render.
+const TEAM_COLORS = {
+  alpine: '#0093CC', aston_martin: '#229971', ferrari: '#E80020',
+  haas: '#B6BABD', mclaren: '#FF8000', mercedes: '#27F4D2',
+  rb: '#6692FF', red_bull: '#3671C6', sauber: '#52E252', williams: '#64C4FF',
+  alphatauri: '#2B4562', alfa: '#900000', renault: '#FFF500',
+  toro_rosso: '#0000FF', force_india: '#FF80C7', racing_point: '#F596C8',
+  toyota: '#FF0000', bmw_sauber: '#5C7BB0', honda: '#CCCCCC', super_aguri: '#990000',
+  brawn: '#80FF80', lotus: '#FFB800', lotus_f1: '#FFB800',
+  caterham: '#005030', marussia: '#6E0000', virgin: '#CD2D3D', hrt: '#3A1B1B',
+  manor: '#FF6699', minardi: '#191970', jaguar: '#0F4D2A', jordan: '#FFCC00',
+  midland: '#C8102E', spyker: '#FF6600', prost: '#0033A0',
+  arrows: '#F58025', stewart: '#FFFFFF', tyrrell: '#0033A0', ligier: '#0055A4',
+  benetton: '#1F8FFF', brabham: '#7FB069', cooper: '#3CB371', lotus_racing: '#FFB800',
+  brm: '#013220', ensign: '#0072CE', ats: '#A7A7A7', shadow: '#000000',
+  surtees: '#C1272D', march: '#FFD700', wolf: '#000000', hesketh: '#FF0080',
+  fittipaldi: '#F5C518', osella: '#000000',
+};
+function teamColor(constructorRef) {
+  return (constructorRef && TEAM_COLORS[constructorRef]) || '#888888';
+}
+
+// 3-letter driver code: prefer the CSV's `code` field; otherwise derive from
+// surname (first 3 letters uppercased) so screens that expect a non-empty
+// code still render. Older drivers (~1950s-2000s) often have no code.
+function deriveCode(driver) {
+  if (driver.code && driver.code !== '\\N' && driver.code.trim()) return driver.code.trim();
+  const surname = (driver.surname || driver.driverRef || '').replace(/[^A-Za-z]/g, '');
+  return surname.slice(0, 3).toUpperCase() || (driver.driverRef || '???').slice(0, 3).toUpperCase();
+}
+
+function natInfo(nationality) {
+  if (!nationality) return { country: '', flag: '🏳' };
+  const trimmed = nationality.trim();
+  return NATIONALITY[trimmed] || { country: '', flag: '🏳' };
+}
+
+// Country (name) → { code (ISO), flag }. Used to render circuit-country
+// flags on the calendar/circuits pages. CSV's `circuits.country` uses
+// country names (Italy, USA, …) not adjectives, so we can't reuse the
+// nationality map directly.
+const COUNTRY = {
+  'Argentina': { code: 'AR', flag: '🇦🇷' },
+  'Australia': { code: 'AU', flag: '🇦🇺' },
+  'Austria': { code: 'AT', flag: '🇦🇹' },
+  'Azerbaijan': { code: 'AZ', flag: '🇦🇿' },
+  'Bahrain': { code: 'BH', flag: '🇧🇭' },
+  'Belgium': { code: 'BE', flag: '🇧🇪' },
+  'Brazil': { code: 'BR', flag: '🇧🇷' },
+  'Canada': { code: 'CA', flag: '🇨🇦' },
+  'China': { code: 'CN', flag: '🇨🇳' },
+  'France': { code: 'FR', flag: '🇫🇷' },
+  'Germany': { code: 'DE', flag: '🇩🇪' },
+  'Hungary': { code: 'HU', flag: '🇭🇺' },
+  'India': { code: 'IN', flag: '🇮🇳' },
+  'Italy': { code: 'IT', flag: '🇮🇹' },
+  'Japan': { code: 'JP', flag: '🇯🇵' },
+  'Korea': { code: 'KR', flag: '🇰🇷' },
+  'Malaysia': { code: 'MY', flag: '🇲🇾' },
+  'Mexico': { code: 'MX', flag: '🇲🇽' },
+  'Monaco': { code: 'MC', flag: '🇲🇨' },
+  'Morocco': { code: 'MA', flag: '🇲🇦' },
+  'Netherlands': { code: 'NL', flag: '🇳🇱' },
+  'Portugal': { code: 'PT', flag: '🇵🇹' },
+  'Qatar': { code: 'QA', flag: '🇶🇦' },
+  'Russia': { code: 'RU', flag: '🇷🇺' },
+  'Saudi Arabia': { code: 'SA', flag: '🇸🇦' },
+  'Singapore': { code: 'SG', flag: '🇸🇬' },
+  'South Africa': { code: 'ZA', flag: '🇿🇦' },
+  'South Korea': { code: 'KR', flag: '🇰🇷' },
+  'Spain': { code: 'ES', flag: '🇪🇸' },
+  'Sweden': { code: 'SE', flag: '🇸🇪' },
+  'Switzerland': { code: 'CH', flag: '🇨🇭' },
+  'Turkey': { code: 'TR', flag: '🇹🇷' },
+  'UAE': { code: 'AE', flag: '🇦🇪' },
+  'UK': { code: 'GB', flag: '🇬🇧' },
+  'United Kingdom': { code: 'GB', flag: '🇬🇧' },
+  'USA': { code: 'US', flag: '🇺🇸' },
+  'United States': { code: 'US', flag: '🇺🇸' },
+  'Vietnam': { code: 'VN', flag: '🇻🇳' },
+};
+function countryInfo(name) {
+  if (!name) return { code: '', flag: '🏳' };
+  return COUNTRY[name.trim()] || { code: '', flag: '🏳' };
+}
+
+// Constructor short code (3-letter). CSV doesn't have one, so derive from
+// constructorRef.
+function constructorShort(constructorRef, name) {
+  const SHORT = {
+    alpine: 'ALP', aston_martin: 'AST', ferrari: 'FER', haas: 'HAA',
+    mclaren: 'MCL', mercedes: 'MER', rb: 'RBL', red_bull: 'RBR',
+    sauber: 'SAU', williams: 'WIL', alphatauri: 'AT', alfa: 'ALF',
+    renault: 'REN', toro_rosso: 'TR', force_india: 'FI', racing_point: 'RP',
+  };
+  if (SHORT[constructorRef]) return SHORT[constructorRef];
+  const src = (name || constructorRef || '').replace(/[^A-Za-z]/g, '');
+  return src.slice(0, 3).toUpperCase();
+}
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const SRC = join(ROOT, 'data', 'history');
@@ -244,3 +397,178 @@ writeFileSync(join(OUT, '_drivers-index.json'), JSON.stringify(index));
 writeFileSync(join(OUT, '_driver-codes.json'), JSON.stringify(codeToRef));
 
 console.log(`[archive] wrote ${index.length} drivers + index + code-map → ${OUT}`);
+
+// ─── Per-year season bundles ─────────────────────────────────────────────
+// Generate /public/data/<year>.json for years that don't already have a
+// hand-curated bundle (2020–2025 are kept untouched; they have richer
+// session schedules + circuit metadata than the CSVs carry). Listing-page
+// islands fetch /data/<year>.json on year-picker click; without these
+// generated bundles, anything pre-2020 silently falls back to the 2026
+// fallback, which makes the year picker mostly cosmetic for old seasons.
+
+const SEASONS_OUT = join(ROOT, 'public', 'data');
+const driversById = new Map(drivers.map(d => [d.driverId, d]));
+const circuits = readCsv('circuits');
+const circuitsById = new Map(circuits.map(c => [c.circuitId, c]));
+
+// Group races by year for fast iteration
+const racesByYear = new Map();
+for (const r of races) {
+  const year = toInt(r.year);
+  if (!racesByYear.has(year)) racesByYear.set(year, []);
+  racesByYear.get(year).push(r);
+}
+
+// Group results by raceId for per-round assembly
+const resultsByRace = new Map();
+for (const r of results) {
+  if (!resultsByRace.has(r.raceId)) resultsByRace.set(r.raceId, []);
+  resultsByRace.get(r.raceId).push(r);
+}
+
+const allYears = [...racesByYear.keys()].sort((a, b) => a - b);
+let seasonsWritten = 0, seasonsSkipped = 0;
+
+for (const year of allYears) {
+  const outPath = join(SEASONS_OUT, `${year}.json`);
+  if (existsSync(outPath)) { seasonsSkipped++; continue; }
+
+  const yearRaces = racesByYear.get(year).slice().sort((a, b) => toInt(a.round) - toInt(b.round));
+
+  // Drivers who raced this year — derived from results, not from the global
+  // drivers table (which would also include drivers who never raced this year)
+  const yearDriverIds = new Set();
+  const yearConstructorIds = new Set();
+  for (const race of yearRaces) {
+    for (const res of (resultsByRace.get(race.raceId) || [])) {
+      yearDriverIds.add(res.driverId);
+      if (res.constructorId) yearConstructorIds.add(res.constructorId);
+    }
+  }
+
+  // For each driver this year, find their primary constructor (most races driven for)
+  const driverPrimaryConstructor = new Map();
+  for (const driverId of yearDriverIds) {
+    const counts = new Map();
+    for (const race of yearRaces) {
+      for (const res of (resultsByRace.get(race.raceId) || [])) {
+        if (res.driverId !== driverId) continue;
+        if (!res.constructorId) continue;
+        counts.set(res.constructorId, (counts.get(res.constructorId) || 0) + 1);
+      }
+    }
+    let top = null, topCount = 0;
+    for (const [cid, c] of counts) if (c > topCount) { top = cid; topCount = c; }
+    driverPrimaryConstructor.set(driverId, top);
+  }
+
+  // Build teams[]
+  const yearTeams = [...yearConstructorIds].map(cid => {
+    const c = constructorsById.get(cid);
+    if (!c) return null;
+    return {
+      id: c.constructorRef,
+      jolpicaId: c.constructorRef,
+      name: c.name,
+      short: constructorShort(c.constructorRef, c.name),
+      color: teamColor(c.constructorRef),
+      nationality: c.nationality,
+    };
+  }).filter(Boolean);
+
+  // Build drivers[]
+  const yearDrivers = [...yearDriverIds].map(driverId => {
+    const d = driversById.get(driverId);
+    if (!d) return null;
+    const code = deriveCode(d);
+    const nat = natInfo(d.nationality);
+    const primaryCid = driverPrimaryConstructor.get(driverId);
+    const primaryConstructor = primaryCid ? constructorsById.get(primaryCid) : null;
+    return {
+      id: code,
+      jolpicaId: d.driverRef,
+      num: toInt(d.number),
+      first: d.forename,
+      last: d.surname,
+      code,
+      country: nat.country,
+      flag: nat.flag,
+      team: primaryConstructor ? primaryConstructor.constructorRef : null,
+      nationality: d.nationality && d.nationality.trim(),
+      dateOfBirth: d.dob,
+    };
+  }).filter(Boolean);
+
+  // Map driverId → display code (matches drivers[].id) for results lookups
+  const driverIdToCode = new Map();
+  for (const driverId of yearDriverIds) {
+    const d = driversById.get(driverId);
+    if (d) driverIdToCode.set(driverId, deriveCode(d));
+  }
+
+  // Build calendar[] + results{}
+  const calendar = [];
+  const resultsObj = {};
+  for (const race of yearRaces) {
+    const round = toInt(race.round);
+    const circuit = circuitsById.get(race.circuitId);
+    const circuitRef = circuit ? circuit.circuitRef : null;
+    const cInfo = circuit ? countryInfo(circuit.country) : { code: '', flag: '🏳' };
+    calendar.push({
+      round,
+      name: race.name,
+      circuit: circuitRef,
+      circuitId: circuitRef,
+      country: cInfo.code,
+      flag: cInfo.flag,
+      date: race.date,
+      time: race.time,
+      sprint: false,
+      status: 'completed',
+    });
+
+    const raceResults = (resultsByRace.get(race.raceId) || []).slice()
+      .sort((a, b) => (toInt(a.positionOrder) || 9999) - (toInt(b.positionOrder) || 9999));
+
+    if (raceResults.length === 0) continue;
+
+    // Order: finishing order by positionOrder
+    const order = raceResults.map(r => driverIdToCode.get(r.driverId)).filter(Boolean);
+    // Grid: starting order; drivers with grid 0 (pit-lane / didn't qualify) tail
+    const gridSorted = raceResults.slice().sort((a, b) => {
+      const ga = toInt(a.grid) || 99;
+      const gb = toInt(b.grid) || 99;
+      return ga - gb;
+    });
+    const grid = gridSorted.map(r => driverIdToCode.get(r.driverId)).filter(Boolean);
+    // Pole: grid === 1
+    const poleRow = raceResults.find(r => toInt(r.grid) === 1);
+    const pole = poleRow ? driverIdToCode.get(poleRow.driverId) : null;
+    // Fastest lap: rank === 1 (CSV's "rank" column = fastest-lap rank)
+    const flRow = raceResults.find(r => toInt(r.rank) === 1);
+    const fastest = flRow ? driverIdToCode.get(flRow.driverId) : null;
+    // DNFs: status not "Finished" or +N Lap(s)
+    const finishedStatuses = new Set(['Finished']);
+    const dnfs = raceResults
+      .filter(r => {
+        const s = statusById.get(r.statusId) || '';
+        return !finishedStatuses.has(s) && !/^\+\d+ Lap/.test(s);
+      })
+      .map(r => driverIdToCode.get(r.driverId))
+      .filter(Boolean);
+
+    resultsObj[round] = { pole, fastest, order, grid, dnfs };
+  }
+
+  const seasonDoc = {
+    seasonYear: String(year),
+    teams: yearTeams,
+    drivers: yearDrivers,
+    calendar,
+    results: resultsObj,
+  };
+  writeFileSync(outPath, JSON.stringify(seasonDoc));
+  seasonsWritten++;
+}
+
+console.log(`[archive] wrote ${seasonsWritten} season bundles to ${SEASONS_OUT}, skipped ${seasonsSkipped} (hand-curated)`);
