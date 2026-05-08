@@ -1,13 +1,14 @@
-// CalendarIsland — thin wrapper that builds the F1_DATA object once
-// (deterministic, runs on both SSR and client) and passes it to CalendarScreen.
-// Until PR 2 wires real data/<year>.json loading, this uses the speculative
-// 2026 fallback dataset that the legacy site shipped as default.
+// CalendarIsland — thin wrapper. SSR/initial render uses the 2026 fallback
+// (the prerendered SEO content); on hydration useYearAwareData swaps in the
+// /data/<year>.json bundle if the visitor picked a past year.
 
 import { buildFallback } from '../../data/buildFallback.js';
+import { useYearAwareData } from '../../lib/yearAwareData.js';
 import CalendarScreen from './screens/CalendarScreen.jsx';
 
-const data = buildFallback();
+const fallback = buildFallback();
 
 export default function CalendarIsland() {
+  const data = useYearAwareData(fallback);
   return <CalendarScreen data={data} />;
 }
