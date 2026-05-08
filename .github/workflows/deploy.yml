@@ -22,3 +22,8 @@ jobs:
             **/.git*/**
             **/.claude/**
             **/README.md
+            data/history/**
+            scripts/**
+            docs/**
+            CLAUDE.md
+            .gitignore
