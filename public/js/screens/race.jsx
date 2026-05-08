@@ -164,7 +164,7 @@ function RaceResultsTable({ round, race, result, mob }) {
                 const points = i < 10 ? F_race.POINTS[i] : 0;
                 const fastestBonus = code === result.fastest && finishPos <= 10 ? 1 : 0;
                 return (
-                  <tr key={code} className="clickable" onClick={() => navigate({ name: 'driver', id: code })}>
+                  <tr key={code} className="clickable" onClick={() => navigate({ name: 'driver', id: code, ref: (F_race.driverById(code) || {}).jolpicaId })}>
                     <td><div className={`pos pos-${finishPos}`}>{isDnf ? '—' : finishPos}</div></td>
                     <td className="num center" style={{ color: 'var(--fg-3)', fontFamily: 'var(--f-mono)' }}>{gridPos}</td>
                     <td><ChangeIndicator change={delta} /></td>

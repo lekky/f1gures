@@ -230,7 +230,7 @@ export default function HomeScreen({ data }) {
           driver={leader.driver}
           big={`${leader.points} pts`}
           sub={`+${leader.points - p2.points} over ${p2.driver.last}`}
-          href={urlFor({ name: 'driver', id: leader.driver.id })}
+          href={urlFor({ name: 'driver', id: leader.driver.id, ref: leader.driver.jolpicaId })}
         />
         <SummaryWidget data={D} kicker="Constructors' Leader"
           team={teamLeader.team}
@@ -262,7 +262,7 @@ export default function HomeScreen({ data }) {
         {top5.map(row => (
           <a key={row.driver.id} className="driver-card"
              style={{ '--team-color': D.teamById(row.driver.team).color, textDecoration: 'none', color: 'inherit' }}
-             href={urlFor({ name: 'driver', id: row.driver.id })}>
+             href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}>
             <div className={`pos pos-${row.position}`}>{row.position}</div>
             <div className="meta">
               <div className="name">{row.driver.last}</div>

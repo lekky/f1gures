@@ -31,7 +31,16 @@ function urlFor(target) {
     case 'circuits':     return '/circuits/';
     case 'race':         return `/race.html?round=${target.round}`;
     case 'circuit':      return `/circuit.html?id=${encodeURIComponent(target.id)}`;
-    case 'driver':       return `/driver.html?id=${encodeURIComponent(target.id)}`;
+    case 'driver': {
+      // PR 2a prerenders driver pages at /drivers/<driverRef>/. Prefer ref
+      // when callers can supply it. The legacy detail screens pass
+      // `id: 'NOR'` here; a target.ref / driver.jolpicaId — wired below
+      // — gives a direct link, otherwise we fall through to the
+      // /driver.html redirect which resolves via _driver-codes.json.
+      const ref = target.ref || target.driverRef;
+      if (ref) return `/drivers/${encodeURIComponent(ref)}/`;
+      return `/driver.html?id=${encodeURIComponent(target.id)}`;
+    }
     case 'team':         return `/team.html?id=${encodeURIComponent(target.id)}`;
     default:             return '/';
   }
