@@ -1,178 +1,173 @@
 # f1gures — F1 Tracking site
 
-A static, multi-page F1 site that pulls live data from the
+A multi-page F1 stats site built with **Astro 4 SSG + React 18 islands**.
+Pages are prerendered at build time (so Google sees real HTML, not a stub),
+React only hydrates the interactive bits (theme toggle, year picker,
+sortable standings, charts). Live data comes from the
 [Jolpica F1 API](https://github.com/jolpica/jolpica-f1) (a free, no-auth
-successor to the old Ergast API). Drop the folder on any web server and it
-works — no build step, no install, no backend.
+successor to the old Ergast API), with the 1950–2024 historical archive
+bundled from the [Ergast CSV dump](http://ergast.com/mrd/) at `data/history/`.
 
 ## What's in the box
 
 ```
 /
-├── index.html                     Home / dashboard
-├── standings-drivers.html         Driver championship table + chart + H2H
-├── standings-constructors.html    Constructor championship table + chart
-├── calendar.html                  Full season calendar
-├── circuits.html                  Circuit index
-├── circuit.html?id=monaco         Circuit profile (?id=… selects circuit)
-├── race.html?round=7              Race detail (?round=… selects round)
-├── driver.html?id=NOR             Driver profile (?id=…  selects driver)
+├── src/
+│   ├── pages/                       Astro pages (one route each)
+│   │   ├── index.astro              Home / dashboard
+│   │   ├── standings-drivers.astro  Driver championship + chart + H2H
+│   │   ├── standings-constructors.astro
+│   │   ├── calendar.astro           Full season calendar
+│   │   └── circuits.astro           Circuit index
+│   ├── layouts/
+│   │   └── BaseLayout.astro         Shared <head> (SEO meta, OG, JSON-LD,
+│   │                                pre-hydration theme script)
+│   ├── components/
+│   │   ├── Chrome.astro             Top nav + mobile bar + bottom nav
+│   │   └── islands/                 React islands (hydrated on the client)
+│   │       ├── ThemeToggle.jsx
+│   │       ├── YearPicker.jsx
+│   │       ├── StandingsDropdown.jsx
+│   │       └── screens/             The actual screen components
+│   ├── lib/
+│   │   └── shared.jsx               Panel, DriverCell, Countdown, urlFor,
+│   │                                useIsMobile, fmtDate, fmtDateLong, etc.
+│   └── data/
+│       └── buildFallback.js         Speculative 2026 grid + helpers
 │
-├── css/
-│   ├── app.css        Full design system (tokens, layout, components, type)
-│   └── site.css       Deployment-only overrides + utilities + Recharts theme
+├── public/
+│   ├── css/{app,site}.css           Design system + responsive overrides
+│   ├── images/drivers/<id>.webp     Driver headshots
+│   ├── images/circuits/             Track maps (black + white outline SVGs)
+│   ├── data/<year>.json             Pre-fetched season bundles (2020–2025)
+│   ├── data/careers/<id>.json       Driver career totals (refreshed nightly)
+│   ├── favicon.svg, robots.txt, site.webmanifest
+│   └── {driver,race,circuit,team}.html  Legacy detail pages (Babel-compiled
+│                                    in browser; replaced by Astro routes
+│                                    in PR 2)
 │
-├── js/
-│   ├── data.js        Static fallback: bundled fictional season + circuit
-│   │                  characteristics (length, corners, lap record, blurbs)
-│   ├── api.js         Live data loader (Jolpica F1 API)
-│   ├── shell.jsx      Top nav, mobile nav, page chrome, shared components
-│   └── screens/       One component file per screen
-│       ├── home.jsx
-│       ├── standings.jsx        (Drivers + Constructors)
-│       ├── calendar.jsx
-│       ├── circuits.jsx         (Index + Detail)
-│       ├── race.jsx
-│       └── driver.jsx
+├── data/history/                    Ergast CSV dump 1950–2024 (build-time
+│                                    only, never served)
 │
-└── vendor/            Pinned UMD builds of React, ReactDOM, Babel, Recharts
-    ├── react.production.min.js
-    ├── react-dom.production.min.js
-    ├── babel.min.js
-    ├── prop-types.min.js
-    └── Recharts.js
+├── scripts/
+│   ├── fetch-careers.mjs            Refresh public/data/careers/ from Jolpica
+│   ├── fetch-season.mjs             Snapshot a season into public/data/
+│   └── build-archive.mjs            (PR 2) Ergast CSV importer
+│
+├── astro.config.mjs                 Static output, trailing-slash always
+├── package.json                     Astro 4 + React 18 + Recharts (npm)
+└── .github/workflows/
+    ├── deploy.yml                   npm ci && build → FTP from dist/
+    └── refresh-careers.yml          Nightly cron
 ```
 
-## How to deploy
+## Develop
 
-1. Upload the whole folder to any static web host — Netlify drop, GitHub Pages,
-   Vercel, S3, Cloudflare Pages, your own VPS, anything that serves files.
-2. Visit `index.html` in a browser. Live data appears as soon as Jolpica
-   responds (typically under a second).
+```
+npm install
+npm run dev           # Astro dev server with HMR at http://localhost:4321/
+npm run build         # Production build → dist/
+npm run preview       # Serve dist/ locally for production-shape preview
+```
+
+The user works across two machines; the no-Node one can serve the prebuilt
+`dist/` (when committed) via:
+```
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude\serve-dist.ps1
+```
+
+## Deploy
+
+GitHub Actions on push to `main`:
+1. `npm ci && npm run build` — Astro builds to `dist/`
+2. FTP-Deploy uploads `dist/` contents to the live server
+
+No manual steps. Merge the PR and the site updates automatically.
 
 ## Where the data comes from
 
 **Live data** (drivers, constructors, calendar, race results, qualifying,
 sprint results, standings, session schedules):
 [Jolpica F1](https://api.jolpi.ca) — free, no API key, no auth, generous rate
-limits (≈500/hour). Fetches happen client-side from the user's browser.
-Responses are cached in `localStorage` for an hour, so navigating between
-pages doesn't re-hit the API.
+limits (≈500/hour). For PR 1 the listing pages use the bundled fallback;
+PR 2 wires real season-aware data via build-time imports of
+`public/data/<year>.json` and (for 1950–2024) the Ergast CSVs in
+`data/history/`.
 
-**Static data** (circuit length, corners, longest straight, DRS zones, tyre
-deg, lap record, blurb): bundled in `js/data.js`. These don't change between
-seasons, and Jolpica doesn't carry them. If the FIA tweaks a track layout,
-edit the `circuits` object in `data.js`.
+**Static lookup data** (circuit length, corners, longest straight, DRS zones,
+tyre deg, lap record, blurb): bundled in `src/data/buildFallback.js`.
+These don't change between seasons.
 
-**Fallback**: if Jolpica is unreachable for any reason (network outage,
-rate-limited, browser blocking the request), the site falls back to the
-fictional 2026 data bundled in `js/data.js`. Nothing breaks — the site still
-renders, just with placeholder data. You can spot the fallback with
-`window.F1_DATA._source` (`'api'` vs `'fallback'`) or by looking at the
-network tab.
+**Driver career stats**: `public/data/careers/<jolpicaId>.json`,
+refreshed nightly via the `refresh-careers` workflow.
 
-You can also force the fallback path with `?offline=1` in the URL — handy
-for screenshots, demos, or when you don't want to hit the API.
+## Adding a historic season
+
+```
+node scripts/fetch-season.mjs 2024
+```
+Writes `public/data/2024.json`. Once committed, the legacy detail pages
+and (PR 2) the Astro build will use the local bundle instead of hitting
+Jolpica.
+
+## Refreshing driver career stats
+
+```
+node scripts/fetch-careers.mjs
+```
+Writes/updates `public/data/careers/<jolpicaId>.json`. Polite with Jolpica's
+rate limit (sequential drivers, retries on 429/503/network errors).
+Skips writes when stats are unchanged.
 
 ## Configuration
 
+### Force the bundled fallback (legacy detail pages only)
+Append `?offline=1` to a `driver.html` / `race.html` URL.
+
 ### Use a different API server (proxy or self-hosted Jolpica)
-
-Add `data-api` to `<body>` in any HTML file:
-
-```html
-<body data-api="https://your-proxy.example.com/ergast/f1">
-```
-
-Or set `window.F1_API_BASE` before `api.js` runs:
-
-```html
-<script>window.F1_API_BASE = "https://your-proxy.example.com/ergast/f1";</script>
-<script src="js/api.js"></script>
-```
-
-This is useful if you want to:
-- Cache Jolpica responses on your own backend to spare their rate limit
-- Add a CDN in front of the API for speed
-- Run [your own Jolpica instance](https://github.com/jolpica/jolpica-f1#contributing)
-- Fork and tweak the API responses
-
-### Force the bundled fallback
-
-Append `?offline=1` to any URL.
-
-### Change the cache TTL
-
-In `js/api.js`, look for `TTL_MS = 60 * 60 * 1000` near the top. Default is
-1 hour. Set to `0` to always fetch fresh, or higher to be gentler on Jolpica.
-
-## How to make design changes
-
-**Want to change colours, fonts, spacing?** Edit `css/app.css`. The tokens
-sit at the very top of the file (`:root { --bg-1: …; --accent: …; … }`).
-Every component reads from those tokens, so changing one variable updates
-the whole site. `css/site.css` holds deployment-specific responsive layouts
-(heroes, grids, breakpoints) and Recharts theming.
-
-**Want to change the layout of a single screen?** Edit the matching file in
-`js/screens/`. They all call into `shell.jsx` for shared pieces.
-
-**Want to change circuit blurbs / track stats?** Edit the `circuits` object
-in `js/data.js`.
-
-**Want to swap in different driver silhouettes / circuit maps?** Replace the
-placeholder boxes in `js/shell.jsx` (`DriverSilhouette`) and
-`js/screens/circuits.jsx` (`.img-placeholder`) with real `<img>` tags.
+Set `window.F1_API_BASE` before the legacy detail HTML's `js/api.js` loads.
+Useful if you run [your own Jolpica instance](https://github.com/jolpica/jolpica-f1)
+or want to put a CDN in front.
 
 ## How it works under the hood
 
-- Each page is its own React render — no SPA router. Pages link to each
-  other with plain `<a href="…">` links, which is what makes the site work
-  on any static host without configuration (no rewrites, no fallbacks).
-- JSX is compiled in the browser at runtime by `@babel/standalone`. Fine
-  for a small site. To precompile for production, run the screen files
-  through esbuild/swc/babel-cli and change `<script type="text/babel">` to
-  plain `<script>`.
-- React, ReactDOM, Babel, prop-types, and Recharts are bundled in `vendor/`,
-  so the site has no CDN dependencies for its libraries.
-- `data.js` runs first and synchronously sets `window.F1_DATA` to the
-  bundled fallback, so the page has *something* to render against
-  immediately. `api.js` then fetches from Jolpica in parallel; once the
-  fetch resolves, it replaces `window.F1_DATA` with live data and resolves
-  `window.F1_READY`. Each page waits for `window.F1_READY` before rendering,
-  so the user only sees the final, live-data version.
+- **Listing pages**: pure Astro. The page component imports `buildFallback()`,
+  passes the data object to a React island as a prop, Astro pre-renders the
+  resulting markup at build time. The island hydrates only the interactive
+  parts (sortable headers, Recharts charts, head-to-head dropdowns).
+- **Detail pages** (driver/race/circuit/team): still the legacy stack — plain
+  HTML in `public/`, Babel compiles JSX in the browser, `js/api.js` fetches
+  Jolpica or `public/data/<year>.json` and replaces `window.F1_DATA`. Will be
+  ported to Astro `getStaticPaths` in PR 2.
+- **Theme**: `<script is:inline>` in `BaseLayout.astro` reads
+  `localStorage.f1-theme` and toggles `html.light` *before* CSS paints, killing
+  the dark→light flash.
+- **No `?v=` cache-busting**: Vite hashes built assets in `dist/_astro/*.[hash].js`
+  automatically.
 
 ## API endpoints used
 
-The live loader hits these Jolpica endpoints (all under
-`https://api.jolpi.ca/ergast/f1/current/`):
+The legacy loader and the (PR 2) build-time fetcher hit these Jolpica
+endpoints (under `https://api.jolpi.ca/ergast/f1/<year>/`):
 
 | Endpoint | Purpose |
 |---|---|
-| `/current/` | Season schedule with practice/quali/sprint times per round |
-| `/current/drivers/` | Driver list (name, code, number, nationality) |
-| `/current/constructors/` | Constructor list (name, nationality) |
-| `/current/driverstandings/` | Driver→team mapping + last completed round |
-| `/current/{round}/results/` | Race results for one completed round |
-| `/current/{round}/qualifying/` | Qualifying times for one completed round |
-| `/current/{round}/sprint/` | Sprint results (sprint weekends only) |
+| `/{year}/` | Season schedule with practice/quali/sprint times per round |
+| `/{year}/drivers/` | Driver list (name, code, number, nationality) |
+| `/{year}/constructors/` | Constructor list (name, nationality) |
+| `/{year}/driverstandings/` | Driver→team mapping + last completed round |
+| `/{year}/{round}/results/` | Race results for one completed round |
+| `/{year}/{round}/qualifying/` | Qualifying times for one completed round |
+| `/{year}/{round}/sprint/` | Sprint results (sprint weekends only) |
 
 If you want richer per-session data (tyre stints, sector times, telemetry,
 weather, race control messages), [OpenF1](https://openf1.org) covers that
-ground for 2023+ — also free, also no auth. The current loader doesn't use
-it, but `js/api.js` is small enough (~400 lines) that adding OpenF1 calls
-to enrich existing screens or feed a new screen is straightforward.
+ground for 2023+ — also free, also no auth.
 
 ## Notes
 
 - Jolpica's terms ask you to be respectful of their rate limit (≈500
   req/hour, with burst). The 1-hour cache means a typical user generates
-  fewer than 30 requests per session, so this isn't a real concern unless
-  you have heavy traffic — in which case put a CDN/proxy between you and
-  Jolpica with `data-api`.
-- `localStorage` is per-origin per-browser; clearing it forces a fresh
-  fetch on next load.
-- Tested in Chromium-based browsers. Should work in Firefox and Safari too,
-  but Babel's in-browser transform is the slowest part of first paint —
-  precompiling for production is recommended if you care about Lighthouse
-  scores.
+  fewer than 30 requests per session. PR 2 moves most data to build-time,
+  cutting runtime calls to the bare minimum (current-year live overlay only).
+- Tested in Chromium-based browsers. Should work in Firefox and Safari too.
