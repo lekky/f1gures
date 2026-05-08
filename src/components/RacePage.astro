@@ -1,0 +1,260 @@
+---
+// Pure server-rendered race detail page. Hero + results table + qualifying
+// table + sprint table (where applicable) + nav to prev/next race. No
+// React island, no client JS.
+
+interface Props {
+  race: {
+    raceId: string;
+    year: number;
+    round: number;
+    name: string;
+    date: string | null;
+    time: string | null;
+    url: string | null;
+    circuit: {
+      circuitRef: string;
+      name: string;
+      location: string;
+      country: string;
+      countryName: string;
+      flag: string;
+    } | null;
+    pole: string | null;
+    fastest: string | null;
+    fastestLapTime: string | null;
+    winner: string | null;
+    results: Array<{
+      position: number | null;
+      positionText: string | null;
+      driverRef: string | null;
+      driverName: string | null;
+      code: string | null;
+      constructorRef: string | null;
+      constructorName: string | null;
+      constructorColor: string | null;
+      grid: number | null;
+      points: number;
+      laps: number | null;
+      time: string | null;
+      status: string | null;
+      fastestLapTime: string | null;
+      fastestLapRank: number | null;
+    }>;
+    qualifying: Array<{
+      position: number | null;
+      driverRef: string | null;
+      driverName: string | null;
+      code: string | null;
+      constructorRef: string | null;
+      constructorName: string | null;
+      q1: string | null;
+      q2: string | null;
+      q3: string | null;
+    }>;
+    sprint: Array<{
+      position: number | null;
+      positionText: string | null;
+      driverRef: string | null;
+      driverName: string | null;
+      code: string | null;
+      constructorRef: string | null;
+      grid: number | null;
+      points: number;
+      time: string | null;
+      status: string | null;
+    }> | null;
+    prev: { year: number; round: number; name: string } | null;
+    next: { year: number; round: number; name: string } | null;
+  };
+}
+
+const { race } = Astro.props;
+const podium = race.results.filter(r => r.position != null && r.position <= 3);
+---
+
+<div class="page">
+  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/calendar/">← Calendar</a>
+
+  <div class="panel race-hero">
+    <div class="race-hero-grid">
+      <div class="race-hero-meta">
+        <div class="t-eyebrow race-hero-round">
+          Round {race.round} · {race.year}
+        </div>
+        <h1 class="page-title race-hero-name">{race.name}</h1>
+        <div class="race-hero-stats">
+          {race.circuit && <span class="t-mono">{race.circuit.flag} {race.circuit.name}</span>}
+          {race.circuit && race.date && <span class="sep">·</span>}
+          {race.date && <span class="t-mono">{race.date}</span>}
+        </div>
+      </div>
+      {podium.length > 0 && (
+        <div class="race-hero-podium">
+          {podium.map(p => (
+            <div class={`podium-step podium-${p.position}`}>
+              <div class="podium-pos">P{p.position}</div>
+              <div class="podium-name">
+                {p.driverRef ? (
+                  <a href={`/drivers/${p.driverRef}/`}>{p.driverName}</a>
+                ) : p.driverName}
+              </div>
+              <div class="podium-team">{p.constructorName}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+
+  {race.results.length > 0 && (
+    <>
+      <div class="section-head"><h2>Race Results</h2><div class="section-rule"></div></div>
+      <div class="panel" style="padding: 0; overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="right">Pos</th>
+              <th class="right">Grid</th>
+              <th>Driver</th>
+              <th>Team</th>
+              <th class="right">Laps</th>
+              <th>Time / Status</th>
+              <th class="right">Pts</th>
+              <th>FL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {race.results.map(r => (
+              <tr style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
+                <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || (r.position != null ? String(r.position) : '—')}</td>
+                <td class="right t-mono">{r.grid != null ? r.grid : '—'}</td>
+                <td>{r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : (r.driverName || '—')} {r.code && <span class="t-mono code-tag">{r.code}</span>}</td>
+                <td>{r.constructorRef ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a> : (r.constructorName || '—')}</td>
+                <td class="right t-mono">{r.laps != null ? r.laps : '—'}</td>
+                <td class="t-mono">{r.time || r.status || '—'}</td>
+                <td class="right t-mono">{r.points}</td>
+                <td class="t-mono">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+
+  {race.qualifying.length > 0 && (
+    <>
+      <div class="section-head"><h2>Qualifying</h2><div class="section-rule"></div></div>
+      <div class="panel" style="padding: 0; overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="right">Pos</th>
+              <th>Driver</th>
+              <th>Team</th>
+              <th class="right">Q1</th>
+              <th class="right">Q2</th>
+              <th class="right">Q3</th>
+            </tr>
+          </thead>
+          <tbody>
+            {race.qualifying.map(q => (
+              <tr>
+                <td class={`right t-mono ${q.position === 1 ? 'is-win-cell' : ''}`}>{q.position}</td>
+                <td>{q.driverRef ? <a href={`/drivers/${q.driverRef}/`}>{q.driverName}</a> : q.driverName}</td>
+                <td>{q.constructorName}</td>
+                <td class="right t-mono">{q.q1 || '—'}</td>
+                <td class="right t-mono">{q.q2 || '—'}</td>
+                <td class="right t-mono">{q.q3 || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+
+  {race.sprint && race.sprint.length > 0 && (
+    <>
+      <div class="section-head"><h2>Sprint</h2><div class="section-rule"></div></div>
+      <div class="panel" style="padding: 0; overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="right">Pos</th>
+              <th class="right">Grid</th>
+              <th>Driver</th>
+              <th>Team</th>
+              <th>Time / Status</th>
+              <th class="right">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {race.sprint.map(s => (
+              <tr>
+                <td class={`right t-mono ${s.position === 1 ? 'is-win-cell' : ''}`}>{s.positionText || s.position}</td>
+                <td class="right t-mono">{s.grid != null ? s.grid : '—'}</td>
+                <td>{s.driverRef ? <a href={`/drivers/${s.driverRef}/`}>{s.driverName}</a> : s.driverName}</td>
+                <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorRef}</a> : '—'}</td>
+                <td class="t-mono">{s.time || s.status || '—'}</td>
+                <td class="right t-mono">{s.points}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+
+  <div class="race-nav">
+    {race.prev ? (
+      <a class="btn btn-ghost btn-sm race-nav-prev" href={`/races/${race.prev.year}/${race.prev.round}/`}>
+        ← {race.prev.name} {race.prev.year}
+      </a>
+    ) : <span></span>}
+    {race.next ? (
+      <a class="btn btn-ghost btn-sm race-nav-next" href={`/races/${race.next.year}/${race.next.round}/`}>
+        {race.next.name} {race.next.year} →
+      </a>
+    ) : <span></span>}
+  </div>
+</div>
+
+<style>
+  .race-hero { padding: 20px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
+  .race-hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
+  .race-hero-round { color: var(--fg-3); margin-bottom: 6px; }
+  .race-hero-name { margin: 0 0 8px 0; font-size: 48px; line-height: 1.05; }
+  .race-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
+  .race-hero-stats .sep { color: var(--fg-4); }
+  .race-hero-podium { display: flex; gap: 12px; }
+  .podium-step {
+    border-left: 3px solid var(--line-1);
+    padding: 0 14px;
+  }
+  .podium-1 { border-left-color: var(--accent); }
+  .podium-2 { border-left-color: var(--fg-2); }
+  .podium-3 { border-left-color: var(--fg-3); }
+  .podium-pos { font-family: var(--f-display); font-weight: 800; font-size: 20px; }
+  .podium-name { font-weight: 600; font-size: 14px; }
+  .podium-name a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+  .podium-team { font-size: 12px; color: var(--fg-3); }
+
+  @media (max-width: 720px) {
+    .race-hero-name { font-size: 28px; }
+    .race-hero-grid { grid-template-columns: 1fr; }
+    .race-hero-podium { flex-direction: column; gap: 6px; }
+  }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th, .data-table td { padding: 8px 12px; border-bottom: 1px solid var(--line-1); text-align: left; }
+  .data-table th { font-family: var(--f-display); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); background: var(--bg-2); position: sticky; top: 0; }
+  .data-table tr:last-child td { border-bottom: 0; }
+  .data-table .right { text-align: right; }
+  .data-table .is-win-cell { color: var(--accent); font-weight: 700; }
+  .data-table a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+  .code-tag { font-size: 10px; color: var(--fg-3); margin-left: 6px; }
+
+  .race-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; }
+</style>

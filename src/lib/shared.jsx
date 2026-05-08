@@ -15,8 +15,21 @@ export function urlFor(target) {
     case 'standings-c':  return '/standings-constructors/';
     case 'calendar':     return '/calendar/';
     case 'circuits':     return '/circuits/';
-    case 'race':         return `/race.html?round=${target.round}`;
-    case 'circuit':      return `/circuit.html?id=${encodeURIComponent(target.id)}`;
+    case 'race': {
+      // PR 2b prerenders /races/<year>/<round>/. Pass year+round for direct
+      // links; round-only falls back to /race.html?round=… which the legacy
+      // redirect resolves via the user's selected year.
+      if (target.year && target.round) return `/races/${target.year}/${target.round}/`;
+      return `/race.html?round=${target.round}`;
+    }
+    case 'circuit': {
+      // PR 2b prerenders /circuits/<circuitRef>/. The Ergast circuitRef
+      // matches our internal circuit id (monaco, silverstone, ...) so callers
+      // can pass `ref` or `id` and it works.
+      const cref = target.ref || target.id;
+      if (cref) return `/circuits/${encodeURIComponent(cref)}/`;
+      return `/circuit.html?id=${encodeURIComponent(target.id)}`;
+    }
     case 'driver': {
       // PR 2a prerenders driver pages at /drivers/<driverRef>/. Prefer `ref`
       // (driverRef / jolpicaId, e.g. "norris", "max_verstappen") when callers

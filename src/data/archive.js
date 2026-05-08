@@ -38,3 +38,21 @@ export function getDriverCodes() {
   if (!_codes) _codes = readJson(join(ARCHIVE, '_driver-codes.json'));
   return _codes;
 }
+
+let _racesIdx = null;
+export function getRacesIndex() {
+  if (!_racesIdx) _racesIdx = readJson(join(ARCHIVE, '_races-index.json'));
+  return _racesIdx;
+}
+export function getRace(year, round) {
+  return readJson(join(ARCHIVE, 'races', String(year), `${round}.json`));
+}
+
+let _circuitsIdx = null;
+export function getCircuitsIndex() {
+  if (!_circuitsIdx) _circuitsIdx = readJson(join(ARCHIVE, '_circuits-index.json'));
+  return _circuitsIdx;
+}
+export function getCircuit(circuitRef) {
+  return readJson(join(ARCHIVE, 'circuits', `${circuitRef}.json`));
+}

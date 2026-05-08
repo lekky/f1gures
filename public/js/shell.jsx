@@ -29,8 +29,15 @@ function urlFor(target) {
     case 'standings-c':  return '/standings-constructors/';
     case 'calendar':     return '/calendar/';
     case 'circuits':     return '/circuits/';
-    case 'race':         return `/race.html?round=${target.round}`;
-    case 'circuit':      return `/circuit.html?id=${encodeURIComponent(target.id)}`;
+    case 'race': {
+      if (target.year && target.round) return `/races/${target.year}/${target.round}/`;
+      return `/race.html?round=${target.round}`;
+    }
+    case 'circuit': {
+      const cref = target.ref || target.id;
+      if (cref) return `/circuits/${encodeURIComponent(cref)}/`;
+      return `/circuit.html?id=${encodeURIComponent(target.id)}`;
+    }
     case 'driver': {
       // PR 2a prerenders driver pages at /drivers/<driverRef>/. Prefer ref
       // when callers can supply it. The legacy detail screens pass

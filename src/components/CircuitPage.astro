@@ -1,0 +1,154 @@
+---
+// Pure server-rendered circuit detail page. Hero + race history table +
+// most-wins / most-poles records.
+
+interface Props {
+  circuit: {
+    circuitRef: string;
+    name: string;
+    location: string;
+    country: string;
+    countryName: string;
+    flag: string;
+    lat: number | null;
+    lng: number | null;
+    raceCount: number;
+    firstYear: number | null;
+    lastYear: number | null;
+    races: Array<{
+      year: number;
+      round: number;
+      name: string;
+      date: string | null;
+      winnerRef: string | null;
+      winnerName: string | null;
+      winnerTeam: string | null;
+      poleRef: string | null;
+      poleName: string | null;
+      fastestLapRef: string | null;
+      fastestLapTime: string | null;
+    }>;
+    mostWins: Array<{ driverRef: string; count: number; name: string }>;
+    mostPoles: Array<{ driverRef: string; count: number; name: string }>;
+  };
+}
+
+const { circuit } = Astro.props;
+const yearsLabel = circuit.firstYear === circuit.lastYear
+  ? `${circuit.firstYear}`
+  : `${circuit.firstYear}–${circuit.lastYear}`;
+---
+
+<div class="page">
+  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/circuits/">← Circuits</a>
+
+  <div class="panel circuit-hero">
+    <div class="circuit-hero-grid">
+      <div>
+        <div class="t-eyebrow circuit-hero-loc">
+          {circuit.flag} {circuit.location}, {circuit.countryName}
+        </div>
+        <h1 class="page-title circuit-hero-name">{circuit.name}</h1>
+        <div class="circuit-hero-stats">
+          <span class="t-mono">{circuit.raceCount} F1 races</span>
+          <span class="sep">·</span>
+          <span class="t-mono">{yearsLabel}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {(circuit.mostWins.length > 0 || circuit.mostPoles.length > 0) && (
+    <>
+      <div class="section-head"><h2>All-Time Records</h2><div class="section-rule"></div></div>
+      <div class="grid records-grid">
+        {circuit.mostWins.length > 0 && (
+          <div class="panel" style="padding: 14px 16px;">
+            <div class="t-eyebrow" style="margin-bottom: 10px">Most Wins</div>
+            {circuit.mostWins.map(w => (
+              <div class="record-row">
+                <a href={`/drivers/${w.driverRef}/`}>{w.name}</a>
+                <span class="t-mono record-count">{w.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {circuit.mostPoles.length > 0 && (
+          <div class="panel" style="padding: 14px 16px;">
+            <div class="t-eyebrow" style="margin-bottom: 10px">Most Poles</div>
+            {circuit.mostPoles.map(w => (
+              <div class="record-row">
+                <a href={`/drivers/${w.driverRef}/`}>{w.name}</a>
+                <span class="t-mono record-count">{w.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  )}
+
+  {circuit.races.length > 0 && (
+    <>
+      <div class="section-head"><h2>Race History</h2><div class="section-rule"></div></div>
+      <div class="panel" style="padding: 0; overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="right">Year</th>
+              <th>Race</th>
+              <th>Winner</th>
+              <th>Team</th>
+              <th>Pole</th>
+              <th class="right">Fastest Lap</th>
+            </tr>
+          </thead>
+          <tbody>
+            {circuit.races.map(r => (
+              <tr>
+                <td class="right t-mono"><a href={`/races/${r.year}/${r.round}/`}>{r.year}</a></td>
+                <td><a href={`/races/${r.year}/${r.round}/`}>{r.name}</a></td>
+                <td>{r.winnerRef ? <a href={`/drivers/${r.winnerRef}/`}>{r.winnerName}</a> : (r.winnerName || '—')}</td>
+                <td>{r.winnerTeam || '—'}</td>
+                <td>{r.poleRef ? <a href={`/drivers/${r.poleRef}/`}>{r.poleName}</a> : (r.poleName || '—')}</td>
+                <td class="right t-mono">{r.fastestLapTime || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+</div>
+
+<style>
+  .circuit-hero { padding: 20px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
+  .circuit-hero-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .circuit-hero-loc { color: var(--fg-3); margin-bottom: 6px; }
+  .circuit-hero-name { margin: 0 0 8px 0; font-size: 48px; line-height: 1.05; }
+  .circuit-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
+  .circuit-hero-stats .sep { color: var(--fg-4); }
+
+  @media (max-width: 720px) {
+    .circuit-hero-name { font-size: 28px; }
+  }
+
+  .records-grid { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 720px) {
+    .records-grid { grid-template-columns: 1fr; }
+  }
+  .record-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid var(--line-1);
+  }
+  .record-row:last-child { border-bottom: 0; }
+  .record-row a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+  .record-count { font-weight: 700; color: var(--accent); }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th, .data-table td { padding: 8px 12px; border-bottom: 1px solid var(--line-1); text-align: left; }
+  .data-table th { font-family: var(--f-display); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); background: var(--bg-2); }
+  .data-table tr:last-child td { border-bottom: 0; }
+  .data-table .right { text-align: right; }
+  .data-table a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+</style>
