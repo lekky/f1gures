@@ -309,6 +309,7 @@ export function buildFallback() {
   return {
     teams, drivers, calendar, circuits, results, POINTS,
     driverById, teamById, computeStandings, genQuali, fmtLap, fmtGap,
+    seasonYear: '2026',
     // Marker so screens can tell live data from bundled fallback.
     _source: 'fallback',
     // Static lookups & helpers that api.js re-uses.
@@ -333,7 +334,7 @@ export function buildFallback() {
 // Helper closures (driverById/teamById/computeStandings) are duplicated
 // from buildFallback above rather than shared, to keep this change low-risk
 // to the (working) fallback path. Worth deduplicating in PR 2 / 3.
-export function buildFromYearJson(json) {
+export function buildFromYearJson(json, staticCircuits = {}) {
   const teams = (json && json.teams) || [];
   const drivers = (json && json.drivers) || [];
   const calendar = (json && json.calendar) || [];
@@ -439,7 +440,7 @@ export function buildFromYearJson(json) {
   }
 
   return {
-    teams, drivers, calendar, circuits: {}, results, POINTS, seasonYear,
+    teams, drivers, calendar, circuits: staticCircuits, results, POINTS, seasonYear,
     driverById, teamById, computeStandings,
     _source: 'year-json',
     __rawSeason: { teams, drivers, calendar, results },
