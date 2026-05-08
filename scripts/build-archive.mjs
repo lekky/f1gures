@@ -9,7 +9,7 @@
 //
 // PR 2a (this script): drivers only. Subsequent PRs will add races/circuits/teams.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
@@ -823,6 +823,127 @@ for (const c of circuits) {
     lastYear: circuitDoc.lastYear,
   });
   circuitsWritten++;
+}
+
+// ─── Merge hand-curated post-Ergast seasons into circuit history ─────
+// The Ergast dump ends at 2024. Hand-curated public/data/<year>.json
+// bundles for 2025+ have race calendars + results with the same shape;
+// merge their entries into the per-circuit JSONs so circuit pages don't
+// stop at "2024".
+
+const HAND_CIRCUIT_ALIAS = {
+  albert: 'albert_park',
+  marina: 'marina_bay',
+  lasvegas: 'vegas',
+  yas: 'yas_marina',
+  montreal: 'villeneuve',
+  cota: 'americas',
+  spielberg: 'red_bull_ring',
+  imola: 'imola',
+  monaco: 'monaco',
+  monza: 'monza',
+  silverstone: 'silverstone',
+  spa: 'spa',
+  suzuka: 'suzuka',
+  shanghai: 'shanghai',
+  hungaroring: 'hungaroring',
+  interlagos: 'interlagos',
+  bahrain: 'bahrain',
+  jeddah: 'jeddah',
+  miami: 'miami',
+  baku: 'baku',
+  catalunya: 'catalunya',
+  losail: 'losail',
+  zandvoort: 'zandvoort',
+  rodriguez: 'rodriguez',
+};
+const ARCHIVE_MAX_YEAR = Math.max(...allYears);
+
+const seasonFiles = readdirSync(SEASONS_OUT)
+  .filter(f => /^\d{4}\.json$/.test(f))
+  .map(f => ({ year: parseInt(f.slice(0, 4), 10), path: join(SEASONS_OUT, f) }))
+  .filter(e => e.year > ARCHIVE_MAX_YEAR)
+  .sort((a, b) => a.year - b.year);
+
+let postArchiveRacesAdded = 0;
+for (const { year, path } of seasonFiles) {
+  const season = JSON.parse(readFileSync(path, 'utf8'));
+  if (!Array.isArray(season.calendar)) continue;
+  for (const race of season.calendar) {
+    const refRaw = race.circuit || race.circuitId;
+    if (!refRaw) continue;
+    const cref = HAND_CIRCUIT_ALIAS[refRaw] || refRaw;
+    const circuitJsonPath = join(OUT, 'circuits', `${cref}.json`);
+    if (!existsSync(circuitJsonPath)) continue;
+
+    const doc = JSON.parse(readFileSync(circuitJsonPath, 'utf8'));
+    // Skip if this race is already present (idempotent re-runs)
+    if (doc.races.some(r => r.year === year && r.round === race.round)) continue;
+
+    const result = season.results && season.results[race.round];
+    let winnerRef = null, poleRef = null, fastestRef = null;
+    let winnerName = null, poleName = null, winnerTeam = null;
+    if (result) {
+      const winnerId = result.order?.[0];
+      const poleId = result.pole;
+      const fastestId = result.fastest;
+      const driverByCode = (id) => season.drivers?.find(d => d.id === id || d.jolpicaId === id);
+      const teamByDriverCode = (id) => {
+        const d = driverByCode(id);
+        if (!d) return null;
+        const t = season.teams?.find(t => t.id === d.team);
+        return t ? t.name : null;
+      };
+      const refOf = (id) => driverByCode(id)?.jolpicaId || null;
+      const nameOf = (id) => {
+        const d = driverByCode(id);
+        return d ? `${d.first} ${d.last}` : null;
+      };
+      winnerRef = refOf(winnerId); winnerName = nameOf(winnerId); winnerTeam = teamByDriverCode(winnerId);
+      poleRef = refOf(poleId); poleName = nameOf(poleId);
+      fastestRef = refOf(fastestId);
+    }
+
+    doc.races.unshift({
+      year,
+      round: race.round,
+      name: race.name,
+      date: race.date,
+      winnerRef, winnerName, winnerTeam,
+      poleRef, poleName,
+      fastestLapRef: fastestRef,
+      fastestLapTime: null,
+    });
+    doc.raceCount = doc.races.length;
+    doc.lastYear = Math.max(doc.lastYear || year, year);
+
+    // Refresh tallies (most wins / most poles)
+    const winCounts = new Map();
+    const poleCounts = new Map();
+    const driverNames = new Map();
+    for (const r of doc.races) {
+      if (r.winnerRef) {
+        winCounts.set(r.winnerRef, (winCounts.get(r.winnerRef) || 0) + 1);
+        if (r.winnerName) driverNames.set(r.winnerRef, r.winnerName);
+      }
+      if (r.poleRef) {
+        poleCounts.set(r.poleRef, (poleCounts.get(r.poleRef) || 0) + 1);
+        if (r.poleName) driverNames.set(r.poleRef, r.poleName);
+      }
+    }
+    const tallyTop = (m) => [...m.entries()]
+      .map(([driverRef, count]) => ({ driverRef, count, name: driverNames.get(driverRef) || driverRef }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    doc.mostWins = tallyTop(winCounts);
+    doc.mostPoles = tallyTop(poleCounts);
+
+    writeFileSync(circuitJsonPath, JSON.stringify(doc));
+    postArchiveRacesAdded++;
+  }
+}
+if (postArchiveRacesAdded > 0) {
+  console.log(`[archive] merged ${postArchiveRacesAdded} post-Ergast races (${seasonFiles.map(s => s.year).join(', ')}) into circuit history`);
 }
 
 writeFileSync(join(OUT, '_circuits-index.json'), JSON.stringify(circuitsIndex));

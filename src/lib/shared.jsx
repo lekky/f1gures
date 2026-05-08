@@ -16,17 +16,35 @@ export function urlFor(target) {
     case 'calendar':     return '/calendar/';
     case 'circuits':     return '/circuits/';
     case 'race': {
-      // PR 2b prerenders /races/<year>/<round>/. Pass year+round for direct
-      // links; round-only falls back to /race.html?round=… which the legacy
-      // redirect resolves via the user's selected year.
-      if (target.year && target.round) return `/races/${target.year}/${target.round}/`;
+      // /races/<y>/<r>/ pages exist only for archived years (Ergast: 1950–2024).
+      // The 2026 fallback grid + 2025 hand-curated bundle have race calendar
+      // data with no prerendered detail page, so fall through to /race.html
+      // for those years; the redirect lands on /calendar/ on miss.
+      const ARCHIVE_MAX_YEAR = 2024;
+      const y = target.year ? Number(target.year) : null;
+      if (y && target.round && y <= ARCHIVE_MAX_YEAR) {
+        return `/races/${target.year}/${target.round}/`;
+      }
+      if (target.year) return `/race.html?round=${target.round}&year=${target.year}`;
       return `/race.html?round=${target.round}`;
     }
     case 'circuit': {
-      // PR 2b prerenders /circuits/<circuitRef>/. The Ergast circuitRef
-      // matches our internal circuit id (monaco, silverstone, ...) so callers
-      // can pass `ref` or `id` and it works.
-      const cref = target.ref || target.id;
+      // PR 2b prerenders /circuits/<circuitRef>/. Most callers in current
+      // (post-migration) code already pass the Ergast circuitRef, but the
+      // 2026 fallback + 2020-2025 hand-curated season bundles use legacy
+      // short ids (albert, marina, lasvegas, ...) that diverge from Ergast
+      // (albert_park, marina_bay, vegas, ...). Map known aliases.
+      const CIRCUIT_ID_ALIAS = {
+        albert: 'albert_park',
+        marina: 'marina_bay',
+        lasvegas: 'vegas',
+        yas: 'yas_marina',
+        montreal: 'villeneuve',
+        cota: 'americas',
+        spielberg: 'red_bull_ring',
+      };
+      const raw = target.ref || target.id;
+      const cref = (raw && CIRCUIT_ID_ALIAS[raw]) || raw;
       if (cref) return `/circuits/${encodeURIComponent(cref)}/`;
       return `/circuit.html?id=${encodeURIComponent(target.id)}`;
     }
