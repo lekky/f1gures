@@ -33,17 +33,53 @@ interface Props {
   };
 }
 
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 const { circuit } = Astro.props;
 const yearsLabel = circuit.firstYear === circuit.lastYear
   ? `${circuit.firstYear}`
   : `${circuit.firstYear}–${circuit.lastYear}`;
+
+// Track-map SVGs in public/images/circuits/{black,white}-outline/ use the
+// site's internal ids (albert, marina, lasvegas, …) which diverge from
+// Ergast's circuitRef in a handful of cases. Map known equivalents; for
+// circuits without a curated SVG (the historic 50+) skip the map entirely.
+const SVG_FOR_REF: Record<string, string> = {
+  albert_park: 'albert',
+  americas: 'cota',
+  bahrain: 'bahrain',
+  baku: 'baku',
+  catalunya: 'catalunya',
+  hungaroring: 'hungaroring',
+  imola: 'imola',
+  interlagos: 'interlagos',
+  jeddah: 'jeddah',
+  losail: 'losail',
+  marina_bay: 'marina',
+  miami: 'miami',
+  monaco: 'monaco',
+  monza: 'monza',
+  red_bull_ring: 'spielberg',
+  rodriguez: 'rodriguez',
+  shanghai: 'shanghai',
+  silverstone: 'silverstone',
+  spa: 'spa',
+  suzuka: 'suzuka',
+  vegas: 'lasvegas',
+  villeneuve: 'montreal',
+  yas_marina: 'yas',
+  zandvoort: 'zandvoort',
+};
+const svgName = SVG_FOR_REF[circuit.circuitRef];
+const hasMap = !!svgName && existsSync(resolve(process.cwd(), 'public', 'images', 'circuits', 'black-outline', `${svgName}.svg`));
 ---
 
 <div class="page">
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/circuits/">← Circuits</a>
 
   <div class="panel circuit-hero">
-    <div class="circuit-hero-grid">
+    <div class={`circuit-hero-grid ${hasMap ? 'has-map' : ''}`}>
       <div>
         <div class="t-eyebrow circuit-hero-loc">
           {circuit.flag} {circuit.location}, {circuit.countryName}
@@ -55,6 +91,12 @@ const yearsLabel = circuit.firstYear === circuit.lastYear
           <span class="t-mono">{yearsLabel}</span>
         </div>
       </div>
+      {hasMap && (
+        <div class="circuit-map-wrap" aria-hidden="true">
+          <img class="circuit-map circuit-map-dark" src={`/images/circuits/white-outline/${svgName}.svg`} alt="" loading="lazy" />
+          <img class="circuit-map circuit-map-light" src={`/images/circuits/black-outline/${svgName}.svg`} alt="" loading="lazy" />
+        </div>
+      )}
     </div>
   </div>
 
@@ -124,6 +166,18 @@ const yearsLabel = circuit.firstYear === circuit.lastYear
 <style>
   .circuit-hero { padding: 20px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
   .circuit-hero-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .circuit-hero-grid.has-map { grid-template-columns: 1fr 280px; align-items: center; }
+  .circuit-map-wrap { display: flex; align-items: center; justify-content: center; }
+  .circuit-map { width: 100%; max-width: 280px; height: auto; }
+  /* Track maps come in black-outline (for light theme) and white-outline
+     (for dark theme). CSS picks the right one based on html.light. */
+  .circuit-map-light { display: none; }
+  :global(html.light) .circuit-map-light { display: block; }
+  :global(html.light) .circuit-map-dark { display: none; }
+  @media (max-width: 720px) {
+    .circuit-hero-grid.has-map { grid-template-columns: 1fr; }
+    .circuit-map { max-width: 200px; margin: 0 auto; }
+  }
   .circuit-hero-loc { color: var(--fg-3); margin-bottom: 6px; }
   .circuit-hero-name { margin: 0 0 8px 0; font-size: 48px; line-height: 1.05; }
   .circuit-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
