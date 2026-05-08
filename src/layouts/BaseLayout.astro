@@ -1,0 +1,123 @@
+---
+// BaseLayout — shared <head> + Chrome wrapper for every page.
+// Ports the boilerplate from the legacy *.html files and shell.jsx <Chrome>.
+//
+// Props:
+//   title           — full <title> tag value (already includes "| f1gures")
+//   description     — meta description (~150-160 chars)
+//   canonicalPath   — leading slash, e.g. "/standings-drivers/" — origin is added
+//   ogType          — og:type, defaults to "website"
+//   ogImage         — og:image URL, defaults to /images/og-default.png
+//   jsonLd          — optional schema.org object, serialised into a <script type="application/ld+json"> block
+//   breadcrumb      — optional array of { name, path } for BreadcrumbList JSON-LD
+//   robots          — meta robots, defaults to "index, follow, max-image-preview:large"
+
+import Chrome from '../components/Chrome.astro';
+
+export interface Props {
+  title: string;
+  description: string;
+  canonicalPath: string;
+  ogType?: string;
+  ogImage?: string;
+  jsonLd?: unknown;
+  breadcrumb?: { name: string; path: string }[];
+  robots?: string;
+}
+
+const {
+  title,
+  description,
+  canonicalPath,
+  ogType = 'website',
+  ogImage = '/images/og-default.png',
+  jsonLd,
+  breadcrumb,
+  robots = 'index, follow, max-image-preview:large',
+} = Astro.props;
+
+const ORIGIN = 'https://f1gures.app';
+const canonical = ORIGIN + canonicalPath;
+const ogImageUrl = ogImage.startsWith('http') ? ogImage : ORIGIN + ogImage;
+
+// Combine breadcrumb + jsonLd into a single graph if both supplied
+const graph: unknown[] = [];
+if (jsonLd) graph.push(jsonLd);
+if (breadcrumb && breadcrumb.length > 0) {
+  graph.push({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumb.map((b, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: b.name,
+      item: ORIGIN + b.path,
+    })),
+  });
+}
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+  <meta name="robots" content={robots} />
+  <link rel="canonical" href={canonical} />
+
+  <meta property="og:site_name" content="f1gures" />
+  <meta property="og:type" content={ogType} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={ogImageUrl} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImageUrl} />
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://api.jolpi.ca" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="stylesheet" href="/css/site.css" />
+
+  {graph.length > 0 && (
+    <script type="application/ld+json" set:html={JSON.stringify(graph.length === 1 ? graph[0] : { '@context': 'https://schema.org', '@graph': graph })}></script>
+  )}
+
+  <!-- Pre-hydration theme: read localStorage and set html.light *before* CSS
+       paints, to avoid a dark→light flash on every page load. Inlined per Astro
+       docs — `is:inline` opts out of bundling so it actually runs synchronously
+       in <head>. -->
+  <script is:inline>
+    (function () {
+      try {
+        var saved = localStorage.getItem('f1-theme') || 'light';
+        if (saved === 'light') document.documentElement.classList.add('light');
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <Chrome>
+    <slot />
+  </Chrome>
+
+  <!-- Buy Me a Coffee floating widget. Restyled in css/app.css. Don't display:none — breaks the modal. -->
+  <script defer data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="f1gures" data-description="Support me on Buy me a coffee!" data-message="" data-color="#FF5F5F" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+</body>
+</html>

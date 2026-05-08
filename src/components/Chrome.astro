@@ -1,0 +1,83 @@
+---
+// Chrome — desktop top nav + mobile top bar + mobile bottom nav.
+// Renders as static HTML (no JS) for the static parts. Interactive bits
+// (theme toggle, year picker, standings dropdown) hydrate as React islands.
+//
+// Active-route detection runs at build time based on Astro.url.pathname,
+// replacing the runtime currentRouteName() in shell.jsx.
+
+import ThemeToggle from './islands/ThemeToggle.jsx';
+import YearPicker from './islands/YearPicker.jsx';
+import StandingsDropdown from './islands/StandingsDropdown.jsx';
+
+const APP_VERSION = '2.000';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+function isRoute(prefix: string) {
+  if (prefix === '/') return path === '/' || path === '';
+  return path === prefix || path.startsWith(prefix + '/');
+}
+const route = {
+  home:        isRoute('/'),
+  standingsD:  isRoute('/standings-drivers'),
+  standingsC:  isRoute('/standings-constructors'),
+  standings:   isRoute('/standings-drivers') || isRoute('/standings-constructors'),
+  calendar:    isRoute('/calendar') || isRoute('/races') || isRoute('/race.html'),
+  circuits:    isRoute('/circuits') || isRoute('/circuit.html'),
+};
+const botActive =
+  route.home       ? 'home' :
+  route.standings  ? 'standings' :
+  route.calendar   ? 'calendar' :
+  route.circuits   ? 'circuits' : null;
+---
+<div class="f1-app">
+  <!-- Desktop top nav -->
+  <nav class="nav nav-desktop">
+    <a class="nav-logo" href="/">
+      <span class="dot"></span>F1GURES
+      <span class="nav-version">v{APP_VERSION}</span>
+    </a>
+    <div class="nav-items">
+      <a class:list={['nav-item', { active: route.home }]} href="/">Home</a>
+
+      <StandingsDropdown client:load active={route.standings} />
+
+      <a class:list={['nav-item', { active: route.calendar }]} href="/calendar/">Calendar</a>
+      <a class:list={['nav-item', { active: route.circuits }]} href="/circuits/">Circuits</a>
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-controls">
+      <ThemeToggle client:load />
+      <YearPicker client:load />
+    </div>
+  </nav>
+
+  <!-- Mobile top bar -->
+  <div class="topbar-mobile">
+    <a class="nav-logo topbar-logo" href="/">
+      <span class="dot"></span>F1GURES
+    </a>
+    <div style="flex:1"></div>
+    <ThemeToggle client:load />
+    <YearPicker client:load compact />
+  </div>
+
+  <slot />
+
+  <!-- Mobile bottom nav (static) -->
+  <nav class="botnav botnav-mobile">
+    <a class:list={['botnav-item', { active: botActive === 'home' }]} href="/">
+      <span class="botnav-icon">◇</span><span>Home</span>
+    </a>
+    <a class:list={['botnav-item', { active: botActive === 'standings' }]} href="/standings-drivers/">
+      <span class="botnav-icon">≡</span><span>Standings</span>
+    </a>
+    <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/">
+      <span class="botnav-icon">▦</span><span>Calendar</span>
+    </a>
+    <a class:list={['botnav-item', { active: botActive === 'circuits' }]} href="/circuits/">
+      <span class="botnav-icon">◈</span><span>Circuits</span>
+    </a>
+  </nav>
+</div>

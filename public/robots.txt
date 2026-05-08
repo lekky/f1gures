@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /vendor/
+Disallow: /scripts/
+Disallow: /docs/
+
+Sitemap: https://f1gures.app/sitemap.xml
