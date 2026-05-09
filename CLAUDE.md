@@ -25,7 +25,6 @@ If you only touch the importer and want to skip Astro: `npm run build:archive`. 
 - `src/layouts/BaseLayout.astro` — shared `<head>` (SEO meta, OG/Twitter, canonical, JSON-LD, theme pre-hydration script, content-hashed CSS cache-bust). Every page renders inside it.
 - `src/components/Chrome.astro` — desktop top nav + mobile top bar + mobile bottom nav. Static markup; islands slot in for interactivity.
 - `src/lib/shared.jsx` — React helpers + components used inside islands: `Panel`, `SectionHead`, `ChangeIndicator`, `StatusPill`, `SprintBadge`, `DriverCell`, `Countdown`, `DriverSilhouette`, plus `urlFor`, `navigate`, `getParam`, `useIsMobile`, `fmtDate`, `fmtDateLong`. **`urlFor` holds the team/circuit alias maps and the `ARCHIVE_MAX_YEAR` guard** — see Conventions.
-- `src/lib/version.js` — single source for `APP_VERSION` (chrome label).
 - `src/lib/assetHash.js` — content-hashes a public asset at build time for `?v=<hash>` cache-busts; the URL only changes when the file changes, so HTML stays byte-identical across PRs that don't touch CSS.
 - `src/lib/yearAwareData.js` — `useYearAwareData(fallback)` hook. SSR/initial render uses the 2026 fallback (the prerendered HTML, for SEO); on hydration it reads `?year=` / `localStorage.f1-year` and swaps `data` for the matching `/data/<year>.json`.
 
@@ -80,7 +79,6 @@ If you only touch the importer and want to skip Astro: `npm run build:archive`. 
   - `CIRCUIT_ID_ALIAS`: `albert` → `albert_park`, `marina` → `marina_bay`, `lasvegas` → `vegas`, `yas` → `yas_marina`, `montreal` → `villeneuve`, `cota` → `americas`, `spielberg` → `red_bull_ring`
   - `ARCHIVE_MAX_YEAR = 2024` — race URLs for years past this fall through to `/race.html?round=N&year=Y` (which redirects to `/calendar/` if no detail page exists). The same guard is duplicated in `DriverPage.astro` and `CircuitPage.astro` via local `raceUrl()` helpers — bump in all three when next year's CSV dump lands.
 - **Astro template gotcha**: don't write `r.year <= ARCHIVE_MAX_YEAR` inline in a JSX expression — Astro's compiler parses `<=` as a tag opener and errors with *"Unable to assign attributes when using <> Fragment shorthand syntax"*. Wrap the comparison in a function defined in the frontmatter.
-- **`APP_VERSION`**: bump in `src/lib/version.js` only when the chrome version label should reflect a visible change. CSS cache-busting is already content-hashed via `assetHash.js`, so non-CSS PRs don't need a version bump.
 - **Dark mode tokens**: `:root` holds dark defaults; `html.light` overrides for light mode. Pre-hydration `<script is:inline>` in BaseLayout reads `localStorage.f1-theme` and toggles `html.light` *before* paint, killing the dark→light flash.
 - **Mobile responsive**: prefer CSS `@media (max-width: 720px)` over JS `useIsMobile()` for layout-only decisions. SSR has no `window` so JS-driven layouts emit the desktop variant in HTML and snap to mobile only after hydration — visible flash on slow phones, persistent breakage if JS fails. `css/site.css` has overrides forcing `repeat(N, 1fr)` inline grids back to `1fr` below 720px.
 - **Driver code collisions**: many historic drivers have no Ergast `code` field, so the importer derives one from surname (first 3 chars). For per-season bundles, that collides for shared surnames (1961: Phil Hill + Graham Hill → both `HIL`). Use `driverRef` (always unique slug like `phil_hill`) as `id` in season JSONs; `code` stays as the display label only.
@@ -104,7 +102,7 @@ Two GitHub Actions workflows write to the live server, sharing a `concurrency: d
 - **`deploy.yml`** — push to `main`. `npm ci && npm run build` (prebuild → Astro build), then FTP sync.
 - **`refresh-current-season.yml`** — nightly cron at 04:00 UTC (also `workflow_dispatch`-able). Runs `node scripts/fetch-season.mjs $(date +%Y)` to pull the current year from Jolpica into `public/data/<year>.json`, commits the bundle if it changed (so future builds have it cached), then build + FTP. The fetch step is non-fatal — if Jolpica is down or the year hasn't started, the existing bundle is reused and the deploy proceeds.
 
-The first deploy after a heavy PR (lots of new routes, or APP_VERSION bump that re-emits every HTML) can take 20+ minutes and occasionally fails with `ECONNRESET` mid-upload — `gh run rerun <id> --failed` is idempotent and usually clears it.
+The first deploy after a heavy PR (lots of new routes, or a CSS edit that re-hashes every HTML's `?v=` cache-bust) can take 20+ minutes and occasionally fails with `ECONNRESET` mid-upload — `gh run rerun <id> --failed` is idempotent and usually clears it.
 
 ## Two-machine setup
 

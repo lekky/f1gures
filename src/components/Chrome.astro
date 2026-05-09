@@ -10,8 +10,6 @@ import ThemeToggle from './islands/ThemeToggle.jsx';
 import YearPicker from './islands/YearPicker.jsx';
 import StandingsDropdown from './islands/StandingsDropdown.jsx';
 
-import { APP_VERSION } from '../lib/version.js';
-
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 function isRoute(prefix: string) {
   if (prefix === '/') return path === '/' || path === '';
@@ -36,7 +34,6 @@ const botActive =
   <nav class="nav nav-desktop">
     <a class="nav-logo" href="/">
       <span class="dot"></span>F1GURES
-      <span class="nav-version">v{APP_VERSION}</span>
     </a>
     <div class="nav-items">
       <a class:list={['nav-item', { active: route.home }]} href="/">Home</a>
