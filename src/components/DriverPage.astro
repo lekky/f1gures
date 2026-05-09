@@ -55,9 +55,11 @@ interface Props {
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { buildDriverSummary } from '../lib/buildDriverSummary.js';
 
 const { driver } = Astro.props;
 const fullName = `${driver.forename} ${driver.surname}`;
+const driverSummary = buildDriverSummary(driver, new Date().getFullYear());
 const yearsLabel = driver.career.firstYear === driver.career.lastYear
   ? `${driver.career.firstYear}`
   : `${driver.career.firstYear}–${driver.career.lastYear}`;
@@ -180,6 +182,10 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
       </div>
     </div>
   </div>
+
+  {driverSummary && (
+    <p class="driver-summary">{driverSummary}</p>
+  )}
 
   <div class="section-head"><h2>Career Stats</h2><div class="section-rule"></div></div>
   <div class="grid driver-career-grid">
