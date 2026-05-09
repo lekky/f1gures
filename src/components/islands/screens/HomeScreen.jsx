@@ -4,6 +4,7 @@
 import { useMemo } from 'react';
 import {
   SectionHead, SprintBadge, Countdown, useIsMobile, urlFor, navigate, fmtDateLong,
+  circuitTz, zoneShort,
 } from '../../../lib/shared.jsx';
 
 const SESSION_LABELS = {
@@ -15,28 +16,32 @@ const SESSION_LABELS = {
   sprintQuali: 'Sprint Quali',
   race: 'Race',
 };
-const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 // Sessions come from public/data/<year>.json's calendar entries (date +
 // HH:MM:SSZ time per session). Sprint weekends drop fp2/fp3 and gain
-// sprintQuali + sprint. Times rendered as UTC for now — a follow-on PR
-// adds a global timezone toggle (race-local vs user-local).
-function buildSessions(next) {
+// sprintQuali + sprint. Both day-of-week and HH:MM are computed in the
+// chosen IANA zone so a Friday session in Tokyo correctly becomes
+// Thursday in Austin.
+function buildSessions(next, zone) {
   const order = next.sprint
     ? ['fp1', 'sprintQuali', 'sprint', 'q', 'race']
     : ['fp1', 'fp2', 'fp3', 'q', 'race'];
+  const dayFmt  = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: zone });
+  const timeFmt = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: zone,
+  });
   const src = next.sessions;
   return order.map(id => {
     const s = src && src[id];
     if (!s || !s.date || !s.time) {
-      return { id, name: SESSION_LABELS[id], day: '—', time: '—' };
+      return { id, name: SESSION_LABELS[id], day: '—', time: '—', dt: null };
     }
     const dt = new Date(`${s.date}T${s.time}`);
     return {
       id,
       name: SESSION_LABELS[id],
-      day: DAYS_SHORT[dt.getUTCDay()],
-      time: s.time.slice(0, 5),
+      day:  dayFmt.format(dt),
+      time: timeFmt.format(dt),
+      dt,
     };
   });
 }
@@ -107,7 +112,7 @@ function NextRacePanel({ data, cal, next, mob }) {
       : new Date();
   }, [next.date, next.time]);
 
-  const sessions = buildSessions(next);
+  const sessions = buildSessions(next, 'UTC');
 
   return (
     <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
