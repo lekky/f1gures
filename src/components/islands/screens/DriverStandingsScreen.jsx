@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import {
-  Panel, SectionHead, ChangeIndicator, DriverCell, useIsMobile, navigate,
+  Panel, SectionHead, ChangeIndicator, DriverCell, useIsMobile, urlFor,
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, PointsChart, HeadToHead } from './StandingsCommon.jsx';
 
@@ -111,12 +111,22 @@ export default function DriverStandingsScreen({ data }) {
             <tbody>
               {sorted.map(row => {
                 const team = DD.teamById(row.driver.team);
+                const driverHref = urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId });
+                const teamHref = team ? urlFor({ name: 'team', id: team.id, ref: team.id }) : null;
                 return (
-                  <tr key={row.driver.id} className="clickable" onClick={() => navigate({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}>
+                  <tr key={row.driver.id} className="clickable" onClick={() => { window.location.href = driverHref; }}>
                     <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
                     <td><ChangeIndicator change={row.change} /></td>
-                    <td><DriverCell data={DD} driver={row.driver} /></td>
-                    <td>{team ? team.name : '—'}</td>
+                    <td>
+                      <a href={driverHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                        <DriverCell data={DD} driver={row.driver} />
+                      </a>
+                    </td>
+                    <td>
+                      {team && teamHref
+                        ? <a href={teamHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{team.name}</a>
+                        : '—'}
+                    </td>
                     <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 16 }}>{row.points}</strong></td>
                     <td className="right num">{row.wins}</td>
                     <td className="right num">{row.podiums}</td>

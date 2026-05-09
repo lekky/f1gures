@@ -2,7 +2,7 @@
 // js/screens/standings.jsx ConstructorStandingsScreen.
 
 import { useMemo } from 'react';
-import { Panel, SectionHead, useIsMobile, navigate } from '../../../lib/shared.jsx';
+import { Panel, SectionHead, useIsMobile, urlFor } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, TeamProgressionChart } from './StandingsCommon.jsx';
 
 export default function ConstructorStandingsScreen({ data }) {
@@ -35,28 +35,37 @@ export default function ConstructorStandingsScreen({ data }) {
               </tr>
             </thead>
             <tbody>
-              {standings.teams.map(row => (
-                <tr key={row.team.id} className="clickable"
-                    onClick={() => navigate({ name: 'team', id: row.team.id })}>
-                  <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ width: 4, height: 24, background: row.team.color }}></span>
-                      <span style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase' }}>{row.team.name}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {row.drivers.map(d => (
-                        <span key={d.id} className="driver-chip" style={{ '--team-color': row.team.color }}>{d.code}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 18 }}>{row.points}</strong></td>
-                  <td className="right num">{row.wins}</td>
-                  <td className="right num">{row.podiums}</td>
-                </tr>
-              ))}
+              {standings.teams.map(row => {
+                const teamHref = urlFor({ name: 'team', id: row.team.id, ref: row.team.id });
+                return (
+                  <tr key={row.team.id} className="clickable"
+                      onClick={() => { window.location.href = teamHref; }}>
+                    <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
+                    <td>
+                      <a href={teamHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ width: 4, height: 24, background: row.team.color }}></span>
+                          <span style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase' }}>{row.team.name}</span>
+                        </div>
+                      </a>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {row.drivers.map(d => (
+                          <a key={d.id}
+                             href={urlFor({ name: 'driver', id: d.id, ref: d.jolpicaId })}
+                             className="driver-chip"
+                             style={{ '--team-color': row.team.color, color: 'inherit', textDecoration: 'none' }}
+                             onClick={e => e.stopPropagation()}>{d.code}</a>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 18 }}>{row.points}</strong></td>
+                    <td className="right num">{row.wins}</td>
+                    <td className="right num">{row.podiums}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
