@@ -20,14 +20,25 @@ const title = `${team.name} — F1 Constructor History, Wins & Championships | f
 const description = `${team.name} (${team.nationality}, F1 ${yearsLabel}). ${team.career.races} races, ${team.career.wins} wins, ${team.career.podiums} podiums, ${team.career.championships} constructors' championships. Full season-by-season history and notable drivers.`;
 const canonicalPath = `/teams/${team.constructorRef}/`;
 
-const jsonLd = {
+const jsonLd: any = {
   '@context': 'https://schema.org',
   '@type': 'SportsTeam',
   name: team.name,
   sport: 'Formula 1',
   identifier: team.constructorRef,
   url: `https://f1gures.app${canonicalPath}`,
+  memberOf: {
+    '@type': 'SportsOrganization',
+    name: 'FIA Formula One World Championship',
+  },
 };
+
+if (team.career.firstYear) {
+  jsonLd.foundingDate = String(team.career.firstYear);
+}
+if (team.nationality) {
+  jsonLd.location = { '@type': 'Country', name: team.nationality };
+}
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
@@ -35,6 +46,6 @@ const breadcrumb = [
   { name: team.name, path: canonicalPath },
 ];
 ---
-<BaseLayout {title} {description} {canonicalPath} ogType="article" {jsonLd} {breadcrumb}>
+<BaseLayout {title} {description} {canonicalPath} ogType="website" {jsonLd} {breadcrumb}>
   <TeamPage {team} />
 </BaseLayout>
