@@ -10,17 +10,18 @@
 //      so the prerendered HTML reflects real, current standings.
 //
 // If no bundle exists (fresh clone, API down, year not yet started), the
-// JSON is `{}` and we fall back to the speculative grid in buildFallback().
+// JSON is `{}` and we hand the islands an empty-but-valid shape with
+// `_empty: true` so screens can render placeholders. We deliberately do
+// NOT fall back to buildFallback's speculative driver grid — that data
+// drifts from reality and confuses visitors.
 
 import json from './currentSeason.json';
-import { buildFallback, buildFromYearJson } from './buildFallback.js';
-
-const fallback = buildFallback();
+import { buildFromYearJson } from './buildFallback.js';
+import { circuitProfiles } from './circuitProfiles.js';
 
 const hasBundle = json && json.seasonYear && Array.isArray(json.drivers) && json.drivers.length > 0;
 
-const currentSeason = hasBundle
-  ? buildFromYearJson(json, fallback.circuits)
-  : fallback;
+const currentSeason = buildFromYearJson(hasBundle ? json : {}, circuitProfiles);
+if (!hasBundle) currentSeason._empty = true;
 
 export default currentSeason;
