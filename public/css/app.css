@@ -797,7 +797,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .driver-summary {
   font-size: 0.95rem;
   line-height: 1.55;
-  color: var(--ink-2, #444);
+  color: var(--fg-2, #b8b9bd);
   margin: 12px 0 18px;
   max-width: 65ch;
 }
