@@ -9,5 +9,5 @@ import CalendarScreen from './screens/CalendarScreen.jsx';
 
 export default function CalendarIsland() {
   const data = useYearAwareData(currentSeason);
-  return <CalendarScreen data={data} />;
+  return <div data-year-aware><CalendarScreen data={data} /></div>;
 }

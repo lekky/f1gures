@@ -14,9 +14,11 @@
 
 import Chrome from '../components/Chrome.astro';
 import { publicAssetHash } from '../lib/assetHash.js';
+import currentSeason from '../data/currentSeason.js';
 
 const appCssHash = publicAssetHash('css/app.css');
 const siteCssHash = publicAssetHash('css/site.css');
+const currentSeasonYear = String(currentSeason.seasonYear || '');
 
 export interface Props {
   title: string;
@@ -115,6 +117,25 @@ if (breadcrumb && breadcrumb.length > 0) {
       } catch (e) {}
     })();
   </script>
+
+  <!-- Pre-hydration year guard: if the visitor has picked a non-current
+       season via the year picker, hide year-aware island content before
+       paint so they don't see the SSR'd current-season data flash before
+       the historic bundle finishes loading. The year-aware islands clear
+       the class on mount once they've taken over rendering. -->
+  <script is:inline define:vars={{ currentSeasonYear }}>
+    (function () {
+      try {
+        var y = localStorage.getItem('f1-year');
+        if (y && y !== 'current' && y !== currentSeasonYear) {
+          document.documentElement.classList.add('year-pending');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style is:inline>
+    html.year-pending [data-year-aware] { visibility: hidden; }
+  </style>
 </head>
 <body>
   <Chrome>

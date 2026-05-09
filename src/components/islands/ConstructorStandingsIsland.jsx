@@ -4,5 +4,5 @@ import ConstructorStandingsScreen from './screens/ConstructorStandingsScreen.jsx
 
 export default function ConstructorStandingsIsland() {
   const data = useYearAwareData(currentSeason);
-  return <ConstructorStandingsScreen data={data} />;
+  return <div data-year-aware><ConstructorStandingsScreen data={data} /></div>;
 }

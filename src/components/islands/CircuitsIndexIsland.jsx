@@ -4,5 +4,5 @@ import CircuitsIndexScreen from './screens/CircuitsIndexScreen.jsx';
 
 export default function CircuitsIndexIsland() {
   const data = useYearAwareData(currentSeason);
-  return <CircuitsIndexScreen data={data} />;
+  return <div data-year-aware><CircuitsIndexScreen data={data} /></div>;
 }

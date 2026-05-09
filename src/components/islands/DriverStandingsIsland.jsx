@@ -4,5 +4,5 @@ import DriverStandingsScreen from './screens/DriverStandingsScreen.jsx';
 
 export default function DriverStandingsIsland() {
   const data = useYearAwareData(currentSeason);
-  return <DriverStandingsScreen data={data} />;
+  return <div data-year-aware><DriverStandingsScreen data={data} /></div>;
 }
