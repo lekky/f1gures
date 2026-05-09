@@ -36,9 +36,6 @@ const jsonLd: any = {
 if (team.career.firstYear) {
   jsonLd.foundingDate = String(team.career.firstYear);
 }
-if (team.nationality) {
-  jsonLd.location = { '@type': 'Country', name: team.nationality };
-}
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
