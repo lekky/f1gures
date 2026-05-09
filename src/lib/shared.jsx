@@ -95,6 +95,59 @@ export function useIsMobile(breakpoint = 720) {
   return isMob;
 }
 
+// ─── Circuit timezones ────────────────────────────────────────
+// IANA zone per circuitId (matches the circuitId field on calendar
+// entries in public/data/<year>.json). Used by HomeScreen's session
+// schedule toggle. Missing entries fall back to UTC so the panel
+// never crashes on a circuit we forgot.
+const CIRCUIT_TZ = {
+  albert_park:    'Australia/Melbourne',
+  shanghai:       'Asia/Shanghai',
+  suzuka:         'Asia/Tokyo',
+  miami:          'America/New_York',
+  villeneuve:     'America/Toronto',
+  monaco:         'Europe/Monaco',
+  catalunya:      'Europe/Madrid',
+  red_bull_ring:  'Europe/Vienna',
+  silverstone:    'Europe/London',
+  spa:            'Europe/Brussels',
+  hungaroring:    'Europe/Budapest',
+  zandvoort:      'Europe/Amsterdam',
+  monza:          'Europe/Rome',
+  madring:        'Europe/Madrid',
+  baku:           'Asia/Baku',
+  marina_bay:     'Asia/Singapore',
+  americas:       'America/Chicago',
+  rodriguez:      'America/Mexico_City',
+  interlagos:     'America/Sao_Paulo',
+  vegas:          'America/Los_Angeles',
+  losail:         'Asia/Qatar',
+  yas_marina:     'Asia/Dubai',
+  bahrain:        'Asia/Bahrain',
+  jeddah:         'Asia/Riyadh',
+  imola:          'Europe/Rome',
+};
+
+export function circuitTz(circuitId) {
+  return (circuitId && CIRCUIT_TZ[circuitId]) || 'UTC';
+}
+
+// Resolve the short timezone abbreviation (EDT, CEST, JST, …) for a
+// given zone at a given moment. The moment matters because abbreviations
+// flip with DST (EDT in summer, EST in winter).
+export function zoneShort(zone, dt) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      timeZoneName: 'short',
+    }).formatToParts(dt);
+    const part = parts.find(p => p.type === 'timeZoneName');
+    return part ? part.value : '';
+  } catch {
+    return '';
+  }
+}
+
 // ─── Date helpers ─────────────────────────────────────────────
 export function fmtDate(iso, opts = {}) {
   const d = new Date(iso + 'T14:00:00Z');
