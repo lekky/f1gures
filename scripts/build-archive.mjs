@@ -968,12 +968,40 @@ const HAND_CONSTRUCTOR_ALIAS = {
 };
 
 const driverDocCache = new Map(); // driverRef → mutable doc
-function loadDriverDoc(driverRef) {
+const newlyCreatedDrivers = new Set(); // refs synthesised from bundles
+function loadDriverDoc(driverRef, bundleDriver) {
   if (driverDocCache.has(driverRef)) return driverDocCache.get(driverRef);
   const p = join(OUT, 'drivers', `${driverRef}.json`);
-  if (!existsSync(p)) return null;
-  const doc = JSON.parse(readFileSync(p, 'utf8'));
+  if (existsSync(p)) {
+    const doc = JSON.parse(readFileSync(p, 'utf8'));
+    driverDocCache.set(driverRef, doc);
+    return doc;
+  }
+  // No Ergast row for this driver — they debuted post-2024. Synthesize a
+  // shell doc from the bundle entry so the post-archive merge has somewhere
+  // to append per-race entries. Career totals get filled in by the
+  // recompute pass below.
+  if (!bundleDriver) return null;
+  const doc = {
+    driverRef,
+    driverId: null,
+    code: bundleDriver.code || null,
+    number: bundleDriver.num != null ? String(bundleDriver.num) : null,
+    forename: bundleDriver.first || '',
+    surname: bundleDriver.last || '',
+    dob: bundleDriver.dateOfBirth || null,
+    nationality: bundleDriver.nationality || null,
+    url: null,
+    career: {
+      seasons: 0, firstYear: null, lastYear: null,
+      races: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0,
+      championships: 0,
+    },
+    perSeason: [],
+    perRace: [],
+  };
   driverDocCache.set(driverRef, doc);
+  newlyCreatedDrivers.add(driverRef);
   return doc;
 }
 
@@ -1002,7 +1030,7 @@ for (const { year, path } of seasonFiles) {
     for (const code of codes) {
       const d = driverByCode.get(code);
       if (!d) continue;
-      const doc = loadDriverDoc(d.jolpicaId);
+      const doc = loadDriverDoc(d.jolpicaId, d);
       if (!doc) continue;
       // Idempotent re-runs: skip if this race is already merged
       if (doc.perRace.some(r => r.year === year && r.round === round)) continue;
@@ -1108,19 +1136,47 @@ for (const [driverRef, doc] of driverDocCache) {
 
   writeFileSync(join(OUT, 'drivers', `${driverRef}.json`), JSON.stringify(doc));
 
-  const idx = driverIndexByRef.get(driverRef);
-  if (idx) {
-    idx.firstYear = doc.career.firstYear;
-    idx.lastYear = doc.career.lastYear;
-    idx.races = doc.career.races;
-    idx.wins = doc.career.wins;
-    // championships unchanged
+  if (newlyCreatedDrivers.has(driverRef)) {
+    // First time we've seen this driver — give them an index entry so
+    // /drivers/<ref>/ gets prerendered, and add a code → ref mapping for
+    // the legacy /driver.html?id=ANT redirect.
+    index.push({
+      driverRef,
+      code: doc.code,
+      forename: doc.forename,
+      surname: doc.surname,
+      nationality: doc.nationality,
+      firstYear: doc.career.firstYear,
+      lastYear: doc.career.lastYear,
+      races: doc.career.races,
+      wins: doc.career.wins,
+      championships: doc.career.championships,
+    });
+    if (doc.code) codeToRef[doc.code] = driverRef;
+  } else {
+    const idx = driverIndexByRef.get(driverRef);
+    if (idx) {
+      idx.firstYear = doc.career.firstYear;
+      idx.lastYear = doc.career.lastYear;
+      idx.races = doc.career.races;
+      idx.wins = doc.career.wins;
+      // championships unchanged
+    }
   }
 }
 
 if (postArchiveDriverEntries > 0) {
+  // Re-sort the index after appending new drivers; same comparator as
+  // the initial sort so order is stable across reruns.
+  index.sort((a, b) =>
+    (a.surname || '').localeCompare(b.surname || '') ||
+    (a.forename || '').localeCompare(b.forename || '')
+  );
   writeFileSync(join(OUT, '_drivers-index.json'), JSON.stringify(index));
-  console.log(`[archive] merged ${postArchiveDriverEntries} post-Ergast race entries (${seasonFiles.map(s => s.year).join(', ')}) into ${driverDocCache.size} driver docs`);
+  if (newlyCreatedDrivers.size > 0) {
+    writeFileSync(join(OUT, '_driver-codes.json'), JSON.stringify(codeToRef));
+  }
+  console.log(`[archive] merged ${postArchiveDriverEntries} post-Ergast race entries (${seasonFiles.map(s => s.year).join(', ')}) into ${driverDocCache.size} driver docs (${newlyCreatedDrivers.size} new)`);
 }
 
 // ─── Teams (constructors) ────────────────────────────────────────────
