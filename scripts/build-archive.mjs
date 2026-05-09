@@ -1229,6 +1229,30 @@ for (const { year, path } of seasonFiles) {
   }
 }
 
+// Pre-compute championship standings per bundle year by summing race points.
+// Used below to fill position for post-Ergast perSeason rows instead of null.
+const bundleStandings = new Map(); // year → Map<driverRef, champPosition>
+for (const { year, path } of seasonFiles) {
+  const season = JSON.parse(readFileSync(path, 'utf8'));
+  if (!season.results) continue;
+  const driverByCode = new Map();
+  for (const d of season.drivers || []) {
+    if (d.id && d.jolpicaId) driverByCode.set(d.id, d);
+  }
+  const totals = new Map(); // driverRef → totalPoints
+  for (const rData of Object.values(season.results)) {
+    for (const [code, det] of Object.entries(rData.detail || {})) {
+      const d = driverByCode.get(code);
+      if (!d) continue;
+      const pts = parseFloat(det.points) || 0;
+      totals.set(d.jolpicaId, (totals.get(d.jolpicaId) || 0) + pts);
+    }
+  }
+  const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+  const posMap = new Map(sorted.map(([ref], i) => [ref, i + 1]));
+  bundleStandings.set(year, posMap);
+}
+
 // Refresh career totals + perSeason for any driver we touched, then
 // rewrite the per-driver JSON. _drivers-index.json gets the same updates
 // in-place so the listing reflects new totals.
@@ -1280,12 +1304,13 @@ for (const [driverRef, doc] of driverDocCache) {
       // Year was in Ergast — preserve final-standing rank and points.
       return { ...existing, races: rows.length, bestFinish, wins: seasonWins };
     }
-    // Post-Ergast year — sum points from per-race detail.
+    // Post-Ergast year — sum points from per-race detail; derive position
+    // from bundleStandings (computed above from race result points totals).
     return {
       year,
       constructorRef: primaryRef,
       constructorName: primaryName,
-      position: null,
+      position: bundleStandings.get(year)?.get(driverRef) ?? null,
       points: rows.reduce((s, r) => s + (r.points || 0), 0),
       wins: seasonWins,
       races: rows.length,

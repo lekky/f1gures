@@ -159,7 +159,7 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
             {driver.perSeason.map(s => (
               <tr>
                 <td class="t-mono">{s.year}</td>
-                <td>{s.constructorName || '—'}</td>
+                <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : (s.constructorName || '—')}</td>
                 <td class={`right ${s.position === 1 ? 'is-champ-cell' : ''}`}>{ord(s.position)}</td>
                 <td class="right t-mono">{s.points != null ? s.points : '—'}</td>
                 <td class="right t-mono">{s.wins}</td>
@@ -196,7 +196,7 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
                 <tr>
                   <td class="t-mono">{raceHref ? <a href={raceHref}>{r.year}</a> : r.year}</td>
                   <td>{raceHref ? <a href={raceHref}>{r.raceName || '—'}</a> : (r.raceName || '—')}</td>
-                  <td>{r.constructorName || '—'}</td>
+                  <td>{r.constructorRef ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName || r.constructorRef}</a> : (r.constructorName || '—')}</td>
                   <td class="right t-mono">{fmtNum(r.grid)}</td>
                   <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || ord(r.position)}</td>
                   <td class="right t-mono">{r.points || 0}</td>
