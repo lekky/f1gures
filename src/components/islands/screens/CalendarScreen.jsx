@@ -25,11 +25,12 @@ export default function CalendarScreen({ data }) {
           const result = F.results[race.round];
           const winner = result ? F.driverById(result.order[0]) : null;
           const fastest = result ? F.driverById(result.fastest) : null;
+          const href = result ? urlFor({ name: 'race', year: F.seasonYear, round: race.round }) : undefined;
           return (
             <a key={race.round}
                className={`race-card is-${race.status}`}
-               style={{ textDecoration: 'none', color: 'inherit' }}
-               href={urlFor({ name: 'race', year: F.seasonYear, round: race.round })}>
+               style={{ textDecoration: 'none', color: 'inherit', cursor: href ? 'pointer' : 'default' }}
+               href={href}>
               <div className="race-card-head">
                 <div>
                   <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>
