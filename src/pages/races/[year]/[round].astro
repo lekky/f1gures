@@ -1,4 +1,6 @@
 ---
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import RacePage from '../../../components/RacePage.astro';
 import { getRacesIndex, getRace } from '../../../data/archive.js';
@@ -16,7 +18,10 @@ const winnerName = race.results.find(r => r.position === 1)?.driverName || null;
 const title = `${race.name} ${race.year}${winnerName ? ` — ${winnerName} won` : ''} | f1gures`;
 const description = `${race.name} ${race.year} race results from ${race.circuit?.name || 'the circuit'}. Full grid, finishing order, qualifying times${race.sprint ? ', sprint results' : ''}, points, and pit-stop pace.`;
 const canonicalPath = `/races/${race.year}/${race.round}/`;
-const ogImage = `/images/og/races/${race.year}-${race.round}.png`;
+const ogImagePath = `/images/og/races/${race.year}-${race.round}.png`;
+const ogImage = existsSync(resolve(process.cwd(), 'public', ogImagePath.slice(1)))
+  ? ogImagePath
+  : '/images/og-default.png';
 
 const completed = race.results.length > 0;
 const winner = race.results.find(r => r.position === 1) || null;

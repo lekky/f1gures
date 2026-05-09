@@ -682,6 +682,7 @@ for (const race of racesSorted) {
       driverName: d ? `${d.forename} ${d.surname}` : null,
       code: d ? deriveCode(d) : null,
       constructorRef: c ? c.constructorRef : null,
+      constructorName: c ? c.name : null,
       grid: toInt(s.grid),
       points: toFloat(s.points) || 0,
       time: s.time || null,
@@ -828,6 +829,7 @@ for (let i = 0; i < allBundleRounds.length; i++) {
       const det = (rData.sprintResults.detail || {})[code] || {};
       const tId = d?.team;
       const cRef = BUNDLE_TEAM_ALIAS[tId] || tId || null;
+      const cName = teamById.get(tId)?.name || cRef || null;
       return {
         position: det.position != null ? parseInt(det.position, 10) : null,
         positionText: det.position != null ? String(det.position) : null,
@@ -835,6 +837,7 @@ for (let i = 0; i < allBundleRounds.length; i++) {
         driverName: d ? `${d.first} ${d.last}` : code,
         code,
         constructorRef: cRef,
+        constructorName: cName,
         grid: det.grid ?? null,
         points: det.points ?? 0,
         time: det.time || null,

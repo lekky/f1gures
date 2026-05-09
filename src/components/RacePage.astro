@@ -59,6 +59,7 @@ interface Props {
       driverName: string | null;
       code: string | null;
       constructorRef: string | null;
+      constructorName: string | null;
       grid: number | null;
       points: number;
       time: string | null;
@@ -238,7 +239,7 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
                 <td class={`right t-mono ${s.position === 1 ? 'is-win-cell' : ''}`}>{s.positionText || s.position}</td>
                 <td class="right t-mono">{s.grid != null ? s.grid : '—'}</td>
                 <td>{s.driverRef ? <a href={`/drivers/${s.driverRef}/`}>{s.driverName}</a> : s.driverName}</td>
-                <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorRef}</a> : '—'}</td>
+                <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : '—'}</td>
                 <td class="t-mono">{s.time || s.status || '—'}</td>
                 <td class="right t-mono">{s.points}</td>
               </tr>

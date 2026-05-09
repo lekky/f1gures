@@ -55,12 +55,20 @@ export default function CalendarScreen({ data }) {
                   <span className="lbl">Date</span>
                   <span className="val">{fmtDateLong(race.date)}</span>
                 </div>
-                {winner && (
-                  <div className="race-mini-row">
-                    <span className="lbl">Winner</span>
-                    <span className="val" style={{ color: 'var(--fg-1)' }}>{winner.flag} {winner.first[0]}. {winner.last}</span>
-                  </div>
-                )}
+                {winner && (() => {
+                  const winnerHref = urlFor({ name: 'driver', id: winner.id, ref: winner.jolpicaId });
+                  const winnerLabel = `${winner.flag} ${winner.first ? winner.first[0] + '. ' : ''}${winner.last}`;
+                  return (
+                    <div className="race-mini-row">
+                      <span className="lbl">Winner</span>
+                      <span className="val" style={{ color: 'var(--fg-1)' }}>
+                        {winner.jolpicaId
+                          ? <a href={winnerHref} className="inline-link" style={{ color: 'inherit' }} onClick={e => e.stopPropagation()}>{winnerLabel}</a>
+                          : winnerLabel}
+                      </span>
+                    </div>
+                  );
+                })()}
                 {fastest && (
                   <div className="race-mini-row">
                     <span className="lbl">Fastest Lap</span>

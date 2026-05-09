@@ -16,19 +16,23 @@ let jsonLd: unknown = undefined;
 if (!currentSeason._empty && typeof currentSeason.computeStandings === 'function') {
   const standings = currentSeason.computeStandings();
   const ranked = standings.teams || [];
-  if (ranked.length > 0) {
+  // Only include teams with a known Ergast slug (jolpicaId) so emitted URLs
+  // resolve to real prerendered pages. team.id is the buildFallback alias
+  // (e.g. "redbull"); team.jolpicaId is the URL slug (e.g. "red_bull").
+  const linkable = ranked.filter(row => row.team.jolpicaId);
+  if (linkable.length > 0) {
     jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       name: `${seasonYear} F1 Constructor Championship Standings`,
-      numberOfItems: ranked.length,
-      itemListElement: ranked.map((row, i) => ({
+      numberOfItems: linkable.length,
+      itemListElement: linkable.map((row, i) => ({
         '@type': 'ListItem',
         position: i + 1,
         item: {
           '@type': 'SportsTeam',
           name: row.team.name,
-          url: `https://f1gures.app/teams/${row.team.id}/`,
+          url: `https://f1gures.app/teams/${row.team.jolpicaId}/`,
         },
       })),
     };
