@@ -790,3 +790,14 @@ html.light .circuit-track .circuit-track-light { display: block; }
   line-height: 1.5;
   font-size: 15px;
 }
+
+/* SEO content paragraphs — visible natural-language summaries above
+   detail page tables. Reused for race-summary and driver-summary. */
+.race-summary,
+.driver-summary {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--ink-2, #444);
+  margin: 12px 0 18px;
+  max-width: 65ch;
+}

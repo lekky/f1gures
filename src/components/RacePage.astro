@@ -69,8 +69,11 @@ interface Props {
   };
 }
 
+import { buildRaceSummary } from '../lib/buildRaceSummary.js';
+
 const { race } = Astro.props;
 const podium = race.results.filter(r => r.position != null && r.position <= 3);
+const raceSummary = buildRaceSummary(race);
 ---
 
 <div class="page">
@@ -110,6 +113,10 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
       )}
     </div>
   </div>
+
+  {raceSummary && (
+    <p class="race-summary">{raceSummary}</p>
+  )}
 
   {race.results.length > 0 && (
     <>
