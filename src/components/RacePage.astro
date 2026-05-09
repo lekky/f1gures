@@ -74,6 +74,24 @@ import { buildRaceSummary } from '../lib/buildRaceSummary.js';
 const { race } = Astro.props;
 const podium = race.results.filter(r => r.position != null && r.position <= 3);
 const raceSummary = buildRaceSummary(race);
+
+const winnerRow = race.results.find(r => r.position === 1) || null;
+const poleQualifying = race.qualifying?.[0] || null;
+
+interface KeyLink { label: string; href: string; text: string; }
+const keyLinks: KeyLink[] = [];
+if (winnerRow?.driverRef && winnerRow?.driverName) {
+  keyLinks.push({ label: 'Winner', href: `/drivers/${winnerRow.driverRef}/`, text: winnerRow.driverName });
+}
+if (poleQualifying?.driverRef && poleQualifying?.driverName && poleQualifying.driverRef !== winnerRow?.driverRef) {
+  keyLinks.push({ label: 'Pole', href: `/drivers/${poleQualifying.driverRef}/`, text: poleQualifying.driverName });
+}
+if (race.circuit?.circuitRef && race.circuit?.name) {
+  keyLinks.push({ label: 'Circuit', href: `/circuits/${race.circuit.circuitRef}/`, text: race.circuit.name });
+}
+if (winnerRow?.constructorRef && winnerRow?.constructorName) {
+  keyLinks.push({ label: 'Winning team', href: `/teams/${winnerRow.constructorRef}/`, text: winnerRow.constructorName });
+}
 ---
 
 <div class="page">
@@ -151,6 +169,19 @@ const raceSummary = buildRaceSummary(race);
           </tbody>
         </table>
       </div>
+      {keyLinks.length > 0 && (
+        <div class="race-keylinks">
+          <span class="t-eyebrow">Key links:</span>
+          <ul>
+            {keyLinks.map((l) => (
+              <li>
+                <span class="t-mono">{l.label}</span>{' '}
+                <a href={l.href}>{l.text}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </>
   )}
 
