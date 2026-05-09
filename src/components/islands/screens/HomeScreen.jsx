@@ -129,11 +129,13 @@ function NextRacePanel({ data, cal, next, mob }) {
   const trackZone = circuitTz(next.circuitId);
   const activeZone = tzMode === 'user' ? userZone : trackZone;
 
-  const target = useMemo(() => {
+  const raceDt = useMemo(() => {
     return next.date
       ? new Date(`${next.date}T${next.time || '14:00:00Z'}`)
       : new Date();
   }, [next.date, next.time]);
+
+  const target = raceDt;
 
   const sessions = buildSessions(next, activeZone);
 
@@ -200,6 +202,16 @@ function NextRacePanel({ data, cal, next, mob }) {
                 <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{s.time}</span>
               </div>
             ))}
+          </div>
+          <div className="t-mono" style={{
+            fontSize: 11,
+            color: 'var(--fg-3)',
+            marginTop: 8,
+            letterSpacing: '0.04em',
+          }}>
+            Track: {(D.circuits[next.circuit] && D.circuits[next.circuit].city) || '—'} ({zoneShort(trackZone, raceDt)})
+            {' · '}
+            You: {userZone} ({zoneShort(userZone, raceDt)})
           </div>
         </div>
       </div>
