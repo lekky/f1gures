@@ -18,11 +18,21 @@ const yearsPart = driver.career.firstYear === driver.career.lastYear
   ? `${driver.career.firstYear}`
   : `${driver.career.firstYear}–${driver.career.lastYear}`;
 
+const completed = driver.career.races > 0;
+const championshipYears = (driver.perSeason || [])
+  .filter(s => s.position === 1)
+  .map(s => s.year)
+  .sort((a, b) => a - b);
+const teamsRaced = Array.from(new Set((driver.perSeason || [])
+  .map(s => s.constructorName)
+  .filter((n): n is string => !!n)));
+const careerSummary = `${fullName} (${driver.nationality || 'unknown nationality'}, F1 ${yearsPart}) — ${driver.career.races} races, ${driver.career.wins} wins, ${driver.career.podiums} podiums, ${driver.career.poles} poles, ${driver.career.championships} championships.`;
+
 const title = `${fullName}${codePart} — F1 Driver Stats, Career & Race Results | f1gures`;
 const description = `${fullName} (${driver.nationality}, F1 ${yearsPart}). Career: ${driver.career.races} races, ${driver.career.wins} wins, ${driver.career.podiums} podiums, ${driver.career.poles} poles, ${driver.career.championships} championships. Full season-by-season and race-by-race results.`;
 const canonicalPath = `/drivers/${driver.driverRef}/`;
 
-const jsonLd = {
+const personLd: any = {
   '@context': 'https://schema.org',
   '@type': 'Person',
   name: fullName,
@@ -31,9 +41,61 @@ const jsonLd = {
   nationality: driver.nationality,
   birthDate: driver.dob,
   jobTitle: 'Formula 1 Driver',
+  description: careerSummary,
   identifier: driver.code || driver.driverRef,
   url: `https://f1gures.app${canonicalPath}`,
+  hasOccupation: {
+    '@type': 'Occupation',
+    name: 'Formula 1 Racing Driver',
+  },
 };
+
+const jsonLd: any[] = [personLd];
+
+if (completed) {
+  const faqEntities: any[] = [];
+  if (driver.career.championships > 0 && championshipYears.length > 0) {
+    faqEntities.push({
+      '@type': 'Question',
+      name: `How many F1 World Championships did ${fullName} win?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${driver.career.championships} (${championshipYears.join(', ')}).`,
+      },
+    });
+  } else {
+    faqEntities.push({
+      '@type': 'Question',
+      name: `Did ${fullName} win an F1 World Championship?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `No. ${fullName} did not win the Formula 1 World Drivers' Championship.`,
+      },
+    });
+  }
+  faqEntities.push({
+    '@type': 'Question',
+    name: `How many F1 races did ${fullName} win?`,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: `${driver.career.wins} wins from ${driver.career.races} starts, with ${driver.career.podiums} podiums and ${driver.career.poles} pole positions.`,
+    },
+  });
+  if (teamsRaced.length > 0) {
+    faqEntities.push({
+      '@type': 'Question',
+      name: `Which teams did ${fullName} drive for in F1?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: teamsRaced.join(', ') + '.',
+      },
+    });
+  }
+  jsonLd.push({
+    '@type': 'FAQPage',
+    mainEntity: faqEntities,
+  });
+}
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
@@ -42,6 +104,13 @@ const breadcrumb = [
 ];
 ---
 
-<BaseLayout {title} {description} {canonicalPath} ogType="profile" {jsonLd} {breadcrumb}>
+<BaseLayout
+  {title}
+  {description}
+  {canonicalPath}
+  ogType="profile"
+  jsonLd={jsonLd.length === 1 ? jsonLd[0] : { '@context': 'https://schema.org', '@graph': jsonLd }}
+  {breadcrumb}
+>
   <DriverPage {driver} />
 </BaseLayout>
