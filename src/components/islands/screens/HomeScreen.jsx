@@ -1,7 +1,7 @@
 // Home / Dashboard. Ported from js/screens/home.jsx.
 // All `window.F1_DATA` reads → `data` prop. Recharts unused on this screen.
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   SectionHead, SprintBadge, Countdown, useIsMobile, urlFor, navigate, fmtDateLong,
   circuitTz, zoneShort,
@@ -106,13 +106,36 @@ function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
 function NextRacePanel({ data, cal, next, mob }) {
   const D = data;
 
+  const userZone = useMemo(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
+    catch { return 'UTC'; }
+  }, []);
+
+  // Initial render is always 'track' so the prerendered HTML matches what
+  // hydration shows for users with no saved preference. localStorage is
+  // read in an effect after hydration to switch to 'user' when needed.
+  const [tzMode, setTzMode] = useState('track');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('f1-tz');
+      if (saved === 'user' || saved === 'track') setTzMode(saved);
+    } catch { /* localStorage unavailable */ }
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem('f1-tz', tzMode); }
+    catch { /* localStorage unavailable */ }
+  }, [tzMode]);
+
+  const trackZone = circuitTz(next.circuitId);
+  const activeZone = tzMode === 'user' ? userZone : trackZone;
+
   const target = useMemo(() => {
     return next.date
       ? new Date(`${next.date}T${next.time || '14:00:00Z'}`)
       : new Date();
   }, [next.date, next.time]);
 
-  const sessions = buildSessions(next, 'UTC');
+  const sessions = buildSessions(next, activeZone);
 
   return (
     <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
@@ -142,7 +165,27 @@ function NextRacePanel({ data, cal, next, mob }) {
         </div>
 
         <div>
-          <div className="t-eyebrow" style={{ marginBottom: 10 }}>Session Schedule</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <span className="t-eyebrow">Session Schedule</span>
+            <div role="tablist" aria-label="Time zone"
+                 style={{ display: 'inline-flex', border: '1px solid var(--line-1)' }}>
+              {[['track', 'Track'], ['user', 'You']].map(([val, lbl]) => (
+                <button key={val} role="tab" aria-selected={tzMode === val}
+                  onClick={(e) => { e.stopPropagation(); setTzMode(val); }}
+                  style={{
+                    padding: '4px 10px',
+                    fontFamily: 'var(--f-mono)',
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    cursor: 'pointer',
+                    background: tzMode === val ? 'var(--accent)' : 'transparent',
+                    color: tzMode === val ? '#fff' : 'var(--fg-2)',
+                    border: 'none',
+                  }}>{lbl}</button>
+              ))}
+            </div>
+          </div>
           <div style={{ border: '1px solid var(--line-1)' }}>
             {sessions.map((s, i) => (
               <div key={s.id} style={{
