@@ -1,20 +1,50 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import CircuitsIndexIsland from '../components/islands/CircuitsIndexIsland.jsx';
+import currentSeason from '../data/currentSeason.js';
 
-const title = 'F1 Circuits 2026 — All Tracks, Maps & Lap Records | f1gures';
-const description = 'Every circuit on the 2026 Formula 1 calendar. Track maps, lap records, length, corners, DRS zones and tyre characteristics for all 24 Grands Prix.';
+const seasonYear = currentSeason.seasonYear || '2026';
+const calendar = Array.isArray(currentSeason.calendar) ? currentSeason.calendar : [];
+const title = `F1 Circuits ${seasonYear} — All Tracks, Maps & Lap Records | f1gures`;
+const description = `Every circuit on the ${seasonYear} Formula 1 calendar. Track maps, lap records, length, corners, DRS zones and tyre characteristics for all ${calendar.length || 24} Grands Prix.`;
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
   { name: 'Circuits', path: '/circuits/' },
 ];
+
+const seenCircuits = new Set<string>();
+const circuitItems: { circuitId: string; name: string }[] = [];
+for (const r of calendar) {
+  const id = r.circuitId || r.circuit;
+  if (id && !seenCircuits.has(id)) {
+    seenCircuits.add(id);
+    circuitItems.push({ circuitId: id, name: r.name?.replace(/Grand Prix$/i, 'Circuit').trim() || id });
+  }
+}
+
+const jsonLd = circuitItems.length > 0 ? {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: `${seasonYear} F1 Circuits`,
+  numberOfItems: circuitItems.length,
+  itemListElement: circuitItems.map((c, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    item: {
+      '@type': 'Place',
+      name: c.name,
+      url: `https://f1gures.app/circuits/${c.circuitId}/`,
+    },
+  })),
+} : undefined;
 ---
 <BaseLayout
   title={title}
   description={description}
   canonicalPath="/circuits/"
   ogType="website"
+  jsonLd={jsonLd}
   breadcrumb={breadcrumb}
 >
   <CircuitsIndexIsland client:load />
