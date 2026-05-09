@@ -737,6 +737,165 @@ for (const race of racesSorted) {
 writeFileSync(join(OUT, '_races-index.json'), JSON.stringify(racesIndex));
 console.log(`[archive] wrote ${racesWritten} race detail bundles → ${join(OUT, 'races')}`);
 
+// ─── Post-2024 bundle → race archive entries ─────────────────────────────
+// For years after the Ergast CSV dump (> 2024), read public/data/<year>.json
+// and emit archive race JSONs for completed rounds (those with results).
+// These are appended to racesIndex so getStaticPaths prerenders /races/<y>/<r>/.
+
+const BUNDLE_TEAM_ALIAS = { redbull: 'red_bull', aston: 'aston_martin' };
+
+const DATA_DIR = join(ROOT, 'public', 'data');
+const bundleYears = readdirSync(DATA_DIR)
+  .filter(f => /^\d{4}\.json$/.test(f))
+  .map(f => parseInt(f, 10))
+  .filter(y => y > 2024)
+  .sort((a, b) => a - b);
+
+// Collect all completed rounds across all bundle years, sorted by year+round
+const allBundleRounds = [];
+for (const bYear of bundleYears) {
+  const bundle = JSON.parse(readFileSync(join(DATA_DIR, `${bYear}.json`), 'utf8'));
+  if (!bundle.calendar || !bundle.results) continue;
+  for (const calEntry of bundle.calendar.slice().sort((a, b) => a.round - b.round)) {
+    const rData = bundle.results[String(calEntry.round)];
+    if (rData) allBundleRounds.push({ year: bYear, round: calEntry.round, calEntry, rData, bundle });
+  }
+}
+
+// circuits.csv uses numeric circuitId; bundles use circuitRef slugs — build a ref map
+const circuitsByRef = new Map(circuits.map(c => [c.circuitRef, c]));
+
+let bundleRacesWritten = 0;
+for (let i = 0; i < allBundleRounds.length; i++) {
+  const { year: bYear, round, calEntry, rData, bundle } = allBundleRounds[i];
+  const driverByCode = new Map(bundle.drivers.map(d => [d.id, d]));
+  const teamById = new Map(bundle.teams.map(t => [t.id, t]));
+
+  const circuitId = calEntry.circuitId;
+  const ergCircuit = circuitsByRef.get(circuitId);
+  const cInfo = ergCircuit
+    ? countryInfo(ergCircuit.country)
+    : { code: calEntry.country || '', flag: calEntry.flag || '' };
+
+  const results = (rData.order || []).map(code => {
+    const d = driverByCode.get(code);
+    const det = (rData.detail || {})[code] || {};
+    const tId = d?.team;
+    const cRef = BUNDLE_TEAM_ALIAS[tId] || tId || null;
+    const isFastest = rData.fastest === code;
+    return {
+      position: det.position != null ? parseInt(det.position, 10) : null,
+      positionText: det.position != null ? String(det.position) : null,
+      driverRef: d?.jolpicaId || null,
+      driverName: d ? `${d.first} ${d.last}` : code,
+      code,
+      constructorRef: cRef,
+      constructorName: (tId ? teamById.get(tId) : null)?.name || cRef || null,
+      constructorColor: teamColor(cRef),
+      grid: det.grid ?? null,
+      points: det.points ?? 0,
+      laps: det.laps ?? null,
+      time: det.time || null,
+      status: det.status || null,
+      fastestLapTime: isFastest ? (det.fastestLap || null) : null,
+      fastestLapRank: isFastest ? 1 : null,
+    };
+  });
+
+  const qualifying = Object.entries(rData.quali || {})
+    .sort((a, b) => (a[1].position || 99) - (b[1].position || 99))
+    .map(([code, q]) => {
+      const d = driverByCode.get(code);
+      const tId = d?.team;
+      const cRef = BUNDLE_TEAM_ALIAS[tId] || tId || null;
+      return {
+        position: q.position ?? null,
+        driverRef: d?.jolpicaId || null,
+        driverName: d ? `${d.first} ${d.last}` : code,
+        code,
+        constructorRef: cRef,
+        constructorName: (tId ? teamById.get(tId) : null)?.name || cRef || null,
+        q1: q.q1 || null,
+        q2: q.q2 || null,
+        q3: q.q3 || null,
+      };
+    });
+
+  let sprint = null;
+  if (rData.sprintResults?.order) {
+    sprint = rData.sprintResults.order.map(code => {
+      const d = driverByCode.get(code);
+      const det = (rData.sprintResults.detail || {})[code] || {};
+      const tId = d?.team;
+      const cRef = BUNDLE_TEAM_ALIAS[tId] || tId || null;
+      return {
+        position: det.position != null ? parseInt(det.position, 10) : null,
+        positionText: det.position != null ? String(det.position) : null,
+        driverRef: d?.jolpicaId || null,
+        driverName: d ? `${d.first} ${d.last}` : code,
+        code,
+        constructorRef: cRef,
+        grid: det.grid ?? null,
+        points: det.points ?? 0,
+        time: det.time || null,
+        status: det.status || null,
+      };
+    });
+  }
+
+  // Prev: previous bundle round, or last Ergast race for round 1 of first year
+  const prevEntry = i > 0 ? allBundleRounds[i - 1] : null;
+  const nextEntry = i < allBundleRounds.length - 1 ? allBundleRounds[i + 1] : null;
+  const prev = prevEntry
+    ? { year: prevEntry.year, round: prevEntry.round, name: prevEntry.calEntry.name }
+    : (racesIndex.length > 0
+        ? { year: racesIndex[racesIndex.length - 1].year, round: racesIndex[racesIndex.length - 1].round, name: racesIndex[racesIndex.length - 1].name }
+        : null);
+  const next = nextEntry
+    ? { year: nextEntry.year, round: nextEntry.round, name: nextEntry.calEntry.name }
+    : null;
+
+  const fastCode = rData.fastest;
+  const fastDet = (rData.detail || {})[fastCode] || {};
+  const raceDoc = {
+    raceId: `${bYear}_${round}`,
+    year: bYear, round,
+    name: calEntry.name,
+    date: calEntry.date || null,
+    time: calEntry.time || null,
+    url: null,
+    circuit: {
+      circuitRef: circuitId,
+      circuitId,
+      name: ergCircuit?.name || calEntry.name,
+      location: ergCircuit?.location || '',
+      country: cInfo.code,
+      countryName: ergCircuit?.country || '',
+      flag: calEntry.flag || '',
+    },
+    pole: driverByCode.get(rData.pole)?.jolpicaId || null,
+    fastest: driverByCode.get(fastCode)?.jolpicaId || null,
+    fastestLapTime: fastDet.fastestLap || null,
+    winner: driverByCode.get(rData.order?.[0])?.jolpicaId || null,
+    results,
+    qualifying,
+    sprint,
+    prev,
+    next,
+  };
+
+  const yearDir = join(OUT, 'races', String(bYear));
+  mkdirSync(yearDir, { recursive: true });
+  writeFileSync(join(yearDir, `${round}.json`), JSON.stringify(raceDoc));
+  racesIndex.push({ year: bYear, round, name: calEntry.name, date: calEntry.date || null, circuitRef: circuitId });
+  bundleRacesWritten++;
+}
+
+if (allBundleRounds.length > 0) {
+  writeFileSync(join(OUT, '_races-index.json'), JSON.stringify(racesIndex));
+  console.log(`[archive] +${bundleRacesWritten} bundle race detail bundles (${bundleYears.join(', ')})`);
+}
+
 // ─── Circuits ─────────────────────────────────────────────────────────
 const circuitsIndex = [];
 let circuitsWritten = 0;

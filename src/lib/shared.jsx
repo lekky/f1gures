@@ -16,11 +16,11 @@ export function urlFor(target) {
     case 'calendar':     return '/calendar/';
     case 'circuits':     return '/circuits/';
     case 'race': {
-      // /races/<y>/<r>/ pages exist only for archived years (Ergast: 1950–2024).
-      // The 2026 fallback grid + 2025 hand-curated bundle have race calendar
-      // data with no prerendered detail page, so fall through to /race.html
-      // for those years; the redirect lands on /calendar/ on miss.
-      const ARCHIVE_MAX_YEAR = 2024;
+      // /races/<y>/<r>/ pages exist for Ergast (1950–2024) + hand-curated bundles
+      // (2025 full, 2026 completed rounds). Completed bundle rounds are emitted by
+      // build-archive.mjs and included in _races-index.json. For future 2026+
+      // rounds without results, race.html falls through to /calendar/.
+      const ARCHIVE_MAX_YEAR = 2025;
       const y = target.year ? Number(target.year) : null;
       if (y && target.round && y <= ARCHIVE_MAX_YEAR) {
         return `/races/${target.year}/${target.round}/`;
