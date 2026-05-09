@@ -80,29 +80,17 @@ const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
     </div>
   </div>
 
-  {team.topDrivers.length > 0 && (
+  {team.topDrivers && team.topDrivers.length > 0 && (
     <>
       <div class="section-head"><h2>Notable Drivers</h2><div class="section-rule"></div></div>
-      <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Driver</th>
-              <th class="right">Races</th>
-              <th class="right">Wins</th>
-            </tr>
-          </thead>
-          <tbody>
-            {team.topDrivers.map(d => (
-              <tr>
-                <td><a href={`/drivers/${d.driverRef}/`}>{d.name}</a></td>
-                <td class="right t-mono">{d.races}</td>
-                <td class={`right t-mono ${d.wins > 0 ? 'is-win-cell' : ''}`}>{d.wins}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ul class="team-drivers-list">
+        {team.topDrivers.slice(0, 20).map((d) => (
+          <li>
+            <a href={`/drivers/${d.driverRef}/`} class="inline-link">{d.name}</a>
+            <span class="t-mono"> · {d.races} races · {d.wins} wins</span>
+          </li>
+        ))}
+      </ul>
     </>
   )}
 
