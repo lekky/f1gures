@@ -40,10 +40,10 @@ import { circuitProfiles } from '../data/circuitProfiles.js';
 import { buildFallback } from '../data/buildFallback.js';
 import { fmtDateLong } from '../lib/shared.jsx';
 
-// /races/<y>/<r>/ pages exist only for archived years (Ergast: 1950-2024).
-// Post-archive races (merged from hand-curated 2025+ bundles) route through
-// /race.html which falls back to /calendar/ if no prerendered detail exists.
-const ARCHIVE_MAX_YEAR = 2024;
+// /races/<y>/<r>/ pages exist for Ergast (1950-2024) + completed bundle rounds
+// (2025 full, 2026 partial). build-archive.mjs emits those and adds them to
+// _races-index.json. Future 2026+ rounds route via /race.html → /calendar/.
+const ARCHIVE_MAX_YEAR = 2025;
 function raceUrl(year: number | null, round: number | null): string {
   if (year == null || round == null) return '/calendar/';
   if (year <= ARCHIVE_MAX_YEAR) return `/races/${year}/${round}/`;
