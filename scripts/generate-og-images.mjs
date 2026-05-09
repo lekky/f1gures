@@ -74,13 +74,44 @@ async function generateRaceOgs(fontData) {
   return count;
 }
 
+async function generateDriverOgs(fontData) {
+  const indexPath = path.join(ARCHIVE, '_drivers-index.json');
+  if (!fs.existsSync(indexPath)) {
+    console.warn('[og] no driver index found, skipping driver OGs');
+    return 0;
+  }
+  const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+  const outDir = path.join(OUT_BASE, 'drivers');
+  ensureDir(outDir);
+
+  const { renderDriverOg } = await import('./og-templates/og-driver.mjs');
+  let count = 0;
+  const batchSize = 20;
+  for (let i = 0; i < index.length; i += batchSize) {
+    const batch = index.slice(i, i + batchSize);
+    await Promise.all(batch.map(async (entry) => {
+      const driverPath = path.join(ARCHIVE, 'drivers', `${entry.driverRef}.json`);
+      if (!fs.existsSync(driverPath)) return;
+      const driver = JSON.parse(fs.readFileSync(driverPath, 'utf8'));
+      const png = await renderPng(renderDriverOg(driver), fontData);
+      const out = path.join(outDir, `${entry.driverRef}.png`);
+      fs.writeFileSync(out, png);
+      count++;
+    }));
+  }
+  return count;
+}
+
 async function main() {
   console.log('[og] starting OG image generation');
   const fontData = await loadFont();
   ensureDir(OUT_BASE);
 
   const races = await generateRaceOgs(fontData);
-  console.log(`[og] generated ${races} race OG images → ${path.relative(ROOT, OUT_BASE)}/races/`);
+  console.log(`[og] generated ${races} race OG images`);
+
+  const drivers = await generateDriverOgs(fontData);
+  console.log(`[og] generated ${drivers} driver OG images`);
 }
 
 main().catch(err => {
