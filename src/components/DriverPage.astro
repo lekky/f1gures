@@ -53,7 +53,7 @@ interface Props {
   };
 }
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const { driver } = Astro.props;
@@ -69,6 +69,36 @@ const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
 // the archive), fall back to a CSS-rendered silhouette placeholder.
 const headshotPath = `images/drivers/${driver.driverRef}.webp`;
 const hasHeadshot = existsSync(resolve(process.cwd(), 'public', headshotPath));
+
+// Latest season — perSeason arrives newest-first from build-archive.mjs.
+const latestSeason = driver.perSeason.length > 0 ? driver.perSeason[0] : null;
+
+// Team colour: look up from the season JSON for the driver's latest year.
+// Season JSONs exist for all years (generated from CSV for 1950–2019, hand-
+// curated for 2020+). If the file is missing or the team isn't found, fall
+// back to the site accent colour.
+let teamColor = 'var(--accent)';
+let teamRef = latestSeason?.constructorRef ?? null;
+let teamName = latestSeason?.constructorName ?? null;
+
+if (latestSeason?.year && teamRef) {
+  try {
+    const seasonPath = resolve(process.cwd(), 'public', 'data', `${latestSeason.year}.json`);
+    const seasonData = JSON.parse(readFileSync(seasonPath, 'utf8'));
+    const team = seasonData.teams?.find(
+      (t: { id?: string; jolpicaId?: string; color?: string }) =>
+        t.id === teamRef || t.jolpicaId === teamRef
+    );
+    if (team?.color) teamColor = team.color;
+  } catch {
+    // leave teamColor as accent fallback
+  }
+}
+
+// Show current-season position/points for drivers active in 2025 or later;
+// show seasons count for retired drivers.
+const isActive = (driver.career.lastYear ?? 0) >= 2025;
+const showSeasonStat = isActive && latestSeason != null;
 
 // /races/<y>/<r>/ pages exist for Ergast (1950-2024) + completed bundle rounds
 // (2025 full, 2026 partial). build-archive.mjs emits those and adds them to
@@ -89,37 +119,63 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
 <div class="page">
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-drivers/">← Standings</a>
 
-  <div class="panel driver-hero">
-    <div class={`driver-hero-grid ${hasHeadshot ? 'has-headshot' : ''}`}>
+  <div class="panel driver-hero" style={`border-left-color: ${teamColor}`}>
+    <div class="driver-hero-grid">
       {hasHeadshot ? (
         <img class="driver-hero-photo" src={`/${headshotPath}`} alt={fullName} loading="lazy" width="180" height="220" />
       ) : (
-        <div class="driver-hero-photo driver-hero-silhouette" aria-hidden="true">
+        <div class="driver-hero-photo silhouette" style={`--team-color: ${teamColor}`} aria-hidden="true">
           <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="35" r="20" fill="currentColor" opacity="0.25"/>
-            <path d="M 18 120 Q 18 70 50 70 Q 82 70 82 120 Z" fill="currentColor" opacity="0.25"/>
+            <path d="M50 12 C28 12 18 28 18 46 L18 60 L14 70 L14 82 L20 88 L20 120 L80 120 L80 88 L86 82 L86 70 L82 60 L82 46 C82 28 72 12 50 12 Z" fill={teamColor} />
           </svg>
+          {(driver.code || driver.number) && (
+            <span class="driver-hero-badge">
+              {driver.code}{driver.code && driver.number && driver.number !== '\\N' ? ' · ' : ''}{driver.number && driver.number !== '\\N' ? `#${driver.number}` : ''}
+            </span>
+          )}
         </div>
       )}
-      <div class="driver-hero-meta">
-        <div class="t-eyebrow driver-hero-team">
-          {driver.nationality || '—'}
+      <div class="driver-hero-body">
+        <div class="driver-hero-meta">
+          <div class="t-eyebrow driver-hero-nationality">{driver.nationality || '—'}</div>
+          {teamName && teamRef && (
+            <div class="driver-hero-team">
+              <a href={`/teams/${teamRef}/`} style={`color: ${teamColor}`}>{teamName}</a>
+            </div>
+          )}
+          <h1 class="page-title driver-hero-name">{fullName}</h1>
+          <div class="driver-hero-stats">
+            {driver.code && <span class="t-mono">{driver.code}</span>}
+            {driver.code && <span class="sep">·</span>}
+            {driver.number && driver.number !== '\\N' && <span class="t-mono">#{driver.number}</span>}
+            {driver.number && driver.number !== '\\N' && <span class="sep">·</span>}
+            <span class="t-mono">{yearsLabel}</span>
+            {driver.dob && <span class="sep">·</span>}
+            {driver.dob && <span class="t-mono">b. {driver.dob}</span>}
+          </div>
         </div>
-        <h1 class="page-title driver-hero-name">{fullName}</h1>
-        <div class="driver-hero-stats">
-          {driver.code && <span class="t-mono">{driver.code}</span>}
-          {driver.code && <span class="sep">·</span>}
-          {driver.number && driver.number !== '\\N' && <span class="t-mono">#{driver.number}</span>}
-          {driver.number && driver.number !== '\\N' && <span class="sep">·</span>}
-          <span class="t-mono">{yearsLabel}</span>
-          {driver.dob && <span class="sep">·</span>}
-          {driver.dob && <span class="t-mono">b. {driver.dob}</span>}
-        </div>
-      </div>
-      <div class="driver-hero-champ">
-        <div class="t-eyebrow">Championships</div>
-        <div class={`driver-hero-wdc ${driver.career.championships > 0 ? 'is-champ' : ''}`}>
-          {driver.career.championships}
+        <div class="driver-hero-right">
+        {showSeasonStat ? (
+          <>
+            <div class="t-eyebrow">{latestSeason!.year} Season</div>
+            <div class="driver-hero-pos" style={`color: ${teamColor}`}>
+              {latestSeason!.position != null ? `P${latestSeason!.position}` : '—'}
+            </div>
+            <div class="driver-hero-pts">
+              {latestSeason!.points != null ? `${latestSeason!.points} pts` : '—'}
+            </div>
+          </>
+        ) : (
+          <>
+            <div class="t-eyebrow">Seasons in F1</div>
+            <div class={`driver-hero-wdc ${driver.career.championships > 0 ? 'is-champ' : ''}`}>
+              {driver.career.seasons}
+            </div>
+            {driver.career.championships > 0 && (
+              <div class="driver-hero-pts">{driver.career.championships} WDC</div>
+            )}
+          </>
+        )}
         </div>
       </div>
     </div>
@@ -212,10 +268,10 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
 </div>
 
 <style>
-  .driver-hero { padding: 20px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
+  .driver-hero { display: block; padding: 20px; margin-bottom: 20px; border-left: 4px solid var(--accent); }
   .driver-hero-grid {
     display: grid;
-    grid-template-columns: 180px 1fr auto;
+    grid-template-columns: 180px 1fr;
     gap: 20px;
     align-items: center;
   }
@@ -227,17 +283,43 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
     background: var(--bg-2);
     color: var(--fg-3);
   }
-  .driver-hero-silhouette {
+  .driver-hero-body {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 20px;
+    min-width: 0;
   }
-  .driver-hero-silhouette svg { width: 70%; height: 70%; }
-  .driver-hero-team { color: var(--fg-3); margin-bottom: 6px; }
+  .driver-hero-meta { flex: 1; min-width: 0; }
+  /* silhouette placeholder reuses global .silhouette class from app.css */
+  .driver-hero-photo.silhouette { border-radius: 4px; }
+  .driver-hero-badge {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.6); color: var(--fg-2);
+    font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.1em;
+    padding: 2px 6px; border-radius: 2px; white-space: nowrap; z-index: 2;
+  }
+  .driver-hero-nationality { color: var(--fg-3); margin-bottom: 2px; }
+  .driver-hero-team { margin-bottom: 6px; font-family: var(--f-display); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .driver-hero-team a { text-decoration: none; }
+  .driver-hero-team a:hover { text-decoration: underline; }
   .driver-hero-name { margin: 0 0 8px 0; font-size: 56px; line-height: 1.05; }
   .driver-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
   .driver-hero-stats .sep { color: var(--fg-4); }
-  .driver-hero-champ { text-align: right; }
+  .driver-hero-right { text-align: right; min-width: 100px; }
+  .driver-hero-pos {
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: 56px;
+    line-height: 1;
+  }
+  .driver-hero-pts {
+    font-family: var(--f-display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--fg-3);
+    margin-top: 2px;
+  }
   .driver-hero-wdc {
     font-family: var(--f-display);
     font-weight: 800;
@@ -250,9 +332,11 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
   .driver-career-grid { grid-template-columns: repeat(7, 1fr); }
   @media (max-width: 720px) {
     .driver-hero-name { font-size: 32px; }
-    .driver-hero-grid { grid-template-columns: 120px 1fr; }
-    .driver-hero-photo { width: 120px; height: 150px; }
-    .driver-hero-champ { grid-column: 1 / -1; text-align: left; padding-top: 8px; border-top: 1px solid var(--line-1); }
+    .driver-hero-grid { grid-template-columns: 100px 1fr; }
+    .driver-hero-photo { width: 100px; height: 130px; }
+    .driver-hero-body { flex-wrap: wrap; }
+    .driver-hero-right { flex-basis: 100%; text-align: left; padding-top: 8px; border-top: 1px solid var(--line-1); }
+    .driver-hero-pos, .driver-hero-wdc { font-size: 40px; }
     .driver-career-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
