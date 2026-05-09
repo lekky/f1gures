@@ -135,9 +135,20 @@ function NextRacePanel({ data, cal, next, mob }) {
       : new Date();
   }, [next.date, next.time]);
 
-  const target = raceDt;
-
+  // Countdown targets the earliest session whose start time is in the
+  // future. If all sessions on the weekend have passed (race weekend
+  // finishing today), fall through to the race itself (target = raceDt,
+  // countdown reads 0). Recomputed when `sessions` changes (zone toggle
+  // doesn't affect ordering — `dt` is the same Date — but `useMemo`
+  // keeps this stable across renders).
   const sessions = buildSessions(next, activeZone);
+
+  const nextSession = useMemo(() => {
+    const nowMs = Date.now();
+    const upcoming = sessions.find(s => s.dt && s.dt.getTime() > nowMs);
+    return upcoming || sessions[sessions.length - 1] || null;
+  }, [sessions]);
+  const target = (nextSession && nextSession.dt) || raceDt;
 
   return (
     <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
@@ -163,6 +174,16 @@ function NextRacePanel({ data, cal, next, mob }) {
             <span style={{ color: 'var(--fg-4)' }}>·</span>
             <span className="t-mono" style={{ fontSize: 13 }}>{fmtDateLong(next.date)}</span>
           </div>
+          {nextSession && nextSession.dt && (
+            <div className="t-mono" style={{
+              fontSize: 11,
+              color: 'var(--fg-3)',
+              letterSpacing: '0.04em',
+              marginBottom: 6,
+            }}>
+              {nextSession.name} starts {nextSession.day} · {nextSession.time} {zoneShort(activeZone, nextSession.dt)}
+            </div>
+          )}
           <Countdown target={target} />
         </div>
 
@@ -194,7 +215,7 @@ function NextRacePanel({ data, cal, next, mob }) {
                 display: 'grid', gridTemplateColumns: '50px 1fr auto auto',
                 gap: 12, padding: '10px 14px', alignItems: 'center',
                 borderBottom: i < sessions.length - 1 ? '1px solid var(--line-1)' : '0',
-                background: i === sessions.length - 1 ? 'rgba(232,0,45,0.04)' : 'transparent',
+                background: nextSession && s.id === nextSession.id ? 'rgba(232,0,45,0.04)' : 'transparent',
               }}>
                 <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{String(i + 1).padStart(2, '0')}</span>
                 <span style={{ fontFamily: 'var(--f-display)', fontWeight: 600, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{s.name}</span>
