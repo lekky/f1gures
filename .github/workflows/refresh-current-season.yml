@@ -1,0 +1,77 @@
+name: Refresh Current Season
+
+# Nightly job: pulls the latest race results, qualifying, sprint and
+# standings for the current calendar year from the Jolpica API, commits
+# the bundle (so future builds have it cached), then rebuilds and FTP-
+# deploys the site so the prerendered HTML reflects the new standings.
+#
+# Manual trigger via workflow_dispatch is also supported — use this after
+# a race weekend to push fresh results without waiting for 04:00 UTC.
+
+on:
+  schedule:
+    # 04:00 UTC daily — late enough that Sunday races (incl. US night
+    # rounds like Vegas) have published their final results to Jolpica.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch current season from Jolpica
+        id: fetch
+        run: |
+          YEAR=$(date -u +%Y)
+          echo "year=$YEAR" >> "$GITHUB_OUTPUT"
+          # Don't fail the whole workflow if Jolpica is down or the year
+          # has no data yet — the existing bundle (or fallback) keeps
+          # the site from regressing.
+          node scripts/fetch-season.mjs "$YEAR" || echo "::warning::fetch-season.mjs failed for $YEAR (continuing with existing bundle)"
+
+      - name: Commit bundle if changed
+        run: |
+          YEAR="${{ steps.fetch.outputs.year }}"
+          BUNDLE="public/data/${YEAR}.json"
+          if [ ! -f "$BUNDLE" ]; then
+            echo "No bundle written for $YEAR — skipping commit."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$BUNDLE"
+          if git diff --cached --quiet; then
+            echo "No changes to ${BUNDLE} — skipping commit."
+          else
+            git commit -m "chore(data): nightly ${YEAR} season refresh"
+            git push
+          fi
+
+      - name: Build Astro site
+        run: npm run build
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USER }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          local-dir: ./dist/
+          state-name: .ftp-deploy-sync-state-dist.json

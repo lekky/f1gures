@@ -1,10 +1,8 @@
-import { buildFallback } from '../../data/buildFallback.js';
+import currentSeason from '../../data/currentSeason.js';
 import { useYearAwareData } from '../../lib/yearAwareData.js';
 import CircuitsIndexScreen from './screens/CircuitsIndexScreen.jsx';
 
-const fallback = buildFallback();
-
 export default function CircuitsIndexIsland() {
-  const data = useYearAwareData(fallback);
+  const data = useYearAwareData(currentSeason);
   return <CircuitsIndexScreen data={data} />;
 }

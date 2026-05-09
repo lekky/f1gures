@@ -1,10 +1,8 @@
-import { buildFallback } from '../../data/buildFallback.js';
+import currentSeason from '../../data/currentSeason.js';
 import { useYearAwareData } from '../../lib/yearAwareData.js';
 import DriverStandingsScreen from './screens/DriverStandingsScreen.jsx';
 
-const fallback = buildFallback();
-
 export default function DriverStandingsIsland() {
-  const data = useYearAwareData(fallback);
+  const data = useYearAwareData(currentSeason);
   return <DriverStandingsScreen data={data} />;
 }
