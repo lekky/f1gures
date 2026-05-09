@@ -949,6 +949,180 @@ if (postArchiveRacesAdded > 0) {
 writeFileSync(join(OUT, '_circuits-index.json'), JSON.stringify(circuitsIndex));
 console.log(`[archive] wrote ${circuitsWritten} circuit detail bundles → ${join(OUT, 'circuits')}`);
 
+// ─── Merge post-Ergast seasons into driver history ────────────────────
+// Same idea as the circuit merge above — open each driver JSON, append
+// per-race entries from the hand-curated 2025+ bundles, then refresh
+// career totals and per-season rollups so the driver pages don't stop at
+// the Ergast 2024 cutoff. Championships stay as Ergast computed them
+// (final-standing data isn't available for in-progress seasons).
+
+// Bundle team ids → Ergast constructorRef. Buildfallback uses short
+// slugs; Ergast uses longer ones in a few cases. Brand-new manufacturers
+// (audi, cadillac) don't have Ergast entries yet — pass through their
+// short id; the team page may 404 until Ergast catches up.
+const HAND_CONSTRUCTOR_ALIAS = {
+  aston: 'aston_martin',
+  redbull: 'red_bull',
+  rb: 'rb',
+  alphatauri: 'alphatauri',
+};
+
+const driverDocCache = new Map(); // driverRef → mutable doc
+function loadDriverDoc(driverRef) {
+  if (driverDocCache.has(driverRef)) return driverDocCache.get(driverRef);
+  const p = join(OUT, 'drivers', `${driverRef}.json`);
+  if (!existsSync(p)) return null;
+  const doc = JSON.parse(readFileSync(p, 'utf8'));
+  driverDocCache.set(driverRef, doc);
+  return doc;
+}
+
+let postArchiveDriverEntries = 0;
+for (const { year, path } of seasonFiles) {
+  const season = JSON.parse(readFileSync(path, 'utf8'));
+  if (!Array.isArray(season.calendar) || !season.results) continue;
+
+  const driverByCode = new Map();
+  for (const d of season.drivers || []) {
+    if (d.id && d.jolpicaId) driverByCode.set(d.id, d);
+  }
+  const teamById = new Map();
+  for (const t of season.teams || []) teamById.set(t.id, t);
+
+  for (const race of season.calendar) {
+    const round = toInt(race.round);
+    if (round == null) continue;
+    const result = season.results[round] || season.results[String(round)];
+    if (!result) continue;
+
+    const detail = result.detail || {};
+    const order = result.order || [];
+    const codes = new Set([...order, ...Object.keys(detail)]);
+
+    for (const code of codes) {
+      const d = driverByCode.get(code);
+      if (!d) continue;
+      const doc = loadDriverDoc(d.jolpicaId);
+      if (!doc) continue;
+      // Idempotent re-runs: skip if this race is already merged
+      if (doc.perRace.some(r => r.year === year && r.round === round)) continue;
+
+      const det = detail[code] || {};
+      const team = teamById.get(d.team);
+      const constructorRef = HAND_CONSTRUCTOR_ALIAS[d.team] || d.team || null;
+      const constructorName = team ? team.name : null;
+
+      const positionText = det.position != null ? String(det.position) : null;
+      const positionNum = positionText && /^\d+$/.test(positionText) ? parseInt(positionText, 10) : null;
+      const grid = det.grid != null ? toInt(det.grid) : (order.includes(code) ? null : null);
+
+      doc.perRace.push({
+        raceId: null,
+        year,
+        round,
+        raceName: race.name,
+        date: race.date,
+        circuitId: race.circuitId || race.circuit || null,
+        constructorId: null,
+        constructorRef,
+        constructorName,
+        grid,
+        position: positionNum,
+        positionText,
+        positionOrder: positionNum,
+        points: toFloat(det.points) || 0,
+        laps: det.laps != null ? toInt(det.laps) : null,
+        fastestLapRank: result.fastest === code ? 1 : null,
+        fastestLapTime: det.fastestLap || null,
+        statusId: null,
+        status: det.status || null,
+      });
+      postArchiveDriverEntries++;
+    }
+  }
+}
+
+// Refresh career totals + perSeason for any driver we touched, then
+// rewrite the per-driver JSON. _drivers-index.json gets the same updates
+// in-place so the listing reflects new totals.
+const driverIndexByRef = new Map();
+for (const entry of index) driverIndexByRef.set(entry.driverRef, entry);
+
+for (const [driverRef, doc] of driverDocCache) {
+  doc.perRace.sort((a, b) => (a.year - b.year) || ((a.round || 0) - (b.round || 0)));
+
+  const wins = doc.perRace.filter(r => r.position === 1).length;
+  const podiums = doc.perRace.filter(r => r.position != null && r.position <= 3).length;
+  const poles = doc.perRace.filter(r => r.grid === 1).length;
+  const fastestLaps = doc.perRace.filter(r => r.fastestLapRank === 1).length;
+  const seasonsSet = new Set(doc.perRace.map(r => r.year));
+  doc.career = {
+    ...doc.career,
+    seasons: seasonsSet.size,
+    firstYear: seasonsSet.size ? Math.min(...seasonsSet) : null,
+    lastYear: seasonsSet.size ? Math.max(...seasonsSet) : null,
+    races: doc.perRace.length,
+    wins, podiums, poles, fastestLaps,
+    // championships stays as the Ergast importer set it — final-standing
+    // data isn't available for hand-curated in-progress seasons.
+  };
+
+  // perSeason rebuild: keep Ergast's final-standing position+points for
+  // years that already had them; derive new years from perRace sums.
+  const oldPerSeason = new Map(doc.perSeason.map(s => [s.year, s]));
+  const byYear = new Map();
+  for (const r of doc.perRace) {
+    if (!byYear.has(r.year)) byYear.set(r.year, []);
+    byYear.get(r.year).push(r);
+  }
+  doc.perSeason = [...byYear.entries()].map(([year, rows]) => {
+    const teamCounts = new Map();
+    for (const r of rows) if (r.constructorRef) teamCounts.set(r.constructorRef, (teamCounts.get(r.constructorRef) || 0) + 1);
+    let primaryRef = null, primaryName = null, top = 0;
+    for (const r of rows) {
+      const c = teamCounts.get(r.constructorRef) || 0;
+      if (c > top) { top = c; primaryRef = r.constructorRef; primaryName = r.constructorName; }
+    }
+    const bestFinish = rows.reduce(
+      (best, r) => (r.position != null && (best == null || r.position < best)) ? r.position : best,
+      null,
+    );
+    const seasonWins = rows.filter(r => r.position === 1).length;
+    const existing = oldPerSeason.get(year);
+    if (existing && existing.position != null) {
+      // Year was in Ergast — preserve final-standing rank and points.
+      return { ...existing, races: rows.length, bestFinish, wins: seasonWins };
+    }
+    // Post-Ergast year — sum points from per-race detail.
+    return {
+      year,
+      constructorRef: primaryRef,
+      constructorName: primaryName,
+      position: null,
+      points: rows.reduce((s, r) => s + (r.points || 0), 0),
+      wins: seasonWins,
+      races: rows.length,
+      bestFinish,
+    };
+  }).sort((a, b) => b.year - a.year);
+
+  writeFileSync(join(OUT, 'drivers', `${driverRef}.json`), JSON.stringify(doc));
+
+  const idx = driverIndexByRef.get(driverRef);
+  if (idx) {
+    idx.firstYear = doc.career.firstYear;
+    idx.lastYear = doc.career.lastYear;
+    idx.races = doc.career.races;
+    idx.wins = doc.career.wins;
+    // championships unchanged
+  }
+}
+
+if (postArchiveDriverEntries > 0) {
+  writeFileSync(join(OUT, '_drivers-index.json'), JSON.stringify(index));
+  console.log(`[archive] merged ${postArchiveDriverEntries} post-Ergast race entries (${seasonFiles.map(s => s.year).join(', ')}) into ${driverDocCache.size} driver docs`);
+}
+
 // ─── Teams (constructors) ────────────────────────────────────────────
 mkdirSync(join(OUT, 'teams'), { recursive: true });
 
