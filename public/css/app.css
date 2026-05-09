@@ -822,3 +822,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .race-keylinks .t-mono { opacity: 0.6; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; }
 .race-keylinks a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .race-keylinks a:hover { text-decoration-thickness: 2px; }
+
+.inline-link { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: rgba(255,255,255,0.25); text-underline-offset: 3px; }
+.inline-link:hover { text-decoration-color: currentColor; text-decoration-thickness: 2px; }
+html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
