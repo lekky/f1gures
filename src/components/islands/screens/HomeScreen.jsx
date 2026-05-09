@@ -1,9 +1,10 @@
 // Home / Dashboard. Ported from js/screens/home.jsx.
 // All `window.F1_DATA` reads → `data` prop. Recharts unused on this screen.
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   SectionHead, SprintBadge, Countdown, useIsMobile, urlFor, navigate, fmtDateLong,
+  circuitTz, zoneShort,
 } from '../../../lib/shared.jsx';
 
 const SESSION_LABELS = {
@@ -15,28 +16,32 @@ const SESSION_LABELS = {
   sprintQuali: 'Sprint Quali',
   race: 'Race',
 };
-const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 // Sessions come from public/data/<year>.json's calendar entries (date +
 // HH:MM:SSZ time per session). Sprint weekends drop fp2/fp3 and gain
-// sprintQuali + sprint. Times rendered as UTC for now — a follow-on PR
-// adds a global timezone toggle (race-local vs user-local).
-function buildSessions(next) {
+// sprintQuali + sprint. Both day-of-week and HH:MM are computed in the
+// chosen IANA zone so a Friday session in Tokyo correctly becomes
+// Thursday in Austin.
+function buildSessions(next, zone) {
   const order = next.sprint
     ? ['fp1', 'sprintQuali', 'sprint', 'q', 'race']
     : ['fp1', 'fp2', 'fp3', 'q', 'race'];
+  const dayFmt  = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: zone });
+  const timeFmt = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: zone,
+  });
   const src = next.sessions;
   return order.map(id => {
     const s = src && src[id];
     if (!s || !s.date || !s.time) {
-      return { id, name: SESSION_LABELS[id], day: '—', time: '—' };
+      return { id, name: SESSION_LABELS[id], day: '—', time: '—', dt: null };
     }
     const dt = new Date(`${s.date}T${s.time}`);
     return {
       id,
       name: SESSION_LABELS[id],
-      day: DAYS_SHORT[dt.getUTCDay()],
-      time: s.time.slice(0, 5),
+      day:  dayFmt.format(dt),
+      time: timeFmt.format(dt),
+      dt,
     };
   });
 }
@@ -101,13 +106,49 @@ function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
 function NextRacePanel({ data, cal, next, mob }) {
   const D = data;
 
-  const target = useMemo(() => {
+  const userZone = useMemo(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
+    catch { return 'UTC'; }
+  }, []);
+
+  // Initial render is always 'track' so the prerendered HTML matches what
+  // hydration shows for users with no saved preference. localStorage is
+  // read in an effect after hydration to switch to 'user' when needed.
+  const [tzMode, setTzMode] = useState('track');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('f1-tz');
+      if (saved === 'user' || saved === 'track') setTzMode(saved);
+    } catch { /* localStorage unavailable */ }
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem('f1-tz', tzMode); }
+    catch { /* localStorage unavailable */ }
+  }, [tzMode]);
+
+  const trackZone = circuitTz(next.circuitId);
+  const activeZone = tzMode === 'user' ? userZone : trackZone;
+
+  const raceDt = useMemo(() => {
     return next.date
       ? new Date(`${next.date}T${next.time || '14:00:00Z'}`)
       : new Date();
   }, [next.date, next.time]);
 
-  const sessions = buildSessions(next);
+  // Countdown targets the earliest session whose start time is in the
+  // future. If all sessions on the weekend have passed (race weekend
+  // finishing today), fall through to the race itself (target = raceDt,
+  // countdown reads 0). Recomputed when `sessions` changes (zone toggle
+  // doesn't affect ordering — `dt` is the same Date — but `useMemo`
+  // keeps this stable across renders).
+  const sessions = buildSessions(next, activeZone);
+
+  const nextSession = useMemo(() => {
+    const nowMs = Date.now();
+    const upcoming = sessions.find(s => s.dt && s.dt.getTime() > nowMs);
+    return upcoming || sessions[sessions.length - 1] || null;
+  }, [sessions]);
+  const target = (nextSession && nextSession.dt) || raceDt;
 
   return (
     <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
@@ -133,18 +174,48 @@ function NextRacePanel({ data, cal, next, mob }) {
             <span style={{ color: 'var(--fg-4)' }}>·</span>
             <span className="t-mono" style={{ fontSize: 13 }}>{fmtDateLong(next.date)}</span>
           </div>
+          {nextSession && nextSession.dt && (
+            <div className="t-mono" style={{
+              fontSize: 11,
+              color: 'var(--fg-3)',
+              letterSpacing: '0.04em',
+              marginBottom: 6,
+            }}>
+              {nextSession.name} starts {nextSession.day} · {nextSession.time} {zoneShort(activeZone, nextSession.dt)}
+            </div>
+          )}
           <Countdown target={target} />
         </div>
 
         <div>
-          <div className="t-eyebrow" style={{ marginBottom: 10 }}>Session Schedule</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <span className="t-eyebrow">Session Schedule</span>
+            <div role="tablist" aria-label="Time zone"
+                 style={{ display: 'inline-flex', border: '1px solid var(--line-1)' }}>
+              {[['track', 'Track'], ['user', 'You']].map(([val, lbl]) => (
+                <button key={val} role="tab" aria-selected={tzMode === val}
+                  onClick={(e) => { e.stopPropagation(); setTzMode(val); }}
+                  style={{
+                    padding: '4px 10px',
+                    fontFamily: 'var(--f-mono)',
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    cursor: 'pointer',
+                    background: tzMode === val ? 'var(--accent)' : 'transparent',
+                    color: tzMode === val ? '#fff' : 'var(--fg-2)',
+                    border: 'none',
+                  }}>{lbl}</button>
+              ))}
+            </div>
+          </div>
           <div style={{ border: '1px solid var(--line-1)' }}>
             {sessions.map((s, i) => (
               <div key={s.id} style={{
                 display: 'grid', gridTemplateColumns: '50px 1fr auto auto',
                 gap: 12, padding: '10px 14px', alignItems: 'center',
                 borderBottom: i < sessions.length - 1 ? '1px solid var(--line-1)' : '0',
-                background: i === sessions.length - 1 ? 'rgba(232,0,45,0.04)' : 'transparent',
+                background: nextSession && s.id === nextSession.id ? 'rgba(232,0,45,0.04)' : 'transparent',
               }}>
                 <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{String(i + 1).padStart(2, '0')}</span>
                 <span style={{ fontFamily: 'var(--f-display)', fontWeight: 600, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{s.name}</span>
@@ -152,6 +223,16 @@ function NextRacePanel({ data, cal, next, mob }) {
                 <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{s.time}</span>
               </div>
             ))}
+          </div>
+          <div className="t-mono" style={{
+            fontSize: 11,
+            color: 'var(--fg-3)',
+            marginTop: 8,
+            letterSpacing: '0.04em',
+          }}>
+            Track: {(D.circuits[next.circuit] && D.circuits[next.circuit].city) || '—'} ({zoneShort(trackZone, raceDt)})
+            {' · '}
+            You: {userZone} ({zoneShort(userZone, raceDt)})
           </div>
         </div>
       </div>
