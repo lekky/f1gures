@@ -159,7 +159,7 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
             {driver.perSeason.map(s => (
               <tr>
                 <td class="t-mono">{s.year}</td>
-                <td>{s.constructorName || '—'}</td>
+                <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : (s.constructorName || '—')}</td>
                 <td class={`right ${s.position === 1 ? 'is-champ-cell' : ''}`}>{ord(s.position)}</td>
                 <td class="right t-mono">{s.points != null ? s.points : '—'}</td>
                 <td class="right t-mono">{s.wins}</td>
