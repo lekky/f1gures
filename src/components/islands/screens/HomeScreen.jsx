@@ -6,6 +6,65 @@ import {
   SectionHead, SprintBadge, Countdown, useIsMobile, urlFor, navigate, fmtDateLong,
 } from '../../../lib/shared.jsx';
 
+const SESSION_LABELS = {
+  fp1: 'Practice 1',
+  fp2: 'Practice 2',
+  fp3: 'Practice 3',
+  q: 'Qualifying',
+  sprint: 'Sprint',
+  sprintQuali: 'Sprint Quali',
+  race: 'Race',
+};
+const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Sessions come from public/data/<year>.json's calendar entries (date +
+// HH:MM:SSZ time per session). Sprint weekends drop fp2/fp3 and gain
+// sprintQuali + sprint. Times rendered as UTC for now — a follow-on PR
+// adds a global timezone toggle (race-local vs user-local).
+function buildSessions(next) {
+  const order = next.sprint
+    ? ['fp1', 'sprintQuali', 'sprint', 'q', 'race']
+    : ['fp1', 'fp2', 'fp3', 'q', 'race'];
+  const src = next.sessions;
+  return order.map(id => {
+    const s = src && src[id];
+    if (!s || !s.date || !s.time) {
+      return { id, name: SESSION_LABELS[id], day: '—', time: '—' };
+    }
+    const dt = new Date(`${s.date}T${s.time}`);
+    return {
+      id,
+      name: SESSION_LABELS[id],
+      day: DAYS_SHORT[dt.getUTCDay()],
+      time: s.time.slice(0, 5),
+    };
+  });
+}
+
+function EmptyHome({ mob }) {
+  // Shown when currentSeason has no real bundle yet (fresh clone, before
+  // the nightly Jolpica refresh has run, or year just rolled over). We
+  // prefer empty placeholders to a speculative grid that drifts from
+  // reality.
+  return (
+    <div className={`page ${mob ? 'page-mob' : ''}`}>
+      <div className="panel" style={{ position: 'relative', overflow: 'hidden', minHeight: 220 }}>
+        <div className="kbd-corner kbd-tl"></div>
+        <div className="kbd-corner kbd-tr"></div>
+        <div className="kbd-corner kbd-bl"></div>
+        <div className="kbd-corner kbd-br"></div>
+        <div style={{ padding: mob ? 32 : 56, textAlign: 'center', color: 'var(--fg-3)' }}>
+          <div className="t-eyebrow" style={{ color: 'var(--accent)', marginBottom: 12 }}>Awaiting Season Data</div>
+          <div className="t-display" style={{ fontSize: mob ? 24 : 32, marginBottom: 8, color: 'var(--fg-2)' }}>
+            Refreshing<span style={{ color: 'var(--accent)' }}>.</span>
+          </div>
+          <div className="t-mono" style={{ fontSize: 13 }}>The latest results will appear once the nightly sync completes.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
   const D = data;
   const accent = driver ? D.teamById(driver.team).color : (team ? team.color : 'var(--accent)');
@@ -39,31 +98,16 @@ function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
   );
 }
 
-function NextRacePanel({ data, cal, mob }) {
+function NextRacePanel({ data, cal, next, mob }) {
   const D = data;
-  const next = cal.find(r => r.status === 'next') || cal[0];
 
   const target = useMemo(() => {
-    const offset = 9 * 86400000 + 4 * 3600000 + 22 * 60000;
-    return new Date(Date.now() + offset);
-  }, [next.date]);
+    return next.date
+      ? new Date(`${next.date}T${next.time || '14:00:00Z'}`)
+      : new Date();
+  }, [next.date, next.time]);
 
-  let sessions = [
-    { id: 'fp1', name: 'Practice 1', day: 'Fri', time: '11:30' },
-    { id: 'fp2', name: 'Practice 2', day: 'Fri', time: '15:00' },
-    { id: 'fp3', name: 'Practice 3', day: 'Sat', time: '10:30' },
-    { id: 'q',   name: 'Qualifying', day: 'Sat', time: '14:00' },
-    { id: 'r',   name: 'Race',       day: 'Sun', time: '14:00' },
-  ];
-  if (next.sprint) {
-    sessions = [
-      { id: 'fp1', name: 'Practice 1',   day: 'Fri', time: '11:30' },
-      { id: 'sq',  name: 'Sprint Quali', day: 'Fri', time: '15:30' },
-      { id: 'sp',  name: 'Sprint',       day: 'Sat', time: '11:00' },
-      { id: 'q',   name: 'Qualifying',   day: 'Sat', time: '15:00' },
-      { id: 'r',   name: 'Race',         day: 'Sun', time: '14:00' },
-    ];
-  }
+  const sessions = buildSessions(next);
 
   return (
     <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
@@ -206,10 +250,26 @@ export default function HomeScreen({ data }) {
   const D = data;
   const mob = useIsMobile();
   const standings = useMemo(() => D.computeStandings(), [D]);
+
+  // Empty bundle (fresh clone / pre-cron) — render a placeholder rather than
+  // pretend to have results. Hook order stays stable: standings is computed
+  // unconditionally above (safely returns empty arrays for empty data).
+  if (D._empty) return <EmptyHome mob={mob} />;
+
   const cal = D.calendar;
 
-  const isHistoric = !cal.some(r => r.status === 'next') && cal.some(r => D.results[r.round]);
-  const prev = [...cal].reverse().find(r => r.status === 'completed' && D.results[r.round]);
+  // "Next race" = first race whose date is today or later. Falls back to
+  // the legacy `status: 'next'` flag (only set on buildFallback's hardcoded
+  // 2026 grid) so the dev-data path keeps working when system date drifts
+  // past the speculative calendar. A season is "historic" iff there's no
+  // upcoming race AND results have been recorded for at least one round.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const next =
+    cal.find(r => r.date && r.date >= todayIso) ||
+    cal.find(r => r.status === 'next') ||
+    null;
+  const isHistoric = !next && cal.some(r => D.results[r.round]);
+  const prev = [...cal].reverse().find(r => D.results[r.round]);
 
   const top5 = standings.drivers.slice(0, 5);
   const leader = standings.drivers[0];
@@ -222,7 +282,9 @@ export default function HomeScreen({ data }) {
 
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
-      {isHistoric ? <SeasonAtGlance data={D} cal={cal} standings={standings} mob={mob} /> : <NextRacePanel data={D} cal={cal} mob={mob} />}
+      {isHistoric || !next
+        ? <SeasonAtGlance data={D} cal={cal} standings={standings} mob={mob} />
+        : <NextRacePanel data={D} cal={cal} next={next} mob={mob} />}
 
       <SectionHead title="Season Summary" />
       <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(3, 1fr)' }}>
