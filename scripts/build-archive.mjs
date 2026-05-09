@@ -1253,6 +1253,17 @@ for (const { year, path } of seasonFiles) {
   bundleStandings.set(year, posMap);
 }
 
+// Count championships from completed bundle years (any year before the current
+// calendar year is definitively over; current year may still be in progress).
+const currentCalendarYear = new Date().getFullYear();
+const bundleChampionships = new Map(); // driverRef → additional titles
+for (const [year, posMap] of bundleStandings) {
+  if (year >= currentCalendarYear) continue;
+  for (const [driverRef, pos] of posMap) {
+    if (pos === 1) bundleChampionships.set(driverRef, (bundleChampionships.get(driverRef) || 0) + 1);
+  }
+}
+
 // Refresh career totals + perSeason for any driver we touched, then
 // rewrite the per-driver JSON. _drivers-index.json gets the same updates
 // in-place so the listing reflects new totals.
@@ -1274,8 +1285,7 @@ for (const [driverRef, doc] of driverDocCache) {
     lastYear: seasonsSet.size ? Math.max(...seasonsSet) : null,
     races: doc.perRace.length,
     wins, podiums, poles, fastestLaps,
-    // championships stays as the Ergast importer set it — final-standing
-    // data isn't available for hand-curated in-progress seasons.
+    championships: doc.career.championships + (bundleChampionships.get(driverRef) || 0),
   };
 
   // perSeason rebuild: keep Ergast's final-standing position+points for
@@ -1344,7 +1354,7 @@ for (const [driverRef, doc] of driverDocCache) {
       idx.lastYear = doc.career.lastYear;
       idx.races = doc.career.races;
       idx.wins = doc.career.wins;
-      // championships unchanged
+      idx.championships = doc.career.championships;
     }
   }
 }
