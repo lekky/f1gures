@@ -31,6 +31,7 @@ const careerSummary = `${fullName} (${driver.nationality || 'unknown nationality
 const title = `${fullName}${codePart} — F1 Driver Stats, Career & Race Results | f1gures`;
 const description = `${fullName} (${driver.nationality}, F1 ${yearsPart}). Career: ${driver.career.races} races, ${driver.career.wins} wins, ${driver.career.podiums} podiums, ${driver.career.poles} poles, ${driver.career.championships} championships. Full season-by-season and race-by-race results.`;
 const canonicalPath = `/drivers/${driver.driverRef}/`;
+const ogImage = `/images/og/drivers/${driver.driverRef}.png`;
 
 const personLd: any = {
   '@context': 'https://schema.org',
@@ -108,6 +109,7 @@ const breadcrumb = [
   {title}
   {description}
   {canonicalPath}
+  {ogImage}
   ogType="profile"
   jsonLd={jsonLd.length === 1 ? jsonLd[0] : { '@context': 'https://schema.org', '@graph': jsonLd }}
   {breadcrumb}

@@ -19,6 +19,7 @@ const yearsLabel = team.career.firstYear === team.career.lastYear
 const title = `${team.name} — F1 Constructor History, Wins & Championships | f1gures`;
 const description = `${team.name} (${team.nationality}, F1 ${yearsLabel}). ${team.career.races} races, ${team.career.wins} wins, ${team.career.podiums} podiums, ${team.career.championships} constructors' championships. Full season-by-season history and notable drivers.`;
 const canonicalPath = `/teams/${team.constructorRef}/`;
+const ogImage = `/images/og/teams/${team.constructorRef}.png`;
 
 const jsonLd: any = {
   '@context': 'https://schema.org',
@@ -43,6 +44,6 @@ const breadcrumb = [
   { name: team.name, path: canonicalPath },
 ];
 ---
-<BaseLayout {title} {description} {canonicalPath} ogType="website" {jsonLd} {breadcrumb}>
+<BaseLayout {title} {description} {canonicalPath} {ogImage} ogType="website" {jsonLd} {breadcrumb}>
   <TeamPage {team} />
 </BaseLayout>
