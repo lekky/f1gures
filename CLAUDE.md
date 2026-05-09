@@ -112,3 +112,6 @@ The user has Node on one machine, not the other. The no-Node box can serve a pre
 
 ## Useful URL flags
 - `?year=YYYY` on any listing page — overrides `localStorage.f1-year`. e.g. `https://f1gures.app/calendar/?year=1990` (the `useYearAwareData` hook checks the URL param first, then falls through to localStorage). Years 1950–2025 have JSON bundles; older or future years silently fall back to the 2026 grid.
+
+## Post-Ergast data notes
+- **Championships**: Ergast CSVs cover 1950–2024 only. `build-archive.mjs` computes `bundleStandings` (year → Map<driverRef, champPosition>) from race-result points in hand-curated bundles. Championships for completed bundle years (`year < new Date().getFullYear()`) are credited via `bundleChampionships` in the driver-doc recompute pass. Anything touching post-Ergast career stats should use `bundleStandings` rather than rebuilding the logic.
