@@ -21,9 +21,9 @@ const completed = race.results.length > 0;
 const winner = race.results.find(r => r.position === 1) || null;
 const second = race.results.find(r => r.position === 2) || null;
 const third = race.results.find(r => r.position === 3) || null;
-const poleSitterRef = race.qualifying?.[0]?.driverRef || null;
 
 const sportsEvent: any = {
+  '@context': 'https://schema.org',
   '@type': 'SportsEvent',
   name: `${race.name} ${race.year}`,
   startDate: race.date,
