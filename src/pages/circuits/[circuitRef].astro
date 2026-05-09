@@ -1,4 +1,6 @@
 ---
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CircuitPage from '../../components/CircuitPage.astro';
 import { getCircuitsIndex, getCircuit } from '../../data/archive.js';
@@ -19,6 +21,10 @@ const yearsLabel = circuit.firstYear === circuit.lastYear
 const title = `${circuit.name} — F1 Race History, Winners & Lap Records | f1gures`;
 const description = `${circuit.name} in ${circuit.location}, ${circuit.countryName}. ${circuit.raceCount} Formula 1 races held ${yearsLabel}. Full results history, all-time most wins and pole positions.`;
 const canonicalPath = `/circuits/${circuit.circuitRef}/`;
+const ogImagePath = `/images/og/circuits/${circuit.circuitRef}.png`;
+const ogImage = existsSync(resolve(process.cwd(), 'public', ogImagePath.slice(1)))
+  ? ogImagePath
+  : '/images/og-default.png';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -39,6 +45,6 @@ const breadcrumb = [
   { name: circuit.name, path: canonicalPath },
 ];
 ---
-<BaseLayout {title} {description} {canonicalPath} ogType="place" {jsonLd} {breadcrumb}>
+<BaseLayout {title} {description} {canonicalPath} {ogImage} ogType="place" {jsonLd} {breadcrumb}>
   <CircuitPage {circuit} />
 </BaseLayout>

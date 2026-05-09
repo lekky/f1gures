@@ -1,20 +1,44 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import CalendarIsland from '../components/islands/CalendarIsland.jsx';
+import currentSeason from '../data/currentSeason.js';
 
-const title = 'F1 2026 Race Calendar — All 24 Grands Prix, Dates & Times | f1gures';
-const description = 'Complete 2026 Formula 1 schedule. All 24 Grand Prix dates, circuits, sprint weekends, qualifying and race times in your local timezone.';
+const seasonYear = currentSeason.seasonYear || '2026';
+const calendar = Array.isArray(currentSeason.calendar) ? currentSeason.calendar : [];
+const title = `F1 ${seasonYear} Race Calendar — All ${calendar.length || 24} Grands Prix, Dates & Times | f1gures`;
+const description = `Complete ${seasonYear} Formula 1 schedule. All Grand Prix dates, circuits, sprint weekends, qualifying and race times in your local timezone.`;
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
   { name: 'Calendar', path: '/calendar/' },
 ];
+
+let jsonLd: unknown = undefined;
+if (calendar.length > 0) {
+  jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `${seasonYear} Formula 1 Race Calendar`,
+    numberOfItems: calendar.length,
+    itemListElement: calendar.map((race) => ({
+      '@type': 'ListItem',
+      position: race.round,
+      item: {
+        '@type': 'SportsEvent',
+        name: race.name,
+        startDate: race.date || undefined,
+        sport: 'Formula 1',
+      },
+    })),
+  };
+}
 ---
 <BaseLayout
   title={title}
   description={description}
   canonicalPath="/calendar/"
   ogType="website"
+  jsonLd={jsonLd}
   breadcrumb={breadcrumb}
 >
   <CalendarIsland client:load />

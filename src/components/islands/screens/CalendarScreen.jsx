@@ -25,12 +25,11 @@ export default function CalendarScreen({ data }) {
           const result = F.results[race.round];
           const winner = result ? F.driverById(result.order[0]) : null;
           const fastest = result ? F.driverById(result.fastest) : null;
-          const href = result ? urlFor({ name: 'race', year: F.seasonYear, round: race.round }) : undefined;
+          const raceHref = result ? urlFor({ name: 'race', year: F.seasonYear, round: race.round }) : undefined;
+          const circuitHref = race.circuit ? urlFor({ name: 'circuit', id: race.circuit, ref: race.circuit }) : undefined;
           return (
-            <a key={race.round}
-               className={`race-card is-${race.status}`}
-               style={{ textDecoration: 'none', color: 'inherit', cursor: href ? 'pointer' : 'default' }}
-               href={href}>
+            <div key={race.round}
+                 className={`race-card is-${race.status}`}>
               <div className="race-card-head">
                 <div>
                   <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>
@@ -43,21 +42,33 @@ export default function CalendarScreen({ data }) {
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
                   <span className="race-flag">{race.flag}</span>
-                  <div className="race-name">{race.name.replace(' Grand Prix', '')}</div>
+                  {raceHref
+                    ? <a href={raceHref} className="race-name" style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{race.name.replace(' Grand Prix', '')}</a>
+                    : <div className="race-name">{race.name.replace(' Grand Prix', '')}</div>}
                 </div>
-                <div className="race-circuit">{circuit.name}</div>
+                {circuitHref
+                  ? <a href={circuitHref} className="race-circuit" style={{ color: 'inherit', textDecoration: 'none', display: 'block' }} onClick={e => e.stopPropagation()}>{circuit.name}</a>
+                  : <div className="race-circuit">{circuit.name}</div>}
               </div>
               <div className="race-card-foot">
                 <div className="race-mini-row">
                   <span className="lbl">Date</span>
                   <span className="val">{fmtDateLong(race.date)}</span>
                 </div>
-                {winner && (
-                  <div className="race-mini-row">
-                    <span className="lbl">Winner</span>
-                    <span className="val" style={{ color: 'var(--fg-1)' }}>{winner.flag} {winner.first[0]}. {winner.last}</span>
-                  </div>
-                )}
+                {winner && (() => {
+                  const winnerHref = urlFor({ name: 'driver', id: winner.id, ref: winner.jolpicaId });
+                  const winnerLabel = `${winner.flag} ${winner.first ? winner.first[0] + '. ' : ''}${winner.last}`;
+                  return (
+                    <div className="race-mini-row">
+                      <span className="lbl">Winner</span>
+                      <span className="val" style={{ color: 'var(--fg-1)' }}>
+                        {winner.jolpicaId
+                          ? <a href={winnerHref} className="inline-link" style={{ color: 'inherit' }} onClick={e => e.stopPropagation()}>{winnerLabel}</a>
+                          : winnerLabel}
+                      </span>
+                    </div>
+                  );
+                })()}
                 {fastest && (
                   <div className="race-mini-row">
                     <span className="lbl">Fastest Lap</span>
@@ -65,7 +76,7 @@ export default function CalendarScreen({ data }) {
                   </div>
                 )}
               </div>
-            </a>
+            </div>
           );
         })}
       </div>

@@ -275,9 +275,13 @@ const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '
                 <tr>
                   <td class="right t-mono"><a href={raceHref}>{r.year}</a></td>
                   <td><a href={raceHref}>{r.name}</a></td>
-                  <td>{r.winnerRef ? <a href={`/drivers/${r.winnerRef}/`}>{r.winnerName}</a> : (r.winnerName || '—')}</td>
+                  <td>{r.winnerRef && r.winnerName ? (
+                    <a href={`/drivers/${r.winnerRef}/`} class="inline-link">{r.winnerName}</a>
+                  ) : (r.winnerName || '—')}</td>
                   <td>{r.winnerTeam || '—'}</td>
-                  <td>{r.poleRef ? <a href={`/drivers/${r.poleRef}/`}>{r.poleName}</a> : (r.poleName || '—')}</td>
+                  <td>{r.poleRef && r.poleName ? (
+                    <a href={`/drivers/${r.poleRef}/`} class="inline-link">{r.poleName}</a>
+                  ) : (r.poleName || '—')}</td>
                   <td class="right t-mono">{r.fastestLapTime || '—'}</td>
                 </tr>
               );

@@ -1,4 +1,6 @@
 ---
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TeamPage from '../../components/TeamPage.astro';
 import { getTeamsIndex, getTeam } from '../../data/archive.js';
@@ -19,15 +21,27 @@ const yearsLabel = team.career.firstYear === team.career.lastYear
 const title = `${team.name} — F1 Constructor History, Wins & Championships | f1gures`;
 const description = `${team.name} (${team.nationality}, F1 ${yearsLabel}). ${team.career.races} races, ${team.career.wins} wins, ${team.career.podiums} podiums, ${team.career.championships} constructors' championships. Full season-by-season history and notable drivers.`;
 const canonicalPath = `/teams/${team.constructorRef}/`;
+const ogImagePath = `/images/og/teams/${team.constructorRef}.png`;
+const ogImage = existsSync(resolve(process.cwd(), 'public', ogImagePath.slice(1)))
+  ? ogImagePath
+  : '/images/og-default.png';
 
-const jsonLd = {
+const jsonLd: any = {
   '@context': 'https://schema.org',
   '@type': 'SportsTeam',
   name: team.name,
   sport: 'Formula 1',
   identifier: team.constructorRef,
   url: `https://f1gures.app${canonicalPath}`,
+  memberOf: {
+    '@type': 'SportsOrganization',
+    name: 'FIA Formula One World Championship',
+  },
 };
+
+if (team.career.firstYear) {
+  jsonLd.foundingDate = String(team.career.firstYear);
+}
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
@@ -35,6 +49,6 @@ const breadcrumb = [
   { name: team.name, path: canonicalPath },
 ];
 ---
-<BaseLayout {title} {description} {canonicalPath} ogType="article" {jsonLd} {breadcrumb}>
+<BaseLayout {title} {description} {canonicalPath} {ogImage} ogType="website" {jsonLd} {breadcrumb}>
   <TeamPage {team} />
 </BaseLayout>

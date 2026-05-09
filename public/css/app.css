@@ -790,3 +790,51 @@ html.light .circuit-track .circuit-track-light { display: block; }
   line-height: 1.5;
   font-size: 15px;
 }
+
+/* SEO content paragraphs — visible natural-language summaries above
+   detail page tables. Reused for race-summary and driver-summary. */
+.race-summary,
+.driver-summary {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--fg-2, #b8b9bd);
+  margin: 12px 0 18px;
+  max-width: 65ch;
+}
+
+.race-keylinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 20px;
+  font-size: 0.9rem;
+}
+.race-keylinks ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.race-keylinks li { display: inline-flex; gap: 6px; }
+.race-keylinks .t-mono { opacity: 0.6; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; }
+
+.inline-link { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: rgba(255,255,255,0.25); text-underline-offset: 3px; }
+.inline-link:hover { text-decoration-color: currentColor; text-decoration-thickness: 2px; }
+html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
+
+.team-drivers-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px 16px;
+}
+.team-drivers-list li { font-size: 0.95rem; }
+.team-drivers-list .t-mono { opacity: 0.65; font-size: 0.85rem; }
+@media (max-width: 720px) {
+  .team-drivers-list { grid-template-columns: 1fr; }
+}

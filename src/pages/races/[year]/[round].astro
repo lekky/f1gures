@@ -1,4 +1,6 @@
 ---
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import RacePage from '../../../components/RacePage.astro';
 import { getRacesIndex, getRace } from '../../../data/archive.js';
@@ -16,20 +18,92 @@ const winnerName = race.results.find(r => r.position === 1)?.driverName || null;
 const title = `${race.name} ${race.year}${winnerName ? ` — ${winnerName} won` : ''} | f1gures`;
 const description = `${race.name} ${race.year} race results from ${race.circuit?.name || 'the circuit'}. Full grid, finishing order, qualifying times${race.sprint ? ', sprint results' : ''}, points, and pit-stop pace.`;
 const canonicalPath = `/races/${race.year}/${race.round}/`;
+const ogImagePath = `/images/og/races/${race.year}-${race.round}.png`;
+const ogImage = existsSync(resolve(process.cwd(), 'public', ogImagePath.slice(1)))
+  ? ogImagePath
+  : '/images/og-default.png';
 
-const jsonLd = {
+const completed = race.results.length > 0;
+const winner = race.results.find(r => r.position === 1) || null;
+const second = race.results.find(r => r.position === 2) || null;
+const third = race.results.find(r => r.position === 3) || null;
+
+const sportsEvent: any = {
   '@context': 'https://schema.org',
   '@type': 'SportsEvent',
   name: `${race.name} ${race.year}`,
   startDate: race.date,
   sport: 'Formula 1',
-  location: race.circuit ? {
+  url: `https://f1gures.app${canonicalPath}`,
+  superEvent: {
+    '@type': 'SportsEventSeries',
+    name: 'FIA Formula One World Championship',
+  },
+};
+
+if (race.circuit) {
+  sportsEvent.location = {
     '@type': 'Place',
     name: race.circuit.name,
     address: race.circuit.location ? `${race.circuit.location}, ${race.circuit.countryName}` : race.circuit.countryName,
-  } : undefined,
-  url: `https://f1gures.app${canonicalPath}`,
-};
+  };
+}
+
+if (completed && winner?.driverName) {
+  sportsEvent.winner = { '@type': 'Person', name: winner.driverName };
+  const performers = [winner, second, third].filter(p => p?.driverName).map(p => ({
+    '@type': 'Person',
+    name: p!.driverName,
+  }));
+  if (performers.length > 0) sportsEvent.performer = performers;
+}
+
+const jsonLd: any[] = [sportsEvent];
+
+if (completed) {
+  const fastest = race.results
+    .filter(r => r.fastestLapRank === 1 && r.fastestLapTime)
+    .map(r => ({ name: r.driverName, time: r.fastestLapTime }))[0];
+
+  const faqEntities: any[] = [];
+  if (winner?.driverName) {
+    faqEntities.push({
+      '@type': 'Question',
+      name: `Who won the ${race.name} ${race.year}?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${winner.driverName} won the ${race.name} ${race.year}${winner.constructorName ? `, driving for ${winner.constructorName}` : ''}.`,
+      },
+    });
+  }
+  if (race.qualifying && race.qualifying[0]?.driverName) {
+    const pole = race.qualifying[0];
+    faqEntities.push({
+      '@type': 'Question',
+      name: `Who was on pole position at the ${race.name} ${race.year}?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${pole.driverName} took pole position${pole.constructorName ? ` for ${pole.constructorName}` : ''}.`,
+      },
+    });
+  }
+  if (fastest?.name && fastest?.time) {
+    faqEntities.push({
+      '@type': 'Question',
+      name: `Who set the fastest lap at the ${race.name} ${race.year}?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${fastest.name} set the fastest lap with a time of ${fastest.time}.`,
+      },
+    });
+  }
+  if (faqEntities.length > 0) {
+    jsonLd.push({
+      '@type': 'FAQPage',
+      mainEntity: faqEntities,
+    });
+  }
+}
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
@@ -38,6 +112,6 @@ const breadcrumb = [
   { name: race.name, path: canonicalPath },
 ];
 ---
-<BaseLayout {title} {description} {canonicalPath} ogType="article" {jsonLd} {breadcrumb}>
+<BaseLayout {title} {description} {canonicalPath} {ogImage} ogType="article" publishedTime={race.date || undefined} jsonLd={jsonLd.length === 1 ? jsonLd[0] : { '@context': 'https://schema.org', '@graph': jsonLd }} {breadcrumb}>
   <RacePage {race} />
 </BaseLayout>
