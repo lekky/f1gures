@@ -132,7 +132,7 @@ function reshapeCalendar(scheduleData) {
       round, name: r.raceName, circuit: circuitKey,
       circuitId: r.Circuit.circuitId, country: cc,
       flag: FLAG_BY_COUNTRY[cc] || '🏳', date: r.date, time: r.time || null,
-      sprint: !!r.Sprint, status: 'completed',
+      sprint: !!r.Sprint, status: 'upcoming',
       sessions: {
         fp1: r.FirstPractice || null, fp2: r.SecondPractice || null,
         fp3: r.ThirdPractice || null, q: r.Qualifying || null,
@@ -236,6 +236,11 @@ async function main() {
   const completedRounds = calendarRaw
     .filter(r => r.date < todayISO && r.round <= lastCompletedRound)
     .map(r => r.round);
+
+  // Patch statuses now that we know lastCompletedRound
+  calendarRaw.forEach(r => { if (r.round <= lastCompletedRound) r.status = 'completed'; });
+  const nextRace = calendarRaw.find(r => r.status === 'upcoming');
+  if (nextRace) nextRace.status = 'next';
 
   console.log(`\n${completedRounds.length} completed rounds to fetch...\n`);
 
