@@ -102,6 +102,50 @@ async function generateDriverOgs(fontData) {
   return count;
 }
 
+async function generateCircuitOgs(fontData) {
+  const indexPath = path.join(ARCHIVE, '_circuits-index.json');
+  if (!fs.existsSync(indexPath)) return 0;
+  const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+  const outDir = path.join(OUT_BASE, 'circuits');
+  ensureDir(outDir);
+  const { renderCircuitOg } = await import('./og-templates/og-circuit.mjs');
+  let count = 0;
+  for (let i = 0; i < index.length; i += 20) {
+    const batch = index.slice(i, i + 20);
+    await Promise.all(batch.map(async (entry) => {
+      const p = path.join(ARCHIVE, 'circuits', `${entry.circuitRef}.json`);
+      if (!fs.existsSync(p)) return;
+      const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const png = await renderPng(renderCircuitOg(data), fontData);
+      fs.writeFileSync(path.join(outDir, `${entry.circuitRef}.png`), png);
+      count++;
+    }));
+  }
+  return count;
+}
+
+async function generateTeamOgs(fontData) {
+  const indexPath = path.join(ARCHIVE, '_teams-index.json');
+  if (!fs.existsSync(indexPath)) return 0;
+  const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+  const outDir = path.join(OUT_BASE, 'teams');
+  ensureDir(outDir);
+  const { renderTeamOg } = await import('./og-templates/og-team.mjs');
+  let count = 0;
+  for (let i = 0; i < index.length; i += 20) {
+    const batch = index.slice(i, i + 20);
+    await Promise.all(batch.map(async (entry) => {
+      const p = path.join(ARCHIVE, 'teams', `${entry.constructorRef}.json`);
+      if (!fs.existsSync(p)) return;
+      const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const png = await renderPng(renderTeamOg(data), fontData);
+      fs.writeFileSync(path.join(outDir, `${entry.constructorRef}.png`), png);
+      count++;
+    }));
+  }
+  return count;
+}
+
 async function main() {
   console.log('[og] starting OG image generation');
   const fontData = await loadFont();
@@ -112,6 +156,12 @@ async function main() {
 
   const drivers = await generateDriverOgs(fontData);
   console.log(`[og] generated ${drivers} driver OG images`);
+
+  const circuits = await generateCircuitOgs(fontData);
+  console.log(`[og] generated ${circuits} circuit OG images`);
+
+  const teams = await generateTeamOgs(fontData);
+  console.log(`[og] generated ${teams} team OG images`);
 }
 
 main().catch(err => {
