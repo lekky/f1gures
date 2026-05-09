@@ -1,20 +1,46 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ConstructorStandingsIsland from '../components/islands/ConstructorStandingsIsland.jsx';
+import currentSeason from '../data/currentSeason.js';
 
-const title = "F1 2026 Constructor Standings — Live Team Championship | f1gures";
-const description = "Live 2026 Formula 1 World Constructors' Championship table. Team points, wins, podiums and season trajectory for every F1 team, updated every race.";
+const seasonYear = currentSeason.seasonYear || '2026';
+const title = `F1 ${seasonYear} Constructor Standings — Live Team Championship | f1gures`;
+const description = `Live ${seasonYear} Formula 1 World Constructors' Championship table. Team points, wins, podiums and season trajectory for every F1 team, updated every race.`;
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
   { name: 'Constructor Standings', path: '/standings-constructors/' },
 ];
+
+let jsonLd: unknown = undefined;
+if (!currentSeason._empty && typeof currentSeason.computeStandings === 'function') {
+  const standings = currentSeason.computeStandings();
+  const ranked = standings.teams || [];
+  if (ranked.length > 0) {
+    jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: `${seasonYear} F1 Constructor Championship Standings`,
+      numberOfItems: ranked.length,
+      itemListElement: ranked.map((row, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        item: {
+          '@type': 'SportsTeam',
+          name: row.team.name,
+          url: `https://f1gures.app/teams/${row.team.id}/`,
+        },
+      })),
+    };
+  }
+}
 ---
 <BaseLayout
   title={title}
   description={description}
   canonicalPath="/standings-constructors/"
   ogType="website"
+  jsonLd={jsonLd}
   breadcrumb={breadcrumb}
 >
   <ConstructorStandingsIsland client:load />
