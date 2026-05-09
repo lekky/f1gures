@@ -147,6 +147,18 @@ if (breadcrumb && breadcrumb.length > 0) {
   <style is:inline>
     html.year-pending [data-year-aware] { visibility: hidden; }
   </style>
+
+  {import.meta.env.PROD && (
+    <>
+      <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-17WG173FST"></script>
+      <script is:inline>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-17WG173FST');
+      </script>
+    </>
+  )}
 </head>
 <body>
   <Chrome>
