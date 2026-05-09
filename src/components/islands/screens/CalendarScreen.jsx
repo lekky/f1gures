@@ -29,9 +29,7 @@ export default function CalendarScreen({ data }) {
           const circuitHref = race.circuit ? urlFor({ name: 'circuit', id: race.circuit, ref: race.circuit }) : undefined;
           return (
             <div key={race.round}
-                 className={`race-card is-${race.status}`}
-                 style={{ cursor: raceHref ? 'pointer' : 'default' }}
-                 onClick={raceHref ? () => { window.location.href = raceHref; } : undefined}>
+                 className={`race-card is-${race.status}`}>
               <div className="race-card-head">
                 <div>
                   <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>
