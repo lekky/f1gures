@@ -258,7 +258,7 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
               const raceHref = raceUrl(r.year, r.round);
               return (
                 <tr>
-                  <td class="t-mono">{raceHref ? <a href={raceHref}>{r.year}</a> : r.year}</td>
+                  <td class="t-mono">{r.year}</td>
                   <td>{r.raceName && raceHref ? (
                     <a href={raceHref} class="inline-link">{r.raceName}</a>
                   ) : (r.raceName || '—')}</td>

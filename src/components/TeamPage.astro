@@ -84,7 +84,7 @@ const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
     <>
       <div class="section-head"><h2>Notable Drivers</h2><div class="section-rule"></div></div>
       <ul class="team-drivers-list">
-        {team.topDrivers.slice(0, 20).map((d) => (
+        {team.topDrivers.map((d) => (
           <li>
             <a href={`/drivers/${d.driverRef}/`} class="inline-link">{d.name}</a>
             <span class="t-mono"> · {d.races} races · {d.wins} wins</span>
