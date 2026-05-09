@@ -4,5 +4,5 @@ import HomeScreen from './screens/HomeScreen.jsx';
 
 export default function HomeIsland() {
   const data = useYearAwareData(currentSeason);
-  return <HomeScreen data={data} />;
+  return <div data-year-aware><HomeScreen data={data} /></div>;
 }
