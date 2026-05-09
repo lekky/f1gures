@@ -64,6 +64,16 @@ jobs:
             git push
           fi
 
+      - name: Cache OG images
+        uses: actions/cache@v4
+        with:
+          path: public/images/og
+          # Same cache key as deploy.yml — when the nightly fetch updates a
+          # season bundle, the bundle hash changes and OGs regenerate. When
+          # nothing changed (Jolpica returned same data, fetch was skipped),
+          # the cache hits and the build is fast.
+          key: og-images-v1-${{ hashFiles('data/history/**', 'public/data/*.json', 'scripts/build-archive.mjs', 'scripts/generate-og-images.mjs', 'scripts/og-templates/**', 'package-lock.json') }}
+
       - name: Build Astro site
         run: npm run build
 

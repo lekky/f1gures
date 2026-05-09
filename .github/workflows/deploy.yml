@@ -23,6 +23,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache OG images
+        uses: actions/cache@v4
+        with:
+          path: public/images/og
+          # Cache the ~2,300 generated OG PNGs by content hash of inputs that
+          # affect their output. CSS-only or docs-only PRs hit the cache and
+          # save ~5 min of Satori rendering. Data updates bust the key.
+          key: og-images-v1-${{ hashFiles('data/history/**', 'public/data/*.json', 'scripts/build-archive.mjs', 'scripts/generate-og-images.mjs', 'scripts/og-templates/**', 'package-lock.json') }}
+
       - name: Build Astro site
         run: npm run build
 

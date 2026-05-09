@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 // Build-time OG image generator. Renders one PNG per detail page using Satori
 // + @resvg/resvg-js. Output: public/images/og/<type>/<slug>.png.
+//
+// Skip-if-exists: when a target PNG already exists on disk, the entity is
+// skipped. CI restores public/images/og/ from a content-hashed cache, so
+// unchanged data → 100% skip → no font fetch → near-instant build:og step.
+//
+// Set OG_FORCE=1 to force regenerate everything (e.g. after editing a
+// template under scripts/og-templates/ locally).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,9 +21,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const ARCHIVE = path.join(ROOT, 'public/data/archive');
 const OUT_BASE = path.join(ROOT, 'public/images/og');
+const FORCE = process.env.OG_FORCE === '1';
 
-// Load Inter font from Google Fonts. Cached in node_modules/.cache so we
-// only fetch once per install.
+// Lazy font loader — only fetched if at least one entity actually needs
+// rendering. When the OG cache is fully restored in CI, this is never
+// called and we save the network round-trip.
+let _fontPromise = null;
+function getFont() {
+  if (!_fontPromise) _fontPromise = loadFont();
+  return _fontPromise;
+}
+
 async function loadFont() {
   const cacheDir = path.join(ROOT, 'node_modules/.cache/og-fonts');
   fs.mkdirSync(cacheDir, { recursive: true });
@@ -35,7 +50,8 @@ async function loadFont() {
   return fs.readFileSync(cachePath);
 }
 
-async function renderPng(tree, fontData) {
+async function renderPng(tree) {
+  const fontData = await getFont();
   const svg = await satori(tree, {
     width: OG_WIDTH,
     height: OG_HEIGHT,
@@ -49,28 +65,30 @@ function ensureDir(p) {
   fs.mkdirSync(p, { recursive: true });
 }
 
-async function generateRaceOgs(fontData) {
+async function generateRaceOgs() {
   const indexPath = path.join(ARCHIVE, '_races-index.json');
   if (!fs.existsSync(indexPath)) {
     console.warn('[og] no race index found, skipping race OGs');
-    return 0;
+    return { count: 0, skipped: 0, failed: 0 };
   }
   const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
   const outDir = path.join(OUT_BASE, 'races');
   ensureDir(outDir);
 
   let count = 0;
+  let skipped = 0;
   let failed = 0;
   const batchSize = 20;
   for (let i = 0; i < index.length; i += batchSize) {
     const batch = index.slice(i, i + batchSize);
     await Promise.all(batch.map(async (entry) => {
       try {
+        const out = path.join(outDir, `${entry.year}-${entry.round}.png`);
+        if (!FORCE && fs.existsSync(out)) { skipped++; return; }
         const racePath = path.join(ARCHIVE, 'races', String(entry.year), `${entry.round}.json`);
         if (!fs.existsSync(racePath)) return;
         const race = JSON.parse(fs.readFileSync(racePath, 'utf8'));
-        const png = await renderPng(renderRaceOg(race), fontData);
-        const out = path.join(outDir, `${entry.year}-${entry.round}.png`);
+        const png = await renderPng(renderRaceOg(race));
         fs.writeFileSync(out, png);
         count++;
       } catch (err) {
@@ -79,15 +97,14 @@ async function generateRaceOgs(fontData) {
       }
     }));
   }
-  if (failed > 0) console.warn(`[og] ${failed} race OG renders failed`);
-  return count;
+  return { count, skipped, failed };
 }
 
-async function generateDriverOgs(fontData) {
+async function generateDriverOgs() {
   const indexPath = path.join(ARCHIVE, '_drivers-index.json');
   if (!fs.existsSync(indexPath)) {
     console.warn('[og] no driver index found, skipping driver OGs');
-    return 0;
+    return { count: 0, skipped: 0, failed: 0 };
   }
   const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
   const outDir = path.join(OUT_BASE, 'drivers');
@@ -95,17 +112,19 @@ async function generateDriverOgs(fontData) {
 
   const { renderDriverOg } = await import('./og-templates/og-driver.mjs');
   let count = 0;
+  let skipped = 0;
   let failed = 0;
   const batchSize = 20;
   for (let i = 0; i < index.length; i += batchSize) {
     const batch = index.slice(i, i + batchSize);
     await Promise.all(batch.map(async (entry) => {
       try {
+        const out = path.join(outDir, `${entry.driverRef}.png`);
+        if (!FORCE && fs.existsSync(out)) { skipped++; return; }
         const driverPath = path.join(ARCHIVE, 'drivers', `${entry.driverRef}.json`);
         if (!fs.existsSync(driverPath)) return;
         const driver = JSON.parse(fs.readFileSync(driverPath, 'utf8'));
-        const png = await renderPng(renderDriverOg(driver), fontData);
-        const out = path.join(outDir, `${entry.driverRef}.png`);
+        const png = await renderPng(renderDriverOg(driver));
         fs.writeFileSync(out, png);
         count++;
       } catch (err) {
@@ -114,28 +133,30 @@ async function generateDriverOgs(fontData) {
       }
     }));
   }
-  if (failed > 0) console.warn(`[og] ${failed} driver OG renders failed`);
-  return count;
+  return { count, skipped, failed };
 }
 
-async function generateCircuitOgs(fontData) {
+async function generateCircuitOgs() {
   const indexPath = path.join(ARCHIVE, '_circuits-index.json');
-  if (!fs.existsSync(indexPath)) return 0;
+  if (!fs.existsSync(indexPath)) return { count: 0, skipped: 0, failed: 0 };
   const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
   const outDir = path.join(OUT_BASE, 'circuits');
   ensureDir(outDir);
   const { renderCircuitOg } = await import('./og-templates/og-circuit.mjs');
   let count = 0;
+  let skipped = 0;
   let failed = 0;
   for (let i = 0; i < index.length; i += 20) {
     const batch = index.slice(i, i + 20);
     await Promise.all(batch.map(async (entry) => {
       try {
+        const out = path.join(outDir, `${entry.circuitRef}.png`);
+        if (!FORCE && fs.existsSync(out)) { skipped++; return; }
         const p = path.join(ARCHIVE, 'circuits', `${entry.circuitRef}.json`);
         if (!fs.existsSync(p)) return;
         const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-        const png = await renderPng(renderCircuitOg(data), fontData);
-        fs.writeFileSync(path.join(outDir, `${entry.circuitRef}.png`), png);
+        const png = await renderPng(renderCircuitOg(data));
+        fs.writeFileSync(out, png);
         count++;
       } catch (err) {
         failed++;
@@ -143,28 +164,30 @@ async function generateCircuitOgs(fontData) {
       }
     }));
   }
-  if (failed > 0) console.warn(`[og] ${failed} circuit OG renders failed`);
-  return count;
+  return { count, skipped, failed };
 }
 
-async function generateTeamOgs(fontData) {
+async function generateTeamOgs() {
   const indexPath = path.join(ARCHIVE, '_teams-index.json');
-  if (!fs.existsSync(indexPath)) return 0;
+  if (!fs.existsSync(indexPath)) return { count: 0, skipped: 0, failed: 0 };
   const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
   const outDir = path.join(OUT_BASE, 'teams');
   ensureDir(outDir);
   const { renderTeamOg } = await import('./og-templates/og-team.mjs');
   let count = 0;
+  let skipped = 0;
   let failed = 0;
   for (let i = 0; i < index.length; i += 20) {
     const batch = index.slice(i, i + 20);
     await Promise.all(batch.map(async (entry) => {
       try {
+        const out = path.join(outDir, `${entry.constructorRef}.png`);
+        if (!FORCE && fs.existsSync(out)) { skipped++; return; }
         const p = path.join(ARCHIVE, 'teams', `${entry.constructorRef}.json`);
         if (!fs.existsSync(p)) return;
         const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-        const png = await renderPng(renderTeamOg(data), fontData);
-        fs.writeFileSync(path.join(outDir, `${entry.constructorRef}.png`), png);
+        const png = await renderPng(renderTeamOg(data));
+        fs.writeFileSync(out, png);
         count++;
       } catch (err) {
         failed++;
@@ -172,26 +195,24 @@ async function generateTeamOgs(fontData) {
       }
     }));
   }
-  if (failed > 0) console.warn(`[og] ${failed} team OG renders failed`);
-  return count;
+  return { count, skipped, failed };
+}
+
+function summarise(label, r) {
+  const parts = [`generated ${r.count}`];
+  if (r.skipped > 0) parts.push(`${r.skipped} cached`);
+  if (r.failed > 0) parts.push(`${r.failed} failed`);
+  console.log(`[og] ${label}: ${parts.join(', ')}`);
 }
 
 async function main() {
-  console.log('[og] starting OG image generation');
-  const fontData = await loadFont();
+  console.log(`[og] starting OG image generation${FORCE ? ' (forced)' : ''}`);
   ensureDir(OUT_BASE);
 
-  const races = await generateRaceOgs(fontData);
-  console.log(`[og] generated ${races} race OG images`);
-
-  const drivers = await generateDriverOgs(fontData);
-  console.log(`[og] generated ${drivers} driver OG images`);
-
-  const circuits = await generateCircuitOgs(fontData);
-  console.log(`[og] generated ${circuits} circuit OG images`);
-
-  const teams = await generateTeamOgs(fontData);
-  console.log(`[og] generated ${teams} team OG images`);
+  summarise('races', await generateRaceOgs());
+  summarise('drivers', await generateDriverOgs());
+  summarise('circuits', await generateCircuitOgs());
+  summarise('teams', await generateTeamOgs());
 }
 
 main().catch(err => {
