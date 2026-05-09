@@ -219,11 +219,6 @@ button { font-family: inherit; }
   #bmc-wbtn img { height: 18px !important; width: 18px !important; }
   #bmc-wbtn::after { font-size: 11px; }
 }
-.nav-version {
-  font-family: var(--f-mono); font-size: 10px; font-weight: 400;
-  color: var(--fg-4); letter-spacing: 0.06em;
-  align-self: flex-end; padding-bottom: 2px;
-}
 .nav-spacer { flex: 1; }
 .nav-controls { display: flex; align-items: center; gap: 8px; }
 .nav-season {
