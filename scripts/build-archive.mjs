@@ -731,7 +731,7 @@ for (const race of racesSorted) {
   const yearDir = join(OUT, 'races', String(year));
   mkdirSync(yearDir, { recursive: true });
   writeFileSync(join(yearDir, `${round}.json`), JSON.stringify(raceDoc));
-  racesIndex.push({ year, round, name: race.name, date: race.date, circuitRef: circuit ? circuit.circuitRef : null });
+  racesIndex.push({ year, round, name: race.name, date: race.date, circuitRef: circuit ? circuit.circuitRef : null, completed: true });
   racesWritten++;
 }
 
@@ -890,13 +890,160 @@ for (let i = 0; i < allBundleRounds.length; i++) {
   const yearDir = join(OUT, 'races', String(bYear));
   mkdirSync(yearDir, { recursive: true });
   writeFileSync(join(yearDir, `${round}.json`), JSON.stringify(raceDoc));
-  racesIndex.push({ year: bYear, round, name: calEntry.name, date: calEntry.date || null, circuitRef: circuitId });
+  racesIndex.push({ year: bYear, round, name: calEntry.name, date: calEntry.date || null, circuitRef: circuitId, completed: true });
   bundleRacesWritten++;
 }
 
 if (allBundleRounds.length > 0) {
   writeFileSync(join(OUT, '_races-index.json'), JSON.stringify(racesIndex));
   console.log(`[archive] +${bundleRacesWritten} bundle race detail bundles (${bundleYears.join(', ')})`);
+}
+
+// ─── Upcoming bundle rounds → holding-page archive entries ───────────────
+// For rounds in post-Ergast bundles (year > 2024) that have NOT been run yet
+// (no results in bundle.results) but have session timetable data populated,
+// emit a holding-page archive JSON. The Astro route renders these via
+// RaceUpcomingBody.astro instead of RaceResultsBody.astro.
+//
+// Schema differs from completed races: results/qualifying/sprint are empty
+// arrays/null, sessions is populated, lastHeldHere holds the most recent
+// completed race at the same circuitRef (any year), circuitFirstTime is true
+// when no completed race ever exists at this circuitRef.
+
+// Index completed races by circuitRef so we can compute lastHeldHere quickly.
+// racesIndex now contains both Ergast (1950–2024) and post-2024 completed
+// bundle rounds — that's everything we need.
+const completedByCircuit = new Map();
+for (const entry of racesIndex) {
+  if (!entry.circuitRef) continue;
+  const list = completedByCircuit.get(entry.circuitRef) || [];
+  list.push(entry);
+  completedByCircuit.set(entry.circuitRef, list);
+}
+for (const list of completedByCircuit.values()) {
+  list.sort((a, b) => b.year - a.year || b.round - a.round); // newest first
+}
+
+// Walk every bundle year × round; emit archive JSON for rounds with no result
+// but with sessions populated. Track upcoming rounds in chronological order so
+// prev/next nav links work cross-bundle and cross-completion.
+const allBundleCalendars = [];
+for (const bYear of bundleYears) {
+  const bundle = JSON.parse(readFileSync(join(DATA_DIR, `${bYear}.json`), 'utf8'));
+  if (!bundle.calendar) continue;
+  for (const calEntry of bundle.calendar.slice().sort((a, b) => a.round - b.round)) {
+    allBundleCalendars.push({ year: bYear, round: calEntry.round, calEntry, bundle });
+  }
+}
+
+let upcomingRacesWritten = 0;
+for (let i = 0; i < allBundleCalendars.length; i++) {
+  const { year: bYear, round, calEntry, bundle } = allBundleCalendars[i];
+  // Skip rounds that already have a completed archive entry (handled above).
+  const hasResult = bundle.results && bundle.results[String(round)];
+  if (hasResult) continue;
+  // Skip rounds with no session data — falls through to legacy /race.html redirect.
+  if (!calEntry.sessions || Object.values(calEntry.sessions).every(v => !v)) continue;
+
+  const circuitId = calEntry.circuitId;
+  const ergCircuit = circuitsByRef.get(circuitId);
+  const cInfo = ergCircuit
+    ? countryInfo(ergCircuit.country)
+    : { code: calEntry.country || '', flag: calEntry.flag || '' };
+
+  // lastHeldHere: most recent completed race at this circuitRef, any year.
+  const completedHere = completedByCircuit.get(circuitId) || [];
+  let lastHeldHere = null;
+  let circuitFirstTime = true;
+  if (completedHere.length > 0) {
+    circuitFirstTime = false;
+    const newest = completedHere[0];
+    try {
+      const past = JSON.parse(readFileSync(
+        join(OUT, 'races', String(newest.year), `${newest.round}.json`),
+        'utf8'
+      ));
+      const podium = (past.results || [])
+        .filter(r => r.position != null && r.position <= 3)
+        .sort((a, b) => a.position - b.position)
+        .map(r => ({
+          position: r.position,
+          driverRef: r.driverRef,
+          driverName: r.driverName,
+          constructorRef: r.constructorRef,
+          constructorName: r.constructorName,
+        }));
+      if (podium.length > 0) {
+        lastHeldHere = { year: newest.year, round: newest.round, podium };
+      }
+    } catch {
+      // Past race file missing — treat as no lastHeldHere data, but still not first time.
+      lastHeldHere = null;
+    }
+  }
+
+  // prev/next: walk allBundleCalendars in order; pair with the immediate neighbours.
+  // For the first upcoming round, prev points at the most recent completed (whichever
+  // year). For the last, next is null.
+  const prevEntry = i > 0 ? allBundleCalendars[i - 1] : null;
+  const nextEntry = i < allBundleCalendars.length - 1 ? allBundleCalendars[i + 1] : null;
+  const prev = prevEntry
+    ? { year: prevEntry.year, round: prevEntry.round, name: prevEntry.calEntry.name }
+    : null;
+  const next = nextEntry
+    ? { year: nextEntry.year, round: nextEntry.round, name: nextEntry.calEntry.name }
+    : null;
+
+  const raceDoc = {
+    raceId: `${bYear}_${round}`,
+    year: bYear,
+    round,
+    name: calEntry.name,
+    date: calEntry.date || null,
+    time: calEntry.time || null,
+    url: null,
+    circuit: {
+      circuitRef: circuitId,
+      circuitId,
+      name: ergCircuit?.name || calEntry.name,
+      location: ergCircuit?.location || '',
+      country: cInfo.code,
+      countryName: ergCircuit?.country || '',
+      flag: calEntry.flag || '',
+    },
+    sprint: !!calEntry.sprint,
+    sessions: calEntry.sessions, // { fp1, fp2, fp3, q, sprint, sprintQuali, race } | each null or { date, time }
+    status: calEntry.status || 'upcoming',
+    lastHeldHere,
+    circuitFirstTime,
+    pole: null,
+    fastest: null,
+    fastestLapTime: null,
+    winner: null,
+    results: [],
+    qualifying: [],
+    sprint_results: null,
+    prev,
+    next,
+  };
+
+  const yearDir = join(OUT, 'races', String(bYear));
+  mkdirSync(yearDir, { recursive: true });
+  writeFileSync(join(yearDir, `${round}.json`), JSON.stringify(raceDoc));
+  racesIndex.push({
+    year: bYear,
+    round,
+    name: calEntry.name,
+    date: calEntry.date || null,
+    circuitRef: circuitId,
+    completed: false,
+  });
+  upcomingRacesWritten++;
+}
+
+if (upcomingRacesWritten > 0) {
+  writeFileSync(join(OUT, '_races-index.json'), JSON.stringify(racesIndex));
+  console.log(`[archive] +${upcomingRacesWritten} upcoming race holding bundles`);
 }
 
 // ─── Circuits ─────────────────────────────────────────────────────────
