@@ -83,7 +83,7 @@ Stacks top-to-bottom: hero → next-session+timetable → last-held-here → cir
 ### Circuit panel (below two-column block)
 
 - Theme-aware SVG map (`public/images/circuits/{black-outline,white-outline}/<id>.svg`). Picks variant by `html.light`, same pattern as `CircuitPage.astro`.
-- Below the map: length, laps, lap record, location — values pulled from the bundle `circuit` block.
+- Below the map: location, country, flag — values pulled from the bundle `circuit` block. (Length / laps / lap-record were originally planned but the source bundle doesn't carry them; deferred until the data is populated.)
 
 ### Prev/next race nav
 
@@ -122,11 +122,14 @@ Shape of the upcoming JSON:
 
 ```js
 {
-  raceId: `${year}-${round}`,
+  raceId: `${year}_${round}`,  // matches the existing completed-bundle pass; underscore not hyphen
   year, round, name, date, time, url,
   circuit: {
-    circuitRef, name, location, country, countryName, flag,
-    length, laps, lapRecord  // copied from bundle's `circuits` map where available
+    circuitRef, circuitId, name, location, country, countryName, flag,
+    // length / laps / lapRecord are NOT emitted: the bundle's `circuitsFromAPI`
+    // map currently holds zeroed placeholder data, and the Ergast CSV doesn't
+    // carry these fields per-circuit either. RaceUpcomingBody renders only what's
+    // available (location, country, flag) and skips length/laps/lap-record stats.
   },
   sprint: boolean,            // is it a sprint weekend
   sessions: {                 // copied verbatim from bundle calendar entry
