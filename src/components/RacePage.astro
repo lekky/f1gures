@@ -96,7 +96,7 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
           {race.date && <span class="t-mono">{race.date}</span>}
         </div>
       </div>
-      {podium.length > 0 && (
+      {race.results.length > 0 && podium.length > 0 && (
         <div class="race-hero-podium">
           {podium.map(p => (
             <div class={`podium-step podium-${p.position}`}>
@@ -114,7 +114,11 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
     </div>
   </div>
 
-  <RaceResultsBody race={race} />
+  {race.results.length > 0
+    ? <RaceResultsBody race={race} />
+    : <div class="panel" style="padding: 20px;">
+        <p>Race weekend coming up — full schedule and circuit info loading.</p>
+      </div>}
 
   <div class="race-nav">
     {race.prev ? (
