@@ -135,7 +135,15 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
   </div>
 </div>
 
-<style>
+<style is:global>
+  /* This block is global so rules also style elements rendered by the
+     RaceResultsBody and RaceUpcomingBody child components — Astro's default
+     scoped styles don't cross component boundaries, and splitting these rules
+     across three components would duplicate hero/podium styling. Class names
+     here are race-page specific (race-hero-*, race-upcoming-*, session-*, etc.)
+     so global scope doesn't conflict with other pages. */
+  race-countdown { display: block; }
+
   .race-hero { padding: 20px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
   .race-hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
   .race-hero-round { color: var(--fg-3); margin-bottom: 6px; }
