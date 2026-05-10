@@ -93,6 +93,45 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
       </table>
     </race-countdown>
   </div>
+
+  <div class="panel race-upcoming-history">
+    {race.lastHeldHere && race.lastHeldHere.podium.length > 0 ? (
+      <>
+        <div class="t-eyebrow">Last held here — {race.lastHeldHere.year}</div>
+        <div class="race-upcoming-podium">
+          {race.lastHeldHere.podium.map(p => (
+            <div class={`podium-step podium-${p.position}`}>
+              <div class="podium-pos">P{p.position}</div>
+              <div class="podium-name">
+                {p.driverRef ? <a href={`/drivers/${p.driverRef}/`}>{p.driverName}</a> : p.driverName}
+              </div>
+              <div class="podium-team">
+                {p.constructorRef ? <a href={`/teams/${p.constructorRef}/`}>{p.constructorName}</a> : p.constructorName}
+              </div>
+            </div>
+          ))}
+        </div>
+        <a class="inline-link race-upcoming-history-link" href={`/races/${race.lastHeldHere.year}/${race.lastHeldHere.round}/`}>
+          → {race.lastHeldHere.year} {race.name}
+        </a>
+      </>
+    ) : race.circuitFirstTime ? (
+      <>
+        <div class="t-eyebrow">First time at this venue</div>
+        <p class="race-upcoming-firsttime">
+          {race.circuit.name} hosts a Formula 1 race for the first time. Located in {race.circuit.location ? `${race.circuit.location}, ` : ''}{race.circuit.countryName}.
+        </p>
+        <a class="inline-link" href={`/circuits/${race.circuit.circuitRef}/`}>
+          → Circuit page
+        </a>
+      </>
+    ) : (
+      <>
+        <div class="t-eyebrow">No prior data</div>
+        <p>No previous results available for this venue.</p>
+      </>
+    )}
+  </div>
 </div>
 
 <RaceCountdownIsland client:load />
