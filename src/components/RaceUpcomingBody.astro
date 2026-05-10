@@ -6,6 +6,8 @@
 //
 // The shell (RacePage.astro) owns the hero, breadcrumb, prev/next nav.
 
+import RaceCountdownIsland from './islands/RaceCountdown.jsx';
+
 interface Session { date: string; time: string }
 interface RaceProp {
   year: number;
@@ -92,3 +94,5 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
     </race-countdown>
   </div>
 </div>
+
+<RaceCountdownIsland client:load />
