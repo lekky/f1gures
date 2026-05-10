@@ -1,0 +1,94 @@
+---
+// Server-rendered body for upcoming/un-run races. Receives the holding-page
+// race prop emitted by build-archive.mjs (results: [], sessions populated,
+// lastHeldHere optional, circuitFirstTime optional). Renders next-session
+// panel + last-held-here panel + circuit panel.
+//
+// The shell (RacePage.astro) owns the hero, breadcrumb, prev/next nav.
+
+interface Session { date: string; time: string }
+interface RaceProp {
+  year: number;
+  round: number;
+  name: string;
+  circuit: { circuitRef: string; circuitId?: string; name: string; flag: string; location: string; countryName: string };
+  sessions: Record<string, Session | null>;
+  sprint: boolean;
+  lastHeldHere: { year: number; round: number; podium: any[] } | null;
+  circuitFirstTime: boolean;
+}
+
+interface Props { race: RaceProp }
+
+const { race } = Astro.props;
+
+// Build an ordered list of sessions for rendering. Keys come from the bundle
+// shape: fp1, fp2, fp3, q, sprintQuali, sprint, race. Each entry's iso UTC
+// is `<date>T<time>` where time already ends in 'Z' (per the bundle format).
+const SESSION_LABELS: Record<string, string> = {
+  fp1:         'Practice 1',
+  fp2:         'Practice 2',
+  fp3:         'Practice 3',
+  sprintQuali: 'Sprint Qualifying',
+  sprint:      'Sprint',
+  q:           'Qualifying',
+  race:        'Race',
+};
+
+const SESSION_KEYS_ORDER = ['fp1', 'fp2', 'fp3', 'sprintQuali', 'sprint', 'q', 'race'];
+
+const sessionRows = SESSION_KEYS_ORDER
+  .map(key => {
+    const s = race.sessions?.[key];
+    if (!s || !s.date || !s.time) return null;
+    const iso = `${s.date}T${s.time}`; // time already includes 'Z'
+    return { key, label: SESSION_LABELS[key], iso, date: s.date, time: s.time };
+  })
+  .filter(Boolean) as Array<{ key: string; label: string; iso: string; date: string; time: string }>;
+
+// Sort by ISO ascending (ensures FP1 → race even if bundle ordering ever drifts).
+sessionRows.sort((a, b) => a.iso.localeCompare(b.iso));
+
+// Build-time "next session" pick — first session with start >= now. Hydration
+// will re-pick client-side once the page loads, but this gives us a sensible
+// default for no-JS visitors.
+const buildNow = new Date().toISOString();
+const nextIdx = sessionRows.findIndex(r => r.iso >= buildNow);
+const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
+---
+
+<div class="race-upcoming-grid">
+  <div class="panel race-upcoming-next">
+    <div class="t-eyebrow">Next session</div>
+    <race-countdown
+      data-circuit-id={race.circuit.circuitId || race.circuit.circuitRef}
+      data-initial-next-key={initialNextKey || ''}
+    >
+      <div class="next-session-headline">
+        <span class="next-session-label" data-next-label>
+          {initialNextKey ? SESSION_LABELS[initialNextKey] : 'Race weekend complete'}
+        </span>
+        <span class="next-session-countdown" data-next-countdown>—</span>
+      </div>
+      <div class="tz-toggle" role="tablist" aria-label="Time zone">
+        <button type="button" class="tz-btn is-active" data-tz="track" role="tab" aria-selected="true">Track</button>
+        <button type="button" class="tz-btn" data-tz="user" role="tab" aria-selected="false">You</button>
+      </div>
+      <table class="session-table">
+        <tbody>
+          {sessionRows.map(row => (
+            <tr
+              class={row.key === initialNextKey ? 'is-next' : ''}
+              data-session-key={row.key}
+              data-session-iso={row.iso}
+            >
+              <td class="session-label">{row.label}</td>
+              <td class="session-day t-mono" data-session-day>—</td>
+              <td class="session-time t-mono" data-session-time>—</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </race-countdown>
+  </div>
+</div>
