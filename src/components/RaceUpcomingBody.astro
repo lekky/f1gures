@@ -119,7 +119,10 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
       <>
         <div class="t-eyebrow">First time at this venue</div>
         <p class="race-upcoming-firsttime">
-          {race.circuit.name} hosts a Formula 1 race for the first time. Located in {race.circuit.location ? `${race.circuit.location}, ` : ''}{race.circuit.countryName}.
+          {race.circuit.name} hosts a Formula 1 race for the first time.
+          {(race.circuit.location || race.circuit.countryName) && (
+            <> Located in {race.circuit.location ? `${race.circuit.location}, ` : ''}{race.circuit.countryName || race.circuit.country}.</>
+          )}
         </p>
         <a class="inline-link" href={`/circuits/${race.circuit.circuitRef}/`}>
           → Circuit page
