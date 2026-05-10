@@ -313,44 +313,4 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
     font-size: 14px;
     line-height: 1.5;
   }
-
-  .race-upcoming-circuit { padding: 20px; margin-top: 20px; }
-  .race-upcoming-circuit-body {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 24px;
-    align-items: center;
-  }
-  .race-upcoming-circuit-body:not(:has(.race-upcoming-circuit-map)) {
-    grid-template-columns: 1fr;
-  }
-  .race-upcoming-circuit-map img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-  .race-upcoming-circuit-map .circuit-map-dark { display: none; }
-  :root:not(.light) .race-upcoming-circuit-map .circuit-map-light { display: none; }
-  :root:not(.light) .race-upcoming-circuit-map .circuit-map-dark { display: block; }
-  .race-upcoming-circuit-meta { display: flex; flex-direction: column; gap: 12px; }
-  .race-upcoming-circuit-meta .meta-row {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .race-upcoming-circuit-meta .meta-label {
-    font-size: 11px;
-    color: var(--fg-3);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .race-upcoming-circuit-meta .meta-value {
-    font-weight: 600;
-    font-size: 15px;
-  }
-  .race-upcoming-circuit-meta .race-upcoming-circuit-link { margin-top: 8px; font-size: 13px; }
-
-  @media (max-width: 720px) {
-    .race-upcoming-circuit-body { grid-template-columns: 1fr; }
-  }
 </style>
