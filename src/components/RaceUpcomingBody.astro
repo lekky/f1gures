@@ -7,6 +7,38 @@
 // The shell (RacePage.astro) owns the hero, breadcrumb, prev/next nav.
 
 import RaceCountdownIsland from './islands/RaceCountdown.jsx';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// SVG basenames in public/images/circuits/{black,white}-outline/ diverge from
+// circuitRef for some circuits (vegas→lasvegas, villeneuve→montreal, …). Keep
+// the map in sync with src/components/CircuitPage.astro:62.
+const SVG_FOR_REF: Record<string, string> = {
+  albert_park: 'albert',
+  americas: 'cota',
+  bahrain: 'bahrain',
+  baku: 'baku',
+  catalunya: 'catalunya',
+  hungaroring: 'hungaroring',
+  imola: 'imola',
+  interlagos: 'interlagos',
+  jeddah: 'jeddah',
+  losail: 'losail',
+  marina_bay: 'marina',
+  miami: 'miami',
+  monaco: 'monaco',
+  monza: 'monza',
+  red_bull_ring: 'spielberg',
+  rodriguez: 'rodriguez',
+  shanghai: 'shanghai',
+  silverstone: 'silverstone',
+  spa: 'spa',
+  suzuka: 'suzuka',
+  vegas: 'lasvegas',
+  villeneuve: 'montreal',
+  yas_marina: 'yas',
+  zandvoort: 'zandvoort',
+};
 
 interface Session { date: string; time: string }
 interface RaceProp {
@@ -23,6 +55,10 @@ interface RaceProp {
 interface Props { race: RaceProp }
 
 const { race } = Astro.props;
+
+const circuitSvgRef = race.circuit.circuitId || race.circuit.circuitRef;
+const svgName = SVG_FOR_REF[circuitSvgRef] || circuitSvgRef;
+const hasMap = !!svgName && existsSync(resolve(process.cwd(), 'public', 'images', 'circuits', 'black-outline', `${svgName}.svg`));
 
 // Build an ordered list of sessions for rendering. Keys come from the bundle
 // shape: fp1, fp2, fp3, q, sprintQuali, sprint, race. Each entry's iso UTC
@@ -134,6 +170,27 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
         <p>No previous results available for this venue.</p>
       </>
     )}
+  </div>
+</div>
+
+<div class="panel race-upcoming-circuit">
+  <div class="section-head"><h2>Circuit</h2><div class="section-rule"></div></div>
+  <div class="race-upcoming-circuit-body">
+    {hasMap && (
+      <div class="race-upcoming-circuit-map">
+        <img class="circuit-map-light" src={`/images/circuits/black-outline/${svgName}.svg`} alt={`${race.circuit.name} layout`} />
+        <img class="circuit-map-dark" src={`/images/circuits/white-outline/${svgName}.svg`} alt={`${race.circuit.name} layout`} />
+      </div>
+    )}
+    <div class="race-upcoming-circuit-meta">
+      <div class="meta-row"><span class="meta-label">Country</span><span class="meta-value">{race.circuit.flag} {race.circuit.countryName || race.circuit.country || '—'}</span></div>
+      {race.circuit.location && (
+        <div class="meta-row"><span class="meta-label">Location</span><span class="meta-value">{race.circuit.location}</span></div>
+      )}
+      <a class="inline-link race-upcoming-circuit-link" href={`/circuits/${race.circuit.circuitRef}/`}>
+        → Full circuit page
+      </a>
+    </div>
   </div>
 </div>
 
