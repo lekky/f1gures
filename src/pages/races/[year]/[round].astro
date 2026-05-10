@@ -14,16 +14,35 @@ export async function getStaticPaths() {
 }
 
 const { race } = Astro.props;
-const winnerName = race.results.find(r => r.position === 1)?.driverName || null;
-const title = `${race.name} ${race.year}${winnerName ? ` — ${winnerName} won` : ''} | f1gures`;
-const description = `${race.name} ${race.year} race results from ${race.circuit?.name || 'the circuit'}. Full grid, finishing order, qualifying times${race.sprint ? ', sprint results' : ''}, points, and pit-stop pace.`;
+const completed = race.results.length > 0;
+const winnerName = completed ? race.results.find(r => r.position === 1)?.driverName || null : null;
+
+let title: string;
+let description: string;
+
+if (completed) {
+  title = `${race.name} ${race.year}${winnerName ? ` - ${winnerName} won` : ''} | f1gures`;
+  description = `${race.name} ${race.year} race results from ${race.circuit?.name || 'the circuit'}. Full grid, finishing order, qualifying times${race.sprint ? ', sprint results' : ''}, points, and pit-stop pace.`;
+} else {
+  // Build a "FP1, qualifying, sprint and the race"-style sentence from non-null sessions.
+  const SESSION_NAMES: Record<string, string> = {
+    fp1: 'FP1', fp2: 'FP2', fp3: 'FP3', sprintQuali: 'sprint qualifying', sprint: 'sprint', q: 'qualifying', race: 'the race',
+  };
+  const sessionsList = Object.entries((race as any).sessions || {})
+    .filter(([_, v]: [string, any]) => v && v.date)
+    .map(([k]: [string, any]) => SESSION_NAMES[k])
+    .filter(Boolean)
+    .join(', ');
+  title = `${race.name} ${race.year} - Round ${race.round} schedule, sessions & circuit | f1gures`;
+  description = `${race.name} ${race.year}, Round ${race.round}. Race weekend at ${race.circuit?.name || 'the circuit'}. Session times for ${sessionsList || 'the race weekend'}.`;
+}
+
 const canonicalPath = `/races/${race.year}/${race.round}/`;
 const ogImagePath = `/images/og/races/${race.year}-${race.round}.png`;
 const ogImage = existsSync(resolve(process.cwd(), 'public', ogImagePath.slice(1)))
   ? ogImagePath
   : '/images/og-default.png';
 
-const completed = race.results.length > 0;
 const winner = race.results.find(r => r.position === 1) || null;
 const second = race.results.find(r => r.position === 2) || null;
 const third = race.results.find(r => r.position === 3) || null;
@@ -56,6 +75,26 @@ if (completed && winner?.driverName) {
     name: p!.driverName,
   }));
   if (performers.length > 0) sportsEvent.performer = performers;
+}
+
+if (!completed) {
+  sportsEvent.eventStatus = 'https://schema.org/EventScheduled';
+  // sub-events from session timetable
+  const SESSION_NAMES: Record<string, string> = {
+    fp1: 'Practice 1', fp2: 'Practice 2', fp3: 'Practice 3',
+    sprintQuali: 'Sprint Qualifying', sprint: 'Sprint', q: 'Qualifying', race: 'Race',
+  };
+  const subEvents: any[] = [];
+  for (const [key, val] of Object.entries((race as any).sessions || {})) {
+    if (!val || !(val as any).date || !(val as any).time) continue;
+    subEvents.push({
+      '@type': 'SportsEvent',
+      name: `${race.name} ${race.year} - ${SESSION_NAMES[key] || key}`,
+      startDate: `${(val as any).date}T${(val as any).time}`,
+      sport: 'Formula 1',
+    });
+  }
+  if (subEvents.length > 0) sportsEvent.subEvent = subEvents;
 }
 
 const jsonLd: any[] = [sportsEvent];
@@ -112,6 +151,6 @@ const breadcrumb = [
   { name: race.name, path: canonicalPath },
 ];
 ---
-<BaseLayout {title} {description} {canonicalPath} {ogImage} ogType="article" publishedTime={race.date || undefined} jsonLd={jsonLd.length === 1 ? jsonLd[0] : { '@context': 'https://schema.org', '@graph': jsonLd }} {breadcrumb}>
+<BaseLayout {title} {description} {canonicalPath} {ogImage} ogType={completed ? 'article' : 'event'} publishedTime={completed ? (race.date || undefined) : undefined} jsonLd={jsonLd.length === 1 ? jsonLd[0] : { '@context': 'https://schema.org', '@graph': jsonLd }} {breadcrumb}>
   <RacePage {race} />
 </BaseLayout>

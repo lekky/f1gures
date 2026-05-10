@@ -12,7 +12,7 @@
 // If no bundle exists (fresh clone, API down, year not yet started), the
 // JSON is `{}` and we hand the islands an empty-but-valid shape with
 // `_empty: true` so screens can render placeholders. We deliberately do
-// NOT fall back to buildFallback's speculative driver grid — that data
+// NOT fall back to buildFallback's speculative driver grid - that data
 // drifts from reality and confuses visitors.
 
 import json from './currentSeason.json';

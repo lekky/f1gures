@@ -1,7 +1,7 @@
-# SEO Overhaul — Design Spec
+# SEO Overhaul - Design Spec
 **Date:** 2026-05-09  
 **Branch:** `feat/seo-overhaul`  
-**Scope:** Full-stack SEO for f1gures.app — structured data, OG images, natural-language content, internal linking, off-page strategy
+**Scope:** Full-stack SEO for f1gures.app - structured data, OG images, natural-language content, internal linking, off-page strategy
 
 ---
 
@@ -11,10 +11,10 @@ f1gures.app is a new site with ~2,310 prerendered static pages (Astro 4 SSG). It
 
 ---
 
-## Section 1 — Structured Data & Meta Fixes
+## Section 1 - Structured Data & Meta Fixes
 
 ### Global (BaseLayout.astro)
-- Add `<meta property="og:image:alt" content={...} />` — derive from page title
+- Add `<meta property="og:image:alt" content={...} />` - derive from page title
 - Add `<meta name="twitter:site" content="@f1gures" />` (update if handle differs)
 - Fix Google Fonts `<link>` to include `&display=swap` in the URL so font loading doesn't block rendering (prevents render-blocking resource warning in Core Web Vitals)
 
@@ -35,13 +35,13 @@ f1gures.app is a new site with ~2,310 prerendered static pages (Astro 4 SSG). It
 - Fix `ogType` from `"article"` → `"website"`
 - Expand `SportsTeam` JSON-LD:
   - Add `memberOf: { "@type": "SportsOrganization", name: "FIA Formula One World Championship" }`
-  - Add `sport: "Formula 1"` (already present — verify)
+  - Add `sport: "Formula 1"` (already present - verify)
   - Add `foundingDate` if `team.career.firstYear` is available
 
-### Listing pages — add JSON-LD (currently missing or bare BreadcrumbList)
+### Listing pages - add JSON-LD (currently missing or bare BreadcrumbList)
 All data for these comes from `currentSeason` (the prerendered SSR data):
 
-**`standings-drivers.astro`** — add `ItemList` JSON-LD:
+**`standings-drivers.astro`** - add `ItemList` JSON-LD:
 ```json
 {
   "@type": "ItemList",
@@ -50,9 +50,9 @@ All data for these comes from `currentSeason` (the prerendered SSR data):
 }
 ```
 
-**`standings-constructors.astro`** — same pattern for constructors.
+**`standings-constructors.astro`** - same pattern for constructors.
 
-**`calendar.astro`** — add `ItemList` of all race events:
+**`calendar.astro`** - add `ItemList` of all race events:
 ```json
 {
   "@type": "ItemList",
@@ -61,11 +61,11 @@ All data for these comes from `currentSeason` (the prerendered SSR data):
 }
 ```
 
-**`circuits.astro`** — add `ItemList` of all circuits with their URLs.
+**`circuits.astro`** - add `ItemList` of all circuits with their URLs.
 
 ---
 
-## Section 2 — Per-Type OG Images (Build-Time Generation)
+## Section 2 - Per-Type OG Images (Build-Time Generation)
 
 ### Overview
 A new prebuild script `scripts/generate-og-images.mjs` runs after `build-archive.mjs`. It uses **Satori** + **@resvg/resvg-js** (both Node-compatible, no browser needed) to render JSX templates to PNG and write them to `public/images/og/<type>/<slug>.png`.
@@ -105,7 +105,7 @@ The 5 listing pages retain the existing hand-crafted `og-default.png`.
 - `[year]/[round].astro` frontmatter: `ogImage = /images/og/races/${race.year}-${race.round}.png`
 - `[circuitRef].astro` frontmatter: `ogImage = /images/og/circuits/${circuit.circuitRef}.png`
 - `[constructorRef].astro` frontmatter: `ogImage = /images/og/teams/${team.constructorRef}.png`
-- `BaseLayout.astro` already accepts `ogImage` — no changes needed there
+- `BaseLayout.astro` already accepts `ogImage` - no changes needed there
 - Fallback: if the PNG file doesn't exist at the expected path, the page falls back to `/images/og-default.png` (existing behaviour)
 
 ### Performance
@@ -122,7 +122,7 @@ Both are devDependencies (build-time only).
 
 ---
 
-## Section 3 — Natural-Language Summaries & FAQ Schema
+## Section 3 - Natural-Language Summaries & FAQ Schema
 
 ### Race page summaries
 A `buildRaceSummary(race)` function in `RacePage.astro` frontmatter generates a 2–3 sentence paragraph from existing data:
@@ -183,14 +183,14 @@ FAQ schema only added when `driver.career.races > 0`.
 
 ---
 
-## Section 4 — Internal Linking
+## Section 4 - Internal Linking
 
 All changes are data-driven link wraps on existing text nodes. No new UI components. Links use `color: inherit` and underline on hover (existing site `a` styles).
 
 ### Race pages (`RacePage.astro`)
 Add a "Key links" row beneath the results table:
 - Winner name → `/drivers/<winnerRef>/`
-- Pole sitter → `/drivers/<ref>/` — use `race.qualifying[0]?.driverRef` (not `race.pole` which is a name string, not a ref)  
+- Pole sitter → `/drivers/<ref>/` - use `race.qualifying[0]?.driverRef` (not `race.pole` which is a name string, not a ref)  
 - Circuit name → `/circuits/<circuitRef>/`
 - Winning constructor → `/teams/<constructorRef>/`
 
@@ -208,12 +208,12 @@ Data already available in `race` object. Use existing `ARCHIVE_MAX_YEAR` guard f
 - Add a "Drivers" section listing all unique drivers who raced for the team (derived from season data), each linked to `/drivers/<driverRef>/`
 
 ### Listing page islands
-- `DriverStandingsIsland` / `ConstructorStandingsIsland`: driver/team names already rendered — ensure they link to their detail pages (audit current island screens for missing links)
-- `CalendarIsland`: race names for completed rounds already link via `/race.html` redirect — confirm this is working
+- `DriverStandingsIsland` / `ConstructorStandingsIsland`: driver/team names already rendered - ensure they link to their detail pages (audit current island screens for missing links)
+- `CalendarIsland`: race names for completed rounds already link via `/race.html` redirect - confirm this is working
 
 ---
 
-## Section 5 — Off-Page Strategy Guide
+## Section 5 - Off-Page Strategy Guide
 
 Delivered as `docs/seo/strategy.md` committed to the repo.
 
@@ -225,17 +225,17 @@ Delivered as `docs/seo/strategy.md` committed to the repo.
 5. Set up email notifications for coverage errors and manual actions
 
 ### Monitoring cadence
-- **Weekly:** GSC Coverage tab — look for "Excluded" pages, fix crawl errors
-- **Weekly:** Rich Results Test on one race page, one driver page — verify FAQ + SportsEvent schema
-- **Monthly:** GSC Performance tab — filter by page type (URL contains `/races/`, `/drivers/`, etc.) to track impressions + CTR growth
-- **Post-deploy:** GSC Core Web Vitals report — verify font-display fix improved LCP scores
+- **Weekly:** GSC Coverage tab - look for "Excluded" pages, fix crawl errors
+- **Weekly:** Rich Results Test on one race page, one driver page - verify FAQ + SportsEvent schema
+- **Monthly:** GSC Performance tab - filter by page type (URL contains `/races/`, `/drivers/`, etc.) to track impressions + CTR growth
+- **Post-deploy:** GSC Core Web Vitals report - verify font-display fix improved LCP scores
 
 ### Link building playbook
 
 **Reddit (`r/formula1`, 5.4M members)**
 - Post "I built a free F1 stats site covering every race back to 1950" with a specific hook (e.g., "Who has the most podiums without a win? Here's the answer")
 - Reply to "Who won X race?" threads with a direct link to the race page
-- Do not spam — one quality post per week maximum
+- Do not spam - one quality post per week maximum
 
 **Twitter/X**
 - Tweet race results within 30 minutes of the chequered flag linking to the race page
@@ -253,7 +253,7 @@ Delivered as `docs/seo/strategy.md` committed to the repo.
 - Large F1 Discord servers: share the tool in #stats or #history channels
 
 ### Content angle for social
-The natural-language summaries (Section 3) make race pages directly shareable. After deploy, the strongest social hook is historical comparisons: "Hamilton vs Schumacher head-to-head — the data" linking to driver pages side by side. f1gures already has the per-race and per-season data to support this narrative.
+The natural-language summaries (Section 3) make race pages directly shareable. After deploy, the strongest social hook is historical comparisons: "Hamilton vs Schumacher head-to-head - the data" linking to driver pages side by side. f1gures already has the per-race and per-season data to support this narrative.
 
 ---
 

@@ -1,4 +1,4 @@
-# f1gures — F1 Tracking site
+# f1gures - F1 Tracking site
 
 A multi-page F1 stats site built with **Astro 4 SSG + React 18 islands**.
 Pages are prerendered at build time (so Google sees real HTML, not a stub),
@@ -79,7 +79,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude\serve-dist.ps1
 ## Deploy
 
 GitHub Actions on push to `main`:
-1. `npm ci && npm run build` — Astro builds to `dist/`
+1. `npm ci && npm run build` - Astro builds to `dist/`
 2. FTP-Deploy uploads `dist/` contents to the live server
 
 No manual steps. Merge the PR and the site updates automatically.
@@ -88,7 +88,7 @@ No manual steps. Merge the PR and the site updates automatically.
 
 **Live data** (drivers, constructors, calendar, race results, qualifying,
 sprint results, standings, session schedules):
-[Jolpica F1](https://api.jolpi.ca) — free, no API key, no auth, generous rate
+[Jolpica F1](https://api.jolpi.ca) - free, no API key, no auth, generous rate
 limits (≈500/hour). For PR 1 the listing pages use the bundled fallback;
 PR 2 wires real season-aware data via build-time imports of
 `public/data/<year>.json` and (for 1950–2024) the Ergast CSVs in
@@ -135,7 +135,7 @@ or want to put a CDN in front.
   passes the data object to a React island as a prop, Astro pre-renders the
   resulting markup at build time. The island hydrates only the interactive
   parts (sortable headers, Recharts charts, head-to-head dropdowns).
-- **Detail pages** (driver/race/circuit/team): still the legacy stack — plain
+- **Detail pages** (driver/race/circuit/team): still the legacy stack - plain
   HTML in `public/`, Babel compiles JSX in the browser, `js/api.js` fetches
   Jolpica or `public/data/<year>.json` and replaces `window.F1_DATA`. Will be
   ported to Astro `getStaticPaths` in PR 2.
@@ -162,7 +162,7 @@ endpoints (under `https://api.jolpi.ca/ergast/f1/<year>/`):
 
 If you want richer per-session data (tyre stints, sector times, telemetry,
 weather, race control messages), [OpenF1](https://openf1.org) covers that
-ground for 2023+ — also free, also no auth.
+ground for 2023+ - also free, also no auth.
 
 ## Notes
 

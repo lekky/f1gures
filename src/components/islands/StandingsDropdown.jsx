@@ -1,4 +1,4 @@
-// Standings dropdown — React island for the click-driven Drivers/Constructors
+// Standings dropdown - React island for the click-driven Drivers/Constructors
 // menu in the desktop top nav. Replaces the inline TopNav dropdown logic from
 // shell.jsx.
 

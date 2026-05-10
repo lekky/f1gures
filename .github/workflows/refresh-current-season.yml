@@ -5,12 +5,12 @@ name: Refresh Current Season
 # the bundle (so future builds have it cached), then rebuilds and FTP-
 # deploys the site so the prerendered HTML reflects the new standings.
 #
-# Manual trigger via workflow_dispatch is also supported — use this after
+# Manual trigger via workflow_dispatch is also supported - use this after
 # a race weekend to push fresh results without waiting for 04:00 UTC.
 
 on:
   schedule:
-    # 04:00 UTC daily — late enough that Sunday races (incl. US night
+    # 04:00 UTC daily - late enough that Sunday races (incl. US night
     # rounds like Vegas) have published their final results to Jolpica.
     - cron: '0 4 * * *'
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
           YEAR=$(date -u +%Y)
           echo "year=$YEAR" >> "$GITHUB_OUTPUT"
           # Don't fail the whole workflow if Jolpica is down or the year
-          # has no data yet — the existing bundle (or fallback) keeps
+          # has no data yet - the existing bundle (or fallback) keeps
           # the site from regressing.
           node scripts/fetch-season.mjs "$YEAR" || echo "::warning::fetch-season.mjs failed for $YEAR (continuing with existing bundle)"
 
@@ -51,14 +51,14 @@ jobs:
           YEAR="${{ steps.fetch.outputs.year }}"
           BUNDLE="public/data/${YEAR}.json"
           if [ ! -f "$BUNDLE" ]; then
-            echo "No bundle written for $YEAR — skipping commit."
+            echo "No bundle written for $YEAR - skipping commit."
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$BUNDLE"
           if git diff --cached --quiet; then
-            echo "No changes to ${BUNDLE} — skipping commit."
+            echo "No changes to ${BUNDLE} - skipping commit."
           else
             git commit -m "chore(data): nightly ${YEAR} season refresh"
             git push
@@ -68,7 +68,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: public/images/og
-          # Same cache key as deploy.yml — when the nightly fetch updates a
+          # Same cache key as deploy.yml - when the nightly fetch updates a
           # season bundle, the bundle hash changes and OGs regenerate. When
           # nothing changed (Jolpica returned same data, fetch was skipped),
           # the cache hits and the build is fast.

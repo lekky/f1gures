@@ -1,4 +1,4 @@
-/* f1gures — site-specific overrides for deployment (not prototype) */
+/* f1gures - site-specific overrides for deployment (not prototype) */
 html, body { margin: 0; padding: 0; background: var(--bg-1); min-height: 100%; }
 body { font-family: var(--f-body, 'Barlow', system-ui, sans-serif); }
 .f1-app { min-height: 100vh; }
@@ -58,7 +58,7 @@ a { color: inherit; }
   .grid-driver-stats { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
-/* HOME — hero (next race + sessions side-by-side on desktop) */
+/* HOME - hero (next race + sessions side-by-side on desktop) */
 .hero-grid {
   padding: 24px;
   display: grid;
@@ -76,7 +76,7 @@ a { color: inherit; }
   .hero-title { font-size: 38px !important; }
 }
 
-/* RACE DETAIL — header */
+/* RACE DETAIL - header */
 .race-hero { padding: 20px; }
 .race-hero-title { font-size: 44px; }
 @media (max-width: 720px) {
@@ -84,7 +84,7 @@ a { color: inherit; }
   .race-hero-title { font-size: 30px !important; }
 }
 
-/* DRIVER PROFILE — header */
+/* DRIVER PROFILE - header */
 .driver-hero {
   display: grid;
   grid-template-columns: 220px 1fr auto;
@@ -101,7 +101,7 @@ a { color: inherit; }
   .driver-hero-right { text-align: left !important; }
 }
 
-/* CIRCUIT DETAIL — header */
+/* CIRCUIT DETAIL - header */
 .circuit-hero {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
@@ -149,7 +149,7 @@ a { color: inherit; }
    The home/calendar/circuits/standings screens use useIsMobile() to swap
    inline gridTemplateColumns between desktop and mobile, but Astro SSR
    has no `window` so prerender always emits the desktop grid. On real
-   phones that's what gets shipped first — and stays visible until React
+   phones that's what gets shipped first - and stays visible until React
    hydrates (sometimes seconds on slow networks, never if JS fails). These
    selectors override the inline desktop grid styles below 720px so the
    prerendered HTML works on mobile without depending on hydration. */

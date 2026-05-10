@@ -1,4 +1,4 @@
-// Shared React helpers and components — ported from js/shell.jsx for use
+// Shared React helpers and components - ported from js/shell.jsx for use
 // inside React islands. The Astro layout (BaseLayout/Chrome.astro) handles
 // the chrome itself; this module provides the building blocks each screen
 // island composes (Panel, DriverCell, Countdown, etc.) plus URL/date helpers.
@@ -17,10 +17,10 @@ export function urlFor(target) {
     case 'circuits':     return '/circuits/';
     case 'race': {
       // /races/<y>/<r>/ pages exist for Ergast (1950–2024) + hand-curated bundles
-      // (2025 full, 2026 completed rounds). Completed bundle rounds are emitted by
-      // build-archive.mjs and included in _races-index.json. For future 2026+
-      // rounds without results, race.html falls through to /calendar/.
-      const ARCHIVE_MAX_YEAR = 2025;
+      // (2025 full, 2026 completed AND upcoming rounds via holding pages emitted
+      // by build-archive.mjs). All entries land in _races-index.json. Future years
+      // without bundles still fall through to /race.html → /calendar/.
+      const ARCHIVE_MAX_YEAR = 2026;
       const y = target.year ? Number(target.year) : null;
       if (y && target.round && y <= ARCHIVE_MAX_YEAR) {
         return `/races/${target.year}/${target.round}/`;
@@ -185,7 +185,7 @@ export function SectionHead({ title, right }) {
 }
 
 export function ChangeIndicator({ change }) {
-  if (change === 0 || change == null) return <span className="chg flat">— 0</span>;
+  if (change === 0 || change == null) return <span className="chg flat">- 0</span>;
   if (change > 0) return <span className="chg up">▲ {change}</span>;
   return <span className="chg down">▼ {Math.abs(change)}</span>;
 }
@@ -199,7 +199,7 @@ export function SprintBadge() {
 }
 
 export function DriverCell({ data, driver, showCode = true }) {
-  const team = data.teamById(driver.team) || { color: '#888888', short: '—', name: '—' };
+  const team = data.teamById(driver.team) || { color: '#888888', short: '-', name: '-' };
   return (
     <div className="driver-cell" style={{ '--team-color': team.color }}>
       <span className="driver-flag">{driver.flag}</span>

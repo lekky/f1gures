@@ -87,7 +87,7 @@ function DriverPicker({ data, label, value, onChange }) {
       <div className="t-eyebrow" style={{ marginBottom: 6 }}>{label}</div>
       <select className="sel" style={{ width: '100%' }} value={value} onChange={e => onChange(e.target.value)}>
         {DD.drivers.map(d => (
-          <option key={d.id} value={d.id}>{d.first} {d.last} · {(DD.teamById(d.team) || { short: '—' }).short}</option>
+          <option key={d.id} value={d.id}>{d.first} {d.last} · {(DD.teamById(d.team) || { short: '-' }).short}</option>
         ))}
       </select>
     </div>
@@ -104,11 +104,11 @@ export function HeadToHead({ data, standings, mob }) {
   const driverB = DD.driverById(b);
   const rowA = standings.drivers.find(r => r.driver.id === a) || { points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0 };
   const rowB = standings.drivers.find(r => r.driver.id === b) || { points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0 };
-  const teamA = DD.teamById(driverA.team) || { color: '#888888', short: '—' };
-  const teamB = DD.teamById(driverB.team) || { color: '#888888', short: '—' };
+  const teamA = DD.teamById(driverA.team) || { color: '#888888', short: '-' };
+  const teamB = DD.teamById(driverB.team) || { color: '#888888', short: '-' };
   const avgFinish = (id) => {
     const rounds = Object.keys(DD.results).map(Number);
-    if (!rounds.length) return '—';
+    if (!rounds.length) return '-';
     const positions = rounds.map(r => DD.results[r].order.indexOf(id) + 1);
     return (positions.reduce((s, p) => s + p, 0) / positions.length).toFixed(1);
   };

@@ -1,0 +1,140 @@
+---
+// Server-rendered body for upcoming/un-run races. Receives the holding-page
+// race prop emitted by build-archive.mjs (results: [], sessions populated,
+// lastHeldHere optional, circuitFirstTime optional). Renders next-session
+// panel + last-held-here panel.
+//
+// The shell (RacePage.astro) owns the hero, breadcrumb, prev/next nav.
+
+import RaceCountdownIsland from './islands/RaceCountdown.jsx';
+
+interface Session { date: string; time: string }
+interface RaceProp {
+  year: number;
+  round: number;
+  name: string;
+  circuit: { circuitRef: string; circuitId?: string; name: string; flag: string; location: string; countryName: string };
+  sessions: Record<string, Session | null>;
+  sprint: boolean;
+  lastHeldHere: { year: number; round: number; podium: any[] } | null;
+  circuitFirstTime: boolean;
+}
+
+interface Props { race: RaceProp }
+
+const { race } = Astro.props;
+
+// Build an ordered list of sessions for rendering. Keys come from the bundle
+// shape: fp1, fp2, fp3, q, sprintQuali, sprint, race. Each entry's iso UTC
+// is `<date>T<time>` where time already ends in 'Z' (per the bundle format).
+const SESSION_LABELS: Record<string, string> = {
+  fp1:         'Practice 1',
+  fp2:         'Practice 2',
+  fp3:         'Practice 3',
+  sprintQuali: 'Sprint Qualifying',
+  sprint:      'Sprint',
+  q:           'Qualifying',
+  race:        'Race',
+};
+
+const SESSION_KEYS_ORDER = ['fp1', 'fp2', 'fp3', 'sprintQuali', 'sprint', 'q', 'race'];
+
+const sessionRows = SESSION_KEYS_ORDER
+  .map(key => {
+    const s = race.sessions?.[key];
+    if (!s || !s.date || !s.time) return null;
+    const iso = `${s.date}T${s.time}`; // time already includes 'Z'
+    return { key, label: SESSION_LABELS[key], iso, date: s.date, time: s.time };
+  })
+  .filter(Boolean) as Array<{ key: string; label: string; iso: string; date: string; time: string }>;
+
+// Sort by ISO ascending (ensures FP1 → race even if bundle ordering ever drifts).
+sessionRows.sort((a, b) => a.iso.localeCompare(b.iso));
+
+// Build-time "next session" pick - first session with start >= now. Hydration
+// will re-pick client-side once the page loads, but this gives us a sensible
+// default for no-JS visitors.
+const buildNow = new Date().toISOString();
+const nextIdx = sessionRows.findIndex(r => r.iso >= buildNow);
+const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
+---
+
+<div class="race-upcoming-grid">
+  <div class="panel race-upcoming-next">
+    <div class="t-eyebrow">Next session</div>
+    <race-countdown
+      data-circuit-id={race.circuit.circuitId || race.circuit.circuitRef}
+      data-initial-next-key={initialNextKey || ''}
+    >
+      <div class="next-session-headline">
+        <span class="next-session-label" data-next-label>
+          {initialNextKey ? SESSION_LABELS[initialNextKey] : 'Race weekend complete'}
+        </span>
+        <span class="next-session-countdown" data-next-countdown>-</span>
+      </div>
+      <div class="tz-toggle" role="tablist" aria-label="Time zone">
+        <button type="button" class="tz-btn is-active" data-tz="track" role="tab" aria-selected="true">Track</button>
+        <button type="button" class="tz-btn" data-tz="user" role="tab" aria-selected="false">You</button>
+      </div>
+      <table class="session-table">
+        <tbody>
+          {sessionRows.map(row => (
+            <tr
+              class={row.key === initialNextKey ? 'is-next' : ''}
+              data-session-key={row.key}
+              data-session-iso={row.iso}
+            >
+              <td class="session-label">{row.label}</td>
+              <td class="session-day t-mono" data-session-day>-</td>
+              <td class="session-time t-mono" data-session-time>-</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </race-countdown>
+  </div>
+
+  <div class="panel race-upcoming-history">
+    {race.lastHeldHere && race.lastHeldHere.podium.length > 0 ? (
+      <>
+        <div class="t-eyebrow">Last held here - {race.lastHeldHere.year}</div>
+        <div class="race-upcoming-podium">
+          {race.lastHeldHere.podium.map(p => (
+            <div class={`podium-step podium-${p.position}`}>
+              <div class="podium-pos">P{p.position}</div>
+              <div class="podium-name">
+                {p.driverRef ? <a href={`/drivers/${p.driverRef}/`}>{p.driverName}</a> : p.driverName}
+              </div>
+              <div class="podium-team">
+                {p.constructorRef ? <a href={`/teams/${p.constructorRef}/`}>{p.constructorName}</a> : p.constructorName}
+              </div>
+            </div>
+          ))}
+        </div>
+        <a class="inline-link race-upcoming-history-link" href={`/races/${race.lastHeldHere.year}/${race.lastHeldHere.round}/`}>
+          → {race.lastHeldHere.year} {race.name}
+        </a>
+      </>
+    ) : race.circuitFirstTime ? (
+      <>
+        <div class="t-eyebrow">First time at this venue</div>
+        <p class="race-upcoming-firsttime">
+          {race.circuit.name} hosts a Formula 1 race for the first time.
+          {(race.circuit.location || race.circuit.countryName) && (
+            <> Located in {race.circuit.location ? `${race.circuit.location}, ` : ''}{race.circuit.countryName || race.circuit.country}.</>
+          )}
+        </p>
+        <a class="inline-link" href={`/circuits/${race.circuit.circuitRef}/`}>
+          → Circuit page
+        </a>
+      </>
+    ) : (
+      <>
+        <div class="t-eyebrow">No prior data</div>
+        <p>No previous results available for this venue.</p>
+      </>
+    )}
+  </div>
+</div>
+
+<RaceCountdownIsland client:load />

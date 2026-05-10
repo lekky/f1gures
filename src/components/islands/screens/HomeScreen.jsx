@@ -33,7 +33,7 @@ function buildSessions(next, zone) {
   return order.map(id => {
     const s = src && src[id];
     if (!s || !s.date || !s.time) {
-      return { id, name: SESSION_LABELS[id], day: '—', time: '—', dt: null };
+      return { id, name: SESSION_LABELS[id], day: '-', time: '-', dt: null };
     }
     const dt = new Date(`${s.date}T${s.time}`);
     return {
@@ -139,7 +139,7 @@ function NextRacePanel({ data, cal, next, mob }) {
   // future. If all sessions on the weekend have passed (race weekend
   // finishing today), fall through to the race itself (target = raceDt,
   // countdown reads 0). Recomputed when `sessions` changes (zone toggle
-  // doesn't affect ordering — `dt` is the same Date — but `useMemo`
+  // doesn't affect ordering - `dt` is the same Date - but `useMemo`
   // keeps this stable across renders).
   const sessions = buildSessions(next, activeZone);
 
@@ -230,7 +230,7 @@ function NextRacePanel({ data, cal, next, mob }) {
             marginTop: 8,
             letterSpacing: '0.04em',
           }}>
-            Track: {(D.circuits[next.circuit] && D.circuits[next.circuit].city) || '—'} ({zoneShort(trackZone, raceDt)})
+            Track: {(D.circuits[next.circuit] && D.circuits[next.circuit].city) || '-'} ({zoneShort(trackZone, raceDt)})
             {' · '}
             You: {userZone} ({zoneShort(userZone, raceDt)})
           </div>
@@ -332,7 +332,7 @@ export default function HomeScreen({ data }) {
   const mob = useIsMobile();
   const standings = useMemo(() => D.computeStandings(), [D]);
 
-  // Empty bundle (fresh clone / pre-cron) — render a placeholder rather than
+  // Empty bundle (fresh clone / pre-cron) - render a placeholder rather than
   // pretend to have results. Hook order stays stable: standings is computed
   // unconditionally above (safely returns empty arrays for empty data).
   if (D._empty) return <EmptyHome mob={mob} />;
@@ -390,7 +390,7 @@ export default function HomeScreen({ data }) {
           />
         ) : (
           <SummaryWidget data={D} kicker="Last Race"
-            big="—"
+            big="-"
             sub="No results yet"
           />
         )}

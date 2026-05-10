@@ -1,4 +1,4 @@
-// Theme switcher — React island for the dark/light toggle in the nav.
+// Theme switcher - React island for the dark/light toggle in the nav.
 // Pre-hydration script in BaseLayout.astro already set the html.light class
 // from localStorage before paint, so this component just reflects the saved
 // state and writes back on click. No flash on hydration.

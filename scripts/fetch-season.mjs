@@ -113,11 +113,11 @@ function buildCircuitsFromSchedule(scheduleData) {
     const loc = r.Circuit.Location || {};
     out[key] = {
       name: r.Circuit.circuitName || r.Circuit.circuitId,
-      city: loc.locality || '—', country: loc.country || '—',
+      city: loc.locality || '-', country: loc.country || '-',
       firstYear: 0, races: 0, length: 0, laps: 0, corners: 0,
-      longestStraight: 0, drsZones: 0, type: '—', tyreDeg: '—',
-      overtaking: '—', weather: '—',
-      lapRecord: { driver: '—', time: '—', year: 0 }, blurb: '',
+      longestStraight: 0, drsZones: 0, type: '-', tyreDeg: '-',
+      overtaking: '-', weather: '-',
+      lapRecord: { driver: '-', time: '-', year: 0 }, blurb: '',
     };
   });
   return out;

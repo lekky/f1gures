@@ -1,4 +1,4 @@
-// Calendar — full season grid. Ported from js/screens/calendar.jsx.
+// Calendar - full season grid. Ported from js/screens/calendar.jsx.
 // Reads `data` prop instead of window.F1_DATA.
 
 import { urlFor, useIsMobile, fmtDateLong, SprintBadge } from '../../../lib/shared.jsx';
@@ -25,11 +25,10 @@ export default function CalendarScreen({ data }) {
           const result = F.results[race.round];
           const winner = result ? F.driverById(result.order[0]) : null;
           const fastest = result ? F.driverById(result.fastest) : null;
-          const raceHref = result ? urlFor({ name: 'race', year: F.seasonYear, round: race.round }) : undefined;
-          const circuitHref = race.circuit ? urlFor({ name: 'circuit', id: race.circuit, ref: race.circuit }) : undefined;
+          const raceHref = urlFor({ name: 'race', year: F.seasonYear, round: race.round });
           return (
-            <div key={race.round}
-                 className={`race-card is-${race.status}`}>
+            <div key={race.round} className={`race-card race-card-link is-${race.status}`}>
+              <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} - round ${race.round}`}></a>
               <div className="race-card-head">
                 <div>
                   <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>
@@ -42,13 +41,9 @@ export default function CalendarScreen({ data }) {
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
                   <span className="race-flag">{race.flag}</span>
-                  {raceHref
-                    ? <a href={raceHref} className="race-name" style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{race.name.replace(' Grand Prix', '')}</a>
-                    : <div className="race-name">{race.name.replace(' Grand Prix', '')}</div>}
+                  <div className="race-name">{race.name.replace(' Grand Prix', '')}</div>
                 </div>
-                {circuitHref
-                  ? <a href={circuitHref} className="race-circuit" style={{ color: 'inherit', textDecoration: 'none', display: 'block' }} onClick={e => e.stopPropagation()}>{circuit.name}</a>
-                  : <div className="race-circuit">{circuit.name}</div>}
+                <div className="race-circuit">{circuit.name}</div>
               </div>
               <div className="race-card-foot">
                 <div className="race-mini-row">
@@ -63,7 +58,7 @@ export default function CalendarScreen({ data }) {
                       <span className="lbl">Winner</span>
                       <span className="val" style={{ color: 'var(--fg-1)' }}>
                         {winner.jolpicaId
-                          ? <a href={winnerHref} className="inline-link" style={{ color: 'inherit' }} onClick={e => e.stopPropagation()}>{winnerLabel}</a>
+                          ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'inherit' }}>{winnerLabel}</a>
                           : winnerLabel}
                       </span>
                     </div>

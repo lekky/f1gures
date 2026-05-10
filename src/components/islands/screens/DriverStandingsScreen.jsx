@@ -1,4 +1,4 @@
-// Driver Standings — table + sort + CSV export + chart + head-to-head.
+// Driver Standings - table + sort + CSV export + chart + head-to-head.
 // Ported from js/screens/standings.jsx DriverStandingsScreen.
 
 import { useMemo, useState } from 'react';
@@ -125,7 +125,7 @@ export default function DriverStandingsScreen({ data }) {
                     <td>
                       {team && teamHref
                         ? <a href={teamHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{team.name}</a>
-                        : '—'}
+                        : '-'}
                     </td>
                     <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 16 }}>{row.points}</strong></td>
                     <td className="right num">{row.wins}</td>

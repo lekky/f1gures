@@ -37,8 +37,8 @@ const { team } = Astro.props;
 const yearsLabel = team.career.firstYear === team.career.lastYear
   ? `${team.career.firstYear}`
   : `${team.career.firstYear}–${team.career.lastYear}`;
-const fmtNum = (n: number | null | undefined) => (n == null ? '—' : String(n));
-const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
+const fmtNum = (n: number | null | undefined) => (n == null ? '-' : String(n));
+const ord = (n: number | null) => (n == null ? '-' : `P${n}`);
 ---
 
 <div class="page">
@@ -48,7 +48,7 @@ const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
     <div class="team-hero-grid">
       <div class="team-hero-meta">
         <div class="t-eyebrow team-hero-flag" style={`color: ${team.color};`}>
-          {team.nationality || '—'}
+          {team.nationality || '-'}
         </div>
         <h1 class="page-title team-hero-name">{team.name}</h1>
         <div class="team-hero-stats">
@@ -114,7 +114,7 @@ const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
               <tr>
                 <td class="t-mono">{s.year}</td>
                 <td class={`right ${s.position === 1 ? 'is-champ-cell' : ''}`}>{ord(s.position)}</td>
-                <td class="right t-mono">{s.points != null ? s.points : '—'}</td>
+                <td class="right t-mono">{s.points != null ? s.points : '-'}</td>
                 <td class="right t-mono">{s.wins}</td>
                 <td class="right t-mono">{s.races}</td>
                 <td>

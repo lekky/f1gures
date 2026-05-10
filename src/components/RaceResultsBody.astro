@@ -1,0 +1,162 @@
+---
+// Server-rendered body for completed races. Receives the full race prop
+// (same shape as RacePage takes today). Renders results table + qualifying
+// + sprint + key-links + the post-results podium-aware sections.
+//
+// The shell (RacePage.astro) owns the hero (race name, circuit link, date),
+// breadcrumb, and prev/next nav.
+
+interface Props {
+  race: {
+    year: number;
+    round: number;
+    name: string;
+    date: string | null;
+    time: string | null;
+    circuit: any;
+    results: Array<any>;
+    qualifying: Array<any>;
+    sprint: Array<any> | null;
+  };
+}
+
+import { buildRaceSummary } from '../lib/buildRaceSummary.js';
+
+const { race } = Astro.props;
+const raceSummary = buildRaceSummary(race);
+
+const winnerRow = race.results.find(r => r.position === 1) || null;
+const poleQualifying = race.qualifying?.[0] || null;
+
+interface KeyLink { label: string; href: string; text: string; }
+const keyLinks: KeyLink[] = [];
+if (winnerRow?.driverRef && winnerRow?.driverName) {
+  keyLinks.push({ label: 'Winner', href: `/drivers/${winnerRow.driverRef}/`, text: winnerRow.driverName });
+}
+if (poleQualifying?.driverRef && poleQualifying?.driverName && poleQualifying.driverRef !== winnerRow?.driverRef) {
+  keyLinks.push({ label: 'Pole', href: `/drivers/${poleQualifying.driverRef}/`, text: poleQualifying.driverName });
+}
+if (race.circuit?.circuitRef && race.circuit?.name) {
+  keyLinks.push({ label: 'Circuit', href: `/circuits/${race.circuit.circuitRef}/`, text: race.circuit.name });
+}
+if (winnerRow?.constructorRef && winnerRow?.constructorName) {
+  keyLinks.push({ label: 'Winning team', href: `/teams/${winnerRow.constructorRef}/`, text: winnerRow.constructorName });
+}
+---
+
+{raceSummary && (
+  <p class="race-summary">{raceSummary}</p>
+)}
+
+{race.results.length > 0 && (
+  <>
+    <div class="section-head"><h2>Race Results</h2><div class="section-rule"></div></div>
+    <div class="panel" style="padding: 0; overflow-x: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="right">Pos</th>
+            <th class="right">Grid</th>
+            <th>Driver</th>
+            <th>Team</th>
+            <th class="right">Laps</th>
+            <th>Time / Status</th>
+            <th class="right">Pts</th>
+            <th>FL</th>
+          </tr>
+        </thead>
+        <tbody>
+          {race.results.map(r => (
+            <tr style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
+              <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || (r.position != null ? String(r.position) : '-')}</td>
+              <td class="right t-mono">{r.grid != null ? r.grid : '-'}</td>
+              <td>{r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : (r.driverName || '-')} {r.code && <span class="t-mono code-tag">{r.code}</span>}</td>
+              <td>{r.constructorRef ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a> : (r.constructorName || '-')}</td>
+              <td class="right t-mono">{r.laps != null ? r.laps : '-'}</td>
+              <td class="t-mono">{r.time || r.status || '-'}</td>
+              <td class="right t-mono">{r.points}</td>
+              <td class="t-mono">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    {keyLinks.length > 0 && (
+      <div class="race-keylinks">
+        <span class="t-eyebrow">Key links:</span>
+        <ul>
+          {keyLinks.map((l) => (
+            <li>
+              <span class="t-mono">{l.label}</span>{' '}
+              <a href={l.href} class="inline-link">{l.text}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </>
+)}
+
+{race.qualifying.length > 0 && (
+  <>
+    <div class="section-head"><h2>Qualifying</h2><div class="section-rule"></div></div>
+    <div class="panel" style="padding: 0; overflow-x: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="right">Pos</th>
+            <th>Driver</th>
+            <th>Team</th>
+            <th class="right">Q1</th>
+            <th class="right">Q2</th>
+            <th class="right">Q3</th>
+          </tr>
+        </thead>
+        <tbody>
+          {race.qualifying.map(q => (
+            <tr>
+              <td class={`right t-mono ${q.position === 1 ? 'is-win-cell' : ''}`}>{q.position}</td>
+              <td>{q.driverRef ? <a href={`/drivers/${q.driverRef}/`}>{q.driverName}</a> : q.driverName}</td>
+              <td>{q.constructorName}</td>
+              <td class="right t-mono">{q.q1 || '-'}</td>
+              <td class="right t-mono">{q.q2 || '-'}</td>
+              <td class="right t-mono">{q.q3 || '-'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </>
+)}
+
+{race.sprint && race.sprint.length > 0 && (
+  <>
+    <div class="section-head"><h2>Sprint</h2><div class="section-rule"></div></div>
+    <div class="panel" style="padding: 0; overflow-x: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="right">Pos</th>
+            <th class="right">Grid</th>
+            <th>Driver</th>
+            <th>Team</th>
+            <th>Time / Status</th>
+            <th class="right">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {race.sprint.map(s => (
+            <tr>
+              <td class={`right t-mono ${s.position === 1 ? 'is-win-cell' : ''}`}>{s.positionText || s.position}</td>
+              <td class="right t-mono">{s.grid != null ? s.grid : '-'}</td>
+              <td>{s.driverRef ? <a href={`/drivers/${s.driverRef}/`}>{s.driverName}</a> : s.driverName}</td>
+              <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : '-'}</td>
+              <td class="t-mono">{s.time || s.status || '-'}</td>
+              <td class="right t-mono">{s.points}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </>
+)}

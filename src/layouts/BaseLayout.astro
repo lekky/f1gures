@@ -1,16 +1,16 @@
 ---
-// BaseLayout — shared <head> + Chrome wrapper for every page.
+// BaseLayout - shared <head> + Chrome wrapper for every page.
 // Ports the boilerplate from the legacy *.html files and shell.jsx <Chrome>.
 //
 // Props:
-//   title           — full <title> tag value (already includes "| f1gures")
-//   description     — meta description (~150-160 chars)
-//   canonicalPath   — leading slash, e.g. "/standings-drivers/" — origin is added
-//   ogType          — og:type, defaults to "website"
-//   ogImage         — og:image URL, defaults to /images/og-default.png
-//   jsonLd          — optional schema.org object, serialised into a <script type="application/ld+json"> block
-//   breadcrumb      — optional array of { name, path } for BreadcrumbList JSON-LD
-//   robots          — meta robots, defaults to "index, follow, max-image-preview:large"
+//   title           - full <title> tag value (already includes "| f1gures")
+//   description     - meta description (~150-160 chars)
+//   canonicalPath   - leading slash, e.g. "/standings-drivers/" - origin is added
+//   ogType          - og:type, defaults to "website"
+//   ogImage         - og:image URL, defaults to /images/og-default.png
+//   jsonLd          - optional schema.org object, serialised into a <script type="application/ld+json"> block
+//   breadcrumb      - optional array of { name, path } for BreadcrumbList JSON-LD
+//   robots          - meta robots, defaults to "index, follow, max-image-preview:large"
 
 import Chrome from '../components/Chrome.astro';
 import { publicAssetHash } from '../lib/assetHash.js';
@@ -118,7 +118,7 @@ if (breadcrumb && breadcrumb.length > 0) {
 
   <!-- Pre-hydration theme: read localStorage and set html.light *before* CSS
        paints, to avoid a dark→light flash on every page load. Inlined per Astro
-       docs — `is:inline` opts out of bundling so it actually runs synchronously
+       docs - `is:inline` opts out of bundling so it actually runs synchronously
        in <head>. -->
   <script is:inline>
     (function () {
@@ -165,7 +165,7 @@ if (breadcrumb && breadcrumb.length > 0) {
     <slot />
   </Chrome>
 
-  <!-- Buy Me a Coffee floating widget. Restyled in css/app.css. Don't display:none — breaks the modal.
+  <!-- Buy Me a Coffee floating widget. Restyled in css/app.css. Don't display:none - breaks the modal.
        `is:inline` is required: without it Astro bundles the tag and the BMC loader stops injecting #bmc-wbtn. -->
   <script is:inline data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="f1gures" data-description="Support me on Buy me a coffee!" data-message="" data-color="#FF5F5F" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
 </body>

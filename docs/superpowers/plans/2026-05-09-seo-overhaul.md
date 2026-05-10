@@ -2,14 +2,14 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement the full SEO overhaul described in [docs/superpowers/specs/2026-05-09-seo-overhaul-design.md](../specs/2026-05-09-seo-overhaul-design.md) — structured data fixes, listing-page JSON-LD, natural-language race/driver summaries with FAQ schema, internal linking, per-page-type OG images, and an off-page strategy guide.
+**Goal:** Implement the full SEO overhaul described in [docs/superpowers/specs/2026-05-09-seo-overhaul-design.md](../specs/2026-05-09-seo-overhaul-design.md) - structured data fixes, listing-page JSON-LD, natural-language race/driver summaries with FAQ schema, internal linking, per-page-type OG images, and an off-page strategy guide.
 
 **Architecture:** All work is on top of the existing Astro 4 SSG static-site pipeline. No new runtime dependencies on the page; OG image generation is a build-time Node script (Satori + @resvg/resvg-js) that runs as part of `prebuild`. Each Astro page passes new SEO props (`ogImage`, `publishedTime`) into `BaseLayout.astro`. Detail pages get expanded JSON-LD graphs and a new visible summary paragraph generated from data already in the page's props.
 
 **Tech Stack:** Astro 4 (SSG), React 18 islands (existing), Satori + @resvg/resvg-js (new, build-time only), TypeScript in `.astro` frontmatter.
 
 **Verification approach:** This codebase has no unit-test framework. Each task verifies via:
-1. Dev server (already running on `http://localhost:4322`) — open page, check rendered HTML
+1. Dev server (already running on `http://localhost:4322`) - open page, check rendered HTML
 2. `curl -s http://localhost:4322/<path>` + `grep` to confirm specific meta/JSON-LD strings
 3. `npm run build` to catch frontmatter / type errors before commit
 4. Visual via `mcp__Claude_Preview__preview_screenshot` for layout-affecting changes
@@ -37,7 +37,7 @@ Verify: `curl -s -o /dev/null -w "%{http_code}" http://localhost:4322/` should p
 
 ---
 
-## Phase A — BaseLayout Foundations
+## Phase A - BaseLayout Foundations
 
 ### Task 1: Add `og:image:alt`, `twitter:site`, font-display fix to BaseLayout
 
@@ -111,7 +111,7 @@ Find the fonts `<link>` (around line 99) and append `&display=swap` to the href 
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 ```
 
-(That URL already has `&display=swap` — verify it's present. If it is, no change needed; record this in the commit message.)
+(That URL already has `&display=swap` - verify it's present. If it is, no change needed; record this in the commit message.)
 
 - [ ] **Step 1.4: Verify in dev server**
 
@@ -150,7 +150,7 @@ git commit -m "feat(seo): add og:image:alt, twitter:site, publishedTime to BaseL
 grep -n "display=swap\|fonts.googleapis" src/layouts/BaseLayout.astro
 ```
 
-If the existing line includes `display=swap`, this task is a no-op — log that and move on.
+If the existing line includes `display=swap`, this task is a no-op - log that and move on.
 If not, add `&display=swap` to the href and commit:
 
 ```bash
@@ -160,9 +160,9 @@ git commit -m "perf(fonts): add display=swap to Google Fonts URL"
 
 ---
 
-## Phase B — Detail Page Structured Data Fixes
+## Phase B - Detail Page Structured Data Fixes
 
-### Task 3: Race page — `article:published_time` + expanded SportsEvent JSON-LD + FAQ
+### Task 3: Race page - `article:published_time` + expanded SportsEvent JSON-LD + FAQ
 
 **Files:**
 - Modify: `src/pages/races/[year]/[round].astro`
@@ -297,7 +297,7 @@ curl -s http://localhost:4322/races/2026/24/ | grep -c '"@type":"FAQPage"'
 
 Expected: `0`.
 
-If the route returns 404 (round not yet prerendered), skip — the race page only exists for completed rounds.
+If the route returns 404 (round not yet prerendered), skip - the race page only exists for completed rounds.
 
 - [ ] **Step 3.6: Build**
 
@@ -316,7 +316,7 @@ git commit -m "feat(seo): expand race SportsEvent JSON-LD, add FAQPage + article
 
 ---
 
-### Task 4: Driver page — expanded Person JSON-LD + FAQ
+### Task 4: Driver page - expanded Person JSON-LD + FAQ
 
 **Files:**
 - Modify: `src/pages/drivers/[driverRef].astro`
@@ -334,7 +334,7 @@ const championshipYears = (driver.perSeason || [])
 const teamsRaced = Array.from(new Set((driver.perSeason || [])
   .map(s => s.constructorName)
   .filter((n): n is string => !!n)));
-const careerSummary = `${fullName} (${driver.nationality || 'unknown nationality'}, F1 ${yearsPart}) — ${driver.career.races} races, ${driver.career.wins} wins, ${driver.career.podiums} podiums, ${driver.career.poles} poles, ${driver.career.championships} championships.`;
+const careerSummary = `${fullName} (${driver.nationality || 'unknown nationality'}, F1 ${yearsPart}) - ${driver.career.races} races, ${driver.career.wins} wins, ${driver.career.podiums} podiums, ${driver.career.poles} poles, ${driver.career.championships} championships.`;
 ```
 
 - [ ] **Step 4.2: Replace the `jsonLd` block with an expanded graph (Person + FAQPage)**
@@ -438,7 +438,7 @@ Expected: prints `"hasOccupation"` once.
 
 - [ ] **Step 4.5: Verify on a driver with zero races (defensive)**
 
-Pick a known historic driver with no race entries — `senna` will have many. Pick one with `career.races === 0` if any exist; otherwise this branch is verified by code review only.
+Pick a known historic driver with no race entries - `senna` will have many. Pick one with `career.races === 0` if any exist; otherwise this branch is verified by code review only.
 
 ```bash
 npm run build
@@ -455,7 +455,7 @@ git commit -m "feat(seo): expand driver Person JSON-LD with hasOccupation + FAQP
 
 ---
 
-### Task 5: Team page — fix ogType, expand SportsTeam JSON-LD
+### Task 5: Team page - fix ogType, expand SportsTeam JSON-LD
 
 **Files:**
 - Modify: `src/pages/teams/[constructorRef].astro`
@@ -521,9 +521,9 @@ git commit -m "fix(seo): correct team ogType to website, expand SportsTeam JSON-
 
 ---
 
-## Phase C — Listing Page JSON-LD
+## Phase C - Listing Page JSON-LD
 
-### Task 6: Driver standings page — ItemList JSON-LD (top 10)
+### Task 6: Driver standings page - ItemList JSON-LD (top 10)
 
 **Files:**
 - Modify: `src/pages/standings-drivers.astro`
@@ -539,7 +539,7 @@ import DriverStandingsIsland from '../components/islands/DriverStandingsIsland.j
 import currentSeason from '../data/currentSeason.js';
 
 const seasonYear = currentSeason.seasonYear || '2026';
-const title = `F1 ${seasonYear} Driver Standings — Live Championship Table | f1gures`;
+const title = `F1 ${seasonYear} Driver Standings - Live Championship Table | f1gures`;
 const description = `Live ${seasonYear} Formula 1 World Drivers' Championship standings. Points, wins, podiums, poles and head-to-head driver comparison, updated every race.`;
 
 const breadcrumb = [
@@ -618,7 +618,7 @@ git commit -m "feat(seo): add ItemList JSON-LD to driver standings page"
 
 ---
 
-### Task 7: Constructor standings page — ItemList JSON-LD
+### Task 7: Constructor standings page - ItemList JSON-LD
 
 **Files:**
 - Modify: `src/pages/standings-constructors.astro`
@@ -634,7 +634,7 @@ import ConstructorStandingsIsland from '../components/islands/ConstructorStandin
 import currentSeason from '../data/currentSeason.js';
 
 const seasonYear = currentSeason.seasonYear || '2026';
-const title = `F1 ${seasonYear} Constructor Standings — Live Team Championship | f1gures`;
+const title = `F1 ${seasonYear} Constructor Standings - Live Team Championship | f1gures`;
 const description = `Live ${seasonYear} Formula 1 World Constructors' Championship table. Team points, wins, podiums and season trajectory for every F1 team, updated every race.`;
 
 const breadcrumb = [
@@ -707,7 +707,7 @@ git commit -m "feat(seo): add ItemList JSON-LD to constructor standings page"
 
 ---
 
-### Task 8: Calendar page — ItemList JSON-LD
+### Task 8: Calendar page - ItemList JSON-LD
 
 **Files:**
 - Modify: `src/pages/calendar.astro`
@@ -724,7 +724,7 @@ import currentSeason from '../data/currentSeason.js';
 
 const seasonYear = currentSeason.seasonYear || '2026';
 const calendar = Array.isArray(currentSeason.calendar) ? currentSeason.calendar : [];
-const title = `F1 ${seasonYear} Race Calendar — All ${calendar.length || 24} Grands Prix, Dates & Times | f1gures`;
+const title = `F1 ${seasonYear} Race Calendar - All ${calendar.length || 24} Grands Prix, Dates & Times | f1gures`;
 const description = `Complete ${seasonYear} Formula 1 schedule. All Grand Prix dates, circuits, sprint weekends, qualifying and race times in your local timezone.`;
 
 const breadcrumb = [
@@ -787,7 +787,7 @@ git commit -m "feat(seo): add ItemList JSON-LD to calendar page"
 
 ---
 
-### Task 9: Circuits index page — ItemList JSON-LD
+### Task 9: Circuits index page - ItemList JSON-LD
 
 **Files:**
 - Modify: `src/pages/circuits.astro`
@@ -804,7 +804,7 @@ import currentSeason from '../data/currentSeason.js';
 
 const seasonYear = currentSeason.seasonYear || '2026';
 const calendar = Array.isArray(currentSeason.calendar) ? currentSeason.calendar : [];
-const title = `F1 Circuits ${seasonYear} — All Tracks, Maps & Lap Records | f1gures`;
+const title = `F1 Circuits ${seasonYear} - All Tracks, Maps & Lap Records | f1gures`;
 const description = `Every circuit on the ${seasonYear} Formula 1 calendar. Track maps, lap records, length, corners, DRS zones and tyre characteristics for all ${calendar.length || 24} Grands Prix.`;
 
 const breadcrumb = [
@@ -868,7 +868,7 @@ Expected verify: `"@type":"ItemList"` once. Expected build: succeeds.
 
 ---
 
-## Phase D — Natural-Language Summaries & FAQ Content
+## Phase D - Natural-Language Summaries & FAQ Content
 
 ### Task 10: Race summary helper + visible paragraph
 
@@ -979,7 +979,7 @@ You may need to read the surrounding markup to find the right insertion point. T
 Open `public/css/app.css`. Append to the end of the file:
 
 ```css
-/* SEO content paragraphs — visible natural-language summaries above
+/* SEO content paragraphs - visible natural-language summaries above
    detail page tables. Reused for race-summary and driver-summary. */
 .race-summary,
 .driver-summary {
@@ -995,7 +995,7 @@ html.light .race-summary,
 html.light .driver-summary { color: var(--ink-2, #444); }
 ```
 
-(If `--ink-2` does not exist in this codebase, the fallback hex applies — verify by checking `:root` block earlier in the same file.)
+(If `--ink-2` does not exist in this codebase, the fallback hex applies - verify by checking `:root` block earlier in the same file.)
 
 - [ ] **Step 10.4: Verify on a known completed race**
 
@@ -1097,7 +1097,7 @@ After the existing `const fullName = …` line, add:
 const driverSummary = buildDriverSummary(driver, new Date().getFullYear());
 ```
 
-Find the appropriate insertion point — after the hero/title block, before the career stats grid. Insert:
+Find the appropriate insertion point - after the hero/title block, before the career stats grid. Insert:
 
 ```astro
 {driverSummary && (
@@ -1136,9 +1136,9 @@ git commit -m "feat(seo): add natural-language driver career summary paragraph"
 
 ---
 
-## Phase E — Internal Linking
+## Phase E - Internal Linking
 
-### Task 12: Race page — Key Links row
+### Task 12: Race page - Key Links row
 
 **Files:**
 - Modify: `src/components/RacePage.astro`
@@ -1236,7 +1236,7 @@ git commit -m "feat(seo): add key links row (winner, pole, circuit, team) to rac
 
 ---
 
-### Task 13: Driver page — link constructor names + race names in tables
+### Task 13: Driver page - link constructor names + race names in tables
 
 **Files:**
 - Modify: `src/components/DriverPage.astro`
@@ -1249,7 +1249,7 @@ Open `src/components/DriverPage.astro`. Find the per-season table (it iterates o
 {s.constructorRef && s.constructorName ? (
   <a href={`/teams/${s.constructorRef}/`} class="inline-link">{s.constructorName}</a>
 ) : (
-  s.constructorName || '—'
+  s.constructorName || '-'
 )}
 ```
 
@@ -1260,7 +1260,7 @@ Find the per-race table (iterates over `driver.perRace`). The page already has a
 ```astro
 {r.raceName ? (
   <a href={raceUrl(r.year, r.round)} class="inline-link">{r.raceName}</a>
-) : '—'}
+) : '-'}
 ```
 
 If the helper doesn't exist in this file (the spec says it does in `CircuitPage` and `DriverPage`), add it in frontmatter:
@@ -1308,7 +1308,7 @@ git commit -m "feat(seo): link constructor + race names in driver page tables"
 
 ---
 
-### Task 14: Circuit page — link winner names in historical winners table
+### Task 14: Circuit page - link winner names in historical winners table
 
 **Files:**
 - Modify: `src/components/CircuitPage.astro`
@@ -1320,10 +1320,10 @@ Open `src/components/CircuitPage.astro`. Find the table iterating over `circuit.
 ```astro
 {r.winnerRef && r.winnerName ? (
   <a href={`/drivers/${r.winnerRef}/`} class="inline-link">{r.winnerName}</a>
-) : (r.winnerName || '—')}
+) : (r.winnerName || '-')}
 ```
 
-Leave `r.winnerTeam` as plain text — the data does not include `winnerTeamRef` (verified in `scripts/build-archive.mjs:929,1071`).
+Leave `r.winnerTeam` as plain text - the data does not include `winnerTeamRef` (verified in `scripts/build-archive.mjs:929,1071`).
 
 - [ ] **Step 14.2: Verify**
 
@@ -1343,14 +1343,14 @@ git commit -m "feat(seo): link winners in circuit historical race table"
 
 ---
 
-### Task 15: Team page — Drivers section with links
+### Task 15: Team page - Drivers section with links
 
 **Files:**
 - Modify: `src/components/TeamPage.astro`
 
 - [ ] **Step 15.1: Add a "Drivers" section using `team.topDrivers`**
 
-Open `src/components/TeamPage.astro`. The team data already has `topDrivers: Array<{ driverRef, name, races, wins }>` (verified in the interface). After the season-by-season block (or wherever fits in the visual flow — read surrounding markup to decide), add:
+Open `src/components/TeamPage.astro`. The team data already has `topDrivers: Array<{ driverRef, name, races, wins }>` (verified in the interface). After the season-by-season block (or wherever fits in the visual flow - read surrounding markup to decide), add:
 
 ```astro
 {team.topDrivers && team.topDrivers.length > 0 && (
@@ -1440,7 +1440,7 @@ If no changes were needed, skip the commit.
 
 ---
 
-## Phase F — Per-Type OG Images (Build-Time Generation)
+## Phase F - Per-Type OG Images (Build-Time Generation)
 
 ### Task 17: Add Satori + @resvg/resvg-js dependencies
 
@@ -1474,7 +1474,7 @@ git commit -m "chore(deps): add satori + resvg-js for build-time OG image genera
 
 ---
 
-### Task 18: OG image generator script — base + race template
+### Task 18: OG image generator script - base + race template
 
 **Files:**
 - Create: `scripts/generate-og-images.mjs`
@@ -1725,7 +1725,7 @@ Open `package.json`. Update the `prebuild` and `predev` scripts to add the OG st
 "predev": "npm run build:archive && npm run sync:current",
 ```
 
-Note: deliberately skip OG generation in `predev` — it's slow on every dev start. Only run for production builds.
+Note: deliberately skip OG generation in `predev` - it's slow on every dev start. Only run for production builds.
 
 - [ ] **Step 18.6: Run the script standalone**
 
@@ -2078,7 +2078,7 @@ git commit -m "feat(seo): generate circuit + team OG images at build time"
 - Modify: `src/pages/circuits/[circuitRef].astro`
 - Modify: `src/pages/teams/[constructorRef].astro`
 
-- [ ] **Step 21.1: Race page — set ogImage**
+- [ ] **Step 21.1: Race page - set ogImage**
 
 Open `src/pages/races/[year]/[round].astro`. After `const canonicalPath = …`, add:
 
@@ -2088,7 +2088,7 @@ const ogImage = `/images/og/races/${race.year}-${race.round}.png`;
 
 In the `<BaseLayout …>` invocation, add `ogImage={ogImage}` to the props.
 
-- [ ] **Step 21.2: Driver page — set ogImage**
+- [ ] **Step 21.2: Driver page - set ogImage**
 
 Open `src/pages/drivers/[driverRef].astro`. After `const canonicalPath = …`, add:
 
@@ -2098,7 +2098,7 @@ const ogImage = `/images/og/drivers/${driver.driverRef}.png`;
 
 Add `ogImage={ogImage}` to BaseLayout props.
 
-- [ ] **Step 21.3: Circuit page — set ogImage**
+- [ ] **Step 21.3: Circuit page - set ogImage**
 
 Open `src/pages/circuits/[circuitRef].astro`. After `const canonicalPath = …`, add:
 
@@ -2108,7 +2108,7 @@ const ogImage = `/images/og/circuits/${circuit.circuitRef}.png`;
 
 Add `ogImage={ogImage}` to BaseLayout props.
 
-- [ ] **Step 21.4: Team page — set ogImage**
+- [ ] **Step 21.4: Team page - set ogImage**
 
 Open `src/pages/teams/[constructorRef].astro`. After `const canonicalPath = …`, add:
 
@@ -2142,7 +2142,7 @@ git commit -m "feat(seo): wire per-page OG images for races, drivers, circuits, 
 
 ---
 
-## Phase G — Off-Page Strategy Doc
+## Phase G - Off-Page Strategy Doc
 
 ### Task 22: Write `docs/seo/strategy.md`
 
@@ -2154,7 +2154,7 @@ git commit -m "feat(seo): wire per-page OG images for races, drivers, circuits, 
 Create `docs/seo/strategy.md` with the following content (verbatim):
 
 ````markdown
-# f1gures — SEO Strategy & Off-Page Playbook
+# f1gures - SEO Strategy & Off-Page Playbook
 
 This is a living playbook for off-page SEO work. The technical/on-page changes
 shipped in `feat/seo-overhaul` cover what code can do; this doc covers what
@@ -2163,7 +2163,7 @@ needs to happen outside the codebase.
 ## Google Search Console setup
 
 1. Go to https://search.google.com/search-console
-2. Add a property for **`f1gures.app`** — choose "Domain property" (covers
+2. Add a property for **`f1gures.app`** - choose "Domain property" (covers
    all subdomains and protocols). URL prefix property is fine if domain
    property fails for any reason.
 3. Verify via DNS TXT record. FTP-deploy means HTML file verification is
@@ -2187,7 +2187,7 @@ needs to happen outside the codebase.
   follow as Google crawls outward through the internal links shipped in
   Phase E.
 - Watch the **Coverage** tab weekly. "Discovered – currently not indexed"
-  is normal for the first few weeks; "Crawl anomaly" is not — investigate.
+  is normal for the first few weeks; "Crawl anomaly" is not - investigate.
 
 ## Monitoring cadence
 
@@ -2195,19 +2195,19 @@ needs to happen outside the codebase.
 |---|---|---|
 | Weekly | GSC Coverage | Excluded pages, crawl errors. Aim for >90% indexed within 8 weeks. |
 | Weekly | Rich Results Test (https://search.google.com/test/rich-results) | Spot-check one race, one driver, one circuit page after each deploy. Verify FAQ + SportsEvent + Person schemas render. |
-| Monthly | GSC Performance | Filter by URL pattern (`/races/`, `/drivers/`, etc.) — track impressions + CTR by page type. |
+| Monthly | GSC Performance | Filter by URL pattern (`/races/`, `/drivers/`, etc.) - track impressions + CTR by page type. |
 | Per-deploy | GSC Page Experience | Confirm Core Web Vitals stay green after the `font-display: swap` fix. |
 
 ## Link building playbook
 
 F1 is a link-rich vertical: fans share results, debate stats, and link out
-constantly. Every link below is on-policy — no paid links, no spam.
+constantly. Every link below is on-policy - no paid links, no spam.
 
 ### Reddit (`r/formula1`, ~5.4M members)
 - Allowed: fan-built tools, original analysis, "I made this" posts.
 - Forbidden: low-effort affiliate-style spam, repeated self-promotion.
-- Strategy: **one quality post per week, max.** Lead with a stat — e.g.
-  "Most podiums without a win, all-time" — and link the relevant page
+- Strategy: **one quality post per week, max.** Lead with a stat - e.g.
+  "Most podiums without a win, all-time" - and link the relevant page
   as supporting evidence.
 - Reply organically to "Who won X race?" or "Career stats for Y?" threads
   with a direct link to the specific page. Do not reply unless your link
@@ -2232,11 +2232,11 @@ constantly. Every link below is on-policy — no paid links, no spam.
   the site owner. Wikipedia editors enforce this.
 
 ### F1 enthusiast communities
-- **autosport.com forums** — long-form fan discussion. Answer historical
+- **autosport.com forums** - long-form fan discussion. Answer historical
   stat queries with links.
-- **f1technical.net forums** — more engineering-focused but receptive to
+- **f1technical.net forums** - more engineering-focused but receptive to
   data sources.
-- **Large F1 Discord servers** — share in #stats / #history channels.
+- **Large F1 Discord servers** - share in #stats / #history channels.
   Discord links are nofollow but drive traffic + rankings indirectly via
   user behaviour signals.
 
@@ -2247,7 +2247,7 @@ the strongest social hook is historical comparisons:
 
 - "Hamilton vs Schumacher head-to-head" linking both driver pages
 - "Every race winner at Monaco since 1950" linking the circuit page
-- "Most championships without a fastest lap" — pure stat curiosities
+- "Most championships without a fastest lap" - pure stat curiosities
 
 These hooks travel well on Twitter and Reddit because they answer a
 question someone might already be asking.
@@ -2259,7 +2259,7 @@ question someone might already be asking.
 - Don't keyword-stuff race summaries or descriptions. Google's spam filters
   flag this and the existing data-driven summaries already include all the
   relevant keywords naturally.
-- Don't submit to "F1 directories" — they are almost universally low quality
+- Don't submit to "F1 directories" - they are almost universally low quality
   and Google ignores or penalises them.
 - Don't request indexing of the same URL repeatedly in GSC. Once is enough.
 
@@ -2278,7 +2278,7 @@ git commit -m "docs(seo): add off-page strategy + link-building playbook"
 
 ---
 
-## Phase H — Final Build + PR
+## Phase H - Final Build + PR
 
 ### Task 23: Full production build + push + open PR
 
@@ -2315,7 +2315,7 @@ git fetch origin main
 git rebase origin/main
 ```
 
-Resolve any conflicts. If there are major conflicts, commit a merge instead — but try rebase first.
+Resolve any conflicts. If there are major conflicts, commit a merge instead - but try rebase first.
 
 - [ ] **Step 23.4: Push the branch**
 
@@ -2326,7 +2326,7 @@ git push -u origin feat/seo-overhaul
 - [ ] **Step 23.5: Open the PR**
 
 ```bash
-gh pr create --title "feat(seo): full SEO overhaul — structured data, summaries, OG images, internal linking" --body "$(cat <<'EOF'
+gh pr create --title "feat(seo): full SEO overhaul - structured data, summaries, OG images, internal linking" --body "$(cat <<'EOF'
 ## Summary
 - Adds FAQ + expanded SportsEvent / Person / SportsTeam JSON-LD on detail pages
 - Adds ItemList JSON-LD on listing pages (drivers, constructors, calendar, circuits)
@@ -2370,7 +2370,7 @@ This plan covers all five sections of the spec:
 - Section 5 (off-page strategy): Task 22
 
 **Known caveats called out inline:**
-- `winnerTeam` on circuit historical winners table cannot be linked (no `winnerTeamRef` in data) — Task 14 handles this gracefully.
-- The pole sitter on race pages uses `race.qualifying[0]?.driverRef`, not `race.pole` (which is a name string) — Task 12 implements this correctly.
-- OG image generation is deliberately skipped in `predev` to keep dev startup fast — only runs in `prebuild`.
-- The `og-default.png` fallback survives — pages that don't have a generated OG (404, listing pages) fall back to it via the existing BaseLayout default.
+- `winnerTeam` on circuit historical winners table cannot be linked (no `winnerTeamRef` in data) - Task 14 handles this gracefully.
+- The pole sitter on race pages uses `race.qualifying[0]?.driverRef`, not `race.pole` (which is a name string) - Task 12 implements this correctly.
+- OG image generation is deliberately skipped in `predev` to keep dev startup fast - only runs in `prebuild`.
+- The `og-default.png` fallback survives - pages that don't have a generated OG (404, listing pages) fall back to it via the existing BaseLayout default.

@@ -1,4 +1,4 @@
-// f1gures — 2026 season data (speculative / illustrative)
+// f1gures - 2026 season data (speculative / illustrative)
 // Note: this is fan-made fictional data for design purposes.
 
 import { circuitProfiles } from './circuitProfiles.js';
@@ -18,8 +18,8 @@ export function buildFallback() {
     { id: 'haas',     name: 'Haas',             short: 'HAA', color: '#B6BABD' },
   ];
 
-  // Drivers — 2026 speculative grid. Names/numbers are illustrative.
-  // jolpicaId matches Jolpica/Ergast's driverId — used by api.js to fetch live
+  // Drivers - 2026 speculative grid. Names/numbers are illustrative.
+  // jolpicaId matches Jolpica/Ergast's driverId - used by api.js to fetch live
   // career stats. Keep in sync if a driver is added/replaced.
   const drivers = [
     { id: 'NOR', num: 4,  first: 'Lando',     last: 'Norris',     code: 'NOR', country: 'GB',  flag: '🇬🇧', team: 'mclaren',  jolpicaId: 'norris'         },
@@ -44,7 +44,7 @@ export function buildFallback() {
     { id: 'BEA', num: 87, first: 'Oliver',    last: 'Bearman',    code: 'BEA', country: 'GB',  flag: '🇬🇧', team: 'haas',     jolpicaId: 'bearman'        },
   ];
 
-  // 2026 calendar — partial set, 24 rounds. First 6 completed.
+  // 2026 calendar - partial set, 24 rounds. First 6 completed.
   const calendar = [
     { round: 1,  name: 'Bahrain Grand Prix',        circuit: 'bahrain',   country: 'BH', flag: '🇧🇭', date: '2026-03-08', sprint: false, status: 'completed' },
     { round: 2,  name: 'Saudi Arabian Grand Prix',  circuit: 'jeddah',    country: 'SA', flag: '🇸🇦', date: '2026-03-15', sprint: false, status: 'completed' },
@@ -72,7 +72,7 @@ export function buildFallback() {
     { round: 24, name: 'Abu Dhabi Grand Prix',      circuit: 'yas',       country: 'AE', flag: '🇦🇪', date: '2026-12-06', sprint: false, status: 'upcoming' },
   ];
 
-  // Circuit details — hand-curated metadata (length, corners, lapRecord,
+  // Circuit details - hand-curated metadata (length, corners, lapRecord,
   // blurb). Sourced from src/data/circuitProfiles.js so the same data is
   // shared with CircuitPage.astro without round-tripping through this
   // function. Keep the local `circuits` name so existing usages below
@@ -82,7 +82,7 @@ export function buildFallback() {
   // Helper for points: 25/18/15/12/10/8/6/4/2/1
   const POINTS = [25,18,15,12,10,8,6,4,2,1];
 
-  // Race results — completed rounds only.
+  // Race results - completed rounds only.
   // Each entry: round, polesitter (driver code), fastestLap (driver), winner (driver), order (driver codes p1..p20), grid (driver codes start order), dnfs ['XYZ'], q (qualifying times), sprintWinner
   const results = {
     1: { // Bahrain
@@ -109,14 +109,14 @@ export function buildFallback() {
       grid:  ['VER','NOR','PIA','LEC','HAM','RUS','ANT','TSU','SAI','ALB','GAS','ALO','HAD','BEA','HUL','LAW','BOR','OCO','DOO','STR'],
       dnfs: [],
     },
-    5: { // China — Sprint weekend
+    5: { // China - Sprint weekend
       pole: 'PIA', fastest: 'NOR',
       sprintWinner: 'NOR',
       order: ['PIA','NOR','LEC','HAM','VER','RUS','ANT','ALO','SAI','ALB','TSU','GAS','HAD','BEA','HUL','LAW','BOR','OCO','DOO','STR'],
       grid:  ['PIA','NOR','LEC','HAM','VER','RUS','ANT','ALO','SAI','ALB','TSU','GAS','HAD','BEA','HUL','LAW','BOR','OCO','STR','DOO'],
       dnfs: [],
     },
-    6: { // Miami — Sprint weekend
+    6: { // Miami - Sprint weekend
       pole: 'NOR', fastest: 'PIA',
       sprintWinner: 'PIA',
       order: ['NOR','PIA','VER','LEC','RUS','HAM','ANT','SAI','ALB','ALO','TSU','GAS','HAD','BEA','HUL','LAW','BOR','OCO','STR','DOO'],
@@ -162,15 +162,15 @@ export function buildFallback() {
     return `+${gap.toFixed(3)}s`;
   }
 
-  // Expose helpers — always return an object so screens don't crash on
+  // Expose helpers - always return an object so screens don't crash on
   // unknown ids (historic data, transient API states, etc.).
   function driverById(code) {
     return drivers.find(d => d.id === code) ||
-      { id: code, code: code || '—', first: '', last: code || 'Unknown', num: 0, flag: '🏳', team: '' };
+      { id: code, code: code || '-', first: '', last: code || 'Unknown', num: 0, flag: '🏳', team: '' };
   }
   function teamById(id) {
     return teams.find(t => t.id === id) ||
-      { id: id || 'unknown', name: '—', short: '—', color: '#888888' };
+      { id: id || 'unknown', name: '-', short: '-', color: '#888888' };
   }
 
   // Compute season standings from results
@@ -209,7 +209,7 @@ export function buildFallback() {
       if (res.fastest && res.order.indexOf(res.fastest) < 10) driverPts[res.fastest] += 1;
       driverFastest[res.fastest] = (driverFastest[res.fastest] || 0) + 1;
       driverPoles[res.pole] = (driverPoles[res.pole] || 0) + 1;
-      // Sprint points (1-8 -> 8,7,6,5,4,3,2,1) — for simplicity approximate top 4 from race order
+      // Sprint points (1-8 -> 8,7,6,5,4,3,2,1) - for simplicity approximate top 4 from race order
       if (res.sprintWinner) {
         const sp = [res.sprintWinner];
         // Add sprint points to winner only for now, and a couple of others
@@ -300,7 +300,7 @@ export function buildFallback() {
       fmtLap,
       fmtGap,
     },
-    // Raw season payload for the fallback path — same shape api.js produces
+    // Raw season payload for the fallback path - same shape api.js produces
     // from Jolpica responses.
     __rawSeason: { teams, drivers, calendar, results },
   };
@@ -308,7 +308,7 @@ export function buildFallback() {
 
 // Build a data object from a /data/<year>.json bundle (same shape as
 // scripts/fetch-season.mjs writes). Only the home page's historic view
-// (SeasonAtGlance) consumes this currently — other listing pages still
+// (SeasonAtGlance) consumes this currently - other listing pages still
 // use buildFallback's 2026 data. PR 2 wires year-aware data more broadly.
 //
 // Helper closures (driverById/teamById/computeStandings) are duplicated
@@ -324,11 +324,11 @@ export function buildFromYearJson(json, staticCircuits = {}) {
 
   function driverById(code) {
     return drivers.find(d => d.id === code) ||
-      { id: code, code: code || '—', first: '', last: code || 'Unknown', num: 0, flag: '🏳', team: '' };
+      { id: code, code: code || '-', first: '', last: code || 'Unknown', num: 0, flag: '🏳', team: '' };
   }
   function teamById(id) {
     return teams.find(t => t.id === id) ||
-      { id: id || 'unknown', name: '—', short: '—', color: '#888888' };
+      { id: id || 'unknown', name: '-', short: '-', color: '#888888' };
   }
 
   function computeStandings() {

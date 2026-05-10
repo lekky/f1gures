@@ -18,7 +18,7 @@ const yearsLabel = team.career.firstYear === team.career.lastYear
   ? `${team.career.firstYear}`
   : `${team.career.firstYear}–${team.career.lastYear}`;
 
-const title = `${team.name} — F1 Constructor History, Wins & Championships | f1gures`;
+const title = `${team.name} - F1 Constructor History, Wins & Championships | f1gures`;
 const description = `${team.name} (${team.nationality}, F1 ${yearsLabel}). ${team.career.races} races, ${team.career.wins} wins, ${team.career.podiums} podiums, ${team.career.championships} constructors' championships. Full season-by-season history and notable drivers.`;
 const canonicalPath = `/teams/${team.constructorRef}/`;
 const ogImagePath = `/images/og/teams/${team.constructorRef}.png`;
