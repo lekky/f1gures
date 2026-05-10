@@ -1,11 +1,11 @@
 # Upcoming-race holding pages
 
 **Date:** 2026-05-10
-**Status:** Design — pending implementation plan
+**Status:** Design - pending implementation plan
 
 ## Problem
 
-The calendar grid at `/calendar/` shows every round of the current season, but the cards for *future* (un-run) rounds are only weakly clickable: the race name is rendered as plain text (no link), only the circuit name links anywhere, and there's no card-level click target. A user who taps an upcoming card mostly hits dead air — confusing affordance.
+The calendar grid at `/calendar/` shows every round of the current season, but the cards for *future* (un-run) rounds are only weakly clickable: the race name is rendered as plain text (no link), only the circuit name links anywhere, and there's no card-level click target. A user who taps an upcoming card mostly hits dead air - confusing affordance.
 
 The underlying cause: only completed races have a prerendered detail page at `/races/<year>/<round>/`. The `build-archive.mjs` importer skips rounds without `results`, so 2026's rounds 5–22 don't exist as pages, and `urlFor` is forced to no-op for them.
 
@@ -15,14 +15,14 @@ Generate a "holding page" for every upcoming round so calendar cards can link un
 
 - Lead with what the user wants right now: when's the next session, in their local time.
 - Provide context: last time this venue ran, circuit info.
-- Be SEO-worthy in its own right — distinct query intent from the post-race results page.
+- Be SEO-worthy in its own right - distinct query intent from the post-race results page.
 - Live on the same canonical URL as the eventual results page; once the race runs, the URL deepens rather than redirects.
 
 ## Non-goals
 
 - Live timing during a race weekend (no realtime data feeds).
 - Predictions, betting odds, or speculative content.
-- A general "schedule" page beyond what `/calendar/` already provides — these are per-race pages.
+- A general "schedule" page beyond what `/calendar/` already provides - these are per-race pages.
 
 ## Layout
 
@@ -38,7 +38,7 @@ Generate a "holding page" for every upcoming round so calendar cards can link un
 │ └──────────────────────────────────────────────────┘ │
 │                                                      │
 │ ┌────────────────────────┐ ┌───────────────────────┐ │
-│ │ NEXT SESSION           │ │ LAST HELD HERE — 2025 │ │
+│ │ NEXT SESSION           │ │ LAST HELD HERE - 2025 │ │
 │ │ Race in 6d 4h 22m      │ │ P1 Verstappen         │ │
 │ │ [TRACK | YOU]          │ │ P2 Norris             │ │
 │ │                        │ │ P3 Leclerc            │ │
@@ -60,12 +60,12 @@ Generate a "holding page" for every upcoming round so calendar cards can link un
 
 ### Mobile (≤720px)
 
-Stacks top-to-bottom: hero → next-session+timetable → last-held-here → circuit panel → prev/next nav. Implemented via `@media (max-width: 720px)` (CSS only, no JS — per CLAUDE.md). Two-column block becomes `grid-template-columns: 1fr`. Last-podium reuses the existing post-race podium mobile rule (`flex-direction: column; gap: 6px`). Hero already collapses to single column at 720px; inherited from existing `RacePage.astro` styles.
+Stacks top-to-bottom: hero → next-session+timetable → last-held-here → circuit panel → prev/next nav. Implemented via `@media (max-width: 720px)` (CSS only, no JS - per CLAUDE.md). Two-column block becomes `grid-template-columns: 1fr`. Last-podium reuses the existing post-race podium mobile rule (`flex-direction: column; gap: 6px`). Hero already collapses to single column at 720px; inherited from existing `RacePage.astro` styles.
 
 ### Hero
 
 - Reuses the existing `.race-hero` block from `RacePage.astro` (round eyebrow, race name, flag + circuit link, date).
-- Right side of hero (currently the podium tile for completed races) is empty for upcoming races — keeps the visual rhythm consistent across past and future.
+- Right side of hero (currently the podium tile for completed races) is empty for upcoming races - keeps the visual rhythm consistent across past and future.
 - Sprint badge in the hero stats row (only on sprint weekends), reusing `<SprintBadge>` from `src/lib/shared.jsx`.
 
 ### Next-session panel (left of two-column block)
@@ -73,17 +73,17 @@ Stacks top-to-bottom: hero → next-session+timetable → last-held-here → cir
 - Header: "NEXT SESSION".
 - Big text: name of the next future session (e.g. "Race") + countdown ("in 6d 4h 22m"). Reuses the `<Countdown>` React component already on the home page.
 - TRACK / YOU toggle below the countdown. Reads `localStorage.f1-tz` (the same key the home-page hero uses), so a user who picked "YOU" once sees it everywhere. Toggling on this page writes the key back, so other pages stay in sync.
-- Timetable below the toggle. One row per non-null session in `race.sessions`, in chronological order. Columns: session label, day-of-week, time. Time renders in TRACK (using `circuitTz(circuitId)` + `Intl.DateTimeFormat` — same helpers the home-page schedule uses) or YOU per the toggle. The next future session row gets a left-accent and bolded text.
+- Timetable below the toggle. One row per non-null session in `race.sessions`, in chronological order. Columns: session label, day-of-week, time. Time renders in TRACK (using `circuitTz(circuitId)` + `Intl.DateTimeFormat` - same helpers the home-page schedule uses) or YOU per the toggle. The next future session row gets a left-accent and bolded text.
 
 ### Last-held-here panel (right of two-column block)
 
-- When the circuit has run before: "LAST HELD HERE — \<year\>" header, then podium-step rows P1/P2/P3 with driver name + team. Reuses the existing `.podium-step` CSS from `RacePage.astro`. Year is the most recent occurrence (handles circuits that drop off the calendar). Footer: link to that race's results page.
+- When the circuit has run before: "LAST HELD HERE - \<year\>" header, then podium-step rows P1/P2/P3 with driver name + team. Reuses the existing `.podium-step` CSS from `RacePage.astro`. Year is the most recent occurrence (handles circuits that drop off the calendar). Footer: link to that race's results page.
 - When `circuitFirstTime: true`: "FIRST TIME AT THIS VENUE" header, circuit blurb (country, location, length if known), and a link to the circuit detail page.
 
 ### Circuit panel (below two-column block)
 
 - Theme-aware SVG map (`public/images/circuits/{black-outline,white-outline}/<id>.svg`). Picks variant by `html.light`, same pattern as `CircuitPage.astro`.
-- Below the map: location, country, flag — values pulled from the bundle `circuit` block. (Length / laps / lap-record were originally planned but the source bundle doesn't carry them; deferred until the data is populated.)
+- Below the map: location, country, flag - values pulled from the bundle `circuit` block. (Length / laps / lap-record were originally planned but the source bundle doesn't carry them; deferred until the data is populated.)
 
 ### Prev/next race nav
 
@@ -93,17 +93,17 @@ Stacks top-to-bottom: hero → next-session+timetable → last-held-here → cir
 
 ```
 src/components/
-  RacePage.astro            # SHELL — hero + breadcrumb + back-to-calendar + prev/next nav.
+  RacePage.astro            # SHELL - hero + breadcrumb + back-to-calendar + prev/next nav.
                             # Branches body once: completed → RaceResultsBody, else → RaceUpcomingBody.
                             # Target: ~80 lines after the split.
-  RaceResultsBody.astro     # NEW — extracts results table + qualifying + sprint + key-links from current RacePage.
+  RaceResultsBody.astro     # NEW - extracts results table + qualifying + sprint + key-links from current RacePage.
                             # Receives `race` prop. ~200 lines.
-  RaceUpcomingBody.astro    # NEW — countdown panel + timetable + last-podium card + circuit panel.
+  RaceUpcomingBody.astro    # NEW - countdown panel + timetable + last-podium card + circuit panel.
                             # Receives `race` prop with new fields (sessions, lastHeldHere, circuitFirstTime).
                             # ~200 lines.
 
 src/components/islands/
-  RaceCountdown.jsx         # NEW small island — countdown ticker + TRACK/YOU toggle + client-side
+  RaceCountdown.jsx         # NEW small island - countdown ticker + TRACK/YOU toggle + client-side
                             # next-session re-evaluation (reads data-session-start attrs on rendered rows,
                             # picks current next-session, applies bold class, drives countdown).
 ```
@@ -116,7 +116,7 @@ Two changes:
 
 ### 1. Emit upcoming-round JSONs
 
-Currently the importer's bundle pass (year > 2024) only writes `archive/races/<year>/<round>.json` for rounds where `result` exists. Extend it to emit a JSON for rounds where `result` is empty *and* `sessions` is populated (per Section 2 Q6 answer B — rare-no-sessions case falls through to legacy redirect).
+Currently the importer's bundle pass (year > 2024) only writes `archive/races/<year>/<round>.json` for rounds where `result` exists. Extend it to emit a JSON for rounds where `result` is empty *and* `sessions` is populated (per Section 2 Q6 answer B - rare-no-sessions case falls through to legacy redirect).
 
 Shape of the upcoming JSON:
 
@@ -164,7 +164,7 @@ Three call-sites in `src/lib/shared.jsx`, `src/components/DriverPage.astro`, and
 
 In `src/components/islands/screens/CalendarScreen.jsx`:
 
-- Wrap the card in a stretched-link pattern: keep the `<div className="race-card">` visual container, add an absolute-positioned full-bleed `<a>` whose href is **always** `urlFor({ name: 'race', year, round })` — past and future alike.
+- Wrap the card in a stretched-link pattern: keep the `<div className="race-card">` visual container, add an absolute-positioned full-bleed `<a>` whose href is **always** `urlFor({ name: 'race', year, round })` - past and future alike.
 - Remove the inline `<a>` wrappers around race-name and circuit-name (redundant once the card is the link).
 - Keep winner-name as a nested clickable link to the driver page, sitting on top with `position: relative; z-index: 1`.
 - Add `cursor: pointer` and a hover state to `.race-card` (subtle border-accent or background lift). Remove the previous "upcoming → cursor: default" branch.
@@ -174,10 +174,10 @@ In `src/components/islands/screens/CalendarScreen.jsx`:
 
 ### Title / description / canonical (`src/pages/races/[year]/[round].astro`)
 
-- Title (upcoming): `"Canadian GP 2026 — Round 5 schedule, sessions & circuit | f1gures"`
+- Title (upcoming): `"Canadian GP 2026 - Round 5 schedule, sessions & circuit | f1gures"`
 - Description (upcoming): `"Canadian Grand Prix 2026, Round 5 of 22. Race weekend at Circuit Gilles Villeneuve, 22–24 May. Session times for FP1, qualifying, sprint and the race."` Drop the word "sprint" if not a sprint weekend; only mention sessions whose entries are non-null.
 - Canonical unchanged (`/races/2026/5/`).
-- `ogType: "event"` (was `"article"`). The detailed schedule lives in JSON-LD `subEvent[]` (below) — that's the modern surface. OG `event:*` meta tags are largely obsolete and skipped.
+- `ogType: "event"` (was `"article"`). The detailed schedule lives in JSON-LD `subEvent[]` (below) - that's the modern surface. OG `event:*` meta tags are largely obsolete and skipped.
 
 ### JSON-LD
 
@@ -187,8 +187,8 @@ The route already emits a `SportsEvent`. Tune the upcoming variant:
 - Add `eventStatus: "https://schema.org/EventScheduled"`.
 - `startDate`: race UTC datetime.
 - `endDate`: same as `startDate` (single-day for the race itself; whole-weekend modeling deferred).
-- Add `subEvent[]` — one entry per session, each a nested `SportsEvent` with its own `startDate`. Useful structured data: search engines can render session times in rich results.
-- **Drop the FAQPage block** entirely for upcoming pages — current FAQs are about winner / pole / fastest lap, none of which exist yet. No speculative replacements.
+- Add `subEvent[]` - one entry per session, each a nested `SportsEvent` with its own `startDate`. Useful structured data: search engines can render session times in rich results.
+- **Drop the FAQPage block** entirely for upcoming pages - current FAQs are about winner / pole / fastest lap, none of which exist yet. No speculative replacements.
 
 ### OG image (`scripts/og-templates/og-race.mjs`)
 

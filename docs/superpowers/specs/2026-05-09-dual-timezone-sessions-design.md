@@ -5,13 +5,13 @@
 
 ## Problem
 
-The "Next Race" panel on the home page shows session times in UTC. A user planning to watch needs to do the math twice — once to convert to track local (the F1-broadcast convention) and once to convert to their own clock. The countdown above the schedule targets the race start, ignoring the fact that practice and qualifying are usually what people are checking in on mid-week.
+The "Next Race" panel on the home page shows session times in UTC. A user planning to watch needs to do the math twice - once to convert to track local (the F1-broadcast convention) and once to convert to their own clock. The countdown above the schedule targets the race start, ignoring the fact that practice and qualifying are usually what people are checking in on mid-week.
 
 ## Solution
 
 Two related changes shipped together in one panel:
 
-1. **Dual-timezone toggle** for the session-schedule table — `[ TRACK | YOU ]` segmented control, persists in `localStorage.f1-tz`. Both day-of-week and HH:MM are recomputed in the chosen zone.
+1. **Dual-timezone toggle** for the session-schedule table - `[ TRACK | YOU ]` segmented control, persists in `localStorage.f1-tz`. Both day-of-week and HH:MM are recomputed in the chosen zone.
 2. **Countdown re-targeted to the next non-passed session.** When the page loads on Tuesday, it counts down to FP1, not to the race that's still 5 days away.
 
 ## UI
@@ -106,7 +106,7 @@ useEffect(() => { localStorage.setItem('f1-tz', tzMode); }, [tzMode]);
 const activeZone = tzMode === 'user' ? userZone : circuitTz(next.circuitId);
 ```
 
-Initial render is always `'track'` — deterministic, SSR-safe, matches the prerendered HTML byte-for-byte. Hydration reads `localStorage.f1-tz` and switches if needed. Users with no saved preference stay on track.
+Initial render is always `'track'` - deterministic, SSR-safe, matches the prerendered HTML byte-for-byte. Hydration reads `localStorage.f1-tz` and switches if needed. Users with no saved preference stay on track.
 
 ### `buildSessions` becomes timezone-aware
 
@@ -121,7 +121,7 @@ function buildSessions(next, zone) {
   const timeFmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: zone });
   return order.map(id => {
     const s = next.sessions && next.sessions[id];
-    if (!s || !s.date || !s.time) return { id, name: SESSION_LABELS[id], day: '—', time: '—', dt: null };
+    if (!s || !s.date || !s.time) return { id, name: SESSION_LABELS[id], day: '-', time: '-', dt: null };
     const dt = new Date(`${s.date}T${s.time}`);
     return {
       id,
@@ -150,7 +150,7 @@ const nextSession = useMemo(() => {
 const target = nextSession.dt || new Date();
 ```
 
-The countdown caption renders `nextSession.name` + day + time in `activeZone`. `Countdown` itself is unchanged — it takes a `Date`, the duration math is timezone-invariant.
+The countdown caption renders `nextSession.name` + day + time in `activeZone`. `Countdown` itself is unchanged - it takes a `Date`, the duration math is timezone-invariant.
 
 **SSR consistency note:** `Date.now()` differs between build time and render time, so `nextSession` may pick a different session at SSR vs hydration. That's the same pattern the panel already accepts for the countdown numbers (they're always wrong in the prerendered HTML and corrected on hydration). The session row pinned as "current" gets the existing red highlight applied to whichever `nextSession.id` resolves at render time.
 
@@ -194,27 +194,27 @@ Inline in `NextRacePanel`, no new file. Two `<button>`s wrapped in a `display: f
 
 ## Out of scope
 
-- **Race-page session schedule** — `RacePage.astro` doesn't render a schedule today; not adding one here.
-- **Calendar listing rows** — the calendar page shows date-only per round, no per-session times.
-- **`fmtDateLong(next.date)` in panel header** — F1 calendars conventionally label a race by its UTC-stored date even when the local-Saturday-night convention would disagree (Vegas). Changing this opens a separate question; out of scope.
-- **Per-user zone selector** — auto-detected via `Intl`. No UI to override.
-- **Driver/Constructor standings or other panels** — no time-of-day data, nothing to toggle.
+- **Race-page session schedule** - `RacePage.astro` doesn't render a schedule today; not adding one here.
+- **Calendar listing rows** - the calendar page shows date-only per round, no per-session times.
+- **`fmtDateLong(next.date)` in panel header** - F1 calendars conventionally label a race by its UTC-stored date even when the local-Saturday-night convention would disagree (Vegas). Changing this opens a separate question; out of scope.
+- **Per-user zone selector** - auto-detected via `Intl`. No UI to override.
+- **Driver/Constructor standings or other panels** - no time-of-day data, nothing to toggle.
 
 ## Edge cases
 
 - **Empty bundle** (`D._empty`): `EmptyHome` is rendered before `NextRacePanel`, so none of this code runs. No change needed.
 - **Historic season** (no upcoming race): `SeasonAtGlance` is rendered instead of `NextRacePanel`. Untouched.
 - **Year picker swap to a past year**: `next` is `null`, the panel doesn't render. No regression.
-- **Circuit missing from `CIRCUIT_TZ`**: falls back to `'UTC'`, panel shows UTC times labelled as "track". The `circuit` field is logged once via `console.warn` on hydration so we notice (dev-mode only — `import.meta.env.DEV`).
+- **Circuit missing from `CIRCUIT_TZ`**: falls back to `'UTC'`, panel shows UTC times labelled as "track". The `circuit` field is logged once via `console.warn` on hydration so we notice (dev-mode only - `import.meta.env.DEV`).
 - **`Intl` unavailable** (very old browsers): caught by the `try/catch` around `Intl.DateTimeFormat`; user zone falls back to `'UTC'` and the toggle effectively becomes a no-op. Site still renders.
-- **All sessions in the past** (race weekend has finished but the next-race finder still returned this round because the Sunday race is "today or later" by date): `nextSession` falls through to the race itself, countdown reads `0`. Acceptable — same as today.
+- **All sessions in the past** (race weekend has finished but the next-race finder still returned this round because the Sunday race is "today or later" by date): `nextSession` falls through to the race itself, countdown reads `0`. Acceptable - same as today.
 
 ## Verification
 
-1. `npm run dev`, open `/`. Schedule shows track times by default. Toggle to YOU, refresh — preference persists. Toggle back to TRACK.
+1. `npm run dev`, open `/`. Schedule shows track times by default. Toggle to YOU, refresh - preference persists. Toggle back to TRACK.
 2. Set `localStorage.f1-tz = 'user'` in devtools, hard refresh. After hydration, schedule shows local times.
 3. With system TZ set to a non-EU zone (`TZ=America/Los_Angeles`), check Canadian GP rows: TRACK shows EDT (UTC−4), YOU shows PDT (UTC−7). Day-of-week shifts where the time crosses midnight.
 4. Countdown caption matches the first non-passed session row's day+time.
-5. Click anywhere on the panel except the toggle — still navigates to `/races/2026/5/`. Click the toggle — panel does not navigate.
+5. Click anywhere on the panel except the toggle - still navigates to `/races/2026/5/`. Click the toggle - panel does not navigate.
 6. Mobile (Chrome devtools, 375px): toggle and zone caption don't overflow; schedule rows stay one-line.
-7. Lighthouse: no CLS regression — initial paint shows the same TRACK markup as the prerendered HTML.
+7. Lighthouse: no CLS regression - initial paint shows the same TRACK markup as the prerendered HTML.

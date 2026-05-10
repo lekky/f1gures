@@ -18,7 +18,7 @@ const yearsLabel = circuit.firstYear === circuit.lastYear
   ? `${circuit.firstYear}`
   : `${circuit.firstYear}–${circuit.lastYear}`;
 
-const title = `${circuit.name} — F1 Race History, Winners & Lap Records | f1gures`;
+const title = `${circuit.name} - F1 Race History, Winners & Lap Records | f1gures`;
 const description = `${circuit.name} in ${circuit.location}, ${circuit.countryName}. ${circuit.raceCount} Formula 1 races held ${yearsLabel}. Full results history, all-time most wins and pole positions.`;
 const canonicalPath = `/circuits/${circuit.circuitRef}/`;
 const ogImagePath = `/images/og/circuits/${circuit.circuitRef}.png`;

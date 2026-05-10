@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Redirecting to race detail — f1gures</title>
+  <title>Redirecting to race detail - f1gures</title>
   <meta name="robots" content="noindex" />
   <link rel="canonical" href="https://f1gures.app/calendar/" />
   <style>body{font:14px/1.5 system-ui,sans-serif;margin:40px;color:#444}</style>
   <script>
     (function () {
-      // Legacy URL pattern: /race.html?round=N — round-only, current-season
+      // Legacy URL pattern: /race.html?round=N - round-only, current-season
       // assumption baked in by localStorage.f1-year. New URLs are /races/<year>/<round>/.
       var params = new URLSearchParams(location.search);
       var round = params.get('round');
@@ -19,7 +19,7 @@
       }
       if (year === 'current' || !year) year = String(new Date().getFullYear());
       if (!round) { location.replace('/calendar/'); return; }
-      // Validate against the races index — if year/round doesn't exist, send
+      // Validate against the races index - if year/round doesn't exist, send
       // the user to the calendar instead of a 404.
       fetch('/data/archive/_races-index.json', { cache: 'force-cache' })
         .then(function (r) { return r.ok ? r.json() : null; })

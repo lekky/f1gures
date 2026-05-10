@@ -68,12 +68,12 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
         <tbody>
           {race.results.map(r => (
             <tr style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
-              <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || (r.position != null ? String(r.position) : '—')}</td>
-              <td class="right t-mono">{r.grid != null ? r.grid : '—'}</td>
-              <td>{r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : (r.driverName || '—')} {r.code && <span class="t-mono code-tag">{r.code}</span>}</td>
-              <td>{r.constructorRef ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a> : (r.constructorName || '—')}</td>
-              <td class="right t-mono">{r.laps != null ? r.laps : '—'}</td>
-              <td class="t-mono">{r.time || r.status || '—'}</td>
+              <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || (r.position != null ? String(r.position) : '-')}</td>
+              <td class="right t-mono">{r.grid != null ? r.grid : '-'}</td>
+              <td>{r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : (r.driverName || '-')} {r.code && <span class="t-mono code-tag">{r.code}</span>}</td>
+              <td>{r.constructorRef ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a> : (r.constructorName || '-')}</td>
+              <td class="right t-mono">{r.laps != null ? r.laps : '-'}</td>
+              <td class="t-mono">{r.time || r.status || '-'}</td>
               <td class="right t-mono">{r.points}</td>
               <td class="t-mono">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
             </tr>
@@ -118,9 +118,9 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
               <td class={`right t-mono ${q.position === 1 ? 'is-win-cell' : ''}`}>{q.position}</td>
               <td>{q.driverRef ? <a href={`/drivers/${q.driverRef}/`}>{q.driverName}</a> : q.driverName}</td>
               <td>{q.constructorName}</td>
-              <td class="right t-mono">{q.q1 || '—'}</td>
-              <td class="right t-mono">{q.q2 || '—'}</td>
-              <td class="right t-mono">{q.q3 || '—'}</td>
+              <td class="right t-mono">{q.q1 || '-'}</td>
+              <td class="right t-mono">{q.q2 || '-'}</td>
+              <td class="right t-mono">{q.q3 || '-'}</td>
             </tr>
           ))}
         </tbody>
@@ -148,10 +148,10 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
           {race.sprint.map(s => (
             <tr>
               <td class={`right t-mono ${s.position === 1 ? 'is-win-cell' : ''}`}>{s.positionText || s.position}</td>
-              <td class="right t-mono">{s.grid != null ? s.grid : '—'}</td>
+              <td class="right t-mono">{s.grid != null ? s.grid : '-'}</td>
               <td>{s.driverRef ? <a href={`/drivers/${s.driverRef}/`}>{s.driverName}</a> : s.driverName}</td>
-              <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : '—'}</td>
-              <td class="t-mono">{s.time || s.status || '—'}</td>
+              <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : '-'}</td>
+              <td class="t-mono">{s.time || s.status || '-'}</td>
               <td class="right t-mono">{s.points}</td>
             </tr>
           ))}

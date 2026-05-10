@@ -23,7 +23,7 @@ const ARCHIVE = path.join(ROOT, 'public/data/archive');
 const OUT_BASE = path.join(ROOT, 'public/images/og');
 const FORCE = process.env.OG_FORCE === '1';
 
-// Lazy font loader — only fetched if at least one entity actually needs
+// Lazy font loader - only fetched if at least one entity actually needs
 // rendering. When the OG cache is fully restored in CI, this is never
 // called and we save the network round-trip.
 let _fontPromise = null;
@@ -37,7 +37,7 @@ async function loadFont() {
   fs.mkdirSync(cacheDir, { recursive: true });
   const cachePath = path.join(cacheDir, 'inter-700.ttf');
   if (!fs.existsSync(cachePath)) {
-    // Use the fontsource static TTF for Inter 700 — Satori's opentype parser
+    // Use the fontsource static TTF for Inter 700 - Satori's opentype parser
     // chokes on the variable-font axes in the upstream Google Fonts file.
     // Pinned to a specific Fontsource version for reproducible builds. Bump
     // deliberately when verifying glyph metrics haven't changed.
@@ -91,7 +91,7 @@ async function generateRaceOgs() {
           if (fs.existsSync(stateFile)) {
             const have = fs.readFileSync(stateFile, 'utf8').trim();
             if (have === wantState) { skipped++; return; }
-            // state mismatch — fall through to regenerate
+            // state mismatch - fall through to regenerate
           } else {
             // Backfill: PNG exists but no sidecar yet (pre-PR images). The cached
             // PNG was generated against the JSON's current shape; write the sidecar

@@ -51,7 +51,7 @@ export function useYearAwareData(fallback) {
     if (!pendingYear) return;
     let cancelled = false;
     // Reuse the fallback's circuit metadata (length, corners, lap record,
-    // blurb) — year JSON bundles don't include it and it's stable across
+    // blurb) - year JSON bundles don't include it and it's stable across
     // seasons.
     const staticCircuits = fallback.circuits || {};
     fetch(`/data/${pendingYear}.json`)

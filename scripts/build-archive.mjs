@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
 
 // ─── Static lookups ───────────────────────────────────────────────────
-// Hand-curated mappings that the Ergast CSVs don't carry — keep small.
+// Hand-curated mappings that the Ergast CSVs don't carry - keep small.
 
 // Nationality → { country (ISO 3166-1 alpha-2), flag (emoji) }. Covers every
 // nationality that's appeared in F1 since 1950. Unknown values fall back to
@@ -67,7 +67,7 @@ const NATIONALITY = {
 };
 
 // Constructor → team color (hex). Active modern teams use their canonical
-// livery; historic teams default to grey. Display only — doesn't block render.
+// livery; historic teams default to grey. Display only - doesn't block render.
 const TEAM_COLORS = {
   alpine: '#0093CC', aston_martin: '#229971', ferrari: '#E80020',
   haas: '#B6BABD', mclaren: '#FF8000', mercedes: '#27F4D2',
@@ -177,7 +177,7 @@ const OUT = join(ROOT, 'public', 'data', 'archive');
 
 function readCsv(name) {
   const text = readFileSync(join(SRC, `${name}.csv`), 'utf8');
-  // Ergast uses \N for NULL — convert to empty so csv-parse treats consistently.
+  // Ergast uses \N for NULL - convert to empty so csv-parse treats consistently.
   return parse(text, {
     columns: true,
     skip_empty_lines: true,
@@ -210,7 +210,7 @@ const statusById = new Map(status.map(s => [s.statusId, s.status]));
 
 console.log(`[archive] ${drivers.length} drivers, ${races.length} races, ${results.length} results, ${constructors.length} constructors`);
 
-// Group results by driverId once — O(N) instead of O(D*R)
+// Group results by driverId once - O(N) instead of O(D*R)
 const resultsByDriver = new Map();
 for (const r of results) {
   if (!resultsByDriver.has(r.driverId)) resultsByDriver.set(r.driverId, []);
@@ -281,7 +281,7 @@ for (const d of drivers) {
   const seasons = seasonsSet.size;
   const racesEntered = driverResults.length;
 
-  // Championships (WDC titles) — find years where this driver finished P1
+  // Championships (WDC titles) - find years where this driver finished P1
   // in the final-round driver_standings.
   const driverStandingsRows = standingsByDriver.get(d.driverId) || [];
   let championships = 0;
@@ -376,7 +376,7 @@ for (const d of drivers) {
 
   if (d.code && d.code !== '\\N') {
     // A code might have been reused by multiple drivers historically (rare).
-    // Keep the most recent driver — they're most likely the one bookmarks
+    // Keep the most recent driver - they're most likely the one bookmarks
     // refer to. driverId is monotonically increasing (newer = higher).
     const existingRef = codeToRef[d.code];
     if (!existingRef) {
@@ -435,7 +435,7 @@ for (const year of allYears) {
 
   const yearRaces = racesByYear.get(year).slice().sort((a, b) => toInt(a.round) - toInt(b.round));
 
-  // Drivers who raced this year — derived from results, not from the global
+  // Drivers who raced this year - derived from results, not from the global
   // drivers table (which would also include drivers who never raced this year)
   const yearDriverIds = new Set();
   const yearConstructorIds = new Set();
@@ -485,7 +485,7 @@ for (const year of allYears) {
     const primaryCid = driverPrimaryConstructor.get(driverId);
     const primaryConstructor = primaryCid ? constructorsById.get(primaryCid) : null;
     return {
-      // `id` must be unique within a season — used as the key in
+      // `id` must be unique within a season - used as the key in
       // computeStandings.progression and as the dataKey in PointsChart.
       // The 3-letter `code` collides for surnames like Hill / Schumacher
       // / Brabham / Andretti when multiple drivers from the same family
@@ -647,12 +647,12 @@ for (const race of racesSorted) {
   const circuit = circuitsById.get(race.circuitId);
   const cInfo = circuit ? countryInfo(circuit.country) : { code: '', flag: '🏳' };
 
-  // Race results — sorted by positionOrder (handles DNFs, finished-by-laps, etc.)
+  // Race results - sorted by positionOrder (handles DNFs, finished-by-laps, etc.)
   const raceResultsRaw = (resultsByRace.get(race.raceId) || []).slice()
     .sort((a, b) => (toInt(a.positionOrder) || 9999) - (toInt(b.positionOrder) || 9999));
   const raceResults = raceResultsRaw.map(buildResultRow);
 
-  // Qualifying — sorted by position
+  // Qualifying - sorted by position
   const qualiRaw = (qualifyingByRace.get(race.raceId) || []).slice()
     .sort((a, b) => (toInt(a.position) || 9999) - (toInt(b.position) || 9999));
   const qualifyingRows = qualiRaw.map(q => {
@@ -763,7 +763,7 @@ for (const bYear of bundleYears) {
   }
 }
 
-// circuits.csv uses numeric circuitId; bundles use circuitRef slugs — build a ref map
+// circuits.csv uses numeric circuitId; bundles use circuitRef slugs - build a ref map
 const circuitsByRef = new Map(circuits.map(c => [c.circuitRef, c]));
 
 let bundleRacesWritten = 0;
@@ -915,7 +915,7 @@ if (allBundleRounds.length > 0) {
 
 // Index completed races by circuitRef so we can compute lastHeldHere quickly.
 // racesIndex now contains both Ergast (1950–2024) and post-2024 completed
-// bundle rounds — that's everything we need.
+// bundle rounds - that's everything we need.
 const completedByCircuit = new Map();
 for (const entry of racesIndex) {
   if (!entry.circuitRef) continue;
@@ -945,7 +945,7 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
   // Skip rounds that already have a completed archive entry (handled above).
   const hasResult = bundle.results && bundle.results[String(round)];
   if (hasResult) continue;
-  // Skip rounds with no session data — falls through to legacy /race.html redirect.
+  // Skip rounds with no session data - falls through to legacy /race.html redirect.
   if (!calEntry.sessions || Object.values(calEntry.sessions).every(v => !v)) continue;
 
   const circuitId = calEntry.circuitId;
@@ -980,7 +980,7 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
         lastHeldHere = { year: newest.year, round: newest.round, podium };
       }
     } catch {
-      // Past race file missing — treat as no lastHeldHere data, but still not first time.
+      // Past race file missing - treat as no lastHeldHere data, but still not first time.
       lastHeldHere = null;
     }
   }
@@ -1281,7 +1281,7 @@ writeFileSync(join(OUT, '_circuits-index.json'), JSON.stringify(circuitsIndex));
 console.log(`[archive] wrote ${circuitsWritten} circuit detail bundles → ${join(OUT, 'circuits')}`);
 
 // ─── Merge post-Ergast seasons into driver history ────────────────────
-// Same idea as the circuit merge above — open each driver JSON, append
+// Same idea as the circuit merge above - open each driver JSON, append
 // per-race entries from the hand-curated 2025+ bundles, then refresh
 // career totals and per-season rollups so the driver pages don't stop at
 // the Ergast 2024 cutoff. Championships stay as Ergast computed them
@@ -1289,7 +1289,7 @@ console.log(`[archive] wrote ${circuitsWritten} circuit detail bundles → ${joi
 
 // Bundle team ids → Ergast constructorRef. Buildfallback uses short
 // slugs; Ergast uses longer ones in a few cases. Brand-new manufacturers
-// (audi, cadillac) don't have Ergast entries yet — pass through their
+// (audi, cadillac) don't have Ergast entries yet - pass through their
 // short id; the team page may 404 until Ergast catches up.
 const HAND_CONSTRUCTOR_ALIAS = {
   aston: 'aston_martin',
@@ -1308,7 +1308,7 @@ function loadDriverDoc(driverRef, bundleDriver) {
     driverDocCache.set(driverRef, doc);
     return doc;
   }
-  // No Ergast row for this driver — they debuted post-2024. Synthesize a
+  // No Ergast row for this driver - they debuted post-2024. Synthesize a
   // shell doc from the bundle entry so the post-archive merge has somewhere
   // to append per-race entries. Career totals get filled in by the
   // recompute pass below.
@@ -1483,10 +1483,10 @@ for (const [driverRef, doc] of driverDocCache) {
     const seasonWins = rows.filter(r => r.position === 1).length;
     const existing = oldPerSeason.get(year);
     if (existing && existing.position != null) {
-      // Year was in Ergast — preserve final-standing rank and points.
+      // Year was in Ergast - preserve final-standing rank and points.
       return { ...existing, races: rows.length, bestFinish, wins: seasonWins };
     }
-    // Post-Ergast year — sum points from per-race detail; derive position
+    // Post-Ergast year - sum points from per-race detail; derive position
     // from bundleStandings (computed above from race result points totals).
     return {
       year,
@@ -1503,7 +1503,7 @@ for (const [driverRef, doc] of driverDocCache) {
   writeFileSync(join(OUT, 'drivers', `${driverRef}.json`), JSON.stringify(doc));
 
   if (newlyCreatedDrivers.has(driverRef)) {
-    // First time we've seen this driver — give them an index entry so
+    // First time we've seen this driver - give them an index entry so
     // /drivers/<ref>/ gets prerendered, and add a code → ref mapping for
     // the legacy /driver.html?id=ANT redirect.
     index.push({
@@ -1594,7 +1594,7 @@ for (const c of constructors) {
   const racesEntered = new Set(teamResults.map(r => r.raceId)).size;
   const driverIds = new Set(teamResults.map(r => r.driverId));
 
-  // Constructors' championships — final-round position === 1 in each year's standings
+  // Constructors' championships - final-round position === 1 in each year's standings
   let championships = 0;
   const finalStandingByYear = new Map();
   for (const s of standingsByConstructor.get(c.constructorId) || []) {

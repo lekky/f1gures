@@ -1,4 +1,4 @@
-// Shared React helpers and components — ported from js/shell.jsx for use
+// Shared React helpers and components - ported from js/shell.jsx for use
 // inside React islands. The Astro layout (BaseLayout/Chrome.astro) handles
 // the chrome itself; this module provides the building blocks each screen
 // island composes (Panel, DriverCell, Countdown, etc.) plus URL/date helpers.
@@ -185,7 +185,7 @@ export function SectionHead({ title, right }) {
 }
 
 export function ChangeIndicator({ change }) {
-  if (change === 0 || change == null) return <span className="chg flat">— 0</span>;
+  if (change === 0 || change == null) return <span className="chg flat">- 0</span>;
   if (change > 0) return <span className="chg up">▲ {change}</span>;
   return <span className="chg down">▼ {Math.abs(change)}</span>;
 }
@@ -199,7 +199,7 @@ export function SprintBadge() {
 }
 
 export function DriverCell({ data, driver, showCode = true }) {
-  const team = data.teamById(driver.team) || { color: '#888888', short: '—', name: '—' };
+  const team = data.teamById(driver.team) || { color: '#888888', short: '-', name: '-' };
   return (
     <div className="driver-cell" style={{ '--team-color': team.color }}>
       <span className="driver-flag">{driver.flag}</span>

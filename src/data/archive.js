@@ -9,7 +9,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 // process.cwd() is the project root during astro build/dev. Don't use
-// import.meta.url + __dirname here — Vite bundles this module into dist/
+// import.meta.url + __dirname here - Vite bundles this module into dist/
 // during the build, which throws the relative path off (looking for
 // dist/public/data/archive instead of public/data/archive).
 const ARCHIVE = resolve(process.cwd(), 'public', 'data', 'archive');

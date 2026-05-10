@@ -51,7 +51,7 @@ export default function RaceCountdown({ rootSelector = 'race-countdown' }) {
   const [now, setNow] = useState(() => Date.now());
   const rootRef = useRef(null);
 
-  // Find our wrapper element — only one per page, addressed by tag.
+  // Find our wrapper element - only one per page, addressed by tag.
   useEffect(() => {
     rootRef.current = document.querySelector(rootSelector);
   }, [rootSelector]);

@@ -1,6 +1,6 @@
 ---
 // Pure-Astro driver detail page. Server-rendered HTML, no React island, no
-// client JS shipped — every byte is SEO content. Reuses the existing
+// client JS shipped - every byte is SEO content. Reuses the existing
 // design-system classes (`panel`, `grid`, `stat`, `t-eyebrow`, `t-display`,
 // `t-mono`, `section-head`, `page-title`) from css/app.css.
 
@@ -63,16 +63,16 @@ const driverSummary = buildDriverSummary(driver, new Date().getFullYear());
 const yearsLabel = driver.career.firstYear === driver.career.lastYear
   ? `${driver.career.firstYear}`
   : `${driver.career.firstYear}–${driver.career.lastYear}`;
-const fmtNum = (n: number | null | undefined) => (n == null ? '—' : String(n));
-const ord = (n: number | null) => (n == null ? '—' : `P${n}`);
+const fmtNum = (n: number | null | undefined) => (n == null ? '-' : String(n));
+const ord = (n: number | null) => (n == null ? '-' : `P${n}`);
 
-// Headshot lookup — only ~32 modern drivers have a curated WebP in
+// Headshot lookup - only ~32 modern drivers have a curated WebP in
 // public/images/drivers/. For everyone else (most of the 862 drivers in
 // the archive), fall back to a CSS-rendered silhouette placeholder.
 const headshotPath = `images/drivers/${driver.driverRef}.webp`;
 const hasHeadshot = existsSync(resolve(process.cwd(), 'public', headshotPath));
 
-// Latest season — perSeason arrives newest-first from build-archive.mjs.
+// Latest season - perSeason arrives newest-first from build-archive.mjs.
 const latestSeason = driver.perSeason.length > 0 ? driver.perSeason[0] : null;
 
 // Team colour: look up from the season JSON for the driver's latest year.
@@ -140,7 +140,7 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
       )}
       <div class="driver-hero-body">
         <div class="driver-hero-meta">
-          <div class="t-eyebrow driver-hero-nationality">{driver.nationality || '—'}</div>
+          <div class="t-eyebrow driver-hero-nationality">{driver.nationality || '-'}</div>
           {teamName && teamRef && (
             <div class="driver-hero-team">
               <a href={`/teams/${teamRef}/`} style={`color: ${teamColor}`}>{teamName}</a>
@@ -162,10 +162,10 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
           <>
             <div class="t-eyebrow">{latestSeason!.year} Season</div>
             <div class="driver-hero-pos" style={`color: ${teamColor}`}>
-              {latestSeason!.position != null ? `P${latestSeason!.position}` : '—'}
+              {latestSeason!.position != null ? `P${latestSeason!.position}` : '-'}
             </div>
             <div class="driver-hero-pts">
-              {latestSeason!.points != null ? `${latestSeason!.points} pts` : '—'}
+              {latestSeason!.points != null ? `${latestSeason!.points} pts` : '-'}
             </div>
           </>
         ) : (
@@ -224,9 +224,9 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
                 <td class="t-mono">{s.year}</td>
                 <td>{s.constructorRef && s.constructorName ? (
                   <a href={`/teams/${s.constructorRef}/`} class="inline-link">{s.constructorName}</a>
-                ) : (s.constructorName || '—')}</td>
+                ) : (s.constructorName || '-')}</td>
                 <td class={`right ${s.position === 1 ? 'is-champ-cell' : ''}`}>{ord(s.position)}</td>
-                <td class="right t-mono">{s.points != null ? s.points : '—'}</td>
+                <td class="right t-mono">{s.points != null ? s.points : '-'}</td>
                 <td class="right t-mono">{s.wins}</td>
                 <td class="right t-mono">{s.races}</td>
                 <td class="right t-mono">{ord(s.bestFinish)}</td>
@@ -262,14 +262,14 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
                   <td class="t-mono">{r.year}</td>
                   <td>{r.raceName && raceHref ? (
                     <a href={raceHref} class="inline-link">{r.raceName}</a>
-                  ) : (r.raceName || '—')}</td>
+                  ) : (r.raceName || '-')}</td>
                   <td>{r.constructorRef && r.constructorName ? (
                     <a href={`/teams/${r.constructorRef}/`} class="inline-link">{r.constructorName}</a>
-                  ) : (r.constructorName || '—')}</td>
+                  ) : (r.constructorName || '-')}</td>
                   <td class="right t-mono">{fmtNum(r.grid)}</td>
                   <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || ord(r.position)}</td>
                   <td class="right t-mono">{r.points || 0}</td>
-                  <td>{r.status || '—'}</td>
+                  <td>{r.status || '-'}</td>
                 </tr>
               );
             })}

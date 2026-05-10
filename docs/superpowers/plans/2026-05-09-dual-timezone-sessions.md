@@ -4,9 +4,9 @@
 
 **Goal:** Add a TRACK/YOU timezone toggle to the Next Race panel's session schedule, and re-target the countdown to the next non-passed session.
 
-**Architecture:** Single-panel change in `NextRacePanel` ([HomeScreen.jsx](../../../src/components/islands/screens/HomeScreen.jsx)). New `CIRCUIT_TZ` map + `circuitTz()` helper in [shared.jsx](../../../src/lib/shared.jsx). State (`tzMode`) persisted to `localStorage.f1-tz`. Initial render is always TRACK so the prerendered HTML matches what hydration shows for users with no preference — no CLS, no flicker. `Intl.DateTimeFormat` does the conversion.
+**Architecture:** Single-panel change in `NextRacePanel` ([HomeScreen.jsx](../../../src/components/islands/screens/HomeScreen.jsx)). New `CIRCUIT_TZ` map + `circuitTz()` helper in [shared.jsx](../../../src/lib/shared.jsx). State (`tzMode`) persisted to `localStorage.f1-tz`. Initial render is always TRACK so the prerendered HTML matches what hydration shows for users with no preference - no CLS, no flicker. `Intl.DateTimeFormat` does the conversion.
 
-**Tech Stack:** React 18 islands, Astro 4 SSG, browser-native `Intl`. No new deps. No test framework in this repo — verification is dev-server (`npm run dev` → http://localhost:4321/) + manual + preview tools.
+**Tech Stack:** React 18 islands, Astro 4 SSG, browser-native `Intl`. No new deps. No test framework in this repo - verification is dev-server (`npm run dev` → http://localhost:4321/) + manual + preview tools.
 
 **Spec:** [docs/superpowers/specs/2026-05-09-dual-timezone-sessions-design.md](../specs/2026-05-09-dual-timezone-sessions-design.md)
 
@@ -14,8 +14,8 @@
 
 ## File map
 
-- **Modify** `src/lib/shared.jsx` — add `CIRCUIT_TZ` map, `circuitTz()` and `zoneShort()` helpers near the existing `CIRCUIT_ID_ALIAS` block.
-- **Modify** `src/components/islands/screens/HomeScreen.jsx` — `buildSessions(next)` becomes `buildSessions(next, zone)`; `NextRacePanel` gains `tzMode` state, toggle UI, next-session countdown logic, and zone caption.
+- **Modify** `src/lib/shared.jsx` - add `CIRCUIT_TZ` map, `circuitTz()` and `zoneShort()` helpers near the existing `CIRCUIT_ID_ALIAS` block.
+- **Modify** `src/components/islands/screens/HomeScreen.jsx` - `buildSessions(next)` becomes `buildSessions(next, zone)`; `NextRacePanel` gains `tzMode` state, toggle UI, next-session countdown logic, and zone caption.
 
 That's the entire change surface. No new files.
 
@@ -24,7 +24,7 @@ That's the entire change surface. No new files.
 ## Task 1: Add CIRCUIT_TZ map and helpers to shared.jsx
 
 **Files:**
-- Modify: `src/lib/shared.jsx` — insert after line 96 (`useIsMobile` ends), before the "Date helpers" section that starts on line 98.
+- Modify: `src/lib/shared.jsx` - insert after line 96 (`useIsMobile` ends), before the "Date helpers" section that starts on line 98.
 
 - [ ] **Step 1: Insert the timezone constants and helpers**
 
@@ -93,7 +93,7 @@ Run:
 node -e "import('./src/lib/shared.jsx').then(m => console.log(typeof m.circuitTz, typeof m.zoneShort, m.circuitTz('villeneuve'), m.circuitTz('bogus')))"
 ```
 
-Expected: `function function America/Toronto UTC` (or similar). If Node can't import JSX, skip this step — the dev server will catch the error in Task 2.
+Expected: `function function America/Toronto UTC` (or similar). If Node can't import JSX, skip this step - the dev server will catch the error in Task 2.
 
 - [ ] **Step 3: Commit**
 
@@ -150,7 +150,7 @@ function buildSessions(next, zone) {
   return order.map(id => {
     const s = src && src[id];
     if (!s || !s.date || !s.time) {
-      return { id, name: SESSION_LABELS[id], day: '—', time: '—', dt: null };
+      return { id, name: SESSION_LABELS[id], day: '-', time: '-', dt: null };
     }
     const dt = new Date(`${s.date}T${s.time}`);
     return {
@@ -172,15 +172,15 @@ function buildSessions(next, zone) {
 const sessions = buildSessions(next, 'UTC');
 ```
 
-This intentionally still shows UTC times — Task 3 wires up the actual toggle.
+This intentionally still shows UTC times - Task 3 wires up the actual toggle.
 
 - [ ] **Step 4: Verify the dev server still renders**
 
 The dev server is already running on http://localhost:4321/. Use the preview tools:
 
 1. `preview_eval` with `window.location.reload()`.
-2. `preview_console_logs` — expect no errors.
-3. `preview_snapshot` — confirm the home page renders and the session table still shows 5 rows.
+2. `preview_console_logs` - expect no errors.
+3. `preview_snapshot` - confirm the home page renders and the session table still shows 5 rows.
 
 If errors appear, fix and retry. Do NOT proceed until clean.
 
@@ -294,11 +294,11 @@ Replace the eyebrow `<div>` (the line that says `Session Schedule`) and add the 
 Use the preview tools:
 
 1. `preview_eval` with `window.location.reload()`.
-2. `preview_snapshot` — confirm both `Track` and `You` segments are visible next to "Session Schedule", with `Track` highlighted.
+2. `preview_snapshot` - confirm both `Track` and `You` segments are visible next to "Session Schedule", with `Track` highlighted.
 3. `preview_click` on the `You` segment.
-4. `preview_snapshot` — confirm `You` is now highlighted, the page did NOT navigate, and the session times changed (e.g. for the Canadian GP, `04:00 → 00:00` if your zone is e.g. EDT, or different depending on your zone).
-5. `preview_eval` with `localStorage.getItem('f1-tz')` — expect `"user"`.
-6. `preview_eval` with `window.location.reload()`, then `preview_snapshot` — `You` should remain highlighted after reload (persistence).
+4. `preview_snapshot` - confirm `You` is now highlighted, the page did NOT navigate, and the session times changed (e.g. for the Canadian GP, `04:00 → 00:00` if your zone is e.g. EDT, or different depending on your zone).
+5. `preview_eval` with `localStorage.getItem('f1-tz')` - expect `"user"`.
+6. `preview_eval` with `window.location.reload()`, then `preview_snapshot` - `You` should remain highlighted after reload (persistence).
 7. `preview_click` `Track` segment to reset, `preview_eval` to confirm `localStorage.getItem('f1-tz') === 'track'`.
 
 If any step fails, fix and re-verify.
@@ -329,7 +329,7 @@ Inside `NextRacePanel`, in the same block that contains the existing `target` `u
   }, [next.date, next.time]);
 ```
 
-Then below it, leave `target` for the countdown — but Task 5 will replace `target` entirely. For now, add a `target = raceDt` alias so the existing countdown call doesn't break:
+Then below it, leave `target` for the countdown - but Task 5 will replace `target` entirely. For now, add a `target = raceDt` alias so the existing countdown call doesn't break:
 
 ```jsx
   const target = raceDt;
@@ -337,7 +337,7 @@ Then below it, leave `target` for the countdown — but Task 5 will replace `tar
 
 - [ ] **Step 2: Add caption rendering below the session table**
 
-Find the closing `</div>` of the session table (the one that ends `border: '1px solid var(--line-1)'` block — i.e. the `</div>` immediately following the `{sessions.map(...)}` block). After it, before the panel-closing tags, add:
+Find the closing `</div>` of the session table (the one that ends `border: '1px solid var(--line-1)'` block - i.e. the `</div>` immediately following the `{sessions.map(...)}` block). After it, before the panel-closing tags, add:
 
 ```jsx
             <div className="t-mono" style={{
@@ -346,7 +346,7 @@ Find the closing `</div>` of the session table (the one that ends `border: '1px 
               marginTop: 8,
               letterSpacing: '0.04em',
             }}>
-              Track: {(D.circuits[next.circuit] && D.circuits[next.circuit].city) || '—'} ({zoneShort(trackZone, raceDt)})
+              Track: {(D.circuits[next.circuit] && D.circuits[next.circuit].city) || '-'} ({zoneShort(trackZone, raceDt)})
               {' · '}
               You: {userZone} ({zoneShort(userZone, raceDt)})
             </div>
@@ -355,8 +355,8 @@ Find the closing `</div>` of the session table (the one that ends `border: '1px 
 - [ ] **Step 3: Verify in the browser**
 
 1. `preview_eval` with `window.location.reload()`.
-2. `preview_snapshot` — caption appears below the table. Format matches `Track: <City> (<ZONE>) · You: <IANA> (<ZONE>)`.
-3. `preview_click` on `You` segment, `preview_snapshot` — caption text doesn't change (it always shows both); only the table times change.
+2. `preview_snapshot` - caption appears below the table. Format matches `Track: <City> (<ZONE>) · You: <IANA> (<ZONE>)`.
+3. `preview_click` on `You` segment, `preview_snapshot` - caption text doesn't change (it always shows both); only the table times change.
 
 - [ ] **Step 4: Commit**
 
@@ -387,7 +387,7 @@ Replace with:
   // future. If all sessions on the weekend have passed (race weekend
   // finishing today), fall through to the race itself (target = raceDt,
   // countdown reads 0). Recomputed when `sessions` changes (zone toggle
-  // doesn't affect ordering — `dt` is the same Date — but `useMemo`
+  // doesn't affect ordering - `dt` is the same Date - but `useMemo`
   // keeps this stable across renders).
   const nextSession = useMemo(() => {
     const nowMs = Date.now();
@@ -436,9 +436,9 @@ Change the `background:` line to highlight the actual `nextSession` row instead 
 - [ ] **Step 4: Verify in the browser**
 
 1. `preview_eval` with `window.location.reload()`.
-2. `preview_snapshot` — countdown caption shows the next session (e.g. `Practice 1 starts Fri · 12:30 EDT` if Fri FP1 is in the future). The countdown numbers match the duration to that session.
+2. `preview_snapshot` - countdown caption shows the next session (e.g. `Practice 1 starts Fri · 12:30 EDT` if Fri FP1 is in the future). The countdown numbers match the duration to that session.
 3. The highlighted row in the schedule is the one named in the caption.
-4. `preview_click` `You` segment, `preview_snapshot` — caption time updates to user-local zone, schedule highlight stays on the same session row.
+4. `preview_click` `You` segment, `preview_snapshot` - caption time updates to user-local zone, schedule highlight stays on the same session row.
 5. `preview_click` `Track` segment to reset.
 
 - [ ] **Step 5: Commit**
@@ -455,16 +455,16 @@ git commit -m "feat(home): countdown targets next non-passed session"
 - [ ] **Step 1: Full panel walkthrough**
 
 1. `preview_eval` with `localStorage.removeItem('f1-tz'); window.location.reload();`
-2. `preview_snapshot` — confirms TRACK is the default after a fresh visit.
+2. `preview_snapshot` - confirms TRACK is the default after a fresh visit.
 3. Check the schedule shows track-local times (Canadian GP example: `04:00 UTC → 00:00 EDT` for the race row, day shifts from Sun to Sat for the race).
 4. `preview_click` `You`, refresh, confirm persistence.
-5. `preview_resize` to 375 wide, `preview_snapshot` — toggle and zone caption don't overflow; rows stay one-line. Resize back.
-6. `preview_console_logs` — no errors.
-7. `preview_screenshot` — capture the final state for the PR description.
+5. `preview_resize` to 375 wide, `preview_snapshot` - toggle and zone caption don't overflow; rows stay one-line. Resize back.
+6. `preview_console_logs` - no errors.
+7. `preview_screenshot` - capture the final state for the PR description.
 
 - [ ] **Step 2: Verify across the year picker**
 
-1. `preview_eval` with `window.location.search = '?year=2024'` then `preview_snapshot`. Past seasons render `SeasonAtGlance`, not `NextRacePanel` — the toggle code shouldn't even execute. Confirm no errors.
+1. `preview_eval` with `window.location.search = '?year=2024'` then `preview_snapshot`. Past seasons render `SeasonAtGlance`, not `NextRacePanel` - the toggle code shouldn't even execute. Confirm no errors.
 2. `preview_eval` to navigate back: `window.location.search = ''`.
 
 - [ ] **Step 3: Confirm hydration parity**
@@ -472,7 +472,7 @@ git commit -m "feat(home): countdown targets next non-passed session"
 The pre-hydration HTML must match what the default-TRACK hydrated panel shows. If they diverge, React logs a hydration warning to the console.
 
 1. `preview_eval` with `localStorage.removeItem('f1-tz'); window.location.reload();`
-2. `preview_console_logs` — expect zero `Hydration` warnings.
+2. `preview_console_logs` - expect zero `Hydration` warnings.
 
 - [ ] **Step 4: No commit needed (no code changes), but report findings**
 
@@ -490,6 +490,6 @@ Summarise verification results in the PR description.
   - Zone caption below table → Task 4.
   - Next-session countdown + caption → Task 5.
   - Hydration parity, mobile, no-CLS → Task 6 verification.
-- [ ] No `TBD`/`TODO`/placeholder text in any task — every step shows actual code.
+- [ ] No `TBD`/`TODO`/placeholder text in any task - every step shows actual code.
 - [ ] Function and prop names consistent across tasks: `circuitTz`, `zoneShort`, `tzMode`, `setTzMode`, `userZone`, `trackZone`, `activeZone`, `raceDt`, `nextSession`.
 - [ ] Each commit is a coherent unit; no commit leaves the page broken.

@@ -6,7 +6,7 @@
 
 **Architecture:** Extend `build-archive.mjs` to emit upcoming-round JSONs into `public/data/archive/races/<y>/<r>.json` and append them to `_races-index.json` with a new `completed` boolean. Refactor `RacePage.astro` into a shell + two body components (`RaceResultsBody`, `RaceUpcomingBody`); the shell branches on `race.results.length === 0`. A new tiny island (`RaceCountdown.jsx`) handles the live countdown to the next session and the TRACK/YOU timezone toggle, reusing the existing `Countdown` component, `circuitTz()` helper, and `localStorage.f1-tz` key from the home-page schedule. `CalendarScreen.jsx` becomes a stretched-link card so the whole tile is clickable.
 
-**Tech Stack:** Astro 4 SSG, React 18 islands, Node `csv-parse` (build-time only), Satori + Resvg (build-time OG images). No new deps. No test framework in this repo — verification is `npm run dev` (http://localhost:4321/) + `preview_*` MCP tools + manual checks of generated archive JSONs.
+**Tech Stack:** Astro 4 SSG, React 18 islands, Node `csv-parse` (build-time only), Satori + Resvg (build-time OG images). No new deps. No test framework in this repo - verification is `npm run dev` (http://localhost:4321/) + `preview_*` MCP tools + manual checks of generated archive JSONs.
 
 **Spec:** [docs/superpowers/specs/2026-05-10-upcoming-race-holding-pages-design.md](../specs/2026-05-10-upcoming-race-holding-pages-design.md)
 
@@ -15,28 +15,28 @@
 ## File map
 
 **Modify:**
-- `scripts/build-archive.mjs` — second pass after the existing post-2024 bundle pass that emits upcoming-round JSONs and appends them to `_races-index.json` with `completed: false`. Existing completed entries get `completed: true`.
-- `src/components/RacePage.astro` — becomes the shell. Hero, breadcrumb, prev/next nav stay here. Body branches: `race.results.length === 0 ? <RaceUpcomingBody /> : <RaceResultsBody />`.
-- `src/pages/races/[year]/[round].astro` — title, description, OG type, JSON-LD branch on completed.
-- `src/components/islands/screens/CalendarScreen.jsx` — wrap `.race-card` in a stretched-link `<a>`; drop the `result ?` conditional on the href; remove inline race-name and circuit-name links.
-- `public/css/app.css` — `.race-card-link` overlay rules + hover state.
-- `src/lib/shared.jsx` — bump `ARCHIVE_MAX_YEAR` from 2025 to 2026 inside the `case 'race'` block.
-- `src/components/DriverPage.astro` — bump local `ARCHIVE_MAX_YEAR` constant.
-- `src/components/CircuitPage.astro` — bump local `ARCHIVE_MAX_YEAR` constant.
-- `scripts/og-templates/og-race.mjs` — render an "upcoming" variant when `race.results.length === 0`.
-- `scripts/generate-og-images.mjs` — cache invalidation via a `.state` sidecar marker file so the PNG regenerates when the race transitions from upcoming → completed.
+- `scripts/build-archive.mjs` - second pass after the existing post-2024 bundle pass that emits upcoming-round JSONs and appends them to `_races-index.json` with `completed: false`. Existing completed entries get `completed: true`.
+- `src/components/RacePage.astro` - becomes the shell. Hero, breadcrumb, prev/next nav stay here. Body branches: `race.results.length === 0 ? <RaceUpcomingBody /> : <RaceResultsBody />`.
+- `src/pages/races/[year]/[round].astro` - title, description, OG type, JSON-LD branch on completed.
+- `src/components/islands/screens/CalendarScreen.jsx` - wrap `.race-card` in a stretched-link `<a>`; drop the `result ?` conditional on the href; remove inline race-name and circuit-name links.
+- `public/css/app.css` - `.race-card-link` overlay rules + hover state.
+- `src/lib/shared.jsx` - bump `ARCHIVE_MAX_YEAR` from 2025 to 2026 inside the `case 'race'` block.
+- `src/components/DriverPage.astro` - bump local `ARCHIVE_MAX_YEAR` constant.
+- `src/components/CircuitPage.astro` - bump local `ARCHIVE_MAX_YEAR` constant.
+- `scripts/og-templates/og-race.mjs` - render an "upcoming" variant when `race.results.length === 0`.
+- `scripts/generate-og-images.mjs` - cache invalidation via a `.state` sidecar marker file so the PNG regenerates when the race transitions from upcoming → completed.
 
 **Create:**
-- `src/components/RaceResultsBody.astro` — extract the existing results-table + qualifying + sprint + key-links blocks from `RacePage.astro`.
-- `src/components/RaceUpcomingBody.astro` — new server-rendered body: next-session panel + last-held-here panel + circuit panel.
-- `src/components/islands/RaceCountdown.jsx` — new small island: live countdown ticker + TRACK/YOU toggle + client-side next-session re-evaluation.
+- `src/components/RaceResultsBody.astro` - extract the existing results-table + qualifying + sprint + key-links blocks from `RacePage.astro`.
+- `src/components/RaceUpcomingBody.astro` - new server-rendered body: next-session panel + last-held-here panel + circuit panel.
+- `src/components/islands/RaceCountdown.jsx` - new small island: live countdown ticker + TRACK/YOU toggle + client-side next-session re-evaluation.
 
 ---
 
 ## Task 1: build-archive emits upcoming-round JSONs
 
 **Files:**
-- Modify: `scripts/build-archive.mjs` — insert a new pass between the existing bundle-completed-rounds pass (ends ~line 900) and the Circuits section (starts ~line 902).
+- Modify: `scripts/build-archive.mjs` - insert a new pass between the existing bundle-completed-rounds pass (ends ~line 900) and the Circuits section (starts ~line 902).
 
 - [ ] **Step 1: Read the file and locate the insertion point**
 
@@ -71,7 +71,7 @@ Insert the following block immediately after the `if (allBundleRounds.length > 0
 
 // Index completed races by circuitRef so we can compute lastHeldHere quickly.
 // racesIndex now contains both Ergast (1950–2024) and post-2024 completed
-// bundle rounds — that's everything we need.
+// bundle rounds - that's everything we need.
 const completedByCircuit = new Map();
 for (const entry of racesIndex) {
   if (!entry.circuitRef) continue;
@@ -101,7 +101,7 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
   // Skip rounds that already have a completed archive entry (handled above).
   const hasResult = bundle.results && bundle.results[String(round)];
   if (hasResult) continue;
-  // Skip rounds with no session data — falls through to legacy /race.html redirect.
+  // Skip rounds with no session data - falls through to legacy /race.html redirect.
   if (!calEntry.sessions || Object.values(calEntry.sessions).every(v => !v)) continue;
 
   const circuitId = calEntry.circuitId;
@@ -136,7 +136,7 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
         lastHeldHere = { year: newest.year, round: newest.round, podium };
       }
     } catch {
-      // Past race file missing — treat as no lastHeldHere data, but still not first time.
+      // Past race file missing - treat as no lastHeldHere data, but still not first time.
       lastHeldHere = null;
     }
   }
@@ -212,7 +212,7 @@ The existing index entries (Ergast + completed bundle rounds) don't have `comple
 
 Locate two places that push to `racesIndex`:
 
-1. Inside the Ergast races loop (around line 700-ish — search for `racesIndex.push(`). Add `completed: true,` to the object literal.
+1. Inside the Ergast races loop (around line 700-ish - search for `racesIndex.push(`). Add `completed: true,` to the object literal.
 2. Inside the post-2024 bundle completed loop (around line 893). Add `completed: true,` to that object literal.
 
 Example: change
@@ -270,7 +270,7 @@ git commit -m "feat(archive): emit upcoming-round JSONs with sessions + lastHeld
 
 ## Task 2: Split RacePage into shell + RaceResultsBody (no behavior change)
 
-This is a pure refactor — output should be byte-identical for completed races. We do this *before* introducing the upcoming branch so any visual regression is caught against existing race pages, not new ones.
+This is a pure refactor - output should be byte-identical for completed races. We do this *before* introducing the upcoming branch so any visual regression is caught against existing race pages, not new ones.
 
 **Files:**
 - Create: `src/components/RaceResultsBody.astro`
@@ -351,12 +351,12 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
         <tbody>
           {race.results.map(r => (
             <tr style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
-              <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || (r.position != null ? String(r.position) : '—')}</td>
-              <td class="right t-mono">{r.grid != null ? r.grid : '—'}</td>
-              <td>{r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : (r.driverName || '—')} {r.code && <span class="t-mono code-tag">{r.code}</span>}</td>
-              <td>{r.constructorRef ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a> : (r.constructorName || '—')}</td>
-              <td class="right t-mono">{r.laps != null ? r.laps : '—'}</td>
-              <td class="t-mono">{r.time || r.status || '—'}</td>
+              <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || (r.position != null ? String(r.position) : '-')}</td>
+              <td class="right t-mono">{r.grid != null ? r.grid : '-'}</td>
+              <td>{r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : (r.driverName || '-')} {r.code && <span class="t-mono code-tag">{r.code}</span>}</td>
+              <td>{r.constructorRef ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a> : (r.constructorName || '-')}</td>
+              <td class="right t-mono">{r.laps != null ? r.laps : '-'}</td>
+              <td class="t-mono">{r.time || r.status || '-'}</td>
               <td class="right t-mono">{r.points}</td>
               <td class="t-mono">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
             </tr>
@@ -401,9 +401,9 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
               <td class={`right t-mono ${q.position === 1 ? 'is-win-cell' : ''}`}>{q.position}</td>
               <td>{q.driverRef ? <a href={`/drivers/${q.driverRef}/`}>{q.driverName}</a> : q.driverName}</td>
               <td>{q.constructorName}</td>
-              <td class="right t-mono">{q.q1 || '—'}</td>
-              <td class="right t-mono">{q.q2 || '—'}</td>
-              <td class="right t-mono">{q.q3 || '—'}</td>
+              <td class="right t-mono">{q.q1 || '-'}</td>
+              <td class="right t-mono">{q.q2 || '-'}</td>
+              <td class="right t-mono">{q.q3 || '-'}</td>
             </tr>
           ))}
         </tbody>
@@ -431,10 +431,10 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
           {race.sprint.map(s => (
             <tr>
               <td class={`right t-mono ${s.position === 1 ? 'is-win-cell' : ''}`}>{s.positionText || s.position}</td>
-              <td class="right t-mono">{s.grid != null ? s.grid : '—'}</td>
+              <td class="right t-mono">{s.grid != null ? s.grid : '-'}</td>
               <td>{s.driverRef ? <a href={`/drivers/${s.driverRef}/`}>{s.driverName}</a> : s.driverName}</td>
-              <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : '—'}</td>
-              <td class="t-mono">{s.time || s.status || '—'}</td>
+              <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : '-'}</td>
+              <td class="t-mono">{s.time || s.status || '-'}</td>
               <td class="right t-mono">{s.points}</td>
             </tr>
           ))}
@@ -445,20 +445,20 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
 )}
 ```
 
-This is the existing markup from `RacePage.astro` lines 136-251 (the `{raceSummary && ...}` block through the end of the Sprint table). The existing podium-tile inside the hero block stays in `RacePage.astro` (the shell) — it's part of the hero, not the body.
+This is the existing markup from `RacePage.astro` lines 136-251 (the `{raceSummary && ...}` block through the end of the Sprint table). The existing podium-tile inside the hero block stays in `RacePage.astro` (the shell) - it's part of the hero, not the body.
 
 - [ ] **Step 2: Replace the body section in RacePage.astro with a delegate**
 
 In `src/components/RacePage.astro`:
 
-1. Add an import at the top of the frontmatter (after `import { buildRaceSummary }` — which can stay for now, we'll remove it next step):
+1. Add an import at the top of the frontmatter (after `import { buildRaceSummary }` - which can stay for now, we'll remove it next step):
 
 ```astro
 import RaceResultsBody from './RaceResultsBody.astro';
 ```
 
-2. Delete the `buildRaceSummary` import line and the `const raceSummary = buildRaceSummary(race);` line — both moved into RaceResultsBody.
-3. Delete the `keyLinks` block and the `KeyLink` interface — also moved into RaceResultsBody.
+2. Delete the `buildRaceSummary` import line and the `const raceSummary = buildRaceSummary(race);` line - both moved into RaceResultsBody.
+3. Delete the `keyLinks` block and the `KeyLink` interface - also moved into RaceResultsBody.
 4. Replace the body markup (everything from `{raceSummary && (` through the closing `</>` of the Sprint section, i.e. the chunk we just moved) with a single line:
 
 ```astro
@@ -474,7 +474,7 @@ npm run dev
 ```
 
 Then open `http://localhost:4321/races/2024/1/` in a browser (or `preview_snapshot` it). Confirm:
-- Hero, podium tile, results table, qualifying table, key-links — all present.
+- Hero, podium tile, results table, qualifying table, key-links - all present.
 - Visual rendering matches what was there before the split.
 - No console warnings/errors.
 
@@ -491,7 +491,7 @@ git commit -m "refactor(race): extract RaceResultsBody from RacePage shell"
 
 ## Task 3: Branch RacePage shell on completed flag (placeholder body)
 
-We add the branch *before* the real `RaceUpcomingBody` exists, so we can verify upcoming JSONs route correctly. The placeholder body is a simple "Race weekend coming up" panel — replaced in Task 4.
+We add the branch *before* the real `RaceUpcomingBody` exists, so we can verify upcoming JSONs route correctly. The placeholder body is a simple "Race weekend coming up" panel - replaced in Task 4.
 
 **Files:**
 - Modify: `src/components/RacePage.astro`
@@ -510,11 +510,11 @@ with:
 {race.results.length > 0
   ? <RaceResultsBody race={race} />
   : <div class="panel" style="padding: 20px;">
-      <p>Race weekend coming up — full schedule and circuit info loading.</p>
+      <p>Race weekend coming up - full schedule and circuit info loading.</p>
     </div>}
 ```
 
-Also remove the existing `{podium.length > 0 && (...)}` block from inside the hero (lines 118-132 originally) — wrap it the same way:
+Also remove the existing `{podium.length > 0 && (...)}` block from inside the hero (lines 118-132 originally) - wrap it the same way:
 
 ```astro
 {race.results.length > 0 && podium.length > 0 && (
@@ -538,11 +538,11 @@ The `const podium = race.results.filter(...)` line at the top of the frontmatter
 
 - [ ] **Step 2: Verify a completed race still renders results**
 
-`http://localhost:4321/races/2024/1/` — should look unchanged from Task 2.
+`http://localhost:4321/races/2024/1/` - should look unchanged from Task 2.
 
 - [ ] **Step 3: Verify an upcoming race renders the placeholder**
 
-Pick an un-run 2026 round (e.g. round 8 or 12 — whichever is unrun in your local data). Visit `http://localhost:4321/races/2026/8/`.
+Pick an un-run 2026 round (e.g. round 8 or 12 - whichever is unrun in your local data). Visit `http://localhost:4321/races/2026/8/`.
 
 Expected: hero shows ROUND 8 · 2026 + race name + circuit link + date. Body shows the placeholder panel "Race weekend coming up...". Prev/next nav at the bottom links to neighbouring rounds.
 
@@ -557,7 +557,7 @@ git commit -m "feat(race): branch shell on completed flag, placeholder upcoming 
 
 ---
 
-## Task 4: Build RaceUpcomingBody — hero left-empty + sprint badge
+## Task 4: Build RaceUpcomingBody - hero left-empty + sprint badge
 
 This task only handles the hero's right side and the sprint-badge addition. The body content (next-session, last-podium, circuit panel) comes in Tasks 5–7.
 
@@ -582,7 +582,7 @@ In the existing `.race-hero-stats` div in `RacePage.astro` frontmatter/markup, a
 </div>
 ```
 
-Note: `race.sprint` for completed races is the array of sprint results (truthy when present). For upcoming races we set it to a literal boolean (`!!calEntry.sprint`). The `=== true` guard ensures the badge only appears for upcoming sprint weekends — completed sprint weekends already have the existing `<h2>Sprint</h2>` table, so showing the pill again would duplicate. (Optional: also show on completed if you want, but YAGNI for now.)
+Note: `race.sprint` for completed races is the array of sprint results (truthy when present). For upcoming races we set it to a literal boolean (`!!calEntry.sprint`). The `=== true` guard ensures the badge only appears for upcoming sprint weekends - completed sprint weekends already have the existing `<h2>Sprint</h2>` table, so showing the pill again would duplicate. (Optional: also show on completed if you want, but YAGNI for now.)
 
 - [ ] **Step 2: Add `.pill-sprint` style** (if not present)
 
@@ -607,7 +607,7 @@ If `.pill-sprint` already exists in `public/css/app.css` (search for `pill-sprin
 
 - [ ] **Step 3: Verify**
 
-Visit `http://localhost:4321/races/2026/5/` (Canadian GP — sprint weekend). Hero should show the ⚡ Sprint pill. A non-sprint round (e.g. `/races/2026/3/`) should not.
+Visit `http://localhost:4321/races/2026/5/` (Canadian GP - sprint weekend). Hero should show the ⚡ Sprint pill. A non-sprint round (e.g. `/races/2026/3/`) should not.
 
 - [ ] **Step 4: Commit**
 
@@ -618,7 +618,7 @@ git commit -m "feat(race): show sprint pill in hero for upcoming sprint weekends
 
 ---
 
-## Task 5: RaceUpcomingBody — next-session panel (server-rendered timetable, no countdown yet)
+## Task 5: RaceUpcomingBody - next-session panel (server-rendered timetable, no countdown yet)
 
 We build the static SSR timetable first. The countdown island lands in Task 6 to drive it.
 
@@ -680,7 +680,7 @@ const sessionRows = SESSION_KEYS_ORDER
 // Sort by ISO ascending (ensures FP1 → race even if bundle ordering ever drifts).
 sessionRows.sort((a, b) => a.iso.localeCompare(b.iso));
 
-// Build-time "next session" pick — first session with start >= now. Hydration
+// Build-time "next session" pick - first session with start >= now. Hydration
 // will re-pick client-side once the page loads, but this gives us a sensible
 // default for no-JS visitors.
 const buildNow = new Date().toISOString();
@@ -699,7 +699,7 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
         <span class="next-session-label" data-next-label>
           {initialNextKey ? SESSION_LABELS[initialNextKey] : 'Race weekend complete'}
         </span>
-        <span class="next-session-countdown" data-next-countdown>—</span>
+        <span class="next-session-countdown" data-next-countdown>-</span>
       </div>
       <div class="tz-toggle" role="tablist" aria-label="Time zone">
         <button type="button" class="tz-btn is-active" data-tz="track" role="tab" aria-selected="true">Track</button>
@@ -714,8 +714,8 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
               data-session-iso={row.iso}
             >
               <td class="session-label">{row.label}</td>
-              <td class="session-day t-mono" data-session-day>—</td>
-              <td class="session-time t-mono" data-session-time>—</td>
+              <td class="session-day t-mono" data-session-day>-</td>
+              <td class="session-time t-mono" data-session-time>-</td>
             </tr>
           ))}
         </tbody>
@@ -725,7 +725,7 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
 </div>
 ```
 
-The `<race-countdown>` element is a custom-element wrapper — the React island in Task 6 will mount onto it. Until then, the visible text shows `—` for day/time and the next-session label shows the SSR pick. Acceptable interim state.
+The `<race-countdown>` element is a custom-element wrapper - the React island in Task 6 will mount onto it. Until then, the visible text shows `-` for day/time and the next-session label shows the SSR pick. Acceptable interim state.
 
 - [ ] **Step 2: Wire RaceUpcomingBody into RacePage shell**
 
@@ -735,7 +735,7 @@ In `src/components/RacePage.astro`, replace the placeholder block from Task 3:
 {race.results.length > 0
   ? <RaceResultsBody race={race} />
   : <div class="panel" style="padding: 20px;">
-      <p>Race weekend coming up — full schedule and circuit info loading.</p>
+      <p>Race weekend coming up - full schedule and circuit info loading.</p>
     </div>}
 ```
 
@@ -847,7 +847,7 @@ In the existing `<style>` block at the bottom of `src/components/RacePage.astro`
 Visit `http://localhost:4321/races/2026/5/`. Expected:
 - Hero shows ROUND 5 · 2026 + Canadian GP + circuit link + date + ⚡ Sprint pill.
 - Below the hero: a panel with "Next session" eyebrow, the build-time-picked session label (likely "Race" if you're days away), table rows for FP1, SQ, Sprint, Q, Race.
-- Day/time columns show `—` (not yet populated by JS).
+- Day/time columns show `-` (not yet populated by JS).
 - Toggle pill shows TRACK selected.
 - One row has the `is-next` class (left accent + bolded text). On non-sprint rounds: FP1, FP2, FP3, Q, Race rows. On sprint rounds: FP1, SQ, Sprint, Q, Race rows.
 
@@ -860,7 +860,7 @@ git commit -m "feat(race): upcoming body skeleton with next-session timetable SS
 
 ---
 
-## Task 6: RaceCountdown island — countdown ticker, TRACK/YOU toggle, next-session re-eval
+## Task 6: RaceCountdown island - countdown ticker, TRACK/YOU toggle, next-session re-eval
 
 **Files:**
 - Create: `src/components/islands/RaceCountdown.jsx`
@@ -924,7 +924,7 @@ export default function RaceCountdown({ rootSelector = 'race-countdown' }) {
   const [now, setNow] = useState(() => Date.now());
   const rootRef = useRef(null);
 
-  // Find our wrapper element — only one per page, addressed by tag.
+  // Find our wrapper element - only one per page, addressed by tag.
   useEffect(() => {
     rootRef.current = document.querySelector(rootSelector);
   }, [rootSelector]);
@@ -1041,7 +1041,7 @@ Astro will hydrate the island in-place. The component returns `null` (nothing vi
 `http://localhost:4321/races/2026/5/`. Expected after hydration:
 - Day-of-week column populates (e.g. "Fri", "Sat", "Sun").
 - Time column populates (e.g. "16:30", "20:30", "20:00").
-- Next-session headline shows "Race in 6d 4h 22m" (or whichever next session — ticks every second).
+- Next-session headline shows "Race in 6d 4h 22m" (or whichever next session - ticks every second).
 - Toggle: click "You" → times shift to your local zone, day-of-week may change for sessions that cross midnight, `localStorage.f1-tz` becomes `'user'` (verify via devtools).
 - Refresh the page: the toggle remembers "you".
 - Open `/` in another tab, toggle to "Track": when you return to the race page, the storage event fires and the race-countdown table swaps to track time.
@@ -1052,12 +1052,12 @@ Use `preview_eval` to confirm `localStorage.getItem('f1-tz')` returns `"user"` a
 
 ```
 git add src/components/islands/RaceCountdown.jsx src/components/RaceUpcomingBody.astro
-git commit -m "feat(race): RaceCountdown island — live ticker + TRACK/YOU toggle"
+git commit -m "feat(race): RaceCountdown island - live ticker + TRACK/YOU toggle"
 ```
 
 ---
 
-## Task 7: RaceUpcomingBody — last-held-here panel
+## Task 7: RaceUpcomingBody - last-held-here panel
 
 **Files:**
 - Modify: `src/components/RaceUpcomingBody.astro`
@@ -1070,7 +1070,7 @@ In `src/components/RaceUpcomingBody.astro`, after the closing `</div>` of `.pane
 <div class="panel race-upcoming-history">
   {race.lastHeldHere && race.lastHeldHere.podium.length > 0 ? (
     <>
-      <div class="t-eyebrow">Last held here — {race.lastHeldHere.year}</div>
+      <div class="t-eyebrow">Last held here - {race.lastHeldHere.year}</div>
       <div class="race-upcoming-podium">
         {race.lastHeldHere.podium.map(p => (
           <div class={`podium-step podium-${p.position}`}>
@@ -1165,9 +1165,9 @@ In `src/components/RacePage.astro`'s `<style>` block (where the other upcoming s
 
 - [ ] **Step 3: Verify**
 
-`http://localhost:4321/races/2026/5/` (Canadian GP, has prior history). Right column shows "Last held here — 2025" with podium and link to last year's race.
+`http://localhost:4321/races/2026/5/` (Canadian GP, has prior history). Right column shows "Last held here - 2025" with podium and link to last year's race.
 
-`http://localhost:4321/races/2026/<some-round-with-no-prior>/` — if any 2026 round has `circuitFirstTime: true`, expect "First time at this venue". (For 2026 the only candidate is Madrid if it's on the calendar; otherwise you can stub `circuitFirstTime: true` in a JSON manually to test, then revert.)
+`http://localhost:4321/races/2026/<some-round-with-no-prior>/` - if any 2026 round has `circuitFirstTime: true`, expect "First time at this venue". (For 2026 the only candidate is Madrid if it's on the calendar; otherwise you can stub `circuitFirstTime: true` in a JSON manually to test, then revert.)
 
 - [ ] **Step 4: Commit**
 
@@ -1178,7 +1178,7 @@ git commit -m "feat(race): last-held-here panel with podium + first-time fallbac
 
 ---
 
-## Task 8: RaceUpcomingBody — circuit panel
+## Task 8: RaceUpcomingBody - circuit panel
 
 **Files:**
 - Modify: `src/components/RaceUpcomingBody.astro`
@@ -1251,11 +1251,11 @@ In `src/components/RacePage.astro`'s `<style>` block, append:
 }
 ```
 
-Note: the SVG show/hide rules above mirror what `CircuitPage.astro` does — light theme shows black-outline, dark theme shows white-outline. Verify the existing `CircuitPage.astro` patterns and adjust class names if they differ.
+Note: the SVG show/hide rules above mirror what `CircuitPage.astro` does - light theme shows black-outline, dark theme shows white-outline. Verify the existing `CircuitPage.astro` patterns and adjust class names if they differ.
 
 - [ ] **Step 3: Verify**
 
-`http://localhost:4321/races/2026/5/`. Below the two-column grid, the circuit panel shows the SVG map (black on light, white on dark — toggle theme to verify), country + flag + location, and a link to the full circuit page.
+`http://localhost:4321/races/2026/5/`. Below the two-column grid, the circuit panel shows the SVG map (black on light, white on dark - toggle theme to verify), country + flag + location, and a link to the full circuit page.
 
 If the SVG file doesn't exist (some `circuitRef`s diverge from SVG basenames, see `SVG_FOR_REF` in `CircuitPage.astro`), reuse that lookup map. Add the same `SVG_FOR_REF` import or duplicate the map in `RaceUpcomingBody.astro`.
 
@@ -1287,7 +1287,7 @@ let title: string;
 let description: string;
 
 if (completed) {
-  title = `${race.name} ${race.year}${winnerName ? ` — ${winnerName} won` : ''} | f1gures`;
+  title = `${race.name} ${race.year}${winnerName ? ` - ${winnerName} won` : ''} | f1gures`;
   description = `${race.name} ${race.year} race results from ${race.circuit?.name || 'the circuit'}. Full grid, finishing order, qualifying times${race.sprint ? ', sprint results' : ''}, points, and pit-stop pace.`;
 } else {
   // Build a "FP1, qualifying, sprint and the race"-style sentence from non-null sessions.
@@ -1299,12 +1299,12 @@ if (completed) {
     .map(([k]) => SESSION_NAMES[k])
     .filter(Boolean)
     .join(', ');
-  title = `${race.name} ${race.year} — Round ${race.round} schedule, sessions & circuit | f1gures`;
+  title = `${race.name} ${race.year} - Round ${race.round} schedule, sessions & circuit | f1gures`;
   description = `${race.name} ${race.year}, Round ${race.round}. Race weekend at ${race.circuit?.name || 'the circuit'}. Session times for ${sessionsList || 'the race weekend'}.`;
 }
 ```
 
-The existing `const completed = race.results.length > 0;` further down the file should be removed (it's been moved up here). Same for `const winner = ...`, `const second`, `const third` — they only matter for completed races; relocate them inside the `if (completed)` block of the JSON-LD construction below.
+The existing `const completed = race.results.length > 0;` further down the file should be removed (it's been moved up here). Same for `const winner = ...`, `const second`, `const third` - they only matter for completed races; relocate them inside the `if (completed)` block of the JSON-LD construction below.
 
 - [ ] **Step 2: Branch ogType**
 
@@ -1345,7 +1345,7 @@ if (race.circuit) {
 }
 
 if (completed && winnerRow?.driverName) {
-  // existing winner/performer logic — wrap inside the existing if-block
+  // existing winner/performer logic - wrap inside the existing if-block
   sportsEvent.winner = { '@type': 'Person', name: winnerRow.driverName };
   const performers = [winnerRow, secondRow, thirdRow].filter(p => p?.driverName).map(p => ({
     '@type': 'Person',
@@ -1366,7 +1366,7 @@ if (!completed) {
     if (!val || !val.date || !val.time) continue;
     subEvents.push({
       '@type': 'SportsEvent',
-      name: `${race.name} ${race.year} — ${SESSION_NAMES[key] || key}`,
+      name: `${race.name} ${race.year} - ${SESSION_NAMES[key] || key}`,
       startDate: `${val.date}T${val.time}`,
       sport: 'Formula 1',
     });
@@ -1375,7 +1375,7 @@ if (!completed) {
 }
 ```
 
-Replace `winner`/`second`/`third` references with locally-scoped `winnerRow`/`secondRow`/`thirdRow` derived inside the `if (completed)` guard. Adjust to your existing variable names — the key is that none of these should be referenced in the upcoming branch.
+Replace `winner`/`second`/`third` references with locally-scoped `winnerRow`/`secondRow`/`thirdRow` derived inside the `if (completed)` guard. Adjust to your existing variable names - the key is that none of these should be referenced in the upcoming branch.
 
 - [ ] **Step 4: Skip FAQPage on upcoming**
 
@@ -1384,12 +1384,12 @@ Locate the `if (completed) { ... faqEntities ... }` block. Confirm it's already 
 - [ ] **Step 5: Verify**
 
 Visit `http://localhost:4321/races/2026/5/` and view source. Expect:
-- `<title>Canadian GP 2026 — Round 5 schedule, sessions & circuit | f1gures</title>` (or similar — based on the actual race name).
+- `<title>Canadian GP 2026 - Round 5 schedule, sessions & circuit | f1gures</title>` (or similar - based on the actual race name).
 - `<meta property="og:type" content="event">`.
 - One `<script type="application/ld+json">` containing a `SportsEvent` with `eventStatus: "https://schema.org/EventScheduled"` and a `subEvent` array of 5–6 sessions.
 - No FAQPage entry.
 
-For `/races/2024/1/`: title still ends with " — Verstappen won | f1gures", JSON-LD has `winner` + `performer` + the FAQPage @graph entry.
+For `/races/2024/1/`: title still ends with " - Verstappen won | f1gures", JSON-LD has `winner` + `performer` + the FAQPage @graph entry.
 
 - [ ] **Step 6: Commit**
 
@@ -1440,15 +1440,15 @@ Same change in `src/components/CircuitPage.astro`, line ~46.
 
 - [ ] **Step 4: Verify**
 
-`http://localhost:4321/calendar/` — view source, search for `2026/8` (or any upcoming round number). The card link href should now point at `/races/2026/8/` directly (currently passes through `/race.html`).
+`http://localhost:4321/calendar/` - view source, search for `2026/8` (or any upcoming round number). The card link href should now point at `/races/2026/8/` directly (currently passes through `/race.html`).
 
-`http://localhost:4321/circuits/villeneuve/` — the upcoming-race entry in the circuit's race history should also link to `/races/2026/5/` directly.
+`http://localhost:4321/circuits/villeneuve/` - the upcoming-race entry in the circuit's race history should also link to `/races/2026/5/` directly.
 
 - [ ] **Step 5: Commit**
 
 ```
 git add src/lib/shared.jsx src/components/DriverPage.astro src/components/CircuitPage.astro
-git commit -m "chore: bump ARCHIVE_MAX_YEAR to 2026 — holding pages now exist"
+git commit -m "chore: bump ARCHIVE_MAX_YEAR to 2026 - holding pages now exist"
 ```
 
 ---
@@ -1492,7 +1492,7 @@ Replace with:
   const raceHref = urlFor({ name: 'race', year: F.seasonYear, round: race.round });
   return (
     <div key={race.round} className={`race-card race-card-link is-${race.status}`}>
-      <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} — round ${race.round}`}></a>
+      <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} - round ${race.round}`}></a>
       <div className="race-card-head">
         <div>
           <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>
@@ -1601,7 +1601,7 @@ git commit -m "feat(calendar): whole-card click target via stretched link"
 
 ---
 
-## Task 12: OG image — upcoming variant
+## Task 12: OG image - upcoming variant
 
 **Files:**
 - Modify: `scripts/og-templates/og-race.mjs`
@@ -1660,7 +1660,7 @@ const bottom = {
 npm run build:og
 ```
 
-The generator iterates `_races-index.json`. Look at the console output for `[og]` lines — should show the new upcoming entries being skipped (PNG already exists from earlier runs) or freshly generated.
+The generator iterates `_races-index.json`. Look at the console output for `[og]` lines - should show the new upcoming entries being skipped (PNG already exists from earlier runs) or freshly generated.
 
 To force-regenerate one: temporarily delete `public/images/og/races/2026-5.png`, then run `npm run build:og`. Open the regenerated PNG and confirm:
 - Top: "2026 · ROUND 5" + "Canadian Grand Prix" + "🇨🇦 Circuit Gilles Villeneuve".
@@ -1671,7 +1671,7 @@ To force-regenerate one: temporarily delete `public/images/og/races/2026-5.png`,
 
 ```
 git add scripts/og-templates/og-race.mjs
-git commit -m "feat(og): upcoming-race OG variant — race-weekend + date"
+git commit -m "feat(og): upcoming-race OG variant - race-weekend + date"
 ```
 
 ---
@@ -1741,7 +1741,7 @@ The first run after this change will see existing PNGs without sidecars and rege
 npm run build:og
 ```
 
-Expected on first run after the change: every existing race PNG regenerates (could take several minutes — be patient). Console shows `[og]` count: high.
+Expected on first run after the change: every existing race PNG regenerates (could take several minutes - be patient). Console shows `[og]` count: high.
 
 ```
 ls public/images/og/races/2026-5.png.state
@@ -1804,7 +1804,7 @@ Visit and snapshot:
 | `/races/2026/12/` (sprint round) | Hero shows ⚡ Sprint pill; timetable shows SQ + Sprint rows           |
 | `/circuits/villeneuve/`          | Upcoming Canadian GP entry in race history links to `/races/2026/5/` |
 
-For each holding page: open devtools, set `localStorage.f1-tz = 'user'`, refresh — confirm timetable converts to local zone. Set back to `'track'`, refresh, confirm reverts.
+For each holding page: open devtools, set `localStorage.f1-tz = 'user'`, refresh - confirm timetable converts to local zone. Set back to `'track'`, refresh, confirm reverts.
 
 Confirm view-source on `/races/2026/5/`:
 - Title contains "schedule, sessions & circuit"
@@ -1854,10 +1854,10 @@ Coverage check against spec sections:
 - §SEO (title/desc/og/jsonld): Task 9. OG cache invalidation: Task 13. OG upcoming variant: Task 12.
 - §Edge cases: Task 1 covers `lastHeldHere` lookup, `circuitFirstTime`, no-session-data skip, prev/next chaining; Task 6 covers SSR-staleness re-eval on hydration.
 
-Type/name consistency: `circuit.circuitId` vs `circuit.circuitRef` — the bundle calendar has `circuitId` (the ref-like slug), Ergast circuits have `circuitRef`. The build-archive bundle code already aliases (`circuitId: circuitId` in raceDoc). Reads in templates use `race.circuit.circuitId || race.circuit.circuitRef` defensively.
+Type/name consistency: `circuit.circuitId` vs `circuit.circuitRef` - the bundle calendar has `circuitId` (the ref-like slug), Ergast circuits have `circuitRef`. The build-archive bundle code already aliases (`circuitId: circuitId` in raceDoc). Reads in templates use `race.circuit.circuitId || race.circuit.circuitRef` defensively.
 
 The `sprint` field on `race` differs by mode: array on completed, boolean on upcoming. Template guards (`race.sprint === true`) prevent confusion.
 
 `session.time` strings in bundles end with `'Z'`; ISO concatenation (`${date}T${time}`) is valid as-is.
 
-The `ARCHIVE_MAX_YEAR` bump should be the last "user-facing" change (Task 10) before calendar-card uniformity (Task 11), so the calendar card can rely on `urlFor` returning the prerendered path. If you reorder Tasks 10 and 11, calendar cards link to `/races/2026/N/` before `urlFor` returns it directly — they go through `/race.html` first, which works (it consults `_races-index.json`) but is one redirect hop slower. Prefer the order as written.
+The `ARCHIVE_MAX_YEAR` bump should be the last "user-facing" change (Task 10) before calendar-card uniformity (Task 11), so the calendar card can rely on `urlFor` returning the prerendered path. If you reorder Tasks 10 and 11, calendar cards link to `/races/2026/N/` before `urlFor` returns it directly - they go through `/race.html` first, which works (it consults `_races-index.json`) but is one redirect hop slower. Prefer the order as written.

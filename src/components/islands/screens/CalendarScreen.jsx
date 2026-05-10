@@ -1,4 +1,4 @@
-// Calendar — full season grid. Ported from js/screens/calendar.jsx.
+// Calendar - full season grid. Ported from js/screens/calendar.jsx.
 // Reads `data` prop instead of window.F1_DATA.
 
 import { urlFor, useIsMobile, fmtDateLong, SprintBadge } from '../../../lib/shared.jsx';
@@ -28,7 +28,7 @@ export default function CalendarScreen({ data }) {
           const raceHref = urlFor({ name: 'race', year: F.seasonYear, round: race.round });
           return (
             <div key={race.round} className={`race-card race-card-link is-${race.status}`}>
-              <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} — round ${race.round}`}></a>
+              <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} - round ${race.round}`}></a>
               <div className="race-card-head">
                 <div>
                   <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>

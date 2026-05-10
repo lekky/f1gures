@@ -51,7 +51,7 @@ const sessionRows = SESSION_KEYS_ORDER
 // Sort by ISO ascending (ensures FP1 → race even if bundle ordering ever drifts).
 sessionRows.sort((a, b) => a.iso.localeCompare(b.iso));
 
-// Build-time "next session" pick — first session with start >= now. Hydration
+// Build-time "next session" pick - first session with start >= now. Hydration
 // will re-pick client-side once the page loads, but this gives us a sensible
 // default for no-JS visitors.
 const buildNow = new Date().toISOString();
@@ -70,7 +70,7 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
         <span class="next-session-label" data-next-label>
           {initialNextKey ? SESSION_LABELS[initialNextKey] : 'Race weekend complete'}
         </span>
-        <span class="next-session-countdown" data-next-countdown>—</span>
+        <span class="next-session-countdown" data-next-countdown>-</span>
       </div>
       <div class="tz-toggle" role="tablist" aria-label="Time zone">
         <button type="button" class="tz-btn is-active" data-tz="track" role="tab" aria-selected="true">Track</button>
@@ -85,8 +85,8 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
               data-session-iso={row.iso}
             >
               <td class="session-label">{row.label}</td>
-              <td class="session-day t-mono" data-session-day>—</td>
-              <td class="session-time t-mono" data-session-time>—</td>
+              <td class="session-day t-mono" data-session-day>-</td>
+              <td class="session-time t-mono" data-session-time>-</td>
             </tr>
           ))}
         </tbody>
@@ -97,7 +97,7 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
   <div class="panel race-upcoming-history">
     {race.lastHeldHere && race.lastHeldHere.podium.length > 0 ? (
       <>
-        <div class="t-eyebrow">Last held here — {race.lastHeldHere.year}</div>
+        <div class="t-eyebrow">Last held here - {race.lastHeldHere.year}</div>
         <div class="race-upcoming-podium">
           {race.lastHeldHere.podium.map(p => (
             <div class={`podium-step podium-${p.position}`}>

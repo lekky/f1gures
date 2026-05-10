@@ -1,4 +1,4 @@
-// CalendarIsland — thin wrapper. SSR/initial render uses the
+// CalendarIsland - thin wrapper. SSR/initial render uses the
 // build-time-loaded current season (public/data/<year>.json via
 // scripts/sync-current-season.mjs); on hydration useYearAwareData swaps
 // in /data/<year>.json if the visitor picked a different year.

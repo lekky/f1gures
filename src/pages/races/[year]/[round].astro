@@ -21,7 +21,7 @@ let title: string;
 let description: string;
 
 if (completed) {
-  title = `${race.name} ${race.year}${winnerName ? ` — ${winnerName} won` : ''} | f1gures`;
+  title = `${race.name} ${race.year}${winnerName ? ` - ${winnerName} won` : ''} | f1gures`;
   description = `${race.name} ${race.year} race results from ${race.circuit?.name || 'the circuit'}. Full grid, finishing order, qualifying times${race.sprint ? ', sprint results' : ''}, points, and pit-stop pace.`;
 } else {
   // Build a "FP1, qualifying, sprint and the race"-style sentence from non-null sessions.
@@ -33,7 +33,7 @@ if (completed) {
     .map(([k]: [string, any]) => SESSION_NAMES[k])
     .filter(Boolean)
     .join(', ');
-  title = `${race.name} ${race.year} — Round ${race.round} schedule, sessions & circuit | f1gures`;
+  title = `${race.name} ${race.year} - Round ${race.round} schedule, sessions & circuit | f1gures`;
   description = `${race.name} ${race.year}, Round ${race.round}. Race weekend at ${race.circuit?.name || 'the circuit'}. Session times for ${sessionsList || 'the race weekend'}.`;
 }
 
@@ -89,7 +89,7 @@ if (!completed) {
     if (!val || !(val as any).date || !(val as any).time) continue;
     subEvents.push({
       '@type': 'SportsEvent',
-      name: `${race.name} ${race.year} — ${SESSION_NAMES[key] || key}`,
+      name: `${race.name} ${race.year} - ${SESSION_NAMES[key] || key}`,
       startDate: `${(val as any).date}T${(val as any).time}`,
       sport: 'Formula 1',
     });

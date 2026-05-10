@@ -1,4 +1,4 @@
-// Year picker — React island for the season dropdown.
+// Year picker - React island for the season dropdown.
 // Selecting a year writes localStorage and navigates to home. The Astro page's
 // data-loading layer reads ?year= or localStorage.f1-year to decide which season
 // JSON to load.

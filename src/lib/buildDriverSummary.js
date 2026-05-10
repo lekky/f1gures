@@ -37,7 +37,7 @@ export function buildDriverSummary(driver, currentYear) {
   }
   stats += `across ${driver.career.races} races, taking ${driver.career.wins} wins, ${driver.career.podiums} podiums and ${driver.career.poles} pole positions`;
   // For drivers with 1-4 teams, list them all. For 5+, list the first 3 chronologically
-  // then "and N other teams" — keeps the sentence readable without losing all team info.
+  // then "and N other teams" - keeps the sentence readable without losing all team info.
   if (teams.length > 0 && teams.length <= 4) {
     stats += ` for ${teams.join(', ')}`;
   } else if (teams.length >= 5) {

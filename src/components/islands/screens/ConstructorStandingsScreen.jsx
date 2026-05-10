@@ -1,4 +1,4 @@
-// Constructor Standings — table + chart. Ported from
+// Constructor Standings - table + chart. Ported from
 // js/screens/standings.jsx ConstructorStandingsScreen.
 
 import { useMemo } from 'react';

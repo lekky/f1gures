@@ -104,11 +104,11 @@ const PROFILE_FOR_REF: Record<string, string> = {
 };
 const profileKey = PROFILE_FOR_REF[circuit.circuitRef] || circuit.circuitRef;
 const profile = (circuitProfiles as any)[profileKey] || null;
-// Next-race lookup uses the 2026 speculative calendar from buildFallback —
+// Next-race lookup uses the 2026 speculative calendar from buildFallback -
 // that's where the "what's coming up" fallback grid lives semantically.
 const nextRace = (buildFallback().calendar as any[]).find(r => r.circuit === profileKey) || null;
 
-// Weather pill icons — match the legacy mapping.
+// Weather pill icons - match the legacy mapping.
 const WEATHER_ICON: Record<string, string> = {
   'Changeable':     '🌦',
   'Coastal':        '🌊',
@@ -134,12 +134,12 @@ const stats: StatRow[] = profile ? ([
   profile.corners     && { lbl: 'Corners',          val: profile.corners,                    type: 'val' as const },
   profile.longestStraight && { lbl: 'Longest Straight', val: `${profile.longestStraight} m`, type: 'val' as const },
   profile.drsZones    && { lbl: 'DRS Zones',        val: profile.drsZones,                   type: 'val' as const },
-  profile.type && profile.type !== '—' && { lbl: 'Track Type', val: profile.type,            type: 'val' as const },
+  profile.type && profile.type !== '-' && { lbl: 'Track Type', val: profile.type,            type: 'val' as const },
   RATING_FILL[profile.tyreDeg]    && { lbl: 'Tyre Degradation', val: profile.tyreDeg,        type: 'rating' as const },
   RATING_FILL[profile.overtaking] && { lbl: 'Overtaking',       val: profile.overtaking,     type: 'rating' as const },
 ].filter(Boolean) as StatRow[]) : [];
 
-const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '—' ? profile.lapRecord : null;
+const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '-' ? profile.lapRecord : null;
 ---
 
 <div class="page">
@@ -156,7 +156,7 @@ const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '
       <div class="circuit-hero-pills">
         {circuit.firstYear ? <span class="pill">First F1: {circuit.firstYear}</span> : null}
         {circuit.raceCount ? <span class="pill">{circuit.raceCount} races held</span> : null}
-        {profile && profile.weather && profile.weather !== '—' && (
+        {profile && profile.weather && profile.weather !== '-' && (
           <span class="pill pill-weather">
             {WEATHER_ICON[profile.weather] && <span style="margin-right: 6px">{WEATHER_ICON[profile.weather]}</span>}
             {profile.weather}
@@ -278,12 +278,12 @@ const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '
                   <td><a href={raceHref}>{r.name}</a></td>
                   <td>{r.winnerRef && r.winnerName ? (
                     <a href={`/drivers/${r.winnerRef}/`} class="inline-link">{r.winnerName}</a>
-                  ) : (r.winnerName || '—')}</td>
-                  <td>{r.winnerTeam || '—'}</td>
+                  ) : (r.winnerName || '-')}</td>
+                  <td>{r.winnerTeam || '-'}</td>
                   <td>{r.poleRef && r.poleName ? (
                     <a href={`/drivers/${r.poleRef}/`} class="inline-link">{r.poleName}</a>
-                  ) : (r.poleName || '—')}</td>
-                  <td class="right t-mono">{r.fastestLapTime || '—'}</td>
+                  ) : (r.poleName || '-')}</td>
+                  <td class="right t-mono">{r.fastestLapTime || '-'}</td>
                 </tr>
               );
             })}
