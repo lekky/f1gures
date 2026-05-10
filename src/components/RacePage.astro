@@ -64,7 +64,7 @@ interface Props {
       points: number;
       time: string | null;
       status: string | null;
-    }> | null;
+    }> | boolean | null;
     prev: { year: number; round: number; name: string } | null;
     next: { year: number; round: number; name: string } | null;
   };
@@ -94,6 +94,8 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
           )}
           {race.circuit && race.date && <span class="sep">·</span>}
           {race.date && <span class="t-mono">{race.date}</span>}
+          {race.sprint === true && <span class="sep">·</span>}
+          {race.sprint === true && <span class="pill pill-sprint">⚡ Sprint</span>}
         </div>
       </div>
       {race.results.length > 0 && podium.length > 0 && (
