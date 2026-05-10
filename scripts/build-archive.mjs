@@ -910,6 +910,9 @@ if (allBundleRounds.length > 0) {
 // completed race at the same circuitRef (any year), circuitFirstTime is true
 // when no completed race ever exists at this circuitRef.
 
+// IMPORTANT: build completedByCircuit BEFORE the upcoming loop appends to
+// racesIndex, otherwise lastHeldHere could resolve to a not-yet-run race.
+
 // Index completed races by circuitRef so we can compute lastHeldHere quickly.
 // racesIndex now contains both Ergast (1950–2024) and post-2024 completed
 // bundle rounds — that's everything we need.
@@ -982,9 +985,12 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
     }
   }
 
-  // prev/next: walk allBundleCalendars in order; pair with the immediate neighbours.
-  // For the first upcoming round, prev points at the most recent completed (whichever
-  // year). For the last, next is null.
+  // prev/next: pair with immediate neighbours in allBundleCalendars (which spans
+  // completed AND upcoming rounds across all bundle years, in chronological order).
+  // For the first upcoming round, prevEntry is automatically the most recently
+  // completed round. For the last, nextEntry is null. The boundary patch below
+  // fixes the symmetric direction (completed → upcoming) since the completed
+  // pass wrote its `next` based on the completed-only list.
   const prevEntry = i > 0 ? allBundleCalendars[i - 1] : null;
   const nextEntry = i < allBundleCalendars.length - 1 ? allBundleCalendars[i + 1] : null;
   const prev = prevEntry
@@ -993,6 +999,22 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
   const next = nextEntry
     ? { year: nextEntry.year, round: nextEntry.round, name: nextEntry.calEntry.name }
     : null;
+
+  // Boundary patch: when this upcoming round's prev is a completed round, that
+  // completed round's JSON was written earlier with next: null (or pointing at
+  // the next *completed* round, which is wrong). Update its next field to point
+  // at this upcoming round so prev/next nav is symmetric across the boundary.
+  if (prevEntry && prevEntry.bundle.results && prevEntry.bundle.results[String(prevEntry.round)]) {
+    const prevPath = join(OUT, 'races', String(prevEntry.year), `${prevEntry.round}.json`);
+    if (existsSync(prevPath)) {
+      const prevDoc = JSON.parse(readFileSync(prevPath, 'utf8'));
+      const desiredNext = { year: bYear, round, name: calEntry.name };
+      if (!prevDoc.next || prevDoc.next.year !== bYear || prevDoc.next.round !== round) {
+        prevDoc.next = desiredNext;
+        writeFileSync(prevPath, JSON.stringify(prevDoc));
+      }
+    }
+  }
 
   const raceDoc = {
     raceId: `${bYear}_${round}`,
