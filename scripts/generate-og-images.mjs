@@ -84,12 +84,30 @@ async function generateRaceOgs() {
     await Promise.all(batch.map(async (entry) => {
       try {
         const out = path.join(outDir, `${entry.year}-${entry.round}.png`);
-        if (!FORCE && fs.existsSync(out)) { skipped++; return; }
+        const stateFile = `${out}.state`;
+        const wantState = entry.completed === false ? 'upcoming' : 'completed';
+
+        if (!FORCE && fs.existsSync(out)) {
+          if (fs.existsSync(stateFile)) {
+            const have = fs.readFileSync(stateFile, 'utf8').trim();
+            if (have === wantState) { skipped++; return; }
+            // state mismatch — fall through to regenerate
+          } else {
+            // Backfill: PNG exists but no sidecar yet (pre-PR images). The cached
+            // PNG was generated against the JSON's current shape; write the sidecar
+            // to match wantState without regenerating. Future runs hit the cache.
+            fs.writeFileSync(stateFile, wantState);
+            skipped++;
+            return;
+          }
+        }
+
         const racePath = path.join(ARCHIVE, 'races', String(entry.year), `${entry.round}.json`);
         if (!fs.existsSync(racePath)) return;
         const race = JSON.parse(fs.readFileSync(racePath, 'utf8'));
         const png = await renderPng(renderRaceOg(race));
         fs.writeFileSync(out, png);
+        fs.writeFileSync(stateFile, wantState);
         count++;
       } catch (err) {
         failed++;
