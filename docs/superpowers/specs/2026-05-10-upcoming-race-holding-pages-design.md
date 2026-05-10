@@ -174,7 +174,7 @@ In `src/components/islands/screens/CalendarScreen.jsx`:
 - Title (upcoming): `"Canadian GP 2026 — Round 5 schedule, sessions & circuit | f1gures"`
 - Description (upcoming): `"Canadian Grand Prix 2026, Round 5 of 22. Race weekend at Circuit Gilles Villeneuve, 22–24 May. Session times for FP1, qualifying, sprint and the race."` Drop the word "sprint" if not a sprint weekend; only mention sessions whose entries are non-null.
 - Canonical unchanged (`/races/2026/5/`).
-- `ogType: "event"` (was `"article"`); add `event:start_time` and `event:end_time` meta tags computed from race weekend window (FP1 start → race start).
+- `ogType: "event"` (was `"article"`). The detailed schedule lives in JSON-LD `subEvent[]` (below) — that's the modern surface. OG `event:*` meta tags are largely obsolete and skipped.
 
 ### JSON-LD
 
