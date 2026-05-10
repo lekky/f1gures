@@ -838,3 +838,34 @@ html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
 @media (max-width: 720px) {
   .team-drivers-list { grid-template-columns: 1fr; }
 }
+
+.race-card-link {
+  position: relative;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.race-card-link:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.race-card-stretch {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: transparent;
+  border: 0;
+  font-size: 0;
+  color: transparent;
+  text-decoration: none;
+}
+/* keep the winner inline-link clickable and on top of the stretch overlay */
+.race-card-overlay-link {
+  position: relative;
+  z-index: 1;
+}
+.race-card-link .race-mini-row,
+.race-card-link .race-card-head,
+.race-card-link > div {
+  position: relative;
+  z-index: 1;
+}
