@@ -1,0 +1,42 @@
+---
+// Renders a country flag SVG from public/images/flags/ (lipis flag-icons,
+// 4:3). Prefer `cc` (ISO 3166-1 alpha-2). If only the regional-indicator
+// emoji is available, pass it as `flag` and we'll decode the cc from it.
+// Falls back to the emoji when no cc can be resolved (defunct nations,
+// dirty data).
+interface Props {
+  cc?: string | null;
+  flag?: string | null;
+  name?: string | null;
+  class?: string;
+  style?: string;
+}
+
+const { cc, flag, name, class: className = '', style } = Astro.props;
+
+function ccFromFlag(s: string | null | undefined): string | null {
+  if (!s || typeof s !== 'string') return null;
+  const cps = [...s].map(c => c.codePointAt(0)!);
+  if (cps.length !== 2) return null;
+  if (cps[0] < 0x1F1E6 || cps[0] > 0x1F1FF) return null;
+  if (cps[1] < 0x1F1E6 || cps[1] > 0x1F1FF) return null;
+  return (
+    String.fromCharCode(cps[0] - 0x1F1E6 + 0x61) +
+    String.fromCharCode(cps[1] - 0x1F1E6 + 0x61)
+  );
+}
+
+const code = ((cc || ccFromFlag(flag) || '') + '').toLowerCase();
+---
+{code ? (
+  <img
+    class={`flag-img ${className}`.trim()}
+    style={style}
+    src={`/images/flags/${code}.svg`}
+    alt={name || code.toUpperCase()}
+    loading="lazy"
+    decoding="async"
+  />
+) : flag ? (
+  <span class={className} style={style}>{flag}</span>
+) : null}

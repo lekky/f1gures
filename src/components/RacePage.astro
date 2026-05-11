@@ -72,6 +72,7 @@ interface Props {
 
 import RaceResultsBody from './RaceResultsBody.astro';
 import RaceUpcomingBody from './RaceUpcomingBody.astro';
+import Flag from './Flag.astro';
 
 const { race } = Astro.props;
 const podium = race.results.filter(r => r.position != null && r.position <= 3);
@@ -90,7 +91,7 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
         <div class="race-hero-stats">
           {race.circuit && (
             <a class="t-mono race-hero-circuit-link" href={`/circuits/${race.circuit.circuitRef}/`}>
-              {race.circuit.flag} {race.circuit.name}
+              <Flag cc={race.circuit.country} flag={race.circuit.flag} name={race.circuit.countryName} /> {race.circuit.name}
             </a>
           )}
           {race.circuit && race.date && <span class="sep">·</span>}

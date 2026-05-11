@@ -1,7 +1,7 @@
 // Circuits index - grid of all calendar circuits. Ported from
 // js/screens/circuits.jsx (CircuitsIndexScreen only - detail screen is PR 2).
 
-import { urlFor, useIsMobile } from '../../../lib/shared.jsx';
+import { urlFor, useIsMobile, Flag } from '../../../lib/shared.jsx';
 
 export default function CircuitsIndexScreen({ data }) {
   const F = data;
@@ -24,7 +24,7 @@ export default function CircuitsIndexScreen({ data }) {
                href={urlFor({ name: 'circuit', id: race.circuit })}>
               <div className="race-card-head">
                 <div className="race-round">RD {String(race.round).padStart(2,'0')}{c.type && c.type !== '-' ? ` · ${c.type.toUpperCase()}` : ''}</div>
-                <span style={{ fontSize: 18 }}>{race.flag}</span>
+                <span style={{ fontSize: 18, lineHeight: 1 }}><Flag cc={race.country} flag={race.flag} /></span>
               </div>
               <div>
                 <div className="race-name">{c.name.replace('Circuit', '').replace('Autodromo','').trim()}</div>

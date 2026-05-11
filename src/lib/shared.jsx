@@ -158,6 +158,41 @@ export function fmtDateLong(iso) {
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+// ─── Flag rendering ───────────────────────────────────────────
+// Renders an ISO 3166-1 alpha-2 flag as an SVG from public/images/flags/.
+// Lipis flag-icons set, 4:3 ratio. Use this everywhere we previously
+// rendered the regional-indicator emoji `flag` field — Windows doesn't
+// render those as flags (shows "GB" letters), and the image is consistent
+// across platforms. `cc` is preferred; falls back to decoding `flag`.
+export function ccFromFlag(flag) {
+  if (!flag || typeof flag !== 'string') return null;
+  const cps = [...flag].map(c => c.codePointAt(0));
+  if (cps.length !== 2) return null;
+  if (cps[0] < 0x1F1E6 || cps[0] > 0x1F1FF) return null;
+  if (cps[1] < 0x1F1E6 || cps[1] > 0x1F1FF) return null;
+  return (
+    String.fromCharCode(cps[0] - 0x1F1E6 + 0x61) +
+    String.fromCharCode(cps[1] - 0x1F1E6 + 0x61)
+  );
+}
+
+export function Flag({ cc, flag, name, className = '', style }) {
+  const code = ((cc || ccFromFlag(flag) || '') + '').toLowerCase();
+  if (!code) {
+    return flag ? <span className={className} style={style}>{flag}</span> : null;
+  }
+  return (
+    <img
+      className={`flag-img ${className}`.trim()}
+      style={style}
+      src={`/images/flags/${code}.svg`}
+      alt={name || code.toUpperCase()}
+      loading="lazy"
+      decoding="async"
+    />
+  );
+}
+
 // ─── Reusable building blocks ─────────────────────────────────
 export function Panel({ title, action, children, tight, style }) {
   return (
@@ -202,7 +237,7 @@ export function DriverCell({ data, driver, showCode = true }) {
   const team = data.teamById(driver.team) || { color: '#888888', short: '-', name: '-' };
   return (
     <div className="driver-cell" style={{ '--team-color': team.color }}>
-      <span className="driver-flag">{driver.flag}</span>
+      <span className="driver-flag"><Flag cc={driver.country} flag={driver.flag} name={driver.nationality} /></span>
       <span className="driver-name">
         <span className="driver-firstlast">
           <span className="first">{driver.first}</span>

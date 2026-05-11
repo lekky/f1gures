@@ -40,6 +40,7 @@ import { resolve } from 'node:path';
 import { circuitProfiles } from '../data/circuitProfiles.js';
 import { buildFallback } from '../data/buildFallback.js';
 import { fmtDateLong } from '../lib/shared.jsx';
+import Flag from './Flag.astro';
 
 // /races/<y>/<r>/ pages exist for Ergast (1950-2024) + 2025 full bundle +
 // 2026 completed AND upcoming rounds (via holding pages). build-archive.mjs
@@ -151,7 +152,7 @@ const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '
       <div class="t-eyebrow" style="color: var(--accent); margin-bottom: 6px">Circuit Profile</div>
       <h1 class="page-title circuit-hero-name">{circuit.name}</h1>
       <div class="circuit-hero-loc">
-        <span class="circuit-hero-cc t-mono">{circuit.country}</span>
+        <Flag cc={circuit.country} flag={circuit.flag} name={circuit.countryName} class="circuit-hero-flag" />
         <span class="t-mono">{circuit.location.toUpperCase()}, {circuit.countryName.toUpperCase()}</span>
       </div>
       <div class="circuit-hero-pills">
@@ -314,11 +315,7 @@ const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '
   }
 
   .circuit-hero-loc { display: flex; align-items: center; gap: 10px; color: var(--fg-2); margin-bottom: 14px; font-size: 13px; }
-  .circuit-hero-cc {
-    display: inline-block; padding: 2px 7px; font-size: 11px; font-weight: 600;
-    color: var(--fg-2); background: var(--bg-2); border: 1px solid var(--line-1);
-    letter-spacing: 0.06em;
-  }
+  .circuit-hero-flag { height: 18px; width: auto; vertical-align: middle; }
 
   .circuit-hero-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
   .pill-weather { color: var(--accent); border-color: var(--accent); }

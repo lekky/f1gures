@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import {
   SectionHead, SprintBadge, Countdown, useIsMobile, urlFor, navigate, fmtDateLong,
-  circuitTz, zoneShort,
+  circuitTz, zoneShort, Flag,
 } from '../../../lib/shared.jsx';
 
 const SESSION_LABELS = {
@@ -83,7 +83,7 @@ function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
               <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 30, lineHeight: 1, color: 'var(--fg-3)' }}>{driver.num}</div>
               <div>
                 <div style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, textTransform: 'uppercase' }}>{driver.first} {driver.last}</div>
-                <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 2 }}>{driver.flag} {D.teamById(driver.team).name}</div>
+                <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 2 }}><Flag cc={driver.country} flag={driver.flag} /> {D.teamById(driver.team).name}</div>
               </div>
             </>
           )}
@@ -169,7 +169,7 @@ function NextRacePanel({ data, cal, next, mob }) {
             {next.name.replace(' Grand Prix', '')}<span style={{ color: 'var(--accent)' }}>.</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg-2)', marginBottom: 16 }}>
-            <span style={{ fontSize: 20 }}>{next.flag}</span>
+            <span style={{ fontSize: 20, lineHeight: 1 }}><Flag cc={next.country} flag={next.flag} /></span>
             <span className="t-mono" style={{ fontSize: 13 }}>{D.circuits[next.circuit] && D.circuits[next.circuit].name.toUpperCase()}</span>
             <span style={{ color: 'var(--fg-4)' }}>·</span>
             <span className="t-mono" style={{ fontSize: 13 }}>{fmtDateLong(next.date)}</span>
@@ -286,7 +286,7 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
                 {champ.driver.last}<span style={{ color: 'var(--accent)' }}>.</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg-2)', marginBottom: 14, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 20 }}>{champ.driver.flag}</span>
+                <span style={{ fontSize: 20, lineHeight: 1 }}><Flag cc={champ.driver.country} flag={champ.driver.flag} /></span>
                 <span className="t-mono" style={{ fontSize: 13 }}>{champTeam && champTeam.name.toUpperCase()}</span>
                 <span style={{ color: 'var(--fg-4)' }}>·</span>
                 <span className="t-mono" style={{ fontSize: 13 }}>{champ.points} PTS</span>
@@ -409,7 +409,7 @@ export default function HomeScreen({ data }) {
             <div className={`pos pos-${row.position}`}>{row.position}</div>
             <div className="meta">
               <div className="name">{row.driver.last}</div>
-              <div className="team">{D.teamById(row.driver.team).short} · {row.driver.flag}</div>
+              <div className="team">{D.teamById(row.driver.team).short} · <Flag cc={row.driver.country} flag={row.driver.flag} /></div>
             </div>
             <div className="pts">
               <div className="pts-num">{row.points}</div>
