@@ -80,7 +80,7 @@ function SummaryWidget({ data, kicker, driver, team, big, sub, href, mob }) {
           <DriverSilhouette data={D} driver={driver} height={mob ? 70 : 90} />
         </div>
       )}
-      <div className="panel-body" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="panel-body" style={{ position: 'relative', zIndex: 1, paddingRight: driver ? (mob ? 78 : 102) : undefined }}>
         <div className="t-eyebrow" style={{ color: 'var(--fg-3)', marginBottom: 8 }}>{kicker}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           {driver && (
