@@ -1569,7 +1569,11 @@ mkdirSync(join(OUT, 'teams'), { recursive: true });
 //   3. points descending (final stat tiebreaker)
 //   4. year ascending (earliest of ties — "they did it first")
 function pickBestSeason(perSeason) {
-  const eligible = perSeason.filter(s => s.races > 0);
+  const currentYear = new Date().getFullYear();
+  // Exclude the current (in-progress) season — small sample sizes early in
+  // the year would otherwise let a 1-or-2-win streak masquerade as the
+  // team's all-time peak via win-rate.
+  const eligible = perSeason.filter(s => s.races > 0 && s.year < currentYear);
   if (!eligible.length) return null;
   const ranked = [...eligible].sort((a, b) => {
     const pa = a.position == null ? Infinity : a.position;
@@ -1767,3 +1771,223 @@ for (const c of constructors) {
 teamsIndex.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 writeFileSync(join(OUT, '_teams-index.json'), JSON.stringify(teamsIndex));
 console.log(`[archive] wrote ${teamsWritten} team detail bundles → ${join(OUT, 'teams')}`);
+
+// ─── Merge post-Ergast bundle seasons into team docs ─────────────────
+// Append bundle-year perSeason rows to existing team docs and synthesize
+// new docs for teams that don't exist in Ergast yet (Audi, Cadillac, etc).
+// Then refresh career totals + bestSeason and update the teams index.
+
+const teamDocCache = new Map();
+const newlyCreatedTeams = new Set();
+
+function loadTeamDoc(constructorRef, bundleTeam) {
+  if (teamDocCache.has(constructorRef)) return teamDocCache.get(constructorRef);
+  const p = join(OUT, 'teams', `${constructorRef}.json`);
+  if (existsSync(p)) {
+    const doc = JSON.parse(readFileSync(p, 'utf8'));
+    teamDocCache.set(constructorRef, doc);
+    return doc;
+  }
+  if (!bundleTeam) return null;
+  const doc = {
+    constructorRef,
+    constructorId: null,
+    name: bundleTeam.name,
+    nationality: bundleTeam.nationality || null,
+    url: null,
+    color: teamColor(constructorRef) !== '#888888'
+      ? teamColor(constructorRef)
+      : (bundleTeam.color || '#888888'),
+    short: constructorShort(constructorRef, bundleTeam.name),
+    career: {
+      seasons: 0, firstYear: null, lastYear: null,
+      races: 0, wins: 0, podiums: 0, championships: 0, driverCount: 0,
+    },
+    perSeason: [],
+    topDrivers: [],
+    bestSeason: null,
+  };
+  teamDocCache.set(constructorRef, doc);
+  newlyCreatedTeams.add(constructorRef);
+  return doc;
+}
+
+let postArchiveTeamYears = 0;
+for (const { year, path } of seasonFiles) {
+  const season = JSON.parse(readFileSync(path, 'utf8'));
+  if (!Array.isArray(season.calendar) || !season.results) continue;
+
+  const driverByCode = new Map();
+  for (const d of season.drivers || []) {
+    if (d.id && d.jolpicaId) driverByCode.set(d.id, d);
+  }
+  const teamByBundleId = new Map();
+  for (const t of season.teams || []) teamByBundleId.set(t.id, t);
+
+  // Per-team aggregate for this year
+  const byTeam = new Map();
+  for (const race of season.calendar) {
+    const round = toInt(race.round);
+    if (round == null) continue;
+    const result = season.results[round] || season.results[String(round)];
+    if (!result) continue;
+    const detail = result.detail || {};
+
+    for (const code of Object.keys(detail)) {
+      const d = driverByCode.get(code);
+      if (!d || !d.team) continue;
+      const det = detail[code];
+      const posStr = det.position != null ? String(det.position) : '';
+      const pos = /^\d+$/.test(posStr) ? parseInt(posStr, 10) : null;
+
+      let agg = byTeam.get(d.team);
+      if (!agg) {
+        agg = {
+          drivers: new Map(),
+          wins: 0, podiums: 0, points: 0,
+          rounds: new Set(),
+          driverRaceCounts: new Map(),
+          driverWinCounts: new Map(),
+        };
+        byTeam.set(d.team, agg);
+      }
+      const ref = d.jolpicaId;
+      agg.drivers.set(ref, `${d.first} ${d.last}`);
+      agg.points += toFloat(det.points) || 0;
+      agg.rounds.add(round);
+      agg.driverRaceCounts.set(ref, (agg.driverRaceCounts.get(ref) || 0) + 1);
+      if (pos === 1) {
+        agg.wins += 1;
+        agg.driverWinCounts.set(ref, (agg.driverWinCounts.get(ref) || 0) + 1);
+      }
+      if (pos != null && pos <= 3) agg.podiums += 1;
+    }
+  }
+
+  // Year standings: highest points = P1
+  const sorted = [...byTeam.entries()].sort((a, b) => b[1].points - a[1].points);
+  const positions = new Map(sorted.map(([tId], i) => [tId, i + 1]));
+
+  for (const [tId, agg] of byTeam) {
+    const constructorRef = HAND_CONSTRUCTOR_ALIAS[tId] || tId;
+    const bundleTeam = teamByBundleId.get(tId);
+    const doc = loadTeamDoc(constructorRef, bundleTeam);
+    if (!doc) continue;
+    if (doc.perSeason.some(s => s.year === year)) continue;
+
+    doc.perSeason.push({
+      year,
+      drivers: [...agg.drivers.entries()].map(([ref, name]) => ({ driverRef: ref, name, code: null })),
+      position: positions.get(tId) ?? null,
+      points: agg.points,
+      wins: agg.wins,
+      races: agg.rounds.size,
+    });
+    doc._bundleAggs = doc._bundleAggs || [];
+    doc._bundleAggs.push({ year, agg });
+    postArchiveTeamYears++;
+  }
+}
+
+// Recompute career, topDrivers, bestSeason; rewrite docs + index entries
+const currentYearForTeams = new Date().getFullYear();
+const teamsIndexByRef = new Map();
+for (const e of teamsIndex) teamsIndexByRef.set(e.constructorRef, e);
+
+for (const [constructorRef, doc] of teamDocCache) {
+  doc.perSeason.sort((a, b) => b.year - a.year);
+
+  let addWins = 0, addPodiums = 0, addRaces = 0, addChamps = 0;
+  const addDriverNames = new Map();
+  const addDriverRaces = new Map();
+  const addDriverWins = new Map();
+  for (const { year, agg } of doc._bundleAggs || []) {
+    addWins += agg.wins;
+    addPodiums += agg.podiums;
+    addRaces += agg.rounds.size;
+    const seasonRow = doc.perSeason.find(s => s.year === year);
+    if (year < currentYearForTeams && seasonRow?.position === 1) addChamps += 1;
+    for (const [ref, name] of agg.drivers) addDriverNames.set(ref, name);
+    for (const [ref, c] of agg.driverRaceCounts) addDriverRaces.set(ref, (addDriverRaces.get(ref) || 0) + c);
+    for (const [ref, c] of agg.driverWinCounts) addDriverWins.set(ref, (addDriverWins.get(ref) || 0) + c);
+  }
+  delete doc._bundleAggs;
+
+  const yearsSet = new Set(doc.perSeason.map(s => s.year));
+
+  if (newlyCreatedTeams.has(constructorRef)) {
+    doc.career = {
+      seasons: yearsSet.size,
+      firstYear: yearsSet.size ? Math.min(...yearsSet) : null,
+      lastYear: yearsSet.size ? Math.max(...yearsSet) : null,
+      races: addRaces,
+      wins: addWins,
+      podiums: addPodiums,
+      championships: addChamps,
+      driverCount: addDriverNames.size,
+    };
+    doc.topDrivers = [...addDriverNames.entries()]
+      .map(([ref, name]) => ({
+        driverRef: ref, name,
+        races: addDriverRaces.get(ref) || 0,
+        wins: addDriverWins.get(ref) || 0,
+      }))
+      .sort((a, b) => b.wins - a.wins || b.races - a.races)
+      .slice(0, 10);
+  } else {
+    doc.career.seasons = yearsSet.size;
+    doc.career.firstYear = Math.min(doc.career.firstYear ?? Infinity, ...yearsSet);
+    doc.career.lastYear = Math.max(doc.career.lastYear ?? -Infinity, ...yearsSet);
+    doc.career.races += addRaces;
+    doc.career.wins += addWins;
+    doc.career.podiums += addPodiums;
+    doc.career.championships += addChamps;
+    const driverSet = new Set(doc.topDrivers?.map(d => d.driverRef) || []);
+    for (const ref of addDriverNames.keys()) driverSet.add(ref);
+    doc.career.driverCount = Math.max(doc.career.driverCount || 0, driverSet.size);
+
+    const merged = new Map((doc.topDrivers || []).map(d => [d.driverRef, { ...d }]));
+    for (const [ref, name] of addDriverNames) {
+      const cur = merged.get(ref) || { driverRef: ref, name, races: 0, wins: 0 };
+      cur.races += addDriverRaces.get(ref) || 0;
+      cur.wins += addDriverWins.get(ref) || 0;
+      cur.name = name;
+      merged.set(ref, cur);
+    }
+    doc.topDrivers = [...merged.values()]
+      .sort((a, b) => b.wins - a.wins || b.races - a.races)
+      .slice(0, 10);
+  }
+
+  doc.bestSeason = pickBestSeason(doc.perSeason);
+  writeFileSync(join(OUT, 'teams', `${constructorRef}.json`), JSON.stringify(doc));
+
+  if (newlyCreatedTeams.has(constructorRef)) {
+    teamsIndex.push({
+      constructorRef: doc.constructorRef,
+      name: doc.name,
+      nationality: doc.nationality,
+      firstYear: doc.career.firstYear,
+      lastYear: doc.career.lastYear,
+      races: doc.career.races,
+      wins: doc.career.wins,
+      championships: doc.career.championships,
+      color: doc.color,
+    });
+  } else {
+    const idx = teamsIndexByRef.get(constructorRef);
+    if (idx) {
+      idx.firstYear = doc.career.firstYear;
+      idx.lastYear = doc.career.lastYear;
+      idx.races = doc.career.races;
+      idx.wins = doc.career.wins;
+      idx.championships = doc.career.championships;
+    }
+  }
+}
+
+if (postArchiveTeamYears > 0) {
+  teamsIndex.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  writeFileSync(join(OUT, '_teams-index.json'), JSON.stringify(teamsIndex));
+  console.log(`[archive] merged ${postArchiveTeamYears} post-Ergast team-year entries into ${teamDocCache.size} team docs (${newlyCreatedTeams.size} new)`);
+}
