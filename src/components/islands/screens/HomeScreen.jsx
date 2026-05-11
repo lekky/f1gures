@@ -70,12 +70,17 @@ function EmptyHome({ mob }) {
   );
 }
 
-function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
+function SummaryWidget({ data, kicker, driver, team, big, sub, href, mob }) {
   const D = data;
   const accent = driver ? D.teamById(driver.team).color : (team ? team.color : 'var(--accent)');
   return (
-    <a className="panel" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block' }} href={href}>
-      <div className="panel-body">
+    <a className="panel" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block', position: 'relative', overflow: 'hidden' }} href={href}>
+      {driver && (
+        <div style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 0, lineHeight: 0 }}>
+          <DriverSilhouette data={D} driver={driver} height={mob ? 70 : 90} />
+        </div>
+      )}
+      <div className="panel-body" style={{ position: 'relative', zIndex: 1 }}>
         <div className="t-eyebrow" style={{ color: 'var(--fg-3)', marginBottom: 8 }}>{kicker}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           {driver && (
@@ -374,12 +379,14 @@ export default function HomeScreen({ data }) {
           big={`${leader.points} pts`}
           sub={`+${leader.points - p2.points} over ${p2.driver.last}`}
           href={urlFor({ name: 'driver', id: leader.driver.id, ref: leader.driver.jolpicaId })}
+          mob={mob}
         />
         <SummaryWidget data={D} kicker="Constructors' Leader"
           team={teamLeader.team}
           big={`${teamLeader.points} pts`}
           sub={`${teamLeader.wins} wins · ${teamLeader.podiums} podiums`}
           href={urlFor({ name: 'standings-c' })}
+          mob={mob}
         />
         {lastRace && lastWinner ? (
           <SummaryWidget data={D} kicker="Last Race"
@@ -387,11 +394,13 @@ export default function HomeScreen({ data }) {
             big={`P1`}
             sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
             href={urlFor({ name: 'race', year: D.seasonYear, round: lastRace.round })}
+            mob={mob}
           />
         ) : (
           <SummaryWidget data={D} kicker="Last Race"
             big="-"
             sub="No results yet"
+            mob={mob}
           />
         )}
       </div>
