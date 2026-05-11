@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Panel, urlFor } from '../../../lib/shared.jsx';
+import { Panel, urlFor, Flag } from '../../../lib/shared.jsx';
 
 export function StandingsTypeToggle({ active }) {
   return (
@@ -129,12 +129,12 @@ export function HeadToHead({ data, standings, mob }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'center', marginBottom: 18 }}>
         <div style={{ borderLeft: `3px solid ${teamA.color}`, paddingLeft: 12 }}>
-          <div className="t-eyebrow">{driverA.flag} {teamA.short}</div>
+          <div className="t-eyebrow"><Flag cc={driverA.country} flag={driverA.flag} /> {teamA.short}</div>
           <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 24, textTransform: 'uppercase' }}>{driverA.first} {driverA.last}</div>
         </div>
         <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 28, color: 'var(--accent)' }}>VS</div>
         <div style={{ borderRight: `3px solid ${teamB.color}`, paddingRight: 12, textAlign: 'right' }}>
-          <div className="t-eyebrow">{teamB.short} {driverB.flag}</div>
+          <div className="t-eyebrow">{teamB.short} <Flag cc={driverB.country} flag={driverB.flag} /></div>
           <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 24, textTransform: 'uppercase' }}>{driverB.first} {driverB.last}</div>
         </div>
       </div>

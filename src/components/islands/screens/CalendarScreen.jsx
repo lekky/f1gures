@@ -1,7 +1,7 @@
 // Calendar - full season grid. Ported from js/screens/calendar.jsx.
 // Reads `data` prop instead of window.F1_DATA.
 
-import { urlFor, useIsMobile, fmtDateLong, SprintBadge } from '../../../lib/shared.jsx';
+import { urlFor, useIsMobile, fmtDateLong, SprintBadge, Flag } from '../../../lib/shared.jsx';
 
 export default function CalendarScreen({ data }) {
   const F = data;
@@ -40,7 +40,7 @@ export default function CalendarScreen({ data }) {
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-                  <span className="race-flag">{race.flag}</span>
+                  <span className="race-flag"><Flag cc={race.country} flag={race.flag} /></span>
                   <div className="race-name">{race.name.replace(' Grand Prix', '')}</div>
                 </div>
                 <div className="race-circuit">{circuit.name}</div>
@@ -52,7 +52,8 @@ export default function CalendarScreen({ data }) {
                 </div>
                 {winner && (() => {
                   const winnerHref = urlFor({ name: 'driver', id: winner.id, ref: winner.jolpicaId });
-                  const winnerLabel = `${winner.flag} ${winner.first ? winner.first[0] + '. ' : ''}${winner.last}`;
+                  const winnerName = `${winner.first ? winner.first[0] + '. ' : ''}${winner.last}`;
+                  const winnerLabel = (<><Flag cc={winner.country} flag={winner.flag} /> {winnerName}</>);
                   return (
                     <div className="race-mini-row">
                       <span className="lbl">Winner</span>

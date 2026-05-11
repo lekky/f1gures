@@ -387,7 +387,22 @@ button { font-family: inherit; }
   padding-left: 10px;
   min-width: 180px;
 }
-.driver-flag { font-size: 14px; line-height: 1; flex-shrink: 0; }
+.driver-flag { font-size: 14px; line-height: 1; flex-shrink: 0; display: inline-flex; align-items: center; }
+
+/* Flag images (lipis flag-icons, 4:3). Height is driven by the surrounding
+   font-size so each call site keeps its previous visual weight; width
+   auto-tracks the 4:3 ratio. Subtle border + radius keeps light flags
+   (Japan, white-heavy ones) visually grounded against either theme. */
+.flag-img {
+  display: inline-block;
+  height: 1em;
+  width: auto;
+  vertical-align: -0.15em;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--line-1);
+  background: var(--bg-2);
+  flex-shrink: 0;
+}
 .driver-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .driver-firstlast .first { color: var(--fg-3); font-weight: 400; margin-right: 4px; }
 .driver-firstlast .last { color: var(--fg-1); font-weight: 600; }
