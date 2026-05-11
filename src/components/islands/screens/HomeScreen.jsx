@@ -40,6 +40,56 @@ function teamPointsForRound(D, teamId, round) {
   }, 0);
 }
 
+function driversSummary(D, drivers, completedCount) {
+  if (!drivers.length || !completedCount) return null;
+  const [p1, p2, p3] = drivers;
+  const p1Team = D.teamById(p1.driver.team);
+  const year = D.seasonYear || '';
+  const roundsLbl = `${completedCount} ${completedCount === 1 ? 'round' : 'rounds'}`;
+
+  let s = `${p1.driver.first} ${p1.driver.last} leads the ${year} World Drivers' Championship`;
+  if (p1Team) s += ` for ${p1Team.name}`;
+  s += `, with ${p1.points} points after ${roundsLbl}`;
+  if (p1.wins) s += ` and ${p1.wins} race ${p1.wins === 1 ? 'win' : 'wins'}`;
+  s += '.';
+
+  if (p2 && p3) {
+    const g12 = p1.points - p2.points;
+    const g23 = p2.points - p3.points;
+    s += ` ${p2.driver.last} sits ${g12} ${g12 === 1 ? 'point' : 'points'} behind in second`;
+    s += `, with ${p3.driver.last} a further ${g23} adrift in third.`;
+  } else if (p2) {
+    const g12 = p1.points - p2.points;
+    s += ` ${p2.driver.last} is ${g12} ${g12 === 1 ? 'point' : 'points'} behind in second.`;
+  }
+  return s;
+}
+
+function teamsSummary(D, teams, completedCount) {
+  if (!teams.length || !completedCount) return null;
+  const [t1, t2, t3] = teams;
+  const year = D.seasonYear || '';
+  const roundsLbl = `${completedCount} ${completedCount === 1 ? 'round' : 'rounds'}`;
+
+  let s = `${t1.team.name} top the ${year} Constructors' Championship with ${t1.points} points`;
+  if (t1.wins) {
+    s += ` and ${t1.wins} ${t1.wins === 1 ? 'win' : 'wins'} from ${roundsLbl}`;
+  } else {
+    s += ` after ${roundsLbl}`;
+  }
+  s += '.';
+
+  if (t2 && t3) {
+    const g12 = t1.points - t2.points;
+    s += ` ${t2.team.name} sit ${g12} ${g12 === 1 ? 'point' : 'points'} back`;
+    s += `, with ${t3.team.name} completing the top three.`;
+  } else if (t2) {
+    const g12 = t1.points - t2.points;
+    s += ` ${t2.team.name} are ${g12} ${g12 === 1 ? 'point' : 'points'} behind.`;
+  }
+  return s;
+}
+
 function MiniChart({ values, color, max, width = 76, height = 26 }) {
   const m = max || Math.max(...values, 1);
   const gap = 2;
@@ -412,6 +462,9 @@ export default function HomeScreen({ data }) {
   const top3Drivers = standings.drivers.slice(0, 3);
   const top3Teams = standings.teams.slice(0, 3);
   const recentRounds = lastNCompletedRounds(D, 5);
+  const completedCount = D.calendar.filter(r => D.results[r.round]).length;
+  const driversBlurb = driversSummary(D, top3Drivers, completedCount);
+  const teamsBlurb = teamsSummary(D, top3Teams, completedCount);
   const leader = standings.drivers[0];
   const p2 = standings.drivers[1];
   const teamLeader = standings.teams[0];
@@ -462,6 +515,11 @@ export default function HomeScreen({ data }) {
           View Full Standings <span className="arrow">→</span>
         </a>
       } />
+      {driversBlurb && (
+        <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--fg-2)', maxWidth: 780, marginBottom: 14 }}>
+          {driversBlurb}
+        </p>
+      )}
       <div style={{ background: 'var(--bg-2)', border: '1px solid var(--line-1)' }}>
         {top3Drivers.map((row, i) => {
           const team = D.teamById(row.driver.team);
@@ -529,13 +587,18 @@ export default function HomeScreen({ data }) {
           View Full Standings <span className="arrow">→</span>
         </a>
       } />
+      {teamsBlurb && (
+        <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--fg-2)', maxWidth: 780, marginBottom: 14 }}>
+          {teamsBlurb}
+        </p>
+      )}
       <div style={{ background: 'var(--bg-2)', border: '1px solid var(--line-1)' }}>
         {top3Teams.map((row, i) => {
           const team = row.team;
           const recent = recentRounds.map(r => teamPointsForRound(D, team.id, r.round));
           return (
             <a key={team.id}
-               href={urlFor({ name: 'standings-c' })}
+               href={urlFor({ name: 'team', id: team.id, ref: team.id })}
                style={{
                  display: 'grid',
                  gridTemplateColumns: mob ? '44px 1fr auto' : '52px minmax(0, 1.5fr) minmax(0, 1fr) auto auto',
