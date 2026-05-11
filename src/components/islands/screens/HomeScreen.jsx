@@ -416,9 +416,7 @@ export default function HomeScreen({ data }) {
              style={{ '--team-color': D.teamById(row.driver.team).color, textDecoration: 'none', color: 'inherit' }}
              href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}>
             <div className={`pos pos-${row.position}`}>{row.position}</div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-              <DriverSilhouette data={D} driver={row.driver} height={80} />
-            </div>
+            <DriverSilhouette data={D} driver={row.driver} height={80} />
             <div className="meta">
               <div className="name">{row.driver.last}</div>
               <div className="team">{D.teamById(row.driver.team).short} · <Flag cc={row.driver.country} flag={row.driver.flag} /></div>
