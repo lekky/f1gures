@@ -7,6 +7,63 @@ import {
   circuitTz, zoneShort, Flag,
 } from '../../../lib/shared.jsx';
 
+const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+
+function lastNCompletedRounds(D, n) {
+  return D.calendar
+    .filter(r => D.results[r.round])
+    .sort((a, b) => a.round - b.round)
+    .slice(-n);
+}
+
+function driverPointsForRound(D, driverId, round) {
+  const result = D.results[round];
+  if (!result) return 0;
+  const pos = result.order.findIndex(id => id === driverId);
+  if (pos === -1) return 0;
+  let pts = F1_POINTS[pos] || 0;
+  if (result.fastest === driverId && pos < 10) pts += 1;
+  if (result.sprintWinner === driverId) pts += 8;
+  return pts;
+}
+
+function teamPointsForRound(D, teamId, round) {
+  const result = D.results[round];
+  if (!result) return 0;
+  return result.order.reduce((sum, did, i) => {
+    const drv = D.driverById(did);
+    if (!drv || drv.team !== teamId) return sum;
+    let pts = F1_POINTS[i] || 0;
+    if (result.fastest === did && i < 10) pts += 1;
+    if (result.sprintWinner === did) pts += 8;
+    return sum + pts;
+  }, 0);
+}
+
+function MiniChart({ values, color, max, width = 76, height = 26 }) {
+  const m = max || Math.max(...values, 1);
+  const gap = 2;
+  const barW = (width - gap * (values.length - 1)) / values.length;
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true" style={{ display: 'block' }}>
+      {values.map((v, i) => {
+        const bh = m > 0 && v > 0 ? Math.max(2, (v / m) * height) : 2;
+        return (
+          <rect
+            key={i}
+            x={i * (barW + gap)}
+            y={height - bh}
+            width={barW}
+            height={bh}
+            fill={v > 0 ? color : 'var(--line-1)'}
+            opacity={v > 0 ? 1 : 0.5}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
 const SESSION_LABELS = {
   fp1: 'Practice 1',
   fp2: 'Practice 2',
@@ -70,17 +127,12 @@ function EmptyHome({ mob }) {
   );
 }
 
-function SummaryWidget({ data, kicker, driver, team, big, sub, href, mob }) {
+function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
   const D = data;
   const accent = driver ? D.teamById(driver.team).color : (team ? team.color : 'var(--accent)');
   return (
-    <a className="panel" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block', position: 'relative', overflow: 'hidden' }} href={href}>
-      {driver && (
-        <div style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 0, lineHeight: 0, width: mob ? 70 : 90 }}>
-          <DriverSilhouette data={D} driver={driver} height={mob ? 70 : 90} />
-        </div>
-      )}
-      <div className="panel-body" style={{ position: 'relative', zIndex: 1, paddingRight: driver ? (mob ? 78 : 102) : undefined }}>
+    <a className="panel" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block' }} href={href}>
+      <div className="panel-body">
         <div className="t-eyebrow" style={{ color: 'var(--fg-3)', marginBottom: 8 }}>{kicker}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           {driver && (
@@ -357,7 +409,9 @@ export default function HomeScreen({ data }) {
   const isHistoric = !next && cal.some(r => D.results[r.round]);
   const prev = [...cal].reverse().find(r => D.results[r.round]);
 
-  const top5 = standings.drivers.slice(0, 5);
+  const top3Drivers = standings.drivers.slice(0, 3);
+  const top3Teams = standings.teams.slice(0, 3);
+  const recentRounds = lastNCompletedRounds(D, 5);
   const leader = standings.drivers[0];
   const p2 = standings.drivers[1];
   const teamLeader = standings.teams[0];
@@ -379,14 +433,12 @@ export default function HomeScreen({ data }) {
           big={`${leader.points} pts`}
           sub={`+${leader.points - p2.points} over ${p2.driver.last}`}
           href={urlFor({ name: 'driver', id: leader.driver.id, ref: leader.driver.jolpicaId })}
-          mob={mob}
         />
         <SummaryWidget data={D} kicker="Constructors' Leader"
           team={teamLeader.team}
           big={`${teamLeader.points} pts`}
           sub={`${teamLeader.wins} wins · ${teamLeader.podiums} podiums`}
           href={urlFor({ name: 'standings-c' })}
-          mob={mob}
         />
         {lastRace && lastWinner ? (
           <SummaryWidget data={D} kicker="Last Race"
@@ -405,30 +457,128 @@ export default function HomeScreen({ data }) {
         )}
       </div>
 
-      <SectionHead title="Driver Standings" right={
+      <SectionHead title="Top 3 · Drivers" right={
         <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-d' })}>
           View Full Standings <span className="arrow">→</span>
         </a>
       } />
-      <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(5, 1fr)' }}>
-        {top5.map(row => (
-          <a key={row.driver.id} className="driver-card"
-             style={{ '--team-color': D.teamById(row.driver.team).color, textDecoration: 'none', color: 'inherit' }}
-             href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}>
-            <div className={`pos pos-${row.position}`}>{row.position}</div>
-            <div style={{ width: 80, flexShrink: 0 }}>
-              <DriverSilhouette data={D} driver={row.driver} height={80} />
-            </div>
-            <div className="meta">
-              <div className="name">{row.driver.last}</div>
-              <div className="team">{D.teamById(row.driver.team).short} · <Flag cc={row.driver.country} flag={row.driver.flag} /></div>
-            </div>
-            <div className="pts">
-              <div className="pts-num">{row.points}</div>
-              <div className="pts-lbl">PTS</div>
-            </div>
-          </a>
-        ))}
+      <div style={{ background: 'var(--bg-2)', border: '1px solid var(--line-1)' }}>
+        {top3Drivers.map((row, i) => {
+          const team = D.teamById(row.driver.team);
+          const recent = recentRounds.map(r => driverPointsForRound(D, row.driver.id, r.round));
+          return (
+            <a key={row.driver.id}
+               href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}
+               style={{
+                 display: 'grid',
+                 gridTemplateColumns: mob ? '44px 1fr auto' : '52px 60px minmax(0, 1fr) minmax(0, 1.1fr) auto auto',
+                 alignItems: 'center',
+                 gap: mob ? 12 : 18,
+                 padding: mob ? '12px 14px' : '14px 18px',
+                 borderTop: i === 0 ? 'none' : '1px solid var(--line-1)',
+                 borderLeft: `3px solid ${team.color}`,
+                 textDecoration: 'none',
+                 color: 'inherit',
+                 background: 'var(--bg-2)',
+               }}>
+              <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, color: 'var(--fg-3)', letterSpacing: '0.02em' }}>
+                {String(row.position).padStart(2, '0')}
+              </div>
+              {!mob && (
+                <div style={{ width: 60, lineHeight: 0 }}>
+                  <DriverSilhouette data={D} driver={row.driver} height={60} />
+                </div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--f-display)', fontSize: 11, color: 'var(--fg-3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {row.driver.first}
+                </div>
+                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {row.driver.last}
+                </div>
+              </div>
+              {!mob && (
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 3, height: 14, background: team.color, flexShrink: 0 }} />
+                    <span style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {team.name}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--f-mono)', fontSize: 11, color: 'var(--fg-3)', marginTop: 3, letterSpacing: '0.06em' }}>
+                    <Flag cc={row.driver.country} flag={row.driver.flag} /> · #{row.driver.num}
+                  </div>
+                </div>
+              )}
+              {!mob && recent.length > 0 && (
+                <MiniChart values={recent} color={team.color} />
+              )}
+              <div style={{ textAlign: 'right', minWidth: 60 }}>
+                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, lineHeight: 1 }}>
+                  {row.points}
+                </div>
+                <div style={{ fontFamily: 'var(--f-mono)', fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.1em', marginTop: 3 }}>
+                  PTS{row.wins ? ` · ${row.wins}W` : ''}
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+
+      <SectionHead title="Top 3 · Constructors" right={
+        <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-c' })}>
+          View Full Standings <span className="arrow">→</span>
+        </a>
+      } />
+      <div style={{ background: 'var(--bg-2)', border: '1px solid var(--line-1)' }}>
+        {top3Teams.map((row, i) => {
+          const team = row.team;
+          const recent = recentRounds.map(r => teamPointsForRound(D, team.id, r.round));
+          return (
+            <a key={team.id}
+               href={urlFor({ name: 'standings-c' })}
+               style={{
+                 display: 'grid',
+                 gridTemplateColumns: mob ? '44px 1fr auto' : '52px minmax(0, 1.5fr) minmax(0, 1fr) auto auto',
+                 alignItems: 'center',
+                 gap: mob ? 12 : 18,
+                 padding: mob ? '12px 14px' : '14px 18px',
+                 borderTop: i === 0 ? 'none' : '1px solid var(--line-1)',
+                 borderLeft: `3px solid ${team.color}`,
+                 textDecoration: 'none',
+                 color: 'inherit',
+                 background: 'var(--bg-2)',
+               }}>
+              <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, color: 'var(--fg-3)', letterSpacing: '0.02em' }}>
+                {String(row.position).padStart(2, '0')}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {team.name}
+                </div>
+                <div style={{ fontFamily: 'var(--f-mono)', fontSize: 11, color: 'var(--fg-3)', marginTop: 3, letterSpacing: '0.06em' }}>
+                  {row.wins} WINS · {row.podiums} PODIUMS
+                </div>
+              </div>
+              {!mob && recent.length > 0 && (
+                <div style={{ minWidth: 0 }}>
+                  <div className="t-eyebrow" style={{ fontSize: 10, color: 'var(--fg-3)', marginBottom: 4 }}>Last {recent.length} Races</div>
+                  <MiniChart values={recent} color={team.color} width={120} height={28} />
+                </div>
+              )}
+              {!mob && <div />}
+              <div style={{ textAlign: 'right', minWidth: 60 }}>
+                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, lineHeight: 1 }}>
+                  {row.points}
+                </div>
+                <div style={{ fontFamily: 'var(--f-mono)', fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.1em', marginTop: 3 }}>
+                  PTS
+                </div>
+              </div>
+            </a>
+          );
+        })}
       </div>
     </div>
   );
