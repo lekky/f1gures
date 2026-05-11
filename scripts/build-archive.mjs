@@ -1562,6 +1562,53 @@ if (postArchiveDriverEntries > 0) {
 // ─── Teams (constructors) ────────────────────────────────────────────
 mkdirSync(join(OUT, 'teams'), { recursive: true });
 
+// Best-season selection: pick the single most impressive season from a
+// team's perSeason array. Sort key, ascending priority:
+//   1. WCC position (lower better; null sorts last)
+//   2. win-rate descending (normalises 16-race vs 24-race eras)
+//   3. points descending (final stat tiebreaker)
+//   4. year ascending (earliest of ties — "they did it first")
+function pickBestSeason(perSeason) {
+  const eligible = perSeason.filter(s => s.races > 0);
+  if (!eligible.length) return null;
+  const ranked = [...eligible].sort((a, b) => {
+    const pa = a.position == null ? Infinity : a.position;
+    const pb = b.position == null ? Infinity : b.position;
+    if (pa !== pb) return pa - pb;
+    const wra = a.races ? a.wins / a.races : 0;
+    const wrb = b.races ? b.wins / b.races : 0;
+    if (wrb !== wra) return wrb - wra;
+    const ptsa = a.points || 0;
+    const ptsb = b.points || 0;
+    if (ptsb !== ptsa) return ptsb - ptsa;
+    return a.year - b.year;
+  });
+  const s = ranked[0];
+  const winRate = s.races ? s.wins / s.races : 0;
+  return {
+    year: s.year,
+    position: s.position,
+    points: s.points,
+    wins: s.wins,
+    races: s.races,
+    winRate,
+    tagline: taglineFor(s.position, winRate, s.wins),
+    drivers: s.drivers.map(d => ({ driverRef: d.driverRef, name: d.name })),
+  };
+}
+
+function taglineFor(position, winRate, wins) {
+  if (position === 1 && winRate >= 0.75) return 'Total Dominance';
+  if (position === 1 && winRate >= 0.50) return 'Championship Year';
+  if (position === 1) return 'Champions';
+  if (position === 2) return 'Runners-Up';
+  if (position === 3) return 'Third Place';
+  if (position != null && position <= 5) return 'Top-Five Finish';
+  if (position != null && position <= 10) return 'Top-Ten Finish';
+  if (wins > 0) return 'Race Winners';
+  return 'Best Result';
+}
+
 const constructorStandings = readCsv('constructor_standings');
 const standingsByConstructor = new Map();
 for (const s of constructorStandings) {
@@ -1703,6 +1750,7 @@ for (const c of constructors) {
     },
     perSeason,
     topDrivers,
+    bestSeason: pickBestSeason(perSeason),
   };
 
   writeFileSync(join(OUT, 'teams', `${c.constructorRef}.json`), JSON.stringify(teamDoc));
