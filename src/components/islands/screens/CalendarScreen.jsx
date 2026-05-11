@@ -43,7 +43,7 @@ export default function CalendarScreen({ data }) {
                   <span className="race-flag">{race.flag}</span>
                   <div className="race-name">{race.name.replace(' Grand Prix', '')}</div>
                 </div>
-                <div className="race-circuit">{circuit.name}</div>
+                <a href={urlFor({ name: 'circuit', id: race.circuit })} className="race-circuit inline-link race-card-overlay-link" style={{ color: 'inherit' }}>{circuit.name}</a>
               </div>
               <div className="race-card-foot">
                 <div className="race-mini-row">
@@ -64,12 +64,19 @@ export default function CalendarScreen({ data }) {
                     </div>
                   );
                 })()}
-                {fastest && (
-                  <div className="race-mini-row">
-                    <span className="lbl">Fastest Lap</span>
-                    <span className="val">{fastest.code}</span>
-                  </div>
-                )}
+                {fastest && (() => {
+                  const fastestHref = urlFor({ name: 'driver', id: fastest.id, ref: fastest.jolpicaId });
+                  return (
+                    <div className="race-mini-row">
+                      <span className="lbl">Fastest Lap</span>
+                      <span className="val" style={{ color: 'var(--fg-1)' }}>
+                        {fastest.jolpicaId
+                          ? <a href={fastestHref} className="inline-link race-card-overlay-link" style={{ color: 'inherit' }}>{fastest.code}</a>
+                          : fastest.code}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );

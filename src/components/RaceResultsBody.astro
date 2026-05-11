@@ -117,7 +117,7 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
             <tr>
               <td class={`right t-mono ${q.position === 1 ? 'is-win-cell' : ''}`}>{q.position}</td>
               <td>{q.driverRef ? <a href={`/drivers/${q.driverRef}/`}>{q.driverName}</a> : q.driverName}</td>
-              <td>{q.constructorName}</td>
+              <td>{q.constructorRef ? <a href={`/teams/${q.constructorRef}/`}>{q.constructorName}</a> : (q.constructorName || '-')}</td>
               <td class="right t-mono">{q.q1 || '-'}</td>
               <td class="right t-mono">{q.q2 || '-'}</td>
               <td class="right t-mono">{q.q3 || '-'}</td>
