@@ -21,31 +21,40 @@ function getCurrentYear(): number | null {
 }
 const currentYear = getCurrentYear();
 
-// Recent-form: last 5 completed rounds, points per driverRef. Mirrors the
-// algorithm in src/lib/shared.jsx so the prerendered HTML matches the React
-// MiniChart on the standings tables. Bundle results are keyed by driver code
-// (e.g. "VER"); we map driverRef → code via bundle.drivers.
+// Build-time computation of recent form (last 5 rounds points per driver) and
+// current championship standings. Mirrors the algorithm in src/lib/shared.jsx
+// and src/data/buildFallback.js so the prerendered HTML matches the React
+// MiniChart and Driver Standings table. Bundle results are keyed by driver
+// code (e.g. "VER"); we map driverRef → code via bundle.drivers.
 const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 type RecentFormMap = Record<string, number[]>;
-function buildRecentForm(year: number | null): RecentFormMap {
-  if (!year) return {};
+type StandingsMap = Record<string, { position: number; points: number; wins: number }>;
+type BundleStats = { recentForm: RecentFormMap; standings: StandingsMap };
+function buildBundleStats(year: number | null): BundleStats {
+  if (!year) return { recentForm: {}, standings: {} };
   const bundlePath = resolve(process.cwd(), 'public', 'data', `${year}.json`);
-  if (!existsSync(bundlePath)) return {};
+  if (!existsSync(bundlePath)) return { recentForm: {}, standings: {} };
   const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
   const drivers = bundle.drivers || [];
   const results = bundle.results || {};
   const codeByRef = new Map<string, string>();
+  const refByCode = new Map<string, string>();
   for (const d of drivers) {
-    if (d.jolpicaId && d.id) codeByRef.set(d.jolpicaId, d.id);
+    if (d.jolpicaId && d.id) {
+      codeByRef.set(d.jolpicaId, d.id);
+      refByCode.set(d.id, d.jolpicaId);
+    }
   }
-  const rounds = Object.keys(results)
+  const allRounds = Object.keys(results)
     .map(Number)
     .filter(n => Number.isFinite(n))
-    .sort((a, b) => a - b)
-    .slice(-5);
+    .sort((a, b) => a - b);
+  const recentRounds = allRounds.slice(-5);
+
+  // Recent form
   const form: RecentFormMap = {};
   for (const [ref, code] of codeByRef) {
-    form[ref] = rounds.map(r => {
+    form[ref] = recentRounds.map(r => {
       const res = results[r] || results[String(r)];
       if (!res) return 0;
       const order: string[] = res.order || [];
@@ -57,9 +66,41 @@ function buildRecentForm(year: number | null): RecentFormMap {
       return pts;
     });
   }
-  return form;
+
+  // Full-season points + wins per driver code
+  const pts: Record<string, number> = {};
+  const wins: Record<string, number> = {};
+  for (const r of allRounds) {
+    const res = results[r] || results[String(r)];
+    if (!res) continue;
+    const order: string[] = res.order || [];
+    order.forEach((code, i) => {
+      pts[code] = pts[code] || 0;
+      wins[code] = wins[code] || 0;
+      if (i < 10) pts[code] += F1_POINTS[i];
+      if (i === 0) wins[code] += 1;
+    });
+    if (res.fastest && order.indexOf(res.fastest) < 10) {
+      pts[res.fastest] = (pts[res.fastest] || 0) + 1;
+    }
+    if (res.sprintWinner) {
+      const sw = res.sprintWinner;
+      pts[sw] = (pts[sw] || 0) + 8;
+      const others = order.filter((c: string) => c !== sw).slice(0, 7);
+      others.forEach((c: string, i: number) => { pts[c] = (pts[c] || 0) + (7 - i); });
+    }
+  }
+  const ranked = [...refByCode.entries()]
+    .map(([code, ref]) => ({ ref, code, points: pts[code] || 0, wins: wins[code] || 0 }))
+    .sort((a, b) => b.points - a.points || b.wins - a.wins);
+  const standings: StandingsMap = {};
+  ranked.forEach((row, i) => {
+    standings[row.ref] = { position: i + 1, points: row.points, wins: row.wins };
+  });
+
+  return { recentForm: form, standings };
 }
-const recentForm = buildRecentForm(currentYear);
+const { recentForm, standings: currentStandings } = buildBundleStats(currentYear);
 
 export async function getStaticPaths() {
   const index = getTeamsIndex();
@@ -106,5 +147,5 @@ const breadcrumb = [
 ];
 ---
 <BaseLayout {title} {description} {canonicalPath} {ogImage} ogType="website" {jsonLd} {breadcrumb}>
-  <TeamPage {team} {currentYear} {recentForm} />
+  <TeamPage {team} {currentYear} {recentForm} {currentStandings} />
 </BaseLayout>

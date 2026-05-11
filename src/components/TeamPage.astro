@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 interface Props {
   currentYear: number | null;
   recentForm: Record<string, number[]>;
+  currentStandings: Record<string, { position: number; points: number; wins: number }>;
   team: {
     constructorRef: string;
     name: string;
@@ -48,7 +49,7 @@ interface Props {
   };
 }
 
-const { team, currentYear, recentForm } = Astro.props;
+const { team, currentYear, recentForm, currentStandings } = Astro.props;
 
 // Mini bar-chart geometry (matches MiniChart in src/lib/shared.jsx).
 const CHART_W = 80;
@@ -86,7 +87,8 @@ const currentDriverPhotos = currentDrivers.map(d => {
   const headshotPath = `images/drivers/${d.driverRef}.webp`;
   const hasHeadshot = existsSync(resolve(process.cwd(), 'public', headshotPath));
   const recent = (recentForm && recentForm[d.driverRef]) || [];
-  return { ...d, headshotPath, hasHeadshot, recent };
+  const standing = (currentStandings && currentStandings[d.driverRef]) || null;
+  return { ...d, headshotPath, hasHeadshot, recent, standing };
 });
 ---
 
@@ -157,6 +159,15 @@ const currentDriverPhotos = currentDrivers.map(d => {
                 </div>
               )}
             </div>
+            {d.standing && (
+              <div class="current-driver-right">
+                <div class="t-eyebrow">{currentYear} Season</div>
+                <div class={`current-driver-pos ${d.standing.position === 1 ? 'is-champ' : ''}`} style={d.standing.position === 1 ? undefined : `color: ${team.color};`}>
+                  P{d.standing.position}
+                </div>
+                <div class="current-driver-pts">{d.standing.points} pts{d.standing.wins ? ` · ${d.standing.wins}W` : ''}</div>
+              </div>
+            )}
           </a>
         ))}
       </div>
@@ -312,6 +323,13 @@ const currentDriverPhotos = currentDrivers.map(d => {
   .current-driver-form { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
   .current-driver-form-lbl { font-size: 9px; color: var(--fg-4); }
   .current-driver-chart { display: block; }
+  .current-driver-right { margin-left: auto; text-align: right; flex-shrink: 0; padding-left: 8px; }
+  .current-driver-pos { font-family: var(--f-display); font-weight: 800; font-size: 36px; line-height: 1; margin-top: 2px; }
+  .current-driver-pos.is-champ { color: var(--accent); }
+  .current-driver-pts { font-family: var(--f-display); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--fg-3); margin-top: 4px; }
+  @media (max-width: 720px) {
+    .current-driver-pos { font-size: 28px; }
+  }
   @media (max-width: 720px) {
     .current-drivers-grid { grid-template-columns: 1fr; }
     .current-driver-name { font-size: 17px; }
