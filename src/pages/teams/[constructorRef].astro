@@ -1,9 +1,65 @@
 ---
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TeamPage from '../../components/TeamPage.astro';
 import { getTeamsIndex, getTeam } from '../../data/archive.js';
+
+// Highest-numbered season bundle in public/data/ is the active championship
+// year. Used by TeamPage to flag a team as currently competing.
+function getCurrentYear(): number | null {
+  try {
+    const dir = resolve(process.cwd(), 'public', 'data');
+    const years = readdirSync(dir)
+      .map(f => /^(\d{4})\.json$/.exec(f)?.[1])
+      .filter((y): y is string => !!y)
+      .map(Number);
+    return years.length ? Math.max(...years) : null;
+  } catch {
+    return null;
+  }
+}
+const currentYear = getCurrentYear();
+
+// Recent-form: last 5 completed rounds, points per driverRef. Mirrors the
+// algorithm in src/lib/shared.jsx so the prerendered HTML matches the React
+// MiniChart on the standings tables. Bundle results are keyed by driver code
+// (e.g. "VER"); we map driverRef → code via bundle.drivers.
+const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+type RecentFormMap = Record<string, number[]>;
+function buildRecentForm(year: number | null): RecentFormMap {
+  if (!year) return {};
+  const bundlePath = resolve(process.cwd(), 'public', 'data', `${year}.json`);
+  if (!existsSync(bundlePath)) return {};
+  const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
+  const drivers = bundle.drivers || [];
+  const results = bundle.results || {};
+  const codeByRef = new Map<string, string>();
+  for (const d of drivers) {
+    if (d.jolpicaId && d.id) codeByRef.set(d.jolpicaId, d.id);
+  }
+  const rounds = Object.keys(results)
+    .map(Number)
+    .filter(n => Number.isFinite(n))
+    .sort((a, b) => a - b)
+    .slice(-5);
+  const form: RecentFormMap = {};
+  for (const [ref, code] of codeByRef) {
+    form[ref] = rounds.map(r => {
+      const res = results[r] || results[String(r)];
+      if (!res) return 0;
+      const order: string[] = res.order || [];
+      const pos = order.indexOf(code);
+      if (pos === -1) return 0;
+      let pts = F1_POINTS[pos] || 0;
+      if (res.fastest === code && pos < 10) pts += 1;
+      if (res.sprintWinner === code) pts += 8;
+      return pts;
+    });
+  }
+  return form;
+}
+const recentForm = buildRecentForm(currentYear);
 
 export async function getStaticPaths() {
   const index = getTeamsIndex();
@@ -50,5 +106,5 @@ const breadcrumb = [
 ];
 ---
 <BaseLayout {title} {description} {canonicalPath} {ogImage} ogType="website" {jsonLd} {breadcrumb}>
-  <TeamPage {team} />
+  <TeamPage {team} {currentYear} {recentForm} />
 </BaseLayout>

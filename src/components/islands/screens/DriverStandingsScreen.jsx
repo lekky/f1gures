@@ -4,6 +4,7 @@
 import { useMemo, useState } from 'react';
 import {
   Panel, SectionHead, ChangeIndicator, DriverCell, useIsMobile, urlFor,
+  MiniChart, lastNCompletedRounds, driverPointsForRound,
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, PointsChart, HeadToHead } from './StandingsCommon.jsx';
 
@@ -11,6 +12,7 @@ export default function DriverStandingsScreen({ data }) {
   const DD = data;
   const mob = useIsMobile();
   const standings = useMemo(() => DD.computeStandings(), [DD]);
+  const recentRounds = useMemo(() => lastNCompletedRounds(DD, 5), [DD]);
   const [sortKey, setSortKey] = useState('position');
   const [sortDir, setSortDir] = useState('asc');
 
@@ -106,6 +108,7 @@ export default function DriverStandingsScreen({ data }) {
                 <th className="right sortable" onClick={() => toggleSort('wins')}>W<SortInd k="wins" /></th>
                 <th className="right sortable" onClick={() => toggleSort('podiums')}>Pod<SortInd k="podiums" /></th>
                 <th className="right sortable" onClick={() => toggleSort('fastest')}>FL<SortInd k="fastest" /></th>
+                {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
               </tr>
             </thead>
             <tbody>
@@ -131,6 +134,18 @@ export default function DriverStandingsScreen({ data }) {
                     <td className="right num">{row.wins}</td>
                     <td className="right num">{row.podiums}</td>
                     <td className="right num">{row.fastestLaps}</td>
+                    {!mob && recentRounds.length > 0 && (
+                      <td className="right">
+                        <div style={{ display: 'inline-block' }}>
+                          <MiniChart
+                            values={recentRounds.map(r => driverPointsForRound(DD, row.driver.id, r.round))}
+                            color={team ? team.color : 'var(--fg-3)'}
+                            width={70}
+                            height={22}
+                          />
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

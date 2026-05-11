@@ -1852,7 +1852,7 @@ for (const { year, path } of seasonFiles) {
         byTeam.set(d.team, agg);
       }
       const ref = d.jolpicaId;
-      agg.drivers.set(ref, `${d.first} ${d.last}`);
+      agg.drivers.set(ref, { name: `${d.first} ${d.last}`, code: d.code || null });
       agg.points += toFloat(det.points) || 0;
       agg.rounds.add(round);
       agg.driverRaceCounts.set(ref, (agg.driverRaceCounts.get(ref) || 0) + 1);
@@ -1877,7 +1877,7 @@ for (const { year, path } of seasonFiles) {
 
     doc.perSeason.push({
       year,
-      drivers: [...agg.drivers.entries()].map(([ref, name]) => ({ driverRef: ref, name, code: null })),
+      drivers: [...agg.drivers.entries()].map(([ref, info]) => ({ driverRef: ref, name: info.name, code: info.code })),
       position: positions.get(tId) ?? null,
       points: agg.points,
       wins: agg.wins,
@@ -1907,7 +1907,7 @@ for (const [constructorRef, doc] of teamDocCache) {
     addRaces += agg.rounds.size;
     const seasonRow = doc.perSeason.find(s => s.year === year);
     if (year < currentYearForTeams && seasonRow?.position === 1) addChamps += 1;
-    for (const [ref, name] of agg.drivers) addDriverNames.set(ref, name);
+    for (const [ref, info] of agg.drivers) addDriverNames.set(ref, info.name);
     for (const [ref, c] of agg.driverRaceCounts) addDriverRaces.set(ref, (addDriverRaces.get(ref) || 0) + c);
     for (const [ref, c] of agg.driverWinCounts) addDriverWins.set(ref, (addDriverWins.get(ref) || 0) + c);
   }

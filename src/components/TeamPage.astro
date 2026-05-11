@@ -3,7 +3,12 @@
 // championships, career stats grid, season-by-season summary, top drivers
 // list. No React island, no client JS shipped.
 
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 interface Props {
+  currentYear: number | null;
+  recentForm: Record<string, number[]>;
   team: {
     constructorRef: string;
     name: string;
@@ -43,7 +48,26 @@ interface Props {
   };
 }
 
-const { team } = Astro.props;
+const { team, currentYear, recentForm } = Astro.props;
+
+// Mini bar-chart geometry (matches MiniChart in src/lib/shared.jsx).
+const CHART_W = 80;
+const CHART_H = 22;
+const CHART_GAP = 2;
+function chartBars(values: number[]) {
+  const max = Math.max(...values, 1);
+  const barW = (CHART_W - CHART_GAP * (values.length - 1)) / values.length;
+  return values.map((v, i) => {
+    const bh = max > 0 && v > 0 ? Math.max(2, (v / max) * CHART_H) : 2;
+    return {
+      x: i * (barW + CHART_GAP),
+      y: CHART_H - bh,
+      w: barW,
+      h: bh,
+      v,
+    };
+  });
+}
 const yearsLabel = team.career.firstYear === team.career.lastYear
   ? `${team.career.firstYear}`
   : `${team.career.firstYear}–${team.career.lastYear}`;
@@ -52,6 +76,18 @@ const ord = (n: number | null) => (n == null ? '-' : `P${n}`);
 const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`;
 const best = team.bestSeason;
 const bestIsChampion = best != null && best.position === 1;
+
+// Current-team detection: latest perSeason entry matches the active season
+// bundle. perSeason is newest-first from build-archive.mjs.
+const latestSeason = team.perSeason[0] ?? null;
+const isCurrent = !!(currentYear && latestSeason && latestSeason.year === currentYear);
+const currentDrivers = isCurrent ? latestSeason!.drivers : [];
+const currentDriverPhotos = currentDrivers.map(d => {
+  const headshotPath = `images/drivers/${d.driverRef}.webp`;
+  const hasHeadshot = existsSync(resolve(process.cwd(), 'public', headshotPath));
+  const recent = (recentForm && recentForm[d.driverRef]) || [];
+  return { ...d, headshotPath, hasHeadshot, recent };
+});
 ---
 
 <div class="page">
@@ -80,6 +116,52 @@ const bestIsChampion = best != null && best.position === 1;
       </div>
     </div>
   </div>
+
+  {isCurrent && currentDriverPhotos.length > 0 && (
+    <>
+      <div class="section-head">
+        <h2>Current Drivers</h2>
+        <div class="section-rule"></div>
+        <span class="t-eyebrow current-drivers-year" style={`color: ${team.color};`}>{currentYear} Season</span>
+      </div>
+      <div class={`current-drivers-grid count-${currentDriverPhotos.length}`}>
+        {currentDriverPhotos.map(d => (
+          <a class="panel current-driver-card" href={`/drivers/${d.driverRef}/`} style={`border-left: 3px solid ${team.color};`}>
+            {d.hasHeadshot ? (
+              <img class="current-driver-photo" src={`/${d.headshotPath}`} alt={d.name} loading="lazy" width="120" height="150" />
+            ) : (
+              <div class="current-driver-photo silhouette" style={`--team-color: ${team.color};`} aria-hidden="true">
+                <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50 12 C28 12 18 28 18 46 L18 60 L14 70 L14 82 L20 88 L20 120 L80 120 L80 88 L86 82 L86 70 L82 60 L82 46 C82 28 72 12 50 12 Z" fill={team.color} />
+                </svg>
+              </div>
+            )}
+            <div class="current-driver-meta">
+              <div class="t-eyebrow current-driver-code" style={`color: ${team.color};`}>{d.code || '-'}</div>
+              <div class="current-driver-name">{d.name}</div>
+              {d.recent.length > 0 && (
+                <div class="current-driver-form">
+                  <span class="t-eyebrow current-driver-form-lbl">Last {d.recent.length}</span>
+                  <svg class="current-driver-chart" width={CHART_W} height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`} aria-hidden="true">
+                    {chartBars(d.recent).map(b => (
+                      <rect
+                        x={b.x}
+                        y={b.y}
+                        width={b.w}
+                        height={b.h}
+                        fill={b.v > 0 ? team.color : 'var(--line-1)'}
+                        opacity={b.v > 0 ? 1 : 0.5}
+                      />
+                    ))}
+                  </svg>
+                </div>
+              )}
+            </div>
+          </a>
+        ))}
+      </div>
+    </>
+  )}
 
   <div class="section-head"><h2>Career Stats</h2><div class="section-rule"></div></div>
   <div class="grid team-career-grid">
@@ -214,6 +296,27 @@ const bestIsChampion = best != null && best.position === 1;
   .data-table .right { text-align: right; }
   .data-table .is-win-cell, .data-table .is-champ-cell { color: var(--accent); font-weight: 700; }
   .data-table a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+
+  /* Current Drivers section */
+  .current-drivers-year { margin-left: auto; font-weight: 600; }
+  .current-drivers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+  .current-drivers-grid.count-1 { grid-template-columns: minmax(0, 320px); }
+  .current-driver-card { display: flex; align-items: center; gap: 16px; padding: 14px 16px; text-decoration: none; color: inherit; transition: background .15s, border-color .15s; }
+  .current-driver-card:hover { background: var(--bg-3); }
+  .current-driver-photo { width: 72px; height: 90px; object-fit: cover; border-radius: 4px; background: var(--bg-3); flex-shrink: 0; }
+  .current-driver-photo.silhouette { display: flex; align-items: center; justify-content: center; }
+  .current-driver-photo.silhouette svg { width: 100%; height: 100%; opacity: 0.55; }
+  .current-driver-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .current-driver-code { font-family: var(--f-mono); font-weight: 700; font-size: 12px; letter-spacing: 0.12em; }
+  .current-driver-name { font-family: var(--f-display); font-weight: 700; font-size: 20px; line-height: 1.15; color: var(--fg-1); }
+  .current-driver-form { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .current-driver-form-lbl { font-size: 9px; color: var(--fg-4); }
+  .current-driver-chart { display: block; }
+  @media (max-width: 720px) {
+    .current-drivers-grid { grid-template-columns: 1fr; }
+    .current-driver-name { font-size: 17px; }
+    .current-driver-photo { width: 60px; height: 76px; }
+  }
 
   /* Best Season hero card */
   .best-hero { padding: 24px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 32px; align-items: center; }

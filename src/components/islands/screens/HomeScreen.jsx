@@ -5,40 +5,8 @@ import { useMemo, useState, useEffect } from 'react';
 import {
   SectionHead, SprintBadge, Countdown, DriverSilhouette, useIsMobile, urlFor, navigate, fmtDateLong,
   circuitTz, zoneShort, Flag,
+  MiniChart, lastNCompletedRounds, driverPointsForRound, teamPointsForRound,
 } from '../../../lib/shared.jsx';
-
-const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
-
-function lastNCompletedRounds(D, n) {
-  return D.calendar
-    .filter(r => D.results[r.round])
-    .sort((a, b) => a.round - b.round)
-    .slice(-n);
-}
-
-function driverPointsForRound(D, driverId, round) {
-  const result = D.results[round];
-  if (!result) return 0;
-  const pos = result.order.findIndex(id => id === driverId);
-  if (pos === -1) return 0;
-  let pts = F1_POINTS[pos] || 0;
-  if (result.fastest === driverId && pos < 10) pts += 1;
-  if (result.sprintWinner === driverId) pts += 8;
-  return pts;
-}
-
-function teamPointsForRound(D, teamId, round) {
-  const result = D.results[round];
-  if (!result) return 0;
-  return result.order.reduce((sum, did, i) => {
-    const drv = D.driverById(did);
-    if (!drv || drv.team !== teamId) return sum;
-    let pts = F1_POINTS[i] || 0;
-    if (result.fastest === did && i < 10) pts += 1;
-    if (result.sprintWinner === did) pts += 8;
-    return sum + pts;
-  }, 0);
-}
 
 function driversSummary(D, drivers, completedCount) {
   if (!drivers.length || !completedCount) return null;
@@ -88,30 +56,6 @@ function teamsSummary(D, teams, completedCount) {
     s += ` ${t2.team.name} are ${g12} ${g12 === 1 ? 'point' : 'points'} behind.`;
   }
   return s;
-}
-
-function MiniChart({ values, color, max, width = 76, height = 26 }) {
-  const m = max || Math.max(...values, 1);
-  const gap = 2;
-  const barW = (width - gap * (values.length - 1)) / values.length;
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true" style={{ display: 'block' }}>
-      {values.map((v, i) => {
-        const bh = m > 0 && v > 0 ? Math.max(2, (v / m) * height) : 2;
-        return (
-          <rect
-            key={i}
-            x={i * (barW + gap)}
-            y={height - bh}
-            width={barW}
-            height={bh}
-            fill={v > 0 ? color : 'var(--line-1)'}
-            opacity={v > 0 ? 1 : 0.5}
-          />
-        );
-      })}
-    </svg>
-  );
 }
 
 const SESSION_LABELS = {
