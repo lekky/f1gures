@@ -683,7 +683,6 @@ button { font-family: inherit; }
 .silhouette svg { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); height: 90%; opacity: 0.18; }
 .silhouette-photo {
   background: linear-gradient(180deg, rgba(0,0,0,0) 0%, color-mix(in srgb, var(--team-color) 18%, transparent) 100%), var(--bg-3);
-  border-left: 3px solid var(--team-color);
 }
 .silhouette-photo img {
   position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);

@@ -2,13 +2,17 @@
 // js/screens/standings.jsx ConstructorStandingsScreen.
 
 import { useMemo } from 'react';
-import { Panel, SectionHead, useIsMobile, urlFor } from '../../../lib/shared.jsx';
+import {
+  Panel, SectionHead, useIsMobile, urlFor,
+  MiniChart, lastNCompletedRounds, teamPointsForRound,
+} from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, TeamProgressionChart } from './StandingsCommon.jsx';
 
 export default function ConstructorStandingsScreen({ data }) {
   const DD = data;
   const mob = useIsMobile();
   const standings = useMemo(() => DD.computeStandings(), [DD]);
+  const recentRounds = useMemo(() => lastNCompletedRounds(DD, 5), [DD]);
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
       <div className="page-head">
@@ -32,6 +36,7 @@ export default function ConstructorStandingsScreen({ data }) {
                 <th className="right">Points</th>
                 <th className="right">Wins</th>
                 <th className="right">Podiums</th>
+                {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
               </tr>
             </thead>
             <tbody>
@@ -63,6 +68,18 @@ export default function ConstructorStandingsScreen({ data }) {
                     <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 18 }}>{row.points}</strong></td>
                     <td className="right num">{row.wins}</td>
                     <td className="right num">{row.podiums}</td>
+                    {!mob && recentRounds.length > 0 && (
+                      <td className="right">
+                        <div style={{ display: 'inline-block' }}>
+                          <MiniChart
+                            values={recentRounds.map(r => teamPointsForRound(DD, row.team.id, r.round))}
+                            color={row.team.color}
+                            width={70}
+                            height={22}
+                          />
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
