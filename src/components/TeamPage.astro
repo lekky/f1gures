@@ -30,6 +30,16 @@ interface Props {
       races: number;
     }>;
     topDrivers: Array<{ driverRef: string; name: string; races: number; wins: number }>;
+    bestSeason: {
+      year: number;
+      position: number | null;
+      points: number | null;
+      wins: number;
+      races: number;
+      winRate: number;
+      tagline: string;
+      drivers: Array<{ driverRef: string; name: string }>;
+    } | null;
   };
 }
 
@@ -39,6 +49,9 @@ const yearsLabel = team.career.firstYear === team.career.lastYear
   : `${team.career.firstYear}–${team.career.lastYear}`;
 const fmtNum = (n: number | null | undefined) => (n == null ? '-' : String(n));
 const ord = (n: number | null) => (n == null ? '-' : `P${n}`);
+const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`;
+const best = team.bestSeason;
+const bestIsChampion = best != null && best.position === 1;
 ---
 
 <div class="page">
@@ -79,6 +92,47 @@ const ord = (n: number | null) => (n == null ? '-' : `P${n}`);
       <div class="stat-val">{fmtNum(team.career.championships)}</div>
     </div>
   </div>
+
+  {best && (
+    <>
+      <div class="section-head"><h2>Best Season</h2><div class="section-rule"></div></div>
+      <div class="panel best-hero" style={`border-left: 3px solid ${team.color};`}>
+        <div class="best-hero-left">
+          <div class="t-eyebrow best-eyebrow" style={`color: ${team.color};`}>Best Season</div>
+          <div class="best-hero-year">{best.year}</div>
+          <div class="best-hero-tagline" style={`color: ${team.color};`}>{best.tagline}</div>
+          {best.drivers.length > 0 && (
+            <div class="best-hero-drivers">
+              <div class="t-eyebrow best-hero-drivers-lbl">Drivers</div>
+              <div class="best-hero-drivers-chips">
+                {best.drivers.map((d) => (
+                  <a href={`/drivers/${d.driverRef}/`} class="best-hero-chip">{d.name}</a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div class="best-hero-right">
+          <div class="best-hero-stat">
+            <div class="best-hero-stat-lbl">Constructors</div>
+            <div class={`best-hero-stat-val ${bestIsChampion ? 'is-champ' : ''}`}>{ord(best.position)}</div>
+          </div>
+          <div class="best-hero-stat">
+            <div class="best-hero-stat-lbl">Win Rate</div>
+            <div class="best-hero-stat-val">{fmtPct(best.winRate)}</div>
+          </div>
+          <div class="best-hero-stat">
+            <div class="best-hero-stat-lbl">Wins</div>
+            <div class="best-hero-stat-val">{best.wins}</div>
+          </div>
+          <div class="best-hero-stat">
+            <div class="best-hero-stat-lbl">Points</div>
+            <div class="best-hero-stat-val">{best.points != null ? best.points : '-'}</div>
+          </div>
+        </div>
+      </div>
+    </>
+  )}
 
   {team.topDrivers && team.topDrivers.length > 0 && (
     <>
@@ -160,4 +214,25 @@ const ord = (n: number | null) => (n == null ? '-' : `P${n}`);
   .data-table .right { text-align: right; }
   .data-table .is-win-cell, .data-table .is-champ-cell { color: var(--accent); font-weight: 700; }
   .data-table a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+
+  /* Best Season hero card */
+  .best-hero { padding: 24px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 32px; align-items: center; }
+  .best-hero-left { display: flex; flex-direction: column; }
+  .best-hero-left .best-eyebrow { margin-bottom: 6px; }
+  .best-hero-year { font-family: var(--f-display); font-weight: 800; font-size: 96px; line-height: 0.95; letter-spacing: -0.01em; color: var(--fg-1); }
+  .best-hero-tagline { font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 4px; }
+  .best-hero-drivers { margin-top: 16px; }
+  .best-hero-drivers-lbl { margin-bottom: 8px; }
+  .best-hero-drivers-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .best-hero-chip { display: inline-block; padding: 3px 10px; border: 1px solid var(--line-2); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--fg-1); text-decoration: none; transition: background .15s, border-color .15s; }
+  .best-hero-chip:hover { background: var(--bg-3); border-color: var(--line-3); }
+  .best-hero-right { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line-1); border: 1px solid var(--line-1); }
+  .best-hero-stat { background: var(--bg-2); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .best-hero-stat-lbl { font-family: var(--f-display); font-weight: 600; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-3); }
+  .best-hero-stat-val { font-family: var(--f-display); font-weight: 800; font-size: 34px; line-height: 1; color: var(--fg-1); }
+  .best-hero-stat-val.is-champ { color: var(--accent); }
+  @media (max-width: 720px) {
+    .best-hero { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
+    .best-hero-year { font-size: 72px; }
+  }
 </style>
