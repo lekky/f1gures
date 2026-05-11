@@ -76,7 +76,7 @@ function SummaryWidget({ data, kicker, driver, team, big, sub, href, mob }) {
   return (
     <a className="panel" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block', position: 'relative', overflow: 'hidden' }} href={href}>
       {driver && (
-        <div style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 0, lineHeight: 0 }}>
+        <div style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 0, lineHeight: 0, width: mob ? 70 : 90 }}>
           <DriverSilhouette data={D} driver={driver} height={mob ? 70 : 90} />
         </div>
       )}
@@ -416,7 +416,9 @@ export default function HomeScreen({ data }) {
              style={{ '--team-color': D.teamById(row.driver.team).color, textDecoration: 'none', color: 'inherit' }}
              href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}>
             <div className={`pos pos-${row.position}`}>{row.position}</div>
-            <DriverSilhouette data={D} driver={row.driver} height={80} />
+            <div style={{ width: 80, flexShrink: 0 }}>
+              <DriverSilhouette data={D} driver={row.driver} height={80} />
+            </div>
             <div className="meta">
               <div className="name">{row.driver.last}</div>
               <div className="team">{D.teamById(row.driver.team).short} · <Flag cc={row.driver.country} flag={row.driver.flag} /></div>
