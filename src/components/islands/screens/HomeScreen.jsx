@@ -471,7 +471,7 @@ export default function HomeScreen({ data }) {
                href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}
                style={{
                  display: 'grid',
-                 gridTemplateColumns: mob ? '44px 1fr auto' : '52px 60px minmax(0, 1fr) minmax(0, 1.1fr) auto auto',
+                 gridTemplateColumns: mob ? '36px 52px minmax(0, 1fr) auto' : '52px 60px minmax(0, 1fr) minmax(0, 1.1fr) auto auto',
                  alignItems: 'center',
                  gap: mob ? 12 : 18,
                  padding: mob ? '12px 14px' : '14px 18px',
@@ -484,11 +484,9 @@ export default function HomeScreen({ data }) {
               <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, color: 'var(--fg-3)', letterSpacing: '0.02em' }}>
                 {String(row.position).padStart(2, '0')}
               </div>
-              {!mob && (
-                <div style={{ width: 60, lineHeight: 0 }}>
-                  <DriverSilhouette data={D} driver={row.driver} height={60} />
-                </div>
-              )}
+              <div style={{ width: mob ? 52 : 60, lineHeight: 0 }}>
+                <DriverSilhouette data={D} driver={row.driver} height={mob ? 52 : 60} />
+              </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--f-display)', fontSize: 11, color: 'var(--fg-3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   {row.driver.first}
