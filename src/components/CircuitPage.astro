@@ -24,6 +24,7 @@ interface Props {
       winnerRef: string | null;
       winnerName: string | null;
       winnerTeam: string | null;
+      winnerTeamRef: string | null;
       poleRef: string | null;
       poleName: string | null;
       fastestLapRef: string | null;
@@ -209,7 +210,11 @@ const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '
           <div class="callout-icon">◷</div>
           <div class="callout-body">
             <div class="callout-lbl">Lap Record</div>
-            <div class="callout-driver">{lapRecord.driver}</div>
+            <div class="callout-driver">
+              {lapRecord.driverRef
+                ? <a href={`/drivers/${lapRecord.driverRef}/`} class="inline-link">{lapRecord.driver}</a>
+                : lapRecord.driver}
+            </div>
             <div class="callout-time">{lapRecord.time} · {lapRecord.year}</div>
           </div>
         </div>
@@ -279,7 +284,9 @@ const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '
                   <td>{r.winnerRef && r.winnerName ? (
                     <a href={`/drivers/${r.winnerRef}/`} class="inline-link">{r.winnerName}</a>
                   ) : (r.winnerName || '-')}</td>
-                  <td>{r.winnerTeam || '-'}</td>
+                  <td>{r.winnerTeamRef
+                    ? <a href={`/teams/${r.winnerTeamRef}/`} class="inline-link">{r.winnerTeam || r.winnerTeamRef}</a>
+                    : (r.winnerTeam || '-')}</td>
                   <td>{r.poleRef && r.poleName ? (
                     <a href={`/drivers/${r.poleRef}/`} class="inline-link">{r.poleName}</a>
                   ) : (r.poleName || '-')}</td>

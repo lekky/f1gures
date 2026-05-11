@@ -1091,6 +1091,11 @@ for (const c of circuits) {
       const k = constructorsById.get(row.constructorId);
       return k ? k.name : null;
     };
+    const teamRefOf = (row) => {
+      if (!row) return null;
+      const k = constructorsById.get(row.constructorId);
+      return k ? k.constructorRef : null;
+    };
     return {
       year: toInt(race.year),
       round: toInt(race.round),
@@ -1099,6 +1104,7 @@ for (const c of circuits) {
       winnerRef: refOf(winnerRow),
       winnerName: nameOf(winnerRow),
       winnerTeam: teamOf(winnerRow),
+      winnerTeamRef: teamRefOf(winnerRow),
       poleRef: refOf(poleRow),
       poleName: nameOf(poleRow),
       fastestLapRef: refOf(flRow),
@@ -1213,24 +1219,32 @@ for (const { year, path } of seasonFiles) {
 
     const result = season.results && season.results[race.round];
     let winnerRef = null, poleRef = null, fastestRef = null;
-    let winnerName = null, poleName = null, winnerTeam = null;
+    let winnerName = null, poleName = null, winnerTeam = null, winnerTeamRef = null;
     if (result) {
       const winnerId = result.order?.[0];
       const poleId = result.pole;
       const fastestId = result.fastest;
       const driverByCode = (id) => season.drivers?.find(d => d.id === id || d.jolpicaId === id);
+      const TEAM_ALIAS = { redbull: 'red_bull', aston: 'aston_martin' };
       const teamByDriverCode = (id) => {
         const d = driverByCode(id);
         if (!d) return null;
         const t = season.teams?.find(t => t.id === d.team);
         return t ? t.name : null;
       };
+      const teamRefByDriverCode = (id) => {
+        const d = driverByCode(id);
+        if (!d) return null;
+        const raw = d.team;
+        return (raw && TEAM_ALIAS[raw]) || raw || null;
+      };
       const refOf = (id) => driverByCode(id)?.jolpicaId || null;
       const nameOf = (id) => {
         const d = driverByCode(id);
         return d ? `${d.first} ${d.last}` : null;
       };
-      winnerRef = refOf(winnerId); winnerName = nameOf(winnerId); winnerTeam = teamByDriverCode(winnerId);
+      winnerRef = refOf(winnerId); winnerName = nameOf(winnerId);
+      winnerTeam = teamByDriverCode(winnerId); winnerTeamRef = teamRefByDriverCode(winnerId);
       poleRef = refOf(poleId); poleName = nameOf(poleId);
       fastestRef = refOf(fastestId);
     }
@@ -1240,7 +1254,7 @@ for (const { year, path } of seasonFiles) {
       round: race.round,
       name: race.name,
       date: race.date,
-      winnerRef, winnerName, winnerTeam,
+      winnerRef, winnerName, winnerTeam, winnerTeamRef,
       poleRef, poleName,
       fastestLapRef: fastestRef,
       fastestLapTime: null,
