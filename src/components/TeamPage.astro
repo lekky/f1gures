@@ -52,17 +52,19 @@ interface Props {
 const { team, currentYear, recentForm, currentStandings } = Astro.props;
 
 const CAR_IMAGE_FOR_REF: Record<string, string> = {
-  alpine:   'alpine-2026.avif',
-  aston:    'astonmartin-2026.avif',
-  audi:     'audi-2026.avif',
-  cadillac: 'cadillac-2026.avif',
-  ferrari:  'ferrari-2026.avif',
-  haas:     'haas-2026.avif',
-  mclaren:  'mclaren-2026.avif',
-  mercedes: 'mercedes-2026.avif',
-  rb:       'racingbulls-2026.avif',
-  redbull:  'redbull-2026.avif',
-  williams: 'williams-2026.avif',
+  alpine:        'alpine-2026.avif',
+  aston:         'astonmartin-2026.avif',
+  aston_martin:  'astonmartin-2026.avif',
+  audi:          'audi-2026.avif',
+  cadillac:      'cadillac-2026.avif',
+  ferrari:       'ferrari-2026.avif',
+  haas:          'haas-2026.avif',
+  mclaren:       'mclaren-2026.avif',
+  mercedes:      'mercedes-2026.avif',
+  rb:            'racingbulls-2026.avif',
+  redbull:       'redbull-2026.avif',
+  red_bull:      'redbull-2026.avif',
+  williams:      'williams-2026.avif',
 };
 const carFile = CAR_IMAGE_FOR_REF[team.constructorRef];
 const carImagePath = carFile ? `images/cars/${carFile}` : null;

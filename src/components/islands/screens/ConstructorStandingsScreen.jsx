@@ -33,10 +33,10 @@ export default function ConstructorStandingsScreen({ data }) {
                 <th>Pos</th>
                 <th>Team</th>
                 <th>Drivers</th>
+                {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
                 <th className="right">Points</th>
                 <th className="right">Wins</th>
                 <th className="right">Podiums</th>
-                {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
               </tr>
             </thead>
             <tbody>
@@ -65,9 +65,6 @@ export default function ConstructorStandingsScreen({ data }) {
                         ))}
                       </div>
                     </td>
-                    <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 18 }}>{row.points}</strong></td>
-                    <td className="right num">{row.wins}</td>
-                    <td className="right num">{row.podiums}</td>
                     {!mob && recentRounds.length > 0 && (
                       <td className="right">
                         <div style={{ display: 'inline-block' }}>
@@ -80,6 +77,9 @@ export default function ConstructorStandingsScreen({ data }) {
                         </div>
                       </td>
                     )}
+                    <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 18 }}>{row.points}</strong></td>
+                    <td className="right num">{row.wins}</td>
+                    <td className="right num">{row.podiums}</td>
                   </tr>
                 );
               })}

@@ -104,11 +104,11 @@ export default function DriverStandingsScreen({ data }) {
                 <th>Δ</th>
                 <th className="sortable" onClick={() => toggleSort('driver')}>Driver<SortInd k="driver" /></th>
                 <th className="sortable" onClick={() => toggleSort('team')}>Team<SortInd k="team" /></th>
+                {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
                 <th className="right sortable" onClick={() => toggleSort('points')}>Pts<SortInd k="points" /></th>
                 <th className="right sortable" onClick={() => toggleSort('wins')}>W<SortInd k="wins" /></th>
                 <th className="right sortable" onClick={() => toggleSort('podiums')}>Pod<SortInd k="podiums" /></th>
                 <th className="right sortable" onClick={() => toggleSort('fastest')}>FL<SortInd k="fastest" /></th>
-                {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
               </tr>
             </thead>
             <tbody>
@@ -121,19 +121,27 @@ export default function DriverStandingsScreen({ data }) {
                     <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
                     <td><ChangeIndicator change={row.change} /></td>
                     <td>
-                      <a href={driverHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
-                        <DriverCell data={DD} driver={row.driver} />
-                      </a>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {row.driver.jolpicaId && (
+                          <img
+                            src={`/images/drivers/${row.driver.jolpicaId}.webp`}
+                            width={28}
+                            height={28}
+                            alt=""
+                            style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                            onError={e => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        )}
+                        <a href={driverHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                          <DriverCell data={DD} driver={row.driver} />
+                        </a>
+                      </div>
                     </td>
                     <td>
                       {team && teamHref
                         ? <a href={teamHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{team.name}</a>
                         : '-'}
                     </td>
-                    <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 16 }}>{row.points}</strong></td>
-                    <td className="right num">{row.wins}</td>
-                    <td className="right num">{row.podiums}</td>
-                    <td className="right num">{row.fastestLaps}</td>
                     {!mob && recentRounds.length > 0 && (
                       <td className="right">
                         <div style={{ display: 'inline-block' }}>
@@ -146,6 +154,10 @@ export default function DriverStandingsScreen({ data }) {
                         </div>
                       </td>
                     )}
+                    <td className="right num"><strong style={{ fontFamily: 'var(--f-display)', fontSize: 16 }}>{row.points}</strong></td>
+                    <td className="right num">{row.wins}</td>
+                    <td className="right num">{row.podiums}</td>
+                    <td className="right num">{row.fastestLaps}</td>
                   </tr>
                 );
               })}
