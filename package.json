@@ -15,7 +15,9 @@
     "predev": "npm run build:archive && npm run sync:current",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astrojs/react": "^3.6.2",
@@ -32,6 +34,7 @@
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "flag-icons": "^7.5.0",
-    "satori": "^0.26.0"
+    "satori": "^0.26.0",
+    "vitest": "^4.1.6"
   }
 }
