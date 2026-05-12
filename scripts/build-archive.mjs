@@ -1991,3 +1991,43 @@ if (postArchiveTeamYears > 0) {
   writeFileSync(join(OUT, '_teams-index.json'), JSON.stringify(teamsIndex));
   console.log(`[archive] merged ${postArchiveTeamYears} post-Ergast team-year entries into ${teamDocCache.size} team docs (${newlyCreatedTeams.size} new)`);
 }
+
+// ─── Enrich index entries with last5 and display data ───────────────────────
+{
+  const teamRaceMap = new Map(); // constructorRef → Map<'year-round', {points,year,round}>
+
+  for (const entry of index) {
+    let doc;
+    try {
+      doc = JSON.parse(readFileSync(join(OUT, 'drivers', `${entry.driverRef}.json`), 'utf8'));
+    } catch { continue; }
+
+    const perRace = doc.perRace || [];
+    entry.last5 = perRace.slice(-5).map(r => ({ points: r.points || 0, year: r.year, round: r.round }));
+    entry.number = doc.number || null;
+    entry.teamName = doc.perSeason?.[0]?.constructorName || null;
+
+    for (const r of perRace) {
+      if (!r.constructorRef) continue;
+      if (!teamRaceMap.has(r.constructorRef)) teamRaceMap.set(r.constructorRef, new Map());
+      const k = `${r.year}-${r.round}`;
+      const ex = teamRaceMap.get(r.constructorRef).get(k);
+      if (!ex) {
+        teamRaceMap.get(r.constructorRef).set(k, { points: r.points || 0, year: r.year, round: r.round });
+      } else {
+        ex.points += r.points || 0;
+      }
+    }
+  }
+  writeFileSync(join(OUT, '_drivers-index.json'), JSON.stringify(index));
+
+  for (const tEntry of teamsIndex) {
+    const ref = tEntry.constructorRef;
+    const races = teamRaceMap.has(ref)
+      ? [...teamRaceMap.get(ref).values()].sort((a, b) => a.year - b.year || a.round - b.round)
+      : [];
+    tEntry.last5 = races.slice(-5).map(r => ({ points: r.points, year: r.year, round: r.round }));
+  }
+  writeFileSync(join(OUT, '_teams-index.json'), JSON.stringify(teamsIndex));
+  console.log('[archive] enriched driver and team indexes with last5 data');
+}
