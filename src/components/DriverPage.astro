@@ -56,10 +56,12 @@ interface Props {
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildDriverSummary } from '../lib/buildDriverSummary.js';
+import { getDriverBio } from '../data/driverBios.js';
 
 const { driver } = Astro.props;
 const fullName = `${driver.forename} ${driver.surname}`;
-const driverSummary = buildDriverSummary(driver, new Date().getFullYear());
+const customBio = getDriverBio(driver.driverRef);
+const driverSummary = customBio ? null : buildDriverSummary(driver, new Date().getFullYear());
 const yearsLabel = driver.career.firstYear === driver.career.lastYear
   ? `${driver.career.firstYear}`
   : `${driver.career.firstYear}–${driver.career.lastYear}`;
@@ -184,7 +186,11 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
     </div>
   </div>
 
-  {driverSummary && (
+  {customBio ? (
+    <div class="driver-summary">
+      {customBio.map(p => <p>{p}</p>)}
+    </div>
+  ) : driverSummary && (
     <p class="driver-summary">{driverSummary}</p>
   )}
 
@@ -341,6 +347,9 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
     color: var(--fg-1);
   }
   .driver-hero-wdc.is-champ { color: var(--accent); }
+
+  .driver-summary p { margin: 0 0 12px; }
+  .driver-summary p:last-child { margin-bottom: 0; }
 
   .driver-career-grid { grid-template-columns: repeat(7, 1fr); }
   @media (max-width: 720px) {
