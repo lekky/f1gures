@@ -87,13 +87,20 @@ Red Bull Racing
 
 ### Default sort
 
-Most championships descending, then wins descending. Applied before any filter.
+Most championships descending, then wins descending.
+
+### Sorting
+
+A sort control above the grid lets the user sort by any column. Clicking a column label cycles: descending → ascending → default. One active sort at a time. Resets to page 1 on change.
+
+Sortable columns — drivers: name, nationality, active years (by firstYear), championships, wins. Teams: same set minus name → constructor name.
 
 ### Controls
 
 Above the grid:
 - **Search input**: live filters by driver/team name as you type (case-insensitive)
 - **Nationality dropdown**: populated from unique nationality values in the loaded index; filters in combination with search (AND logic)
+- **Sort control**: column label buttons with directional indicator (↑ ↓)
 - **Result count**: e.g. "Showing 24 of 862"
 
 ### Pagination
@@ -136,4 +143,4 @@ Above the grid:
 - Team logos / car images (future)
 - URL-persisted filter/pagination state
 - Year-aware switching (this is all-time only)
-- Sorting controls (sort order is fixed; no user-facing sort toggle)
+- Multi-column sorting
