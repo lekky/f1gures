@@ -363,7 +363,7 @@ export function buildFromYearJson(json, staticCircuits = {}) {
       snapshots[r] = { ...driverPts };
     });
 
-    const ranked = drivers.map(d => ({
+    const ranked = drivers.filter(d => d.team).map(d => ({
       driver: d,
       points: driverPts[d.id] || 0,
       wins: driverWins[d.id] || 0,
