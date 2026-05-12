@@ -22,12 +22,16 @@ const route = {
   standings:   isRoute('/standings-drivers') || isRoute('/standings-constructors'),
   calendar:    isRoute('/calendar') || isRoute('/races') || isRoute('/race.html'),
   circuits:    isRoute('/circuits') || isRoute('/circuit.html'),
+  drivers:     isRoute('/drivers') || isRoute('/driver.html'),
+  teams:       isRoute('/teams') || isRoute('/team.html'),
 };
 const botActive =
   route.home       ? 'home' :
   route.standings  ? 'standings' :
   route.calendar   ? 'calendar' :
-  route.circuits   ? 'circuits' : null;
+  route.circuits   ? 'circuits' :
+  route.drivers    ? 'drivers' :
+  route.teams      ? 'teams' : null;
 ---
 <div class="f1-app">
   <!-- Desktop top nav -->
@@ -42,6 +46,8 @@ const botActive =
 
       <a class:list={['nav-item', { active: route.calendar }]} href="/calendar/">Calendar</a>
       <a class:list={['nav-item', { active: route.circuits }]} href="/circuits/">Circuits</a>
+      <a class:list={['nav-item', { active: route.drivers }]} href="/drivers/">Drivers</a>
+      <a class:list={['nav-item', { active: route.teams }]} href="/teams/">Teams</a>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-controls">
@@ -75,6 +81,12 @@ const botActive =
     </a>
     <a class:list={['botnav-item', { active: botActive === 'circuits' }]} href="/circuits/">
       <span class="botnav-icon">◈</span><span>Circuits</span>
+    </a>
+    <a class:list={['botnav-item', { active: botActive === 'drivers' }]} href="/drivers/">
+      <span class="botnav-icon">◈</span><span>Drivers</span>
+    </a>
+    <a class:list={['botnav-item', { active: botActive === 'teams' }]} href="/teams/">
+      <span class="botnav-icon">◈</span><span>Teams</span>
     </a>
   </nav>
 </div>
