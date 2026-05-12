@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import DriversIndexIsland from '../components/islands/DriversIndexIsland.jsx';
+const title = 'F1 Drivers - All Time | f1gures';
+const description = 'Every Formula 1 driver from 1950 to today. Career wins, championships, and active years. Filter by nationality.';
+const breadcrumb = [{ name: 'Home', path: '/' }, { name: 'Drivers', path: '/drivers/' }];
+---
+<BaseLayout title={title} description={description} canonicalPath="/drivers/" ogType="website" breadcrumb={breadcrumb}>
+  <DriversIndexIsland client:load />
+</BaseLayout>

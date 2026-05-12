@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TeamsIndexIsland from '../components/islands/TeamsIndexIsland.jsx';
+const title = 'F1 Teams - All Time | f1gures';
+const description = 'Every Formula 1 constructor from 1950 to today. Championships, wins, and active years. Filter by nationality.';
+const breadcrumb = [{ name: 'Home', path: '/' }, { name: 'Teams', path: '/teams/' }];
+---
+<BaseLayout title={title} description={description} canonicalPath="/teams/" ogType="website" breadcrumb={breadcrumb}>
+  <TeamsIndexIsland client:load />
+</BaseLayout>
