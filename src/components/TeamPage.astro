@@ -70,6 +70,9 @@ const carFile = CAR_IMAGE_FOR_REF[team.constructorRef];
 const carImagePath = carFile ? `images/cars/${carFile}` : null;
 const hasCarImage = carImagePath ? existsSync(resolve(process.cwd(), 'public', carImagePath)) : false;
 
+const logoImagePath = `images/teams/${team.constructorRef}.jpg`;
+const hasLogo = existsSync(resolve(process.cwd(), 'public', logoImagePath));
+
 // Mini bar-chart geometry (matches MiniChart in src/lib/shared.jsx).
 const CHART_W = 80;
 const CHART_H = 22;
@@ -120,7 +123,12 @@ const currentDriverPhotos = currentDrivers.map(d => {
         <div class="t-eyebrow team-hero-flag" style={`color: ${team.color};`}>
           {team.nationality || '-'}
         </div>
-        <h1 class="page-title team-hero-name">{team.name}</h1>
+        <div class="team-hero-title-row">
+          {hasLogo && (
+            <img class="team-hero-logo" src={`/${logoImagePath}`} alt={`${team.name} logo`} width="72" height="72" loading="eager" />
+          )}
+          <h1 class="page-title team-hero-name">{team.name}</h1>
+        </div>
         <div class="team-hero-stats">
           <span class="t-mono">{team.short}</span>
           <span class="sep">·</span>
@@ -308,7 +316,9 @@ const currentDriverPhotos = currentDrivers.map(d => {
   .team-hero { padding: 20px; margin-bottom: 20px; }
   .team-hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
   .team-hero-flag { margin-bottom: 6px; }
-  .team-hero-name { margin: 0 0 8px 0; font-size: 56px; line-height: 1.05; }
+  .team-hero-title-row { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+  .team-hero-logo { width: 72px; height: 72px; object-fit: contain; border-radius: 8px; background: #fff; padding: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.08); flex-shrink: 0; }
+  .team-hero-name { margin: 0; font-size: 56px; line-height: 1.05; }
   .team-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
   .team-hero-stats .sep { color: var(--fg-4); }
   .team-hero-champ { text-align: right; }

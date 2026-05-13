@@ -3,7 +3,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import {
-  SectionHead, SprintBadge, Countdown, DriverSilhouette, useIsMobile, urlFor, navigate, fmtDateLong,
+  SectionHead, SprintBadge, Countdown, DriverSilhouette, TeamLogo, useIsMobile, urlFor, navigate, fmtDateLong,
   circuitTz, zoneShort, Flag,
   MiniChart, lastNCompletedRounds, driverPointsForRound, teamPointsForRound,
 } from '../../../lib/shared.jsx';
@@ -545,7 +545,7 @@ export default function HomeScreen({ data }) {
                href={urlFor({ name: 'team', id: team.id, ref: team.id })}
                style={{
                  display: 'grid',
-                 gridTemplateColumns: mob ? '44px 1fr auto' : '52px minmax(0, 1.5fr) minmax(0, 1fr) auto auto',
+                 gridTemplateColumns: mob ? '32px 52px 1fr auto' : '40px 60px minmax(0, 1.5fr) minmax(0, 1fr) auto auto',
                  alignItems: 'center',
                  gap: mob ? 12 : 18,
                  padding: mob ? '12px 14px' : '14px 18px',
@@ -558,6 +558,7 @@ export default function HomeScreen({ data }) {
               <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, color: 'var(--fg-3)', letterSpacing: '0.02em' }}>
                 {String(row.position).padStart(2, '0')}
               </div>
+              <TeamLogo team={team} size={mob ? 52 : 60} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {team.name}

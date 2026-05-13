@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MiniChart, urlFor } from '../../../lib/shared.jsx';
+import { MiniChart, urlFor, TeamLogo } from '../../../lib/shared.jsx';
 import { filterItems, sortItems, paginateItems, uniqueNationalities } from '../../../lib/listingUtils.js';
 
 const PAGE_SIZE = 24;
@@ -116,6 +116,7 @@ export default function TeamsIndexScreen({ teams }) {
             >
               <div className="listing-card-head">
                 <div className="listing-team-bar" style={{ background: team.color || 'var(--accent)' }} />
+                <TeamLogo team={team} size={36} />
                 <div>
                   <div className="listing-card-name">{team.name}</div>
                   <div className="listing-card-sub">{team.nationality}</div>

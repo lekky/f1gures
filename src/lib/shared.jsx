@@ -338,6 +338,30 @@ export function MiniChart({ values, color, max, width = 76, height = 26 }) {
   );
 }
 
+// Map Ergast constructorRef ↔ buildFallback team id for logo files.
+const TEAM_LOGO_ALIAS = {
+  red_bull: 'redbull',
+  aston_martin: 'aston',
+};
+export function TeamLogo({ team, size = 40 }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const raw = team?.id || team?.constructorRef || null;
+  const slug = raw ? (TEAM_LOGO_ALIAS[raw] || raw) : null;
+  const src = slug ? `/images/teams/${slug}.jpg` : null;
+  if (!src || imgFailed) return null;
+  return (
+    <img
+      src={src}
+      alt={`${team.name} logo`}
+      width={size}
+      height={size}
+      loading="lazy"
+      onError={() => setImgFailed(true)}
+      style={{ width: size, height: size, objectFit: 'contain', borderRadius: 6, background: '#fff', padding: 3, flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}
+    />
+  );
+}
+
 export function DriverSilhouette({ data, driver, height = 200 }) {
   const team = data.teamById(driver.team);
   const [imgFailed, setImgFailed] = useState(false);
