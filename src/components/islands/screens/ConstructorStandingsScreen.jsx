@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import {
   Panel, SectionHead, useIsMobile, urlFor,
   MiniChart, lastNCompletedRounds, teamPointsForRound,
+  TeamLogo,
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, TeamProgressionChart } from './StandingsCommon.jsx';
 
@@ -49,7 +50,8 @@ export default function ConstructorStandingsScreen({ data }) {
                     <td>
                       <a href={teamHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ width: 4, height: 24, background: row.team.color }}></span>
+                          <span style={{ width: 4, height: 24, background: row.team.color, flexShrink: 0 }}></span>
+                          <TeamLogo team={row.team} size={32} />
                           <span style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase' }}>{row.team.name}</span>
                         </div>
                       </a>
