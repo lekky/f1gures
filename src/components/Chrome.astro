@@ -30,6 +30,7 @@ const botActive =
   route.home       ? 'home' :
   route.standings  ? 'standings' :
   route.calendar   ? 'calendar' :
+  route.blog       ? 'blog' :
   route.circuits   ? 'circuits' :
   route.drivers    ? 'drivers' :
   route.teams      ? 'teams' : null;
@@ -81,8 +82,8 @@ const botActive =
     <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/">
       <span class="botnav-icon">▦</span><span>Calendar</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'circuits' }]} href="/circuits/">
-      <span class="botnav-icon">◈</span><span>Circuits</span>
+    <a class:list={['botnav-item', { active: botActive === 'blog' }]} href="/blog/">
+      <span class="botnav-icon">◈</span><span>Blog</span>
     </a>
   </nav>
 </div>
