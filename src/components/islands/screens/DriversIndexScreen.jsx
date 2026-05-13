@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MiniChart, SectionHead, urlFor, useIsMobile } from '../../../lib/shared.jsx';
-import { filterItems, sortItems, paginateItems, uniqueNationalities } from '../../../lib/listingUtils.js';
+import { filterItems, sortItems, paginateItems } from '../../../lib/listingUtils.js';
 
 const PAGE_SIZE = 24;
 const SORT_FIELDS = [
@@ -154,7 +154,6 @@ function CompactRow({ driver, mob }) {
 export default function DriversIndexScreen({ drivers }) {
   const mob = useIsMobile();
   const [search, setSearch] = useState('');
-  const [nationality, setNationality] = useState('');
   const [sortField, setSortField] = useState('championships');
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(1);
@@ -164,8 +163,7 @@ export default function DriversIndexScreen({ drivers }) {
     .filter(d => d.lastYear >= currentYear)
     .sort((a, b) => b.championships - a.championships || b.wins - a.wins);
 
-  const nationalities = uniqueNationalities(drivers);
-  const filtered = filterItems(drivers, { search, nationality });
+  const filtered = filterItems(drivers, { search });
   const sorted = (() => {
     if (sortField === 'championships') {
       const mult = sortDir === 'desc' ? 1 : -1;
@@ -216,22 +214,21 @@ export default function DriversIndexScreen({ drivers }) {
           value={search}
           onInput={e => { setSearch(e.target.value); setPage(1); }}
         />
-        <select value={nationality} onChange={e => { setNationality(e.target.value); setPage(1); }}>
-          <option value="">All nationalities</option>
-          {nationalities.map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
       </div>
 
       <div className="sort-bar">
-        {SORT_FIELDS.map(({ key, label }) => (
-          <button
-            key={key}
-            className={`sort-btn${sortField === key ? ' active' : ''}`}
-            onClick={() => handleSort(key)}
-          >
-            {label}{sortField === key ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
-          </button>
-        ))}
+        <span className="sort-bar-label">Sort by</span>
+        <div className="sort-group">
+          {SORT_FIELDS.map(({ key, label }) => (
+            <button
+              key={key}
+              className={`sort-btn${sortField === key ? ' active' : ''}`}
+              onClick={() => handleSort(key)}
+            >
+              {label}{sortField === key && <span className="sort-arrow">{sortDir === 'desc' ? '↓' : '↑'}</span>}
+            </button>
+          ))}
+        </div>
       </div>
 
       <p className="result-count">Showing {Math.min(page * PAGE_SIZE, sorted.length)} of {sorted.length}</p>
