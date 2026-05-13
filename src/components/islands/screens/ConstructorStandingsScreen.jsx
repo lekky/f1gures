@@ -22,6 +22,11 @@ export default function ConstructorStandingsScreen({ data }) {
           <h1 className="page-title">Constructor Standings</h1>
           <div className="page-sub">After Round {standings.lastRound}</div>
         </div>
+        {mob && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <a className="btn btn-secondary btn-sm" href="/teams/">All Teams</a>
+          </div>
+        )}
       </div>
 
       {mob && <StandingsTypeToggle active="c" />}
