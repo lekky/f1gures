@@ -1,0 +1,93 @@
+---
+// Race result panel for MDX blog posts. Shows the top 5 finishers plus pole
+// and fastest lap, linked to the full race page. Pulls from the archive
+// JSONs so it works for any 1950-2024 round (and any post-2024 round that's
+// been merged into the archive via the bundle pass).
+//
+// Usage:
+//   <RaceResult year={1976} round={16} />
+//   <RaceResult year={1976} round={16} top={3} />
+
+import { getRaceArchive, getDriverEntry } from '../../lib/blogData';
+
+interface Props {
+  year: number;
+  round: number;
+  /** Number of finishers to show, default 5 */
+  top?: number;
+}
+
+const { year, round, top = 5 } = Astro.props;
+const race = getRaceArchive(year, round);
+---
+{race ? (
+  <aside class="blog-race-card panel">
+    <div class="blog-race-card-head">
+      <span class="t-eyebrow">Round {race.round}, {race.year}</span>
+      <a class="blog-race-card-title" href={`/races/${race.year}/${race.round}/`}>
+        {race.circuit.flag} {race.name}
+      </a>
+      <span class="blog-race-card-date t-mono">{race.date}</span>
+    </div>
+    <table class="blog-race-card-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Driver</th>
+          <th>Team</th>
+          <th class="num">Grid</th>
+          <th class="num">Pts</th>
+        </tr>
+      </thead>
+      <tbody>
+        {race.results.slice(0, top).map((r) => (
+          <tr>
+            <td class="t-mono">{r.positionText}</td>
+            <td>
+              <a class="blog-race-card-driver" href={`/drivers/${r.driverRef}/`}>
+                {r.driverName}
+              </a>
+            </td>
+            <td>
+              {r.constructorRef ? (
+                <a class="blog-race-card-team" href={`/teams/${r.constructorRef}/`} style={`color: ${r.constructorColor || 'inherit'}`}>
+                  {r.constructorName}
+                </a>
+              ) : <span>{r.constructorName || '-'}</span>}
+            </td>
+            <td class="num t-mono">{r.grid ?? '-'}</td>
+            <td class="num t-mono">{r.points}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    {(race.pole || race.fastestLapTime) && (
+      <div class="blog-race-card-foot">
+        {race.pole && (() => {
+          const p = getDriverEntry(race.pole);
+          return (
+            <span>
+              <span class="t-eyebrow">Pole</span>{' '}
+              <a href={`/drivers/${race.pole}/`}>{p ? `${p.forename} ${p.surname}` : race.pole}</a>
+            </span>
+          );
+        })()}
+        {race.fastestLapTime && (
+          <span>
+            <span class="t-eyebrow">Fastest lap</span>{' '}
+            <span class="t-mono">{race.fastestLapTime}</span>
+          </span>
+        )}
+      </div>
+    )}
+  </aside>
+) : (
+  <aside class="blog-race-card panel">
+    <div class="blog-race-card-head">
+      <span class="t-eyebrow">Race not in archive</span>
+      <a class="blog-race-card-title" href={`/races/${year}/${round}/`}>
+        {year} round {round}
+      </a>
+    </div>
+  </aside>
+)}

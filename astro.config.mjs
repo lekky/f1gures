@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
+import mdx from '@astrojs/mdx';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -25,6 +26,7 @@ export default defineConfig({
   output: 'static',
   integrations: [
     react(),
+    mdx(),
     sitemap({ customPages: teamPages }),
   ],
   vite: {

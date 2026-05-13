@@ -1,0 +1,84 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { BLOG_CATEGORY_LABELS } from '../../content/config';
+import { sortPosts, isPublic, fmtPostDate } from '../../lib/blog';
+
+const posts = sortPosts((await getCollection('blog')).filter(isPublic));
+
+const title = 'Blog - F1 Race Recaps, History & Analysis | f1gures';
+const description = 'Race recaps, technical explainers, driver focus pieces and historic season retrospectives from f1gures.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Blog',
+  '@id': 'https://f1gures.app/blog/#blog',
+  url: 'https://f1gures.app/blog/',
+  name: 'f1gures Blog',
+  description,
+  inLanguage: 'en-GB',
+  publisher: {
+    '@type': 'Organization',
+    name: 'f1gures',
+    url: 'https://f1gures.app/',
+  },
+  blogPost: posts.slice(0, 20).map((p) => ({
+    '@type': 'BlogPosting',
+    headline: p.data.title,
+    description: p.data.description,
+    datePublished: p.data.publishedAt.toISOString(),
+    url: `https://f1gures.app/blog/${p.slug}/`,
+  })),
+};
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Blog', path: '/blog/' },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/blog/"
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page">
+    <div class="page-head">
+      <div class="t-eyebrow">f1gures</div>
+      <h1 class="page-title">Blog</h1>
+      <p class="page-sub">Race recaps, technical explainers and historic deep-dives.</p>
+    </div>
+
+    <div class="blog-categories">
+      {Object.entries(BLOG_CATEGORY_LABELS).map(([slug, label]) => (
+        <a class="blog-category-chip" href={`/blog/category/${slug}/`}>{label}</a>
+      ))}
+      <a class="blog-category-chip blog-category-rss" href="/blog/rss.xml">RSS</a>
+    </div>
+
+    {posts.length === 0 ? (
+      <div class="panel">
+        <div class="panel-body">
+          <p>No posts yet — first ones coming soon.</p>
+        </div>
+      </div>
+    ) : (
+      <ul class="blog-list">
+        {posts.map((post) => (
+          <li class="blog-list-item">
+            <a class="panel blog-card" href={`/blog/${post.slug}/`}>
+              <div class="blog-card-meta">
+                <span class="t-eyebrow blog-card-cat">{BLOG_CATEGORY_LABELS[post.data.category]}</span>
+                <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+              </div>
+              <h2 class="blog-card-title">{post.data.title}</h2>
+              <p class="blog-card-desc">{post.data.description}</p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</BaseLayout>

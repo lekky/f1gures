@@ -1,0 +1,92 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  BLOG_CATEGORIES,
+  BLOG_CATEGORY_LABELS,
+  BLOG_CATEGORY_DESCRIPTIONS,
+} from '../../../content/config';
+import { isPublic, sortPosts, fmtPostDate } from '../../../lib/blog';
+
+export async function getStaticPaths() {
+  return BLOG_CATEGORIES.map((category) => ({
+    params: { category },
+    props: { category },
+  }));
+}
+
+interface Props {
+  category: (typeof BLOG_CATEGORIES)[number];
+}
+
+const { category } = Astro.props;
+const label = BLOG_CATEGORY_LABELS[category];
+const categoryDescription = BLOG_CATEGORY_DESCRIPTIONS[category];
+
+const posts = sortPosts(
+  (await getCollection('blog'))
+    .filter(isPublic)
+    .filter((p) => p.data.category === category),
+);
+
+const canonicalPath = `/blog/category/${category}/`;
+const title = `${label} - F1 Blog | f1gures`;
+const description = `${categoryDescription} Read every ${label.toLowerCase()} post on f1gures.`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  url: `https://f1gures.app${canonicalPath}`,
+  name: `${label} - f1gures Blog`,
+  description,
+  inLanguage: 'en-GB',
+  isPartOf: { '@type': 'Blog', '@id': 'https://f1gures.app/blog/#blog' },
+};
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Blog', path: '/blog/' },
+  { name: label, path: canonicalPath },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page">
+    <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/blog/">← Blog</a>
+
+    <div class="page-head">
+      <div class="t-eyebrow">Category</div>
+      <h1 class="page-title">{label}</h1>
+      <p class="page-sub">{categoryDescription}</p>
+    </div>
+
+    {posts.length === 0 ? (
+      <div class="panel">
+        <div class="panel-body">
+          <p>No posts in this category yet.</p>
+        </div>
+      </div>
+    ) : (
+      <ul class="blog-list">
+        {posts.map((post) => (
+          <li class="blog-list-item">
+            <a class="panel blog-card" href={`/blog/${post.slug}/`}>
+              <div class="blog-card-meta">
+                <span class="t-eyebrow blog-card-cat">{label}</span>
+                <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+              </div>
+              <h2 class="blog-card-title">{post.data.title}</h2>
+              <p class="blog-card-desc">{post.data.description}</p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</BaseLayout>

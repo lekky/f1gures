@@ -1,0 +1,33 @@
+---
+// Inline driver pill for MDX blog posts. Renders as <a class="blog-chip">,
+// styled with the driver's team color. Falls back to a plain link if the
+// driver isn't in the archive (unlikely - the index covers all 865 drivers).
+//
+// Usage in MDX:
+//   import DriverChip from '../../components/blog/DriverChip.astro';
+//   <DriverChip ref="clark" />
+//   <DriverChip ref="antonelli" code surname />
+
+import { getDriverEntry } from '../../lib/blogData';
+
+interface Props {
+  /** driverRef slug, e.g. "clark", "max_verstappen" */
+  ref: string;
+  /** Show driver code (ANT, VER, etc.) instead of last name. Default false. */
+  code?: boolean;
+}
+
+const { ref, code = false } = Astro.props;
+const d = getDriverEntry(ref);
+const label = !d
+  ? ref
+  : code && d.code
+    ? d.code
+    : `${d.forename} ${d.surname}`;
+const color = d?.teamColor || 'var(--accent)';
+const href = `/drivers/${ref}/`;
+---
+<a class="blog-chip" href={href} style={`--chip-color: ${color}`}>
+  <span class="blog-chip-dot" aria-hidden="true"></span>
+  <span class="blog-chip-label">{label}</span>
+</a>

@@ -24,11 +24,13 @@ const route = {
   circuits:    isRoute('/circuits') || isRoute('/circuit.html'),
   drivers:     isRoute('/drivers') || isRoute('/driver.html'),
   teams:       isRoute('/teams') || isRoute('/team.html'),
+  blog:        isRoute('/blog'),
 };
 const botActive =
   route.home       ? 'home' :
   route.standings  ? 'standings' :
   route.calendar   ? 'calendar' :
+  route.blog       ? 'blog' :
   route.circuits   ? 'circuits' :
   route.drivers    ? 'drivers' :
   route.teams      ? 'teams' : null;
@@ -48,6 +50,7 @@ const botActive =
       <a class:list={['nav-item', { active: route.circuits }]} href="/circuits/">Circuits</a>
       <a class:list={['nav-item', { active: route.drivers }]} href="/drivers/">Drivers</a>
       <a class:list={['nav-item', { active: route.teams }]} href="/teams/">Teams</a>
+      <a class:list={['nav-item', { active: route.blog }]} href="/blog/">Blog</a>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-controls">
@@ -79,8 +82,8 @@ const botActive =
     <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/">
       <span class="botnav-icon">▦</span><span>Calendar</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'circuits' }]} href="/circuits/">
-      <span class="botnav-icon">◈</span><span>Circuits</span>
+    <a class:list={['botnav-item', { active: botActive === 'blog' }]} href="/blog/">
+      <span class="botnav-icon">◈</span><span>Blog</span>
     </a>
   </nav>
 </div>
