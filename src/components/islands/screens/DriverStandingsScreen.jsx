@@ -89,10 +89,7 @@ export default function DriverStandingsScreen({ data }) {
           <div className="page-sub">After Round {standings.lastRound} · {lastRoundEntry.name}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {mob
-            ? <a className="btn btn-secondary btn-sm" href="/drivers/">All Drivers</a>
-            : <button className="btn btn-secondary btn-sm" onClick={exportCSV}>Export CSV</button>
-          }
+          <a className="btn btn-secondary btn-sm" href="/drivers/">All Drivers</a>
         </div>
       </div>
 
