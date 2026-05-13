@@ -338,9 +338,16 @@ export function MiniChart({ values, color, max, width = 76, height = 26 }) {
   );
 }
 
+// Map Ergast constructorRef ↔ buildFallback team id for logo files.
+const TEAM_LOGO_ALIAS = {
+  red_bull: 'redbull',
+  aston_martin: 'aston',
+};
 export function TeamLogo({ team, size = 40 }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const src = team?.id ? `/images/teams/${team.id}.jpg` : null;
+  const raw = team?.id || team?.constructorRef || null;
+  const slug = raw ? (TEAM_LOGO_ALIAS[raw] || raw) : null;
+  const src = slug ? `/images/teams/${slug}.jpg` : null;
   if (!src || imgFailed) return null;
   return (
     <img
