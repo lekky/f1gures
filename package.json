@@ -20,7 +20,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@astrojs/mdx": "^3.1.9",
     "@astrojs/react": "^3.6.2",
+    "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "3.2.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
