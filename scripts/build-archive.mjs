@@ -1995,6 +1995,7 @@ if (postArchiveTeamYears > 0) {
 // ─── Enrich index entries with last5 and display data ───────────────────────
 {
   const teamRaceMap = new Map(); // constructorRef → Map<'year-round', {points,year,round}>
+  const teamColorByRef = new Map(teamsIndex.map(t => [t.constructorRef, t.color || null]));
 
   for (const entry of index) {
     let doc;
@@ -2006,6 +2007,9 @@ if (postArchiveTeamYears > 0) {
     entry.last5 = perRace.slice(-5).map(r => ({ points: r.points || 0, year: r.year, round: r.round }));
     entry.number = doc.number || null;
     entry.teamName = doc.perSeason?.[0]?.constructorName || null;
+    const latestTeamRef = doc.perSeason?.[0]?.constructorRef || null;
+    entry.teamRef = latestTeamRef;
+    entry.teamColor = latestTeamRef ? (teamColorByRef.get(latestTeamRef) || null) : null;
 
     for (const r of perRace) {
       if (!r.constructorRef) continue;
