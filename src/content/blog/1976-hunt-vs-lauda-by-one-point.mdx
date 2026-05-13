@@ -5,11 +5,17 @@ category: historic-season
 publishedAt: 2026-02-10
 author: "f1gures"
 ---
+import DriverChip from '../../components/blog/DriverChip.astro';
+import SeasonChart from '../../components/blog/SeasonChart.astro';
+import RaceResult from '../../components/blog/RaceResult.astro';
 
-The [1976 championship](/?year=1976) finished with [James
-Hunt](/drivers/hunt/) on 69 points and [Niki Lauda](/drivers/lauda/) on 68.
-Sixteen races, a single point, one of the most-told F1 stories ever — and
-the numbers behind it are wilder than the film made them look.
+The [1976 championship](/?year=1976) finished with <DriverChip ref="hunt" />
+on 69 points and <DriverChip ref="lauda" /> on 68. Sixteen races, a single
+point, one of the most-told F1 stories ever — and the numbers behind it are
+wilder than the film made them look.
+
+<SeasonChart year={1976} ref="hunt" />
+<SeasonChart year={1976} ref="lauda" />
 
 ## How Lauda was supposed to win it
 
@@ -29,8 +35,9 @@ drivers — for the race to be cancelled on safety grounds; he was outvoted.
 He lined up second on the grid.
 
 On the second lap his Ferrari snapped right at the high-speed Bergwerk
-section, hit the bank, and bounced back into the path of [Brett Lunger](/drivers/lunger/)
-and [Guy Edwards](/drivers/edwards/). The car caught fire. Lauda — trapped
+section, hit the bank, and bounced back into the path of
+<DriverChip ref="lunger" /> and <DriverChip ref="edwards" />. The car caught
+fire. Lauda — trapped
 in the cockpit, helmet partly knocked off — inhaled toxic fumes for the
 nearly two minutes it took to pull him out.
 
@@ -61,23 +68,17 @@ pre-race meeting and very nearly refused to start. Eventually they did.
 
 Lauda completed two laps, came in, and retired the car. He told his team
 the conditions weren't worth losing his life for. Three other drivers
-(Carlos Pace, [Emerson Fittipaldi](/drivers/emerson_fittipaldi/), Larry
-Perkins) followed him off the track. Hunt led for most of the race in his
+(Carlos Pace, <DriverChip ref="emerson_fittipaldi" />, Larry Perkins)
+followed him off the track. Hunt led for most of the race in his
 [McLaren](/teams/mclaren/), then dropped to fifth after a punctured tyre
 gave the front a long, panicked detour through the pits. The rain eased.
 He passed cars on the final laps. He finished third.
 
+<RaceResult year={1976} round={16} />
+
 Three points. Title won by one.
 
 ## The numbers in full
-
-| | Hunt | Lauda |
-|---|---|---|
-| Wins | 6 | 5 |
-| Podiums | 8 | 6 |
-| Poles | 8 | 2 |
-| Retirements | 6 | 3 (incl. withdrawals) |
-| Final points | **69** | **68** |
 
 Hunt outscored Lauda 43-10 in the second half of the year, after a season in
 which they'd been the same on race pace and Lauda had been ahead on

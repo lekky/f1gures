@@ -1,0 +1,88 @@
+---
+// Per-race points chart for a single driver in a single season, rendered as
+// inline SVG so no JS ships. Each bar is a race; bar height scales to max
+// race points (so a win is always full height, not just relative to other
+// race scores in that season). Hover gives race name + points via <title>.
+//
+// Usage:
+//   <SeasonChart year={1963} ref="clark" />
+
+import { getDriverArchive, getDriverEntry } from '../../lib/blogData';
+
+interface Props {
+  year: number;
+  ref: string;
+}
+
+const { year, ref } = Astro.props;
+const archive = getDriverArchive(ref);
+const driver = getDriverEntry(ref);
+const races = archive?.perRace.filter((r) => r.year === year) ?? [];
+races.sort((a, b) => a.round - b.round);
+
+const seasonPts = races.reduce((s, r) => s + (r.points || 0), 0);
+const wins = races.filter((r) => r.position === 1).length;
+const podiums = races.filter((r) => r.position !== null && r.position <= 3).length;
+const maxPts = Math.max(...races.map((r) => r.points || 0), 1);
+const color = driver?.teamColor || 'var(--accent)';
+
+const CHART_H = 96;
+const CHART_PAD_TOP = 4;
+const CHART_PAD_BOTTOM = 22;
+const BAR_GAP = 4;
+const BAR_W = 24;
+const innerH = CHART_H - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+const chartW = races.length * (BAR_W + BAR_GAP) - BAR_GAP;
+---
+<figure class="blog-season-chart panel">
+  <figcaption class="blog-season-chart-head">
+    <span class="t-eyebrow">{year} season</span>
+    <span class="blog-season-chart-name">
+      {driver ? `${driver.forename} ${driver.surname}` : ref}
+    </span>
+    <span class="blog-season-chart-totals t-mono">
+      {seasonPts} pts · {wins}W · {podiums} podiums · {races.length} races
+    </span>
+  </figcaption>
+  {races.length > 0 ? (
+    <svg
+      class="blog-season-chart-svg"
+      viewBox={`0 0 ${chartW} ${CHART_H}`}
+      width={chartW}
+      height={CHART_H}
+      preserveAspectRatio="xMinYMid meet"
+      role="img"
+      aria-label={`Per-race points for ${driver?.forename ?? ref} ${driver?.surname ?? ''} in ${year}`}
+    >
+      {races.map((r, i) => {
+        const x = i * (BAR_W + BAR_GAP);
+        const h = ((r.points || 0) / maxPts) * innerH;
+        const y = CHART_PAD_TOP + (innerH - h);
+        const isDNF = r.position === null;
+        return (
+          <g>
+            <title>
+              R{r.round} {r.raceName}: {isDNF ? `DNF (${r.status})` : `P${r.position} · ${r.points} pts`}
+            </title>
+            <rect
+              x={x}
+              y={isDNF ? CHART_PAD_TOP + innerH - 2 : y}
+              width={BAR_W}
+              height={isDNF ? 2 : Math.max(h, 1)}
+              fill={isDNF ? 'var(--fg-3)' : color}
+              opacity={isDNF ? 0.4 : 1}
+            />
+            <text
+              x={x + BAR_W / 2}
+              y={CHART_H - 6}
+              text-anchor="middle"
+              class="blog-season-chart-label"
+            >R{r.round}</text>
+          </g>
+        );
+      })}
+    </svg>
+  ) : (
+    <p class="blog-season-chart-empty">No race data for {ref} in {year}.</p>
+  )}
+</figure>
