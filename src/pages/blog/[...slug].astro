@@ -71,31 +71,46 @@ const breadcrumb = [
   <article class="page blog-article">
     <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/blog/">← Blog</a>
 
-    <div class="blog-article-head">
-      <a class="t-eyebrow blog-article-cat" href={`/blog/category/${post.data.category}/`}>
-        {categoryLabel}
-      </a>
-      <h1 class="page-title blog-article-title">{post.data.title}</h1>
-      <div class="blog-article-meta">
-        <span class="t-mono">{fmtPostDate(post.data.publishedAt)}</span>
-        {post.data.updatedAt && (
-          <>
-            <span class="sep">·</span>
-            <span class="t-mono">Updated {fmtPostDate(post.data.updatedAt)}</span>
-          </>
-        )}
-        <span class="sep">·</span>
-        <span class="t-mono">{post.data.author}</span>
+    {post.data.heroImage ? (
+      <div class="blog-article-hero-wrap">
+        <img
+          class="blog-article-hero"
+          src={post.data.heroImage}
+          alt={post.data.heroImageAlt || post.data.title}
+          loading="eager"
+        />
+        <div class="blog-article-head blog-article-head--over">
+          <a class="t-eyebrow blog-article-cat" href={`/blog/category/${post.data.category}/`}>
+            {categoryLabel}
+          </a>
+          <h1 class="page-title blog-article-title">{post.data.title}</h1>
+          <div class="blog-article-meta">
+            <span class="t-mono">{fmtPostDate(post.data.publishedAt)}</span>
+            {post.data.updatedAt && (
+              <>
+                <span class="sep">·</span>
+                <span class="t-mono">Updated {fmtPostDate(post.data.updatedAt)}</span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-
-    {post.data.heroImage && (
-      <img
-        class="blog-article-hero"
-        src={post.data.heroImage}
-        alt={post.data.heroImageAlt || post.data.title}
-        loading="eager"
-      />
+    ) : (
+      <div class="blog-article-head">
+        <a class="t-eyebrow blog-article-cat" href={`/blog/category/${post.data.category}/`}>
+          {categoryLabel}
+        </a>
+        <h1 class="page-title blog-article-title">{post.data.title}</h1>
+        <div class="blog-article-meta">
+          <span class="t-mono">{fmtPostDate(post.data.publishedAt)}</span>
+          {post.data.updatedAt && (
+            <>
+              <span class="sep">·</span>
+              <span class="t-mono">Updated {fmtPostDate(post.data.updatedAt)}</span>
+            </>
+          )}
+        </div>
+      </div>
     )}
 
     <div class="blog-article-body">
