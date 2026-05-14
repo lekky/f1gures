@@ -46,12 +46,15 @@ const breadcrumb = [
 >
   <div class="page">
     <div class="page-head">
-      <div class="t-eyebrow">f1gures</div>
-      <h1 class="page-title">Blog</h1>
-      <p class="page-sub">Race recaps, technical explainers and historic deep-dives.</p>
+      <div>
+        <div class="t-eyebrow">f1gures</div>
+        <h1 class="page-title">Blog</h1>
+        <p class="page-sub">Race recaps, technical explainers and historic deep-dives.</p>
+      </div>
     </div>
 
     <div class="blog-categories">
+      <span class="blog-categories-label">Categories</span>
       {Object.entries(BLOG_CATEGORY_LABELS).map(([slug, label]) => (
         <a class="blog-category-chip" href={`/blog/category/${slug}/`}>{label}</a>
       ))}
@@ -68,14 +71,14 @@ const breadcrumb = [
       <ul class="blog-list">
         {posts.map((post) => (
           <li class="blog-list-item">
-            <a class="panel blog-card" href={`/blog/${post.slug}/`}>
+            <div class="panel blog-card">
               <div class="blog-card-meta">
-                <span class="t-eyebrow blog-card-cat">{BLOG_CATEGORY_LABELS[post.data.category]}</span>
+                <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
                 <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
               </div>
-              <h2 class="blog-card-title">{post.data.title}</h2>
+              <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
               <p class="blog-card-desc">{post.data.description}</p>
-            </a>
+            </div>
           </li>
         ))}
       </ul>

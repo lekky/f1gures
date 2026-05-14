@@ -61,9 +61,11 @@ const breadcrumb = [
     <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/blog/">← Blog</a>
 
     <div class="page-head">
-      <div class="t-eyebrow">Category</div>
-      <h1 class="page-title">{label}</h1>
-      <p class="page-sub">{categoryDescription}</p>
+      <div>
+        <div class="t-eyebrow">Category</div>
+        <h1 class="page-title">{label}</h1>
+        <p class="page-sub">{categoryDescription}</p>
+      </div>
     </div>
 
     {posts.length === 0 ? (
@@ -76,14 +78,14 @@ const breadcrumb = [
       <ul class="blog-list">
         {posts.map((post) => (
           <li class="blog-list-item">
-            <a class="panel blog-card" href={`/blog/${post.slug}/`}>
+            <div class="panel blog-card">
               <div class="blog-card-meta">
-                <span class="t-eyebrow blog-card-cat">{label}</span>
+                <a class="t-eyebrow blog-card-cat" href={`/blog/category/${category}/`}>{label}</a>
                 <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
               </div>
-              <h2 class="blog-card-title">{post.data.title}</h2>
+              <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
               <p class="blog-card-desc">{post.data.description}</p>
-            </a>
+            </div>
           </li>
         ))}
       </ul>
