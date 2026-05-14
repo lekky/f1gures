@@ -72,17 +72,27 @@ const breadcrumb = [
         {posts.map((post) => (
           <li class="blog-list-item">
             <div class="panel blog-card">
-              {post.data.heroImage && (
+              {post.data.heroImage ? (
                 <div class="blog-card-img">
                   <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} loading="lazy" />
+                  <div class="blog-card-over">
+                    <div class="blog-card-meta">
+                      <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                      <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                    </div>
+                    <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+                  </div>
+                </div>
+              ) : (
+                <div class="blog-card-body">
+                  <div class="blog-card-meta">
+                    <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                    <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                  </div>
+                  <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
                 </div>
               )}
               <div class="blog-card-body">
-                <div class="blog-card-meta">
-                  <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
-                  <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
-                </div>
-                <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
                 <p class="blog-card-desc">{post.data.description}</p>
               </div>
             </div>
