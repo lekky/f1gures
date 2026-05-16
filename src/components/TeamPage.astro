@@ -5,6 +5,7 @@
 
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import Flag from './Flag.astro';
 
 interface Props {
   currentYear: number | null;
@@ -35,7 +36,7 @@ interface Props {
       wins: number;
       races: number;
     }>;
-    topDrivers: Array<{ driverRef: string; name: string; races: number; wins: number }>;
+    topDrivers: Array<{ driverRef: string; name: string; country?: string | null; flag?: string | null; races: number; wins: number }>;
     bestSeason: {
       year: number;
       position: number | null;
@@ -264,14 +265,23 @@ const currentDriverPhotos = currentDrivers.map(d => {
   {team.topDrivers && team.topDrivers.length > 0 && (
     <>
       <div class="section-head"><h2>Notable Drivers</h2><div class="section-rule"></div></div>
-      <ul class="team-drivers-list">
+      <div class="team-drivers-grid">
         {team.topDrivers.map((d) => (
-          <li>
-            <a href={`/drivers/${d.driverRef}/`} class="inline-link">{d.name}</a>
-            <span class="t-mono"> · {d.races} races · {d.wins} wins</span>
-          </li>
+          <a class="team-driver-card" href={`/drivers/${d.driverRef}/`}>
+            <div class="team-driver-name-row">
+              {(d.country || d.flag) && (
+                <span class="team-driver-flag"><Flag cc={d.country} flag={d.flag} name={d.name} /></span>
+              )}
+              <span class="team-driver-name">{d.name}</span>
+            </div>
+            <div class="team-driver-stats">
+              <span class="t-mono">{d.races} races</span>
+              <span class="sep">·</span>
+              <span class={`t-mono team-driver-wins ${d.wins > 0 ? 'has-wins' : ''}`}>{d.wins} wins</span>
+            </div>
+          </a>
         ))}
-      </ul>
+      </div>
     </>
   )}
 
@@ -327,6 +337,38 @@ const currentDriverPhotos = currentDrivers.map(d => {
   .car-showcase { display: flex; flex-direction: column; align-items: center; padding: 20px; margin-top: 20px; margin-bottom: 20px; gap: 8px; }
   .car-showcase-label { align-self: flex-start; }
   .car-showcase img { max-width: 100%; max-height: 220px; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 6px 24px rgba(0,0,0,.3)); }
+
+  .team-drivers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .team-driver-card {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--line-1);
+    background: var(--bg-2);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .15s, background .15s, transform .15s;
+  }
+  .team-driver-card:hover { border-color: var(--line-3); background: var(--bg-3); }
+  .team-driver-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .team-driver-flag { flex-shrink: 0; display: inline-flex; }
+  .team-driver-flag :global(.flag-img) { width: 18px; height: 13.5px; border-radius: 1px; display: block; }
+  .team-driver-name {
+    font-family: var(--f-display); font-weight: 700;
+    font-size: 15px; line-height: 1.2;
+    color: var(--fg-1);
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .team-driver-stats { display: flex; gap: 6px; align-items: baseline; font-size: 12px; color: var(--fg-3); }
+  .team-driver-stats .sep { color: var(--fg-4); }
+  .team-driver-wins.has-wins { color: var(--accent); font-weight: 600; }
+  @media (max-width: 720px) {
+    .team-drivers-grid { grid-template-columns: 1fr; }
+  }
 
   .team-career-grid { grid-template-columns: repeat(5, 1fr); }
   @media (max-width: 720px) {

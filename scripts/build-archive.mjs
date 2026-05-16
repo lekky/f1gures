@@ -1720,9 +1720,12 @@ for (const c of constructors) {
     .map(driverId => {
       const d = driversById.get(driverId);
       if (!d) return null;
+      const nat = natInfo(d.nationality);
       return {
         driverRef: d.driverRef,
         name: `${d.forename} ${d.surname}`,
+        country: nat.country || null,
+        flag: nat.flag || null,
         races: driverRaceCounts.get(driverId) || 0,
         wins: driverWinCounts.get(driverId) || 0,
       };
@@ -1852,7 +1855,7 @@ for (const { year, path } of seasonFiles) {
         byTeam.set(d.team, agg);
       }
       const ref = d.jolpicaId;
-      agg.drivers.set(ref, { name: `${d.first} ${d.last}`, code: d.code || null });
+      agg.drivers.set(ref, { name: `${d.first} ${d.last}`, code: d.code || null, country: d.country || null, flag: d.flag || null });
       agg.points += toFloat(det.points) || 0;
       agg.rounds.add(round);
       agg.driverRaceCounts.set(ref, (agg.driverRaceCounts.get(ref) || 0) + 1);
@@ -1898,7 +1901,7 @@ for (const [constructorRef, doc] of teamDocCache) {
   doc.perSeason.sort((a, b) => b.year - a.year);
 
   let addWins = 0, addPodiums = 0, addRaces = 0, addChamps = 0;
-  const addDriverNames = new Map();
+  const addDriverInfo = new Map();
   const addDriverRaces = new Map();
   const addDriverWins = new Map();
   for (const { year, agg } of doc._bundleAggs || []) {
@@ -1907,7 +1910,7 @@ for (const [constructorRef, doc] of teamDocCache) {
     addRaces += agg.rounds.size;
     const seasonRow = doc.perSeason.find(s => s.year === year);
     if (year < currentYearForTeams && seasonRow?.position === 1) addChamps += 1;
-    for (const [ref, info] of agg.drivers) addDriverNames.set(ref, info.name);
+    for (const [ref, info] of agg.drivers) addDriverInfo.set(ref, { name: info.name, country: info.country || null, flag: info.flag || null });
     for (const [ref, c] of agg.driverRaceCounts) addDriverRaces.set(ref, (addDriverRaces.get(ref) || 0) + c);
     for (const [ref, c] of agg.driverWinCounts) addDriverWins.set(ref, (addDriverWins.get(ref) || 0) + c);
   }
@@ -1924,11 +1927,13 @@ for (const [constructorRef, doc] of teamDocCache) {
       wins: addWins,
       podiums: addPodiums,
       championships: addChamps,
-      driverCount: addDriverNames.size,
+      driverCount: addDriverInfo.size,
     };
-    doc.topDrivers = [...addDriverNames.entries()]
-      .map(([ref, name]) => ({
-        driverRef: ref, name,
+    doc.topDrivers = [...addDriverInfo.entries()]
+      .map(([ref, info]) => ({
+        driverRef: ref, name: info.name,
+        country: info.country || null,
+        flag: info.flag || null,
         races: addDriverRaces.get(ref) || 0,
         wins: addDriverWins.get(ref) || 0,
       }))
@@ -1943,15 +1948,17 @@ for (const [constructorRef, doc] of teamDocCache) {
     doc.career.podiums += addPodiums;
     doc.career.championships += addChamps;
     const driverSet = new Set(doc.topDrivers?.map(d => d.driverRef) || []);
-    for (const ref of addDriverNames.keys()) driverSet.add(ref);
+    for (const ref of addDriverInfo.keys()) driverSet.add(ref);
     doc.career.driverCount = Math.max(doc.career.driverCount || 0, driverSet.size);
 
     const merged = new Map((doc.topDrivers || []).map(d => [d.driverRef, { ...d }]));
-    for (const [ref, name] of addDriverNames) {
-      const cur = merged.get(ref) || { driverRef: ref, name, races: 0, wins: 0 };
+    for (const [ref, info] of addDriverInfo) {
+      const cur = merged.get(ref) || { driverRef: ref, name: info.name, country: info.country || null, flag: info.flag || null, races: 0, wins: 0 };
       cur.races += addDriverRaces.get(ref) || 0;
       cur.wins += addDriverWins.get(ref) || 0;
-      cur.name = name;
+      cur.name = info.name;
+      if (info.country) cur.country = info.country;
+      if (info.flag) cur.flag = info.flag;
       merged.set(ref, cur);
     }
     doc.topDrivers = [...merged.values()]
