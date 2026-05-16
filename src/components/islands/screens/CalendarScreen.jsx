@@ -13,6 +13,24 @@ const SESSION_LABELS = {
   q: 'Quali', sprint: 'Sprint', sprintQuali: 'Sprint Quali', race: 'Race',
 };
 
+// Constructor nationality → ISO 3166-1 alpha-2 for the team-flag chip on
+// recent-results rows. Covers every active modern constructor; historic
+// names (BMW Sauber, Toro Rosso, ...) inherit the parent nationality.
+// Falls back to '' which renders no flag.
+const TEAM_NATIONALITY_CC = {
+  'American': 'US', 'Austrian': 'AT', 'British': 'GB', 'French': 'FR',
+  'German': 'DE', 'Italian': 'IT', 'Swiss': 'CH', 'Dutch': 'NL',
+  'Japanese': 'JP', 'Russian': 'RU', 'Spanish': 'ES', 'Indian': 'IN',
+  'Malaysian': 'MY', 'Irish': 'IE',
+};
+
+function teamCC(F, driver) {
+  if (!driver || !driver.team) return '';
+  const team = F.teamById ? F.teamById(driver.team) : (F.teams || []).find(t => t.id === driver.team);
+  if (!team) return '';
+  return TEAM_NATIONALITY_CC[team.nationality] || '';
+}
+
 // Build the next session whose start is in the future, plus a short
 // schedule strip for the hero. Mirrors HomeScreen.buildSessions but
 // keeps everything in track-local time (the calendar page doesn't
@@ -188,7 +206,11 @@ function CompletedRow({ F, race, mob }) {
   const raceHref = urlFor({ name: 'race', year: F.seasonYear, round: race.round });
   const winnerHref = winner ? urlFor({ name: 'driver', id: winner.id, ref: winner.jolpicaId }) : null;
   const fastestHref = fastest ? urlFor({ name: 'driver', id: fastest.id, ref: fastest.jolpicaId }) : null;
-  const winnerName = winner ? `${winner.first ? winner.first[0] + '. ' : ''}${winner.last}` : '';
+  const winnerSurname = winner ? winner.last : '';
+  const winnerTeamCC = winner ? teamCC(F, winner) : '';
+  const teamFlag = winnerTeamCC
+    ? <Flag cc={winnerTeamCC} style={{ width: 14, height: 10, flexShrink: 0 }} />
+    : null;
 
   return (
     <div
@@ -228,12 +250,16 @@ function CompletedRow({ F, race, mob }) {
         </span>
         {race.sprint && <SprintBadge />}
         {mob && (
-          <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)', width: '100%' }}>
-            {fmtDate(race.date)}{winner && ' · '}
+          <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)', width: '100%', display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span>{fmtDate(race.date)}</span>
             {winner && (
-              winnerHref
-                ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'inherit' }}>{winner.code || winnerName}</a>
-                : <span>{winner.code || winnerName}</span>
+              <>
+                <span style={{ color: 'var(--fg-4)' }}>·</span>
+                {teamFlag}
+                {winnerHref
+                  ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'var(--fg-1)' }}>{winnerSurname}</a>
+                  : <span style={{ color: 'var(--fg-1)' }}>{winnerSurname}</span>}
+              </>
             )}
           </span>
         )}
@@ -253,9 +279,10 @@ function CompletedRow({ F, race, mob }) {
           {winner ? (
             <>
               <span className="t-mono" style={{ color: 'var(--fg-3)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Win</span>
+              {teamFlag}
               {winnerHref
-                ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'inherit', fontSize: 12 }}>{winnerName}</a>
-                : <span>{winnerName}</span>}
+                ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'inherit', fontSize: 12 }}>{winnerSurname}</a>
+                : <span style={{ fontSize: 12 }}>{winnerSurname}</span>}
               {fastest && (
                 <>
                   <span style={{ color: 'var(--fg-4)' }}>·</span>
@@ -397,7 +424,7 @@ export default function CalendarScreen({ data }) {
 
           {upcomingRaces.length > 0 && (
             <>
-              <SectionHead title={nextRace ? 'Then' : 'Upcoming'} />
+              <SectionHead title={nextRace ? 'Coming Up' : 'Upcoming'} />
               <div
                 className="grid"
                 style={{
