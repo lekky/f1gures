@@ -108,11 +108,19 @@ describe('pickSessionHours', () => {
 describe('summarizeHourly', () => {
   it('describes clear-throughout', () => {
     const hours = Array.from({ length: 7 }, () => ({ wmo: 0, precipProbPct: 5, tempC: 22 }));
-    expect(summarizeHourly(hours)).toMatch(/clear|dry/i);
+    expect(summarizeHourly(hours)).toBe('Dry conditions throughout the session window.');
   });
   it('describes rain-throughout', () => {
     const hours = Array.from({ length: 7 }, () => ({ wmo: 63, precipProbPct: 80, tempC: 18 }));
-    expect(summarizeHourly(hours)).toMatch(/rain/i);
+    expect(summarizeHourly(hours)).toBe('Wet conditions expected across the full session window.');
+  });
+  it('describes fog-throughout as wet', () => {
+    const hours = Array.from({ length: 7 }, () => ({ wmo: 45, precipProbPct: 0, tempC: 12 }));
+    expect(summarizeHourly(hours)).toBe('Wet conditions expected across the full session window.');
+  });
+  it('describes snow-throughout as wet', () => {
+    const hours = Array.from({ length: 7 }, () => ({ wmo: 73, precipProbPct: 0, tempC: -2 }));
+    expect(summarizeHourly(hours)).toBe('Wet conditions expected across the full session window.');
   });
   it('describes rain-then-clear', () => {
     const hours = [
@@ -124,9 +132,31 @@ describe('summarizeHourly', () => {
       { wmo: 0, precipProbPct: 5, tempC: 22 },
       { wmo: 0, precipProbPct: 5, tempC: 22 },
     ];
-    const s = summarizeHourly(hours);
-    expect(s).toMatch(/rain/i);
-    expect(s).toMatch(/clear|dry|easing/i);
+    expect(summarizeHourly(hours)).toBe('Rain at the start of the window, easing later.');
+  });
+  it('describes dry-then-rain', () => {
+    const hours = [
+      { wmo: 0, precipProbPct: 5, tempC: 22 },
+      { wmo: 0, precipProbPct: 5, tempC: 22 },
+      { wmo: 1, precipProbPct: 10, tempC: 21 },
+      { wmo: 2, precipProbPct: 30, tempC: 20 },
+      { wmo: 63, precipProbPct: 60, tempC: 19 },
+      { wmo: 63, precipProbPct: 70, tempC: 18 },
+      { wmo: 63, precipProbPct: 80, tempC: 18 },
+    ];
+    expect(summarizeHourly(hours)).toBe('Dry early, with rain developing later in the window.');
+  });
+  it('describes intermittent showers', () => {
+    const hours = [
+      { wmo: 0, precipProbPct: 5, tempC: 22 },
+      { wmo: 63, precipProbPct: 60, tempC: 19 },
+      { wmo: 0, precipProbPct: 10, tempC: 21 },
+      { wmo: 63, precipProbPct: 60, tempC: 19 },
+      { wmo: 0, precipProbPct: 10, tempC: 21 },
+      { wmo: 63, precipProbPct: 60, tempC: 19 },
+      { wmo: 0, precipProbPct: 10, tempC: 21 },
+    ];
+    expect(summarizeHourly(hours)).toBe('Intermittent showers across the session window.');
   });
   it('returns empty string for empty input', () => {
     expect(summarizeHourly([])).toBe('');

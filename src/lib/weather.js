@@ -60,25 +60,38 @@ export function pickSessionHours(hourly, sessionMs) {
   return hourly.slice(start, end);
 }
 
+// 45,48 = fog; 51-67 = drizzle/rain; 71-77 = snow; 80-82 = rain showers;
+// 85-86 = snow showers; 95-99 = thunderstorm
+function isWet(h) {
+  const c = h.wmo;
+  if (c == null) return false;
+  return (c === 45 || c === 48) ||
+    (c >= 51 && c <= 67) ||
+    (c >= 71 && c <= 77) ||
+    (c >= 80 && c <= 86) ||
+    (c >= 95 && c <= 99);
+}
+
 // One-sentence prose given the 7 hourly entries.
 export function summarizeHourly(hours) {
   if (!hours || hours.length === 0) return '';
-  const wet = hours.filter(h => (h.wmo >= 51 && h.wmo <= 67) || (h.wmo >= 80 && h.wmo <= 82) || (h.wmo >= 95 && h.wmo <= 99));
-  const dryCount = hours.length - wet.length;
-  if (wet.length === 0) return 'Clear and dry throughout the session window.';
-  if (wet.length === hours.length) return 'Rain expected across the full session window.';
-  const firstWetIdx = hours.findIndex(h => wet.includes(h));
-  const lastWetIdx = hours.length - 1 - [...hours].reverse().findIndex(h => wet.includes(h));
+  const firstWetIdx = hours.findIndex(isWet);
+  if (firstWetIdx === -1) return 'Dry conditions throughout the session window.';
+  const lastWetIdx = hours.findLastIndex(isWet);
+  const wetCount = hours.filter(isWet).length;
+  if (wetCount === hours.length) return 'Wet conditions expected across the full session window.';
   if (firstWetIdx <= 1 && lastWetIdx < hours.length - 2) {
     return 'Rain at the start of the window, easing later.';
   }
   if (firstWetIdx > 1 && lastWetIdx >= hours.length - 2) {
     return 'Dry early, with rain developing later in the window.';
   }
-  if (dryCount >= 3) return 'Intermittent showers across the session window.';
+  if (hours.length - wetCount >= 3) return 'Intermittent showers across the session window.';
   return 'Mostly wet across the session window.';
 }
 
+// NOTE: scripts/build-climate.mjs (Task 4) keeps a copy of this function because
+// Node scripts can't import React. Keep both in sync when changing thresholds.
 // Reduce climate normal means (cloud %, precip mm) to a representative WMO code.
 export function wmoFromMeans(meanCloudPct, meanPrecipMm) {
   if (meanPrecipMm >= 2) return 63;
