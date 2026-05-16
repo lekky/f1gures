@@ -270,8 +270,15 @@ function NextRacePanel({ data, cal, next, mob }) {
         <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span className="t-eyebrow">Session Schedule</span>
-            <div role="tablist" aria-label="Time zone"
-                 style={{ display: 'inline-flex', border: '1px solid var(--line-1)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span className="t-mono" style={{
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--fg-3)',
+              }}>Show times in</span>
+              <div role="tablist" aria-label="Time zone"
+                   style={{ display: 'inline-flex', border: '1px solid var(--line-1)' }}>
               {[['track', 'Track'], ['user', 'You']].map(([val, lbl]) => (
                 <button key={val} role="tab" aria-selected={tzMode === val}
                   onClick={(e) => { e.stopPropagation(); setTzMode(val); }}
@@ -287,6 +294,7 @@ function NextRacePanel({ data, cal, next, mob }) {
                     border: 'none',
                   }}>{lbl}</button>
               ))}
+              </div>
             </div>
           </div>
           <div style={{ border: '1px solid var(--line-1)', minWidth: 0 }} className="next-race-sessions">
