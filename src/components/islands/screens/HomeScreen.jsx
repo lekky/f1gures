@@ -149,7 +149,7 @@ function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
   const D = data;
   const accent = driver ? D.teamById(driver.team).color : (team ? team.color : 'var(--accent)');
   return (
-    <a className="panel" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block' }} href={href}>
+    <a className="panel f1-card-link" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block' }} href={href}>
       <div className="panel-body">
         <div className="t-eyebrow" style={{ color: 'var(--fg-3)', marginBottom: 8 }}>{kicker}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
@@ -231,7 +231,7 @@ function NextRacePanel({ data, cal, next, mob }) {
   const target = (nextSession && nextSession.dt) || raceDt;
 
   return (
-    <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+    <div className="panel f1-card-link" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
          onClick={() => navigate({ name: 'race', year: D.seasonYear, round: next.round })}>
       <div className="kbd-corner kbd-tl"></div>
       <div className="kbd-corner kbd-tr"></div>
@@ -373,7 +373,7 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
   );
 
   return (
-    <div className="panel" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer', borderLeft: champTeam ? `3px solid ${champTeam.color}` : undefined }}
+    <div className="panel f1-card-link" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer', borderLeft: champTeam ? `3px solid ${champTeam.color}` : undefined }}
          onClick={() => navigate({ name: 'standings-d' })}>
       <div className="kbd-corner kbd-tl"></div>
       <div className="kbd-corner kbd-tr"></div>
@@ -525,6 +525,7 @@ export default function HomeScreen({ data }) {
           const recent = recentRounds.map(r => driverPointsForRound(D, row.driver.id, r.round));
           return (
             <a key={row.driver.id}
+               className="f1-row-link"
                href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}
                style={{
                  display: 'grid',
@@ -597,6 +598,7 @@ export default function HomeScreen({ data }) {
           const recent = recentRounds.map(r => teamPointsForRound(D, team.id, r.round));
           return (
             <a key={team.id}
+               className="f1-row-link"
                href={urlFor({ name: 'team', id: team.id, ref: team.id })}
                style={{
                  display: 'grid',

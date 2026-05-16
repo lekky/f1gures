@@ -54,6 +54,7 @@ function FeatureCard({ driver }) {
   const color = driver.teamColor || 'var(--accent)';
   return (
     <a
+      className="f1-card-link"
       href={urlFor({ name: 'driver', ref: driver.driverRef })}
       style={{
         position: 'relative',
@@ -112,6 +113,7 @@ function CompactRow({ driver, mob }) {
   const color = driver.teamColor || 'var(--accent)';
   return (
     <a
+      className="f1-row-link"
       href={urlFor({ name: 'driver', ref: driver.driverRef })}
       style={{
         display: 'grid',

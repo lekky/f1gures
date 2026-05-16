@@ -839,6 +839,194 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .inline-link:hover { text-decoration-color: currentColor; text-decoration-thickness: 2px; }
 html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
 
+/* ============================================================
+   CONTENT LINK AFFORDANCE
+   Two distinct affordance patterns:
+
+   1. Clickable cards / whole-row clickables -> box-arrow-up-right
+      icon pinned to the top-right (cards) or end of row (table rows).
+      Telegraphs "this whole surface navigates somewhere".
+
+   2. Inline text links inside table cells / prose -> subtle
+      always-on underline. Hover bumps thickness for feedback.
+      Telegraphs "this specific word navigates somewhere",
+      independent of any surrounding card/row click target.
+   ============================================================ */
+:root {
+  --link-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23000' fill-rule='evenodd' d='M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z'/%3E%3Cpath fill='%23000' fill-rule='evenodd' d='M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z'/%3E%3C/svg%3E");
+}
+
+/* --- Pattern 1: top-right arrow on clickable cards ------------
+   Targets card-shaped anchors. .f1-card-link is a generic opt-in
+   class screens add to bare <a>/<div> wrappers that don't already
+   carry a card class (HomeScreen panels, listing FeatureCards). */
+.race-card.race-card-link,
+.listing-card,
+.blog-card,
+.blog-race-card,
+.blog-article-nav-link,
+.f1-card-link {
+  position: relative;
+}
+.race-card.race-card-link::after,
+.listing-card::after,
+.blog-card::after,
+.blog-race-card::after,
+.blog-article-nav-link::after,
+.f1-card-link::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  mask: var(--link-icon) no-repeat center / contain;
+  -webkit-mask: var(--link-icon) no-repeat center / contain;
+  opacity: 0.4;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.race-card.race-card-link:hover::after,
+.listing-card:hover::after,
+.blog-card:hover::after,
+.blog-race-card:hover::after,
+.blog-article-nav-link:hover::after,
+.f1-card-link:hover::after {
+  opacity: 1;
+}
+
+/* Older blog-article-nav-link layouts text-align right; keep arrow
+   clear of the title text by leaving a small gutter. */
+.blog-article-nav-older::after {
+  /* arrow flips to top-left for "older" (right-aligned) variant */
+  right: auto;
+  left: 12px;
+  transform: scaleX(-1);
+}
+
+/* .race-card has badges (UPCOMING/SPRINT/NEXT) and country flags
+   pinned to the top-right of .race-card-head at right: 17px /
+   top: 18px. The default arrow position would land on top of
+   them. Tuck the arrow into the absolute corner instead, smaller,
+   so it sits clear of the head content with a few px gap. */
+.race-card.race-card-link::after {
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+}
+
+/* .blog-card has an image cover at the top - the arrow on the
+   default 16/9 image area would land on a busy region. Move it to
+   the visually quieter bottom-right of the title body. */
+.blog-card::after {
+  top: auto;
+  bottom: 12px;
+  width: 12px;
+  height: 12px;
+}
+
+/* --- Pattern 1b: chevron at the end of clickable rows --------- */
+/* Matches the existing inline chevron used in CalendarScreen's
+   recent-results rows (a `›` glyph at fg-4, monospace 16px). We
+   re-use that visual for every row-level clickable target:
+   - .tbl tbody tr.clickable                (standings rows)
+   - .f1-row-link                            (HomeScreen Top 3,
+                                              listing CompactRows)
+   - .current-driver-card                    (TeamPage hero) */
+.tbl tbody tr.clickable td:last-child {
+  position: relative;
+  padding-right: 28px;
+}
+.tbl tbody tr.clickable td:last-child::after,
+.f1-row-link::after,
+.current-driver-card::after {
+  content: '\203A';
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  font-family: var(--f-mono);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--fg-4);
+  transition: color 120ms ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.tbl tbody tr.clickable td:last-child::after {
+  right: 10px;
+}
+.tbl tbody tr.clickable:hover td:last-child::after,
+.f1-row-link:hover::after,
+.current-driver-card:hover::after {
+  color: var(--fg-2);
+}
+.f1-row-link,
+.current-driver-card {
+  position: relative;
+  padding-right: 30px !important;
+}
+
+/* --- Pattern 2: inline text links — underline only, no icon ---
+   Note: we don't force `color: inherit` here. Some inline links carry
+   their own colour (e.g. driver-hero-team a is brand-coloured), and
+   overriding it would erase team-colour styling. text-decoration-color
+   uses currentColor so the underline auto-tints to match. */
+:where(
+  .data-table a,
+  .race-hero-circuit-link,
+  .podium-name a,
+  .podium-team a,
+  .record-row a,
+  .race-summary a,
+  .driver-summary a,
+  .race-keylinks a,
+  .team-drivers-list a,
+  .driver-hero-team a,
+  .blog-race-card-driver,
+  .blog-race-card-team,
+  .inline-link,
+  .f1-link
+) {
+  border-bottom: 0 !important;
+  text-decoration: underline !important;
+  text-decoration-thickness: 1px !important;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent) !important;
+  text-underline-offset: 3px !important;
+  transition: text-decoration-color 120ms ease, text-decoration-thickness 120ms ease !important;
+}
+
+:where(
+  .data-table a,
+  .race-hero-circuit-link,
+  .podium-name a,
+  .podium-team a,
+  .record-row a,
+  .race-summary a,
+  .driver-summary a,
+  .race-keylinks a,
+  .team-drivers-list a,
+  .driver-hero-team a,
+  .blog-race-card-driver,
+  .blog-race-card-team,
+  .inline-link,
+  .f1-link
+):hover,
+:where(
+  .data-table a,
+  .race-hero-circuit-link,
+  .driver-hero-team a,
+  .inline-link,
+  .f1-link
+):focus-visible {
+  text-decoration-color: currentColor !important;
+  text-decoration-thickness: 2px !important;
+}
+
 .team-drivers-list {
   list-style: none;
   padding: 0;
