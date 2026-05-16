@@ -2134,12 +2134,23 @@ if (postArchiveTeamYears > 0) {
     if (race?.date) finalRoundDateByYear[year] = race.date;
   }
 
-  // allResults for team-1-2: flatten team docs' perRace into rows with constructorRef
+  // allResults for team-1-2: read raw results CSV, keep only P1/P2 rows with
+  // year+round resolved. Synthesised team perRace lacks round info and would
+  // collapse all year-N rows into one bucket.
   const allResults = [];
-  for (const t of teamDocs) {
-    for (const r of t.perRace) {
-      allResults.push({ year: r.year, round: r.round, constructorRef: t.constructorRef, position: r.position });
-    }
+  for (const r of results) {
+    const race = racesById.get(r.raceId);
+    if (!race) continue;
+    const constructor = constructorsById.get(r.constructorId);
+    if (!constructor) continue;
+    const pos = toInt(r.position);
+    if (pos !== 1 && pos !== 2) continue;
+    allResults.push({
+      year: toInt(race.year),
+      round: toInt(race.round),
+      constructorRef: constructor.constructorRef,
+      position: pos,
+    });
   }
 
   // teamColorByRef
