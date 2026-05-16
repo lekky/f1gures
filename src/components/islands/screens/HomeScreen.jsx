@@ -7,6 +7,9 @@ import {
   circuitTz, zoneShort, Flag,
   MiniChart, lastNCompletedRounds, driverPointsForRound, teamPointsForRound,
 } from '../../../lib/shared.jsx';
+import { useTempUnit } from '../../../lib/weather.js';
+import SessionWeatherCell from './SessionWeatherCell.jsx';
+import SessionWeatherExpand from './SessionWeatherExpand.jsx';
 
 function driversSummary(D, drivers, completedCount) {
   if (!drivers.length || !completedCount) return null;
@@ -97,6 +100,19 @@ function buildSessions(next, zone) {
   });
 }
 
+function sessionWeather(D, next, sessionId) {
+  const w = D.weather;
+  if (w && w.status === 'ok' && w.round === next.round && w.year === D.seasonYear && w.sessions && w.sessions[sessionId]) {
+    const slot = w.sessions[sessionId];
+    return { forecast: { ...slot.at, hourly: slot.hourly }, isClimate: false };
+  }
+  const climate = D.climate && D.climate[next.circuit];
+  if (climate) {
+    return { forecast: { wmo: climate.wmo, tempC: climate.tempC, precipMm: climate.precipMm, precipProbPct: climate.precipProbPct }, isClimate: true };
+  }
+  return { forecast: null, isClimate: false };
+}
+
 function EmptyHome({ mob }) {
   // Shown when currentSeason has no real bundle yet (fresh clone, before
   // the nightly Jolpica refresh has run, or year just rolled over). We
@@ -176,6 +192,11 @@ function NextRacePanel({ data, cal, next, mob }) {
     try { localStorage.setItem('f1-tz', tzMode); }
     catch { /* localStorage unavailable */ }
   }, [tzMode]);
+
+  const [expandedSessionId, setExpandedSessionId] = useState(null);
+  const unit = useTempUnit();
+  const useF = unit === 'F';
+  const toggleExpand = (id) => setExpandedSessionId(curr => curr === id ? null : id);
 
   const trackZone = circuitTz(next.circuitId);
   const activeZone = tzMode === 'user' ? userZone : trackZone;
@@ -260,20 +281,38 @@ function NextRacePanel({ data, cal, next, mob }) {
               ))}
             </div>
           </div>
-          <div style={{ border: '1px solid var(--line-1)' }}>
-            {sessions.map((s, i) => (
-              <div key={s.id} style={{
-                display: 'grid', gridTemplateColumns: '50px 1fr auto auto',
-                gap: 12, padding: '10px 14px', alignItems: 'center',
-                borderBottom: i < sessions.length - 1 ? '1px solid var(--line-1)' : '0',
-                background: nextSession && s.id === nextSession.id ? 'rgba(232,0,45,0.04)' : 'transparent',
-              }}>
-                <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{String(i + 1).padStart(2, '0')}</span>
-                <span style={{ fontFamily: 'var(--f-display)', fontWeight: 600, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{s.name}</span>
-                <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{s.day}</span>
-                <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{s.time}</span>
-              </div>
-            ))}
+          <div style={{ border: '1px solid var(--line-1)' }} className="next-race-sessions">
+            {sessions.map((s, i) => {
+              const { forecast, isClimate } = sessionWeather(D, next, s.id);
+              const isExpanded = expandedSessionId === s.id;
+              return (
+                <div key={s.id}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: mob ? '40px 1fr auto auto 28px' : '50px 1fr auto auto 56px',
+                    gap: mob ? 8 : 12, padding: '10px 14px', alignItems: 'center',
+                    borderBottom: (isExpanded || i < sessions.length - 1) ? '1px solid var(--line-1)' : '0',
+                    background: nextSession && s.id === nextSession.id ? 'rgba(232,0,45,0.04)' : 'transparent',
+                  }}>
+                    <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{String(i + 1).padStart(2, '0')}</span>
+                    <span style={{ fontFamily: 'var(--f-display)', fontWeight: 600, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{s.name}</span>
+                    <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{s.day}</span>
+                    <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{s.time}</span>
+                    <SessionWeatherCell
+                      forecast={forecast}
+                      isClimate={isClimate}
+                      useFahrenheit={useF}
+                      expanded={isExpanded}
+                      mob={mob}
+                      onClick={() => toggleExpand(s.id)}
+                    />
+                  </div>
+                  {isExpanded && forecast && (
+                    <SessionWeatherExpand forecast={forecast} isClimate={isClimate} useFahrenheit={useF} />
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="t-mono" style={{
             fontSize: 11,
