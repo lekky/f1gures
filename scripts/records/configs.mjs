@@ -30,7 +30,7 @@ export const RECORD_CONFIGS = [
   { id: 'poles',           group: 'career', subjectType: 'driver', valueFormat: 'integer',
     title: 'Most pole positions',      blurb: 'Career pole positions in qualifying.' },
   { id: 'championships',   group: 'career', subjectType: 'driver', valueFormat: 'integer',
-    title: 'Most drivers' championships', blurb: 'World Drivers' Championships won.' },
+    title: "Most drivers' championships", blurb: "World Drivers' Championships won." },
   { id: 'starts',          group: 'career', subjectType: 'driver', valueFormat: 'integer',
     title: 'Most race starts',         blurb: 'Career grand prix entries.' },
   { id: 'fastest-laps',    group: 'career', subjectType: 'driver', valueFormat: 'integer',
@@ -46,7 +46,7 @@ export const RECORD_CONFIGS = [
   { id: 'title-margin',    group: 'season-streaks', subjectType: 'driver', valueFormat: 'points',
     title: 'Biggest championship-winning margin',
     blurb: 'Largest points gap between the champion and the runner-up.',
-    note: 'Raw point margins aren't directly comparable across eras - F1's points system has changed several times since 1950.' },
+    note: "Raw point margins aren't directly comparable across eras - F1's points system has changed several times since 1950." },
 
   // Milestones (driver)
   { id: 'youngest-champion', group: 'milestones', subjectType: 'driver', valueFormat: 'age',
@@ -58,7 +58,7 @@ export const RECORD_CONFIGS = [
 
   // Teams
   { id: 'team-titles',     group: 'teams', subjectType: 'team', valueFormat: 'integer',
-    title: 'Most constructors' championships', blurb: 'World Constructors' Championships won.' },
+    title: "Most constructors' championships", blurb: "World Constructors' Championships won." },
   { id: 'team-wins',       group: 'teams', subjectType: 'team', valueFormat: 'integer',
     title: 'Most team race wins',      blurb: 'Career grand prix victories by constructor.' },
   { id: 'team-1-2-finishes', group: 'teams', subjectType: 'team', valueFormat: 'integer',

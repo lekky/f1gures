@@ -2042,3 +2042,125 @@ if (postArchiveTeamYears > 0) {
   writeFileSync(join(OUT, '_teams-index.json'), JSON.stringify(teamsIndex));
   console.log('[archive] enriched driver and team indexes with last5 data');
 }
+
+// ─── Records & milestones pass ────────────────────────────────────
+// Computes 17 curated leaderboards (top-5 for the hub, top-50 for sub-pages)
+// across all-time and modern (>= 1981) eras. Reads per-driver / per-team docs
+// written above (which already include hand-curated bundle years).
+
+{
+  const { buildRecords } = await import('./records/index.mjs');
+
+  console.log('[archive] building records...');
+
+  // For per-race circuit-name lookup: bundle rows store circuitRef (string),
+  // Ergast rows store numeric circuitId (string). We need both maps.
+  const circuitsByRef = new Map(circuits.map(c => [c.circuitRef, c]));
+
+  // Load all driver docs we just wrote, attach derived fields the records
+  // library expects (natInfo, finalStandingByYear).
+  const driverFiles = readdirSync(join(OUT, 'drivers'));
+  const driverDocs = [];
+  for (const f of driverFiles) {
+    if (!f.endsWith('.json')) continue;
+    const doc = JSON.parse(readFileSync(join(OUT, 'drivers', f), 'utf8'));
+    doc.natInfo = natInfo(doc.nationality);
+    // finalStandingByYear: { year: {position} } - rebuilt from doc.perSeason.
+    doc.finalStandingByYear = {};
+    for (const s of doc.perSeason || []) {
+      if (s.position != null) doc.finalStandingByYear[s.year] = { position: s.position };
+    }
+    // Normalise circuitRef + circuitName on perRace. Ergast rows store numeric
+    // circuitId in the CSV-keyed map; bundle rows store the circuitRef directly.
+    for (const r of doc.perRace || []) {
+      if (r.circuitId && circuitsById.has(r.circuitId)) {
+        const c = circuitsById.get(r.circuitId);
+        r.circuitRef = c.circuitRef;
+        r.circuitName = c.name;
+      } else if (typeof r.circuitId === 'string') {
+        r.circuitRef = r.circuitId;
+        const c = circuitsByRef.get(r.circuitRef);
+        if (c) r.circuitName = c.name;
+      }
+    }
+    driverDocs.push(doc);
+  }
+
+  // Load all team docs
+  const teamFiles = readdirSync(join(OUT, 'teams'));
+  const teamDocs = [];
+  for (const f of teamFiles) {
+    if (!f.endsWith('.json')) continue;
+    const doc = JSON.parse(readFileSync(join(OUT, 'teams', f), 'utf8'));
+    // Synthesise perRace / finalStandingByYear from perSeason for the team generator.
+    doc.perRace = [];
+    doc.finalStandingByYear = {};
+    for (const s of doc.perSeason || []) {
+      if (s.position != null) doc.finalStandingByYear[s.year] = { position: s.position };
+      for (let i = 0; i < (s.wins || 0); i++) {
+        doc.perRace.push({ year: s.year, round: null, position: 1 });
+      }
+      // Tail of races as non-wins so era filter still treats the year as active
+      const nonWins = Math.max(0, (s.races || 0) - (s.wins || 0));
+      for (let i = 0; i < nonWins; i++) {
+        doc.perRace.push({ year: s.year, round: null, position: null });
+      }
+    }
+    teamDocs.push(doc);
+  }
+
+  // yearStandings: per year, the P1 and P2 final standing (driverRef, name, surname, points)
+  const yearStandings = {};
+  for (const [year, final] of finalRaceIdByYear) {
+    const top2 = [];
+    for (const s of driverStandings) {
+      if (s.raceId !== final.raceId) continue;
+      const pos = toInt(s.position);
+      if (pos === 1 || pos === 2) {
+        const d = driversById.get(s.driverId);
+        if (!d) continue;
+        top2.push({ pos, driverRef: d.driverRef, name: `${d.forename} ${d.surname}`.trim(), surname: d.surname, points: toFloat(s.points) || 0 });
+      }
+    }
+    const p1 = top2.find(x => x.pos === 1);
+    const p2 = top2.find(x => x.pos === 2);
+    if (p1 && p2) yearStandings[year] = { p1, p2 };
+  }
+
+  // finalRoundDateByYear from races.csv
+  const finalRoundDateByYear = {};
+  for (const [year, final] of finalRaceIdByYear) {
+    const race = racesById.get(final.raceId);
+    if (race?.date) finalRoundDateByYear[year] = race.date;
+  }
+
+  // allResults for team-1-2: flatten team docs' perRace into rows with constructorRef
+  const allResults = [];
+  for (const t of teamDocs) {
+    for (const r of t.perRace) {
+      allResults.push({ year: r.year, round: r.round, constructorRef: t.constructorRef, position: r.position });
+    }
+  }
+
+  // teamColorByRef
+  const teamColorByRef = new Map(teamDocs.map(t => [t.constructorRef, t.color || null]));
+
+  const currentYear = new Date().getFullYear();
+
+  const { index, byTopic } = buildRecords({
+    driverDocs,
+    teamDocs,
+    yearStandings,
+    finalRoundDateByYear,
+    allResults,
+    teamColorByRef,
+    currentYear,
+  });
+
+  mkdirSync(join(OUT, 'records'), { recursive: true });
+  writeFileSync(join(OUT, '_records-index.json'), JSON.stringify(index));
+  for (const [id, payload] of Object.entries(byTopic)) {
+    writeFileSync(join(OUT, 'records', `${id}.json`), JSON.stringify(payload));
+  }
+  console.log(`[archive] wrote records index + ${Object.keys(byTopic).length} topic files`);
+}
