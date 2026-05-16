@@ -1,0 +1,97 @@
+// scripts/records/generators.test.js
+import { describe, it, expect } from 'vitest';
+import { generateDriverCareerEntries } from './generators.mjs';
+
+const DRIVERS = [
+  {
+    driverRef: 'hamilton', forename: 'Lewis', surname: 'Hamilton', code: 'HAM',
+    nationality: 'British', dob: '1985-01-07',
+    natInfo: { country: 'GB', flag: '🇬🇧' },
+    perRace: [
+      { year: 2007, round: 1, position: 3, grid: 4, fastestLapRank: null, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      { year: 2008, round: 6, position: 1, grid: 1, fastestLapRank: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      { year: 2014, round: 1, position: 1, grid: 1, fastestLapRank: null, constructorRef: 'mercedes', constructorName: 'Mercedes' },
+      { year: 2020, round: 1, position: 1, grid: 1, fastestLapRank: null, constructorRef: 'mercedes', constructorName: 'Mercedes' },
+    ],
+    finalStandingByYear: { 2008: { position: 1 }, 2014: { position: 1 }, 2020: { position: 1 } },
+  },
+  {
+    driverRef: 'norris', forename: 'Lando', surname: 'Norris', code: 'NOR',
+    nationality: 'British', dob: '1999-11-13',
+    natInfo: { country: 'GB', flag: '🇬🇧' },
+    perRace: [
+      { year: 2024, round: 5, position: 1, grid: 1, fastestLapRank: null, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      { year: 2024, round: 7, position: 2, grid: 2, fastestLapRank: null, constructorRef: 'mclaren', constructorName: 'McLaren' },
+    ],
+    finalStandingByYear: {},
+  },
+];
+
+describe('generateDriverCareerEntries - wins', () => {
+  it('all-time: hamilton has 3 wins, norris 1', () => {
+    const entries = generateDriverCareerEntries(DRIVERS, 'wins', 'all-time', 2026);
+    expect(entries[0].driverRef).toBe('hamilton');
+    expect(entries[0].value).toBe(3);
+    expect(entries[1].driverRef).toBe('norris');
+    expect(entries[1].value).toBe(1);
+  });
+
+  it('current-year rows excluded - norris drops to 0 wins and is filtered out', () => {
+    const entries = generateDriverCareerEntries(DRIVERS, 'wins', 'all-time', 2024);
+    const norris = entries.find(e => e.driverRef === 'norris');
+    expect(norris).toBeUndefined();
+  });
+
+  it('modern-era filter drops a pre-1981 row', () => {
+    const drivers = [{
+      driverRef: 'lauda', forename: 'Niki', surname: 'Lauda', code: 'LAU',
+      dob: '1949-02-22', natInfo: { country: 'AT', flag: 'X' },
+      perRace: [
+        { year: 1975, round: 1, position: 1, grid: 1, fastestLapRank: null, constructorRef: 'ferrari', constructorName: 'Ferrari' },
+        { year: 1984, round: 1, position: 1, grid: 1, fastestLapRank: null, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      ],
+      finalStandingByYear: { 1975: { position: 1 }, 1984: { position: 1 } },
+    }];
+    expect(generateDriverCareerEntries(drivers, 'wins', 'all-time', 2026)[0].value).toBe(2);
+    expect(generateDriverCareerEntries(drivers, 'wins', 'modern',   2026)[0].value).toBe(1);
+  });
+
+  it('attaches teamRef / context / flag / shortName / valueLabel', () => {
+    const entries = generateDriverCareerEntries(DRIVERS, 'wins', 'all-time', 2026);
+    const ham = entries.find(e => e.driverRef === 'hamilton');
+    expect(ham.teamRef).toBe('mercedes'); // most-raced team
+    expect(ham.flag).toBe('🇬🇧');
+    expect(ham.shortName).toBe('L. Hamilton');
+    expect(ham.context).toBe('2007-2020');
+    expect(ham.valueLabel).toBe('3 wins');
+  });
+});
+
+describe('generateDriverCareerEntries - other stats', () => {
+  it('podiums counts position <= 3', () => {
+    const entries = generateDriverCareerEntries(DRIVERS, 'podiums', 'all-time', 2026);
+    expect(entries[0].driverRef).toBe('hamilton');
+    expect(entries[0].value).toBe(4); // P3, P1, P1, P1
+  });
+
+  it('poles counts grid === 1', () => {
+    const entries = generateDriverCareerEntries(DRIVERS, 'poles', 'all-time', 2026);
+    expect(entries[0].value).toBe(3); // hamilton: 2008, 2014, 2020
+  });
+
+  it('championships counts finalStandingByYear with position === 1, era-aware', () => {
+    expect(generateDriverCareerEntries(DRIVERS, 'championships', 'all-time', 2026)[0].value).toBe(3);
+    // currentYear excludes 2020
+    expect(generateDriverCareerEntries(DRIVERS, 'championships', 'all-time', 2020)[0].value).toBe(2);
+  });
+
+  it('starts counts every perRace row', () => {
+    const entries = generateDriverCareerEntries(DRIVERS, 'starts', 'all-time', 2026);
+    expect(entries[0].value).toBe(4); // hamilton
+  });
+
+  it('fastest-laps counts fastestLapRank === 1', () => {
+    const entries = generateDriverCareerEntries(DRIVERS, 'fastest-laps', 'all-time', 2026);
+    expect(entries[0].value).toBe(1); // hamilton, 2008 only
+  });
+});
