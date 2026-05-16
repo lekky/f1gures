@@ -420,3 +420,53 @@ export function generateTeam12FinishesEntries(results, teamsByRef, era, currentY
   assignRanksWithTies(entries);
   return entries;
 }
+
+// kind: 'wins' (position === 1) | 'poles' (grid === 1)
+export function generateDriverAtCircuitEntries(drivers, kind, era, currentYear) {
+  const predicate = kind === 'wins' ? (r) => r.position === 1 : (r) => r.grid === 1;
+  const stat = kind === 'wins' ? 'wins' : 'poles';
+
+  const entries = [];
+  for (const d of drivers) {
+    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear).filter(predicate);
+    if (!rows.length) continue;
+
+    // Group by circuitRef
+    const byCircuit = new Map();
+    for (const r of rows) {
+      const cr = r.circuitRef || r.circuitId;
+      if (!cr) continue;
+      if (!byCircuit.has(cr)) byCircuit.set(cr, []);
+      byCircuit.get(cr).push(r);
+    }
+    for (const [circuitRef, list] of byCircuit) {
+      const years = list.map(r => r.year);
+      const firstYear = Math.min(...years);
+      const lastYear = Math.max(...years);
+      const circuitName = list[0].circuitName || circuitRef;
+      const team = primaryTeamFromRows(list);
+
+      entries.push({
+        value: list.length,
+        valueLabel: `${list.length} ${stat}`,
+        races: list.length,
+        firstYear,
+        driverRef: d.driverRef,
+        name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+        shortName: shortName(d),
+        code: d.code || null,
+        flag: d.natInfo?.flag || null,
+        country: d.natInfo?.country || null,
+        teamRef: team.ref,
+        teamName: team.name,
+        teamColor: null,
+        circuitRef,
+        circuitName,
+        context: `${circuitName} - ${formatYearsRange(firstYear, lastYear, currentYear)}`,
+      });
+    }
+  }
+  entries.sort(compareEntries);
+  assignRanksWithTies(entries);
+  return entries;
+}

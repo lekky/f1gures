@@ -1,6 +1,6 @@
 // scripts/records/generators.test.js
 import { describe, it, expect } from 'vitest';
-import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries, generateYoungestChampionEntries, generateOldestWinnerEntries, generateTeamCareerEntries, generateTeam12FinishesEntries } from './generators.mjs';
+import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries, generateYoungestChampionEntries, generateOldestWinnerEntries, generateTeamCareerEntries, generateTeam12FinishesEntries, generateDriverAtCircuitEntries } from './generators.mjs';
 
 const DRIVERS = [
   {
@@ -317,5 +317,44 @@ describe('generateTeam12FinishesEntries', () => {
   it('era filter excludes pre-1981', () => {
     const entries = generateTeam12FinishesEntries(results, teamsByRef, 'modern', 2026);
     expect(entries.find(e => e.constructorRef === 'mclaren')).toBeUndefined();
+  });
+});
+
+describe('generateDriverAtCircuitEntries', () => {
+  const drivers = [{
+    driverRef: 'hamilton', forename: 'Lewis', surname: 'Hamilton', code: 'HAM',
+    natInfo: { country: 'GB', flag: 'X' },
+    perRace: [
+      { year: 2007, round: 1, circuitRef: 'hungaroring', circuitName: 'Hungaroring', position: 1, grid: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      { year: 2009, round: 2, circuitRef: 'hungaroring', circuitName: 'Hungaroring', position: 1, grid: 4, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      { year: 2012, round: 3, circuitRef: 'hungaroring', circuitName: 'Hungaroring', position: 1, grid: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      { year: 2007, round: 4, circuitRef: 'silverstone', circuitName: 'Silverstone', position: 2, grid: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+    ],
+  }];
+
+  it('wins-at-circuit groups by driver+circuit', () => {
+    const entries = generateDriverAtCircuitEntries(drivers, 'wins', 'all-time', 2026);
+    expect(entries[0].driverRef).toBe('hamilton');
+    expect(entries[0].circuitRef).toBe('hungaroring');
+    expect(entries[0].value).toBe(3);
+  });
+
+  it('poles-at-circuit groups by grid === 1', () => {
+    const entries = generateDriverAtCircuitEntries(drivers, 'poles', 'all-time', 2026);
+    expect(entries[0].value).toBe(2);   // hungaroring 2007 + 2012 (both grid 1)
+  });
+
+  it('a driver can appear multiple times (different circuits)', () => {
+    const withSilverstoneWin = [{
+      ...drivers[0],
+      perRace: [
+        ...drivers[0].perRace,
+        { year: 2008, round: 5, circuitRef: 'silverstone', circuitName: 'Silverstone', position: 1, grid: 4, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      ],
+    }];
+    const entries = generateDriverAtCircuitEntries(withSilverstoneWin, 'wins', 'all-time', 2026);
+    const silv = entries.find(e => e.circuitRef === 'silverstone');
+    expect(silv).toBeDefined();
+    expect(silv.value).toBe(1);
   });
 });
