@@ -15,6 +15,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pickSessionHours } from '../src/lib/weather.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -71,26 +72,13 @@ function hourlyFromJson(json) {
   }));
 }
 
-function pickHours(hourly, startMs) {
-  if (!hourly.length) return [];
-  let idx = 0, best = Infinity;
-  for (let i = 0; i < hourly.length; i++) {
-    const d = Math.abs(new Date(hourly[i].tISO).getTime() - startMs);
-    if (d < best) { best = d; idx = i; }
-  }
-  let start = Math.max(0, idx - 3);
-  let end = Math.min(hourly.length, start + 7);
-  start = Math.max(0, end - 7);
-  return hourly.slice(start, end);
-}
-
 function buildSessionsBucket(race, hourly) {
   const out = {};
   const src = race.sessions || {};
   for (const id of SESSION_IDS) {
     const ms = sessionMs(src[id]);
     if (ms == null) continue;
-    const hours = pickHours(hourly, ms);
+    const hours = pickSessionHours(hourly, ms);
     if (!hours.length) continue;
     let at = hours[0];
     let bestDelta = Infinity;

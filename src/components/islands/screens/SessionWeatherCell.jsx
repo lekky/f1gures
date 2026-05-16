@@ -34,6 +34,9 @@ export default function SessionWeatherCell({ forecast, isClimate, useFahrenheit,
           {isClimate && <span style={{ color: 'var(--fg-4)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' }}>climate</span>}
         </span>
       )}
+      {mob && isClimate && (
+        <span aria-hidden="true" style={{ color: 'var(--fg-4)', fontSize: 8, letterSpacing: '0.05em', textTransform: 'uppercase', marginLeft: -4 }}>clim</span>
+      )}
     </button>
   );
 }

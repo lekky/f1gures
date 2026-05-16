@@ -102,10 +102,18 @@ function buildSessions(next, zone) {
 
 function sessionWeather(D, next, sessionId) {
   const w = D.weather;
-  if (w && w.status === 'ok' && w.round === next.round && w.year === D.seasonYear && w.sessions && w.sessions[sessionId]) {
+  if (
+    w && w.status === 'ok' &&
+    String(w.round) === String(next.round) &&
+    String(w.year) === String(D.seasonYear) &&
+    w.sessions && w.sessions[sessionId]
+  ) {
     const slot = w.sessions[sessionId];
     return { forecast: { ...slot.at, hourly: slot.hourly }, isClimate: false };
   }
+  // Note: w.status === 'out-of-window' intentionally falls through to climate.
+  // currentSeason.js still attaches that envelope to D.weather, but the guard
+  // above rejects anything other than 'ok'.
   const climate = D.climate && D.climate[next.circuit];
   if (climate) {
     return { forecast: { wmo: climate.wmo, tempC: climate.tempC, precipMm: climate.precipMm, precipProbPct: climate.precipProbPct }, isClimate: true };
