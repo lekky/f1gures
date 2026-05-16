@@ -259,7 +259,7 @@ function NextRacePanel({ data, cal, next, mob }) {
           <Countdown target={target} />
         </div>
 
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span className="t-eyebrow">Session Schedule</span>
             <div role="tablist" aria-label="Time zone"
@@ -281,21 +281,21 @@ function NextRacePanel({ data, cal, next, mob }) {
               ))}
             </div>
           </div>
-          <div style={{ border: '1px solid var(--line-1)' }} className="next-race-sessions">
+          <div style={{ border: '1px solid var(--line-1)', minWidth: 0 }} className="next-race-sessions">
             {sessions.map((s, i) => {
               const { forecast, isClimate } = sessionWeather(D, next, s.id);
               const isExpanded = expandedSessionId === s.id;
               return (
-                <div key={s.id}>
+                <div key={s.id} style={{ minWidth: 0 }}>
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: mob ? '40px 1fr auto auto 28px' : '50px 1fr auto auto 56px',
-                    gap: mob ? 8 : 12, padding: '10px 14px', alignItems: 'center',
+                    gridTemplateColumns: mob ? '32px minmax(0, 1fr) auto auto 24px' : '50px minmax(0, 1fr) auto auto 56px',
+                    gap: mob ? 8 : 12, padding: mob ? '10px 12px' : '10px 14px', alignItems: 'center',
                     borderBottom: (isExpanded || i < sessions.length - 1) ? '1px solid var(--line-1)' : '0',
                     background: nextSession && s.id === nextSession.id ? 'rgba(232,0,45,0.04)' : 'transparent',
                   }}>
                     <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{String(i + 1).padStart(2, '0')}</span>
-                    <span style={{ fontFamily: 'var(--f-display)', fontWeight: 600, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{s.name}</span>
+                    <span style={{ fontFamily: 'var(--f-display)', fontWeight: 600, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{s.name}</span>
                     <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{s.day}</span>
                     <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{s.time}</span>
                     <SessionWeatherCell

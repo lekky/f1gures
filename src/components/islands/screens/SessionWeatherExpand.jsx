@@ -50,8 +50,9 @@ export default function SessionWeatherExpand({ forecast, isClimate, useFahrenhei
            padding: '10px 14px',
            background: 'var(--bg-3)',
            borderBottom: '1px solid var(--line-1)',
+           minWidth: 0,
          }}>
-      <div style={{ display: 'flex', overflowX: 'auto', gap: 4, marginBottom: 8 }}>
+      <div style={{ display: 'flex', overflowX: 'auto', gap: 4, marginBottom: 8, maxWidth: '100%' }}>
         {(forecast.hourly || []).map((h, i) => (
           <HourCell key={i} entry={h} useFahrenheit={useFahrenheit} />
         ))}
