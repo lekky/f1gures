@@ -13,24 +13,6 @@ const SESSION_LABELS = {
   q: 'Quali', sprint: 'Sprint', sprintQuali: 'Sprint Quali', race: 'Race',
 };
 
-// Constructor nationality → ISO 3166-1 alpha-2 for the team-flag chip on
-// recent-results rows. Covers every active modern constructor; historic
-// names (BMW Sauber, Toro Rosso, ...) inherit the parent nationality.
-// Falls back to '' which renders no flag.
-const TEAM_NATIONALITY_CC = {
-  'American': 'US', 'Austrian': 'AT', 'British': 'GB', 'French': 'FR',
-  'German': 'DE', 'Italian': 'IT', 'Swiss': 'CH', 'Dutch': 'NL',
-  'Japanese': 'JP', 'Russian': 'RU', 'Spanish': 'ES', 'Indian': 'IN',
-  'Malaysian': 'MY', 'Irish': 'IE',
-};
-
-function teamCC(F, driver) {
-  if (!driver || !driver.team) return '';
-  const team = F.teamById ? F.teamById(driver.team) : (F.teams || []).find(t => t.id === driver.team);
-  if (!team) return '';
-  return TEAM_NATIONALITY_CC[team.nationality] || '';
-}
-
 // Build the next session whose start is in the future, plus a short
 // schedule strip for the hero. Mirrors HomeScreen.buildSessions but
 // keeps everything in track-local time (the calendar page doesn't
@@ -207,9 +189,8 @@ function CompletedRow({ F, race, mob }) {
   const winnerHref = winner ? urlFor({ name: 'driver', id: winner.id, ref: winner.jolpicaId }) : null;
   const fastestHref = fastest ? urlFor({ name: 'driver', id: fastest.id, ref: fastest.jolpicaId }) : null;
   const winnerSurname = winner ? winner.last : '';
-  const winnerTeamCC = winner ? teamCC(F, winner) : '';
-  const teamFlag = winnerTeamCC
-    ? <Flag cc={winnerTeamCC} style={{ width: 14, height: 10, flexShrink: 0 }} />
+  const driverFlag = winner
+    ? <Flag cc={winner.country} flag={winner.flag} style={{ width: 14, height: 10, flexShrink: 0 }} />
     : null;
 
   return (
@@ -255,7 +236,7 @@ function CompletedRow({ F, race, mob }) {
             {winner && (
               <>
                 <span style={{ color: 'var(--fg-4)' }}>·</span>
-                {teamFlag}
+                {driverFlag}
                 {winnerHref
                   ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'var(--fg-1)' }}>{winnerSurname}</a>
                   : <span style={{ color: 'var(--fg-1)' }}>{winnerSurname}</span>}
@@ -279,7 +260,7 @@ function CompletedRow({ F, race, mob }) {
           {winner ? (
             <>
               <span className="t-mono" style={{ color: 'var(--fg-3)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Win</span>
-              {teamFlag}
+              {driverFlag}
               {winnerHref
                 ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'inherit', fontSize: 12 }}>{winnerSurname}</a>
                 : <span style={{ fontSize: 12 }}>{winnerSurname}</span>}
