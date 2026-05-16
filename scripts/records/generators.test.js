@@ -1,6 +1,6 @@
 // scripts/records/generators.test.js
 import { describe, it, expect } from 'vitest';
-import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries, generateYoungestChampionEntries, generateOldestWinnerEntries, generateTeamCareerEntries } from './generators.mjs';
+import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries, generateYoungestChampionEntries, generateOldestWinnerEntries, generateTeamCareerEntries, generateTeam12FinishesEntries } from './generators.mjs';
 
 const DRIVERS = [
   {
@@ -286,5 +286,36 @@ describe('generateTeamCareerEntries', () => {
     const entries = generateTeamCareerEntries(teams, 'wins', 'all-time', 2026);
     expect(entries[0].teamColor).toBe('#E80020');
     expect(entries[0].context).toBe('1979-2000');
+  });
+});
+
+describe('generateTeam12FinishesEntries', () => {
+  // Each result row: { year, round, constructorRef, position }
+  const results = [
+    { year: 2014, round: 1, constructorRef: 'mercedes', position: 1 },
+    { year: 2014, round: 1, constructorRef: 'mercedes', position: 2 },
+    { year: 2014, round: 2, constructorRef: 'mercedes', position: 1 },
+    { year: 2014, round: 2, constructorRef: 'mercedes', position: 2 },
+    { year: 2014, round: 3, constructorRef: 'mercedes', position: 1 },
+    { year: 2014, round: 3, constructorRef: 'red_bull', position: 2 },
+    { year: 1979, round: 1, constructorRef: 'mclaren', position: 1 },
+    { year: 1979, round: 1, constructorRef: 'mclaren', position: 2 },
+  ];
+  const teamsByRef = new Map([
+    ['mercedes', { constructorRef: 'mercedes', name: 'Mercedes', color: '#27F4D2' }],
+    ['mclaren',  { constructorRef: 'mclaren',  name: 'McLaren',  color: '#FF8000' }],
+  ]);
+
+  it('counts races where the same team holds P1+P2', () => {
+    const entries = generateTeam12FinishesEntries(results, teamsByRef, 'all-time', 2026);
+    expect(entries[0].constructorRef).toBe('mercedes');
+    expect(entries[0].value).toBe(2);
+    expect(entries[1].constructorRef).toBe('mclaren');
+    expect(entries[1].value).toBe(1);
+  });
+
+  it('era filter excludes pre-1981', () => {
+    const entries = generateTeam12FinishesEntries(results, teamsByRef, 'modern', 2026);
+    expect(entries.find(e => e.constructorRef === 'mclaren')).toBeUndefined();
   });
 });

@@ -374,3 +374,49 @@ export function generateTeamCareerEntries(teams, stat, era, currentYear) {
   assignRanksWithTies(entries);
   return entries;
 }
+
+// results: array of all per-race result rows { year, round, constructorRef, position }
+export function generateTeam12FinishesEntries(results, teamsByRef, era, currentYear) {
+  // Group rows by (year-round)
+  const byRace = new Map();
+  for (const r of results) {
+    if (r.year == null || r.year === currentYear) continue;
+    if (era === 'modern' && r.year < 1981) continue;
+    if (r.position !== 1 && r.position !== 2) continue;
+    const key = `${r.year}-${r.round}`;
+    if (!byRace.has(key)) byRace.set(key, { p1: null, p2: null, year: r.year });
+    if (r.position === 1) byRace.get(key).p1 = r.constructorRef;
+    if (r.position === 2) byRace.get(key).p2 = r.constructorRef;
+  }
+
+  // Count 1-2s per team
+  const countByTeam = new Map();
+  const firstYearByTeam = new Map();
+  for (const { p1, p2, year } of byRace.values()) {
+    if (p1 && p1 === p2) {
+      countByTeam.set(p1, (countByTeam.get(p1) || 0) + 1);
+      const fy = firstYearByTeam.get(p1);
+      if (fy == null || year < fy) firstYearByTeam.set(p1, year);
+    }
+  }
+
+  const entries = [];
+  for (const [ref, value] of countByTeam) {
+    const t = teamsByRef.get(ref);
+    if (!t) continue;
+    entries.push({
+      value,
+      valueLabel: `${value} 1-2 finishes`,
+      races: 0,
+      firstYear: firstYearByTeam.get(ref) || null,
+      constructorRef: ref,
+      name: t.name,
+      nationality: t.nationality || null,
+      teamColor: t.color || null,
+      context: `from ${firstYearByTeam.get(ref) || '?'}`,
+    });
+  }
+  entries.sort(compareEntries);
+  assignRanksWithTies(entries);
+  return entries;
+}
