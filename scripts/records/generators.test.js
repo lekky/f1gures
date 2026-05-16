@@ -1,6 +1,6 @@
 // scripts/records/generators.test.js
 import { describe, it, expect } from 'vitest';
-import { generateDriverCareerEntries } from './generators.mjs';
+import { generateDriverCareerEntries, generateWinsInSeasonEntries } from './generators.mjs';
 
 const DRIVERS = [
   {
@@ -93,5 +93,36 @@ describe('generateDriverCareerEntries - other stats', () => {
   it('fastest-laps counts fastestLapRank === 1', () => {
     const entries = generateDriverCareerEntries(DRIVERS, 'fastest-laps', 'all-time', 2026);
     expect(entries[0].value).toBe(1); // hamilton, 2008 only
+  });
+});
+
+describe('generateWinsInSeasonEntries', () => {
+  const drivers = [
+    {
+      driverRef: 'verstappen', forename: 'Max', surname: 'Verstappen', code: 'VER',
+      dob: '1997-09-30', natInfo: { country: 'NL', flag: '🇳🇱' },
+      perRace: [
+        { year: 2023, round: 1, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+        { year: 2023, round: 2, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+        { year: 2023, round: 3, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+        { year: 2022, round: 1, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+      ],
+    },
+  ];
+
+  it('returns the best season per driver', () => {
+    const entries = generateWinsInSeasonEntries(drivers, 'all-time', 2026);
+    expect(entries[0].value).toBe(3);
+    expect(entries[0].context).toBe('2023 - Red Bull');
+  });
+
+  it('era filter excludes pre-1981', () => {
+    const drivers81 = [{
+      ...drivers[0], perRace: [
+        { year: 1976, round: 1, position: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+        { year: 1976, round: 2, position: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      ],
+    }];
+    expect(generateWinsInSeasonEntries(drivers81, 'modern', 2026)).toHaveLength(0);
   });
 });

@@ -106,3 +106,45 @@ export function generateDriverCareerEntries(drivers, stat, era, currentYear) {
   assignRanksWithTies(entries);
   return entries;
 }
+
+export function generateWinsInSeasonEntries(drivers, era, currentYear) {
+  const entries = [];
+  for (const d of drivers) {
+    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear);
+    if (!rows.length) continue;
+
+    // Group by year, count wins
+    const byYear = new Map();
+    for (const r of rows) {
+      if (!byYear.has(r.year)) byYear.set(r.year, []);
+      byYear.get(r.year).push(r);
+    }
+    let bestYear = null, bestWins = 0, bestRows = null;
+    for (const [year, list] of byYear) {
+      const w = list.filter(r => r.position === 1).length;
+      if (w > bestWins) { bestWins = w; bestYear = year; bestRows = list; }
+    }
+    if (bestWins === 0) continue;
+
+    const team = primaryTeamFromRows(bestRows);
+    entries.push({
+      value: bestWins,
+      valueLabel: `${bestWins} wins`,
+      races: bestRows.length,
+      firstYear: bestYear,
+      driverRef: d.driverRef,
+      name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      shortName: shortName(d),
+      code: d.code || null,
+      flag: d.natInfo?.flag || null,
+      country: d.natInfo?.country || null,
+      teamRef: team.ref,
+      teamName: team.name,
+      teamColor: null,
+      context: team.name ? `${bestYear} - ${team.name}` : String(bestYear),
+    });
+  }
+  entries.sort(compareEntries);
+  assignRanksWithTies(entries);
+  return entries;
+}
