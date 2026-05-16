@@ -1,6 +1,6 @@
 // scripts/records/generators.test.js
 import { describe, it, expect } from 'vitest';
-import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries, generateYoungestChampionEntries, generateOldestWinnerEntries } from './generators.mjs';
+import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries, generateYoungestChampionEntries, generateOldestWinnerEntries, generateTeamCareerEntries } from './generators.mjs';
 
 const DRIVERS = [
   {
@@ -241,5 +241,50 @@ describe('generateOldestWinnerEntries', () => {
     const entries = generateOldestWinnerEntries(drivers, 'all-time', 2026);
     expect(entries[0].driverRef).toBe('farina');
     expect(entries[0].valueLabel).toMatch(/46y \d+d/);
+  });
+});
+
+describe('generateTeamCareerEntries', () => {
+  const teams = [
+    {
+      constructorRef: 'ferrari', name: 'Ferrari', nationality: 'Italian', color: '#E80020',
+      perRace: [
+        { year: 1979, round: 1, position: 1 },
+        { year: 1979, round: 2, position: 1 },
+        { year: 2000, round: 3, position: 1 },
+      ],
+      finalStandingByYear: { 1979: { position: 1 }, 2000: { position: 1 } },
+    },
+    {
+      constructorRef: 'mercedes', name: 'Mercedes', nationality: 'German', color: '#27F4D2',
+      perRace: [
+        { year: 2014, round: 1, position: 1 },
+        { year: 2014, round: 2, position: 1 },
+      ],
+      finalStandingByYear: { 2014: { position: 1 } },
+    },
+  ];
+
+  it('team-wins counts position === 1 per result', () => {
+    const entries = generateTeamCareerEntries(teams, 'wins', 'all-time', 2026);
+    expect(entries[0].constructorRef).toBe('ferrari');
+    expect(entries[0].value).toBe(3);
+  });
+
+  it('team-titles counts championship years', () => {
+    const entries = generateTeamCareerEntries(teams, 'titles', 'all-time', 2026);
+    expect(entries[0].value).toBe(2);
+  });
+
+  it('modern era drops 1979', () => {
+    const entries = generateTeamCareerEntries(teams, 'wins', 'modern', 2026);
+    const ferrari = entries.find(e => e.constructorRef === 'ferrari');
+    expect(ferrari.value).toBe(1);
+  });
+
+  it('attaches teamColor and context', () => {
+    const entries = generateTeamCareerEntries(teams, 'wins', 'all-time', 2026);
+    expect(entries[0].teamColor).toBe('#E80020');
+    expect(entries[0].context).toBe('1979-2000');
   });
 });

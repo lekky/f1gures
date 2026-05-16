@@ -334,3 +334,43 @@ export function generateOldestWinnerEntries(drivers, era, currentYear) {
   assignRanksWithTies(entries);
   return entries;
 }
+
+// stat: 'wins' | 'titles'
+export function generateTeamCareerEntries(teams, stat, era, currentYear) {
+  const entries = [];
+  for (const t of teams) {
+    const rows = filterPerRaceByEra(t.perRace || [], era, currentYear);
+    let value = 0;
+    if (stat === 'wins') {
+      value = rows.filter(r => r.position === 1).length;
+    } else {
+      // titles
+      for (const yearStr of Object.keys(t.finalStandingByYear || {})) {
+        const year = Number(yearStr);
+        if (year === currentYear) continue;
+        if (era === 'modern' && year < 1981) continue;
+        if (t.finalStandingByYear[yearStr]?.position === 1) value++;
+      }
+    }
+    if (value === 0) continue;
+
+    const years = rows.map(r => r.year);
+    const firstYear = years.length ? Math.min(...years) : null;
+    const lastYear = years.length ? Math.max(...years) : null;
+
+    entries.push({
+      value,
+      valueLabel: stat === 'wins' ? `${value} wins` : `${value} titles`,
+      races: rows.length,
+      firstYear,
+      constructorRef: t.constructorRef,
+      name: t.name,
+      nationality: t.nationality || null,
+      teamColor: t.color || null,
+      context: formatYearsRange(firstYear, lastYear, currentYear),
+    });
+  }
+  entries.sort(compareEntries);
+  assignRanksWithTies(entries);
+  return entries;
+}
