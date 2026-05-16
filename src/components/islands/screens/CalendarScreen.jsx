@@ -155,27 +155,48 @@ function UpcomingCard({ F, race }) {
   const circuit = F.circuits[race.circuit] || { name: race.circuit };
   const raceHref = urlFor({ name: 'race', year: F.seasonYear, round: race.round });
   return (
-    <div className={`race-card race-card-link is-${race.status}`}>
+    <div
+      className={`race-card race-card-link is-${race.status}`}
+      style={{ minHeight: 0, padding: '12px 14px', gap: 4 }}
+    >
       <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} - round ${race.round}`}></a>
-      <div className="race-card-head">
-        <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span className="race-flag" style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>
+          <Flag cc={race.country} flag={race.flag} />
+        </span>
+        <div
+          style={{
+            fontFamily: 'var(--f-display)', fontWeight: 700,
+            fontSize: 18, lineHeight: 1.1, textTransform: 'uppercase',
+            letterSpacing: '0.01em',
+            flex: 1, minWidth: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}
+        >
+          {race.name.replace(' Grand Prix', '')}
+        </div>
+        <span className="race-round" style={{ flexShrink: 0 }}>
+          RD {String(race.round).padStart(2, '0')}
+        </span>
+      </div>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 8, color: 'var(--fg-3)', fontSize: 12,
+      }}>
+        <a
+          href={urlFor({ name: 'circuit', id: race.circuit })}
+          className="inline-link race-card-overlay-link"
+          style={{
+            color: 'inherit',
+            minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}
+        >
+          {circuit.name}
+        </a>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {race.sprint && <SprintBadge />}
-          <span className={`pill pill-${race.status}`}>{race.status}</span>
-        </div>
-      </div>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-          <span className="race-flag"><Flag cc={race.country} flag={race.flag} /></span>
-          <div className="race-name">{race.name.replace(' Grand Prix', '')}</div>
-        </div>
-        <a href={urlFor({ name: 'circuit', id: race.circuit })} className="race-circuit inline-link race-card-overlay-link" style={{ color: 'inherit' }}>{circuit.name}</a>
-      </div>
-      <div className="race-card-foot">
-        <div className="race-mini-row">
-          <span className="lbl">Date</span>
-          <span className="val">{fmtDateLong(race.date)}</span>
-        </div>
+          <span className="t-mono" style={{ fontSize: 11 }}>{fmtDate(race.date)}</span>
+        </span>
       </div>
     </div>
   );
@@ -409,7 +430,7 @@ export default function CalendarScreen({ data }) {
               <div
                 className="grid"
                 style={{
-                  gridTemplateColumns: mob ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gridTemplateColumns: mob ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))',
                 }}
               >
                 {upcomingRaces.map(race => <UpcomingCard key={race.round} F={F} race={race} />)}
