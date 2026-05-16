@@ -114,6 +114,8 @@ function buildCircuitsFromSchedule(scheduleData) {
     out[key] = {
       name: r.Circuit.circuitName || r.Circuit.circuitId,
       city: loc.locality || '-', country: loc.country || '-',
+      lat: parseFloat(loc.lat) || null,
+      lng: parseFloat(loc.long) || null,
       firstYear: 0, races: 0, length: 0, laps: 0, corners: 0,
       longestStraight: 0, drsZones: 0, type: '-', tyreDeg: '-',
       overtaking: '-', weather: '-',
