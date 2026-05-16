@@ -148,3 +148,63 @@ export function generateWinsInSeasonEntries(drivers, era, currentYear) {
   assignRanksWithTies(entries);
   return entries;
 }
+
+// kind: 'win' (position === 1) | 'podium' (position != null && position <= 3)
+export function generateStreakEntries(drivers, kind, era, currentYear) {
+  const predicate = kind === 'win'
+    ? (r) => r.position === 1
+    : (r) => r.position != null && r.position <= 3;
+  const stat = kind === 'win' ? 'wins' : 'podiums';
+
+  const entries = [];
+  for (const d of drivers) {
+    const filteredAll = filterPerRaceByEra(d.perRace || [], era, currentYear);
+    if (!filteredAll.length) continue;
+
+    // Sort chronologically (perRace already mostly is, but be safe)
+    const rows = filteredAll.slice().sort((a, b) => (a.year - b.year) || ((a.round || 0) - (b.round || 0)));
+
+    let current = 0, best = 0;
+    let currentStart = null, bestStart = null, bestEnd = null;
+    for (const r of rows) {
+      if (predicate(r)) {
+        if (current === 0) currentStart = r;
+        current++;
+        if (current > best) {
+          best = current;
+          bestStart = currentStart;
+          bestEnd = r;
+        }
+      } else {
+        current = 0;
+        currentStart = null;
+      }
+    }
+    if (best === 0) continue;
+
+    const team = primaryTeamFromRows([bestStart, bestEnd].filter(Boolean));
+    const context = bestStart.year === bestEnd.year
+      ? `${bestStart.year}`
+      : `${bestStart.year}-${bestEnd.year}`;
+
+    entries.push({
+      value: best,
+      valueLabel: `${best} ${stat}`,
+      races: rows.length,
+      firstYear: bestStart.year,
+      driverRef: d.driverRef,
+      name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      shortName: shortName(d),
+      code: d.code || null,
+      flag: d.natInfo?.flag || null,
+      country: d.natInfo?.country || null,
+      teamRef: team.ref,
+      teamName: team.name,
+      teamColor: null,
+      context,
+    });
+  }
+  entries.sort(compareEntries);
+  assignRanksWithTies(entries);
+  return entries;
+}

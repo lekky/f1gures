@@ -1,6 +1,6 @@
 // scripts/records/generators.test.js
 import { describe, it, expect } from 'vitest';
-import { generateDriverCareerEntries, generateWinsInSeasonEntries } from './generators.mjs';
+import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries } from './generators.mjs';
 
 const DRIVERS = [
   {
@@ -124,5 +124,58 @@ describe('generateWinsInSeasonEntries', () => {
       ],
     }];
     expect(generateWinsInSeasonEntries(drivers81, 'modern', 2026)).toHaveLength(0);
+  });
+});
+
+describe('generateStreakEntries - win-streak', () => {
+  const drivers = [{
+    driverRef: 'vettel', forename: 'Sebastian', surname: 'Vettel', code: 'VET',
+    dob: '1987-07-03', natInfo: { country: 'DE', flag: '🇩🇪' },
+    perRace: [
+      { year: 2013, round: 12, position: 2, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+      { year: 2013, round: 13, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+      { year: 2013, round: 14, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+      { year: 2013, round: 15, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+      { year: 2013, round: 16, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' },
+      { year: 2013, round: 17, position: 2, constructorRef: 'red_bull', constructorName: 'Red Bull' }, // breaks
+      { year: 2013, round: 18, position: 1, constructorRef: 'red_bull', constructorName: 'Red Bull' }, // restart
+    ],
+  }];
+
+  it('finds the longest run of consecutive wins', () => {
+    const entries = generateStreakEntries(drivers, 'win', 'all-time', 2026);
+    expect(entries[0].value).toBe(4);
+    expect(entries[0].context).toMatch(/2013/);
+  });
+
+  it('era filter breaks streaks across the boundary', () => {
+    const cross = [{
+      ...drivers[0], perRace: [
+        { year: 1980, round: 14, position: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+        { year: 1981, round: 1, position: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+        { year: 1981, round: 2, position: 1, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      ],
+    }];
+    const modern = generateStreakEntries(cross, 'win', 'modern', 2026);
+    expect(modern[0].value).toBe(2);
+  });
+});
+
+describe('generateStreakEntries - podium-streak', () => {
+  const drivers = [{
+    driverRef: 'hamilton', forename: 'Lewis', surname: 'Hamilton', code: 'HAM',
+    natInfo: { country: 'GB', flag: '' },
+    perRace: [
+      { year: 2014, round: 1, position: 3, constructorRef: 'mercedes', constructorName: 'Mercedes' },
+      { year: 2014, round: 2, position: 1, constructorRef: 'mercedes', constructorName: 'Mercedes' },
+      { year: 2014, round: 3, position: 2, constructorRef: 'mercedes', constructorName: 'Mercedes' },
+      { year: 2014, round: 4, position: 5, constructorRef: 'mercedes', constructorName: 'Mercedes' }, // breaks
+      { year: 2014, round: 5, position: 1, constructorRef: 'mercedes', constructorName: 'Mercedes' },
+    ],
+  }];
+
+  it('counts top-3 streaks', () => {
+    const entries = generateStreakEntries(drivers, 'podium', 'all-time', 2026);
+    expect(entries[0].value).toBe(3);
   });
 });
