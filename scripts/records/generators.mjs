@@ -208,3 +208,40 @@ export function generateStreakEntries(drivers, kind, era, currentYear) {
   assignRanksWithTies(entries);
   return entries;
 }
+
+// yearStandings: { [year]: { p1: {driverRef,name,surname,points}, p2: {driverRef,name,surname,points} } }
+// driversByRef: Map<driverRef, driverDoc>  (for flag/short-name/team lookup)
+export function generateTitleMarginEntries(yearStandings, driversByRef, era, currentYear) {
+  const entries = [];
+  for (const yearStr of Object.keys(yearStandings)) {
+    const year = Number(yearStr);
+    if (year === currentYear) continue;
+    if (era === 'modern' && year < 1981) continue;
+
+    const row = yearStandings[yearStr];
+    if (!row?.p1 || !row?.p2) continue;
+    const margin = (row.p1.points || 0) - (row.p2.points || 0);
+    if (margin <= 0) continue;
+
+    const champ = driversByRef.get(row.p1.driverRef);
+    entries.push({
+      value: margin,
+      valueLabel: `${margin} pts`,
+      races: 0,
+      firstYear: year,
+      driverRef: row.p1.driverRef,
+      name: row.p1.name,
+      shortName: champ ? shortName(champ) : row.p1.name,
+      code: champ?.code || null,
+      flag: champ?.natInfo?.flag || null,
+      country: champ?.natInfo?.country || null,
+      teamRef: null,        // filled by orchestrator from the per-driver season team
+      teamName: null,
+      teamColor: null,
+      context: `${year} - beat ${row.p2.surname}`,
+    });
+  }
+  entries.sort(compareEntries);
+  assignRanksWithTies(entries);
+  return entries;
+}

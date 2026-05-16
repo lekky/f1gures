@@ -1,6 +1,6 @@
 // scripts/records/generators.test.js
 import { describe, it, expect } from 'vitest';
-import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries } from './generators.mjs';
+import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries } from './generators.mjs';
 
 const DRIVERS = [
   {
@@ -177,5 +177,35 @@ describe('generateStreakEntries - podium-streak', () => {
   it('counts top-3 streaks', () => {
     const entries = generateStreakEntries(drivers, 'podium', 'all-time', 2026);
     expect(entries[0].value).toBe(3);
+  });
+});
+
+describe('generateTitleMarginEntries', () => {
+  // yearStandings[year] = { p1: {driverRef, name, points, surname}, p2: {...} }
+  const yearStandings = {
+    1992: { p1: { driverRef: 'mansell', name: 'Nigel Mansell', surname: 'Mansell', points: 108 },
+            p2: { driverRef: 'patrese', name: 'Riccardo Patrese', surname: 'Patrese', points: 56 } },
+    2023: { p1: { driverRef: 'max_verstappen', name: 'Max Verstappen', surname: 'Verstappen', points: 575 },
+            p2: { driverRef: 'perez', name: 'Sergio Perez', surname: 'Pérez', points: 285 } },
+    1976: { p1: { driverRef: 'hunt', name: 'James Hunt', surname: 'Hunt', points: 69 },
+            p2: { driverRef: 'lauda', name: 'Niki Lauda', surname: 'Lauda', points: 68 } },
+  };
+  const driversByRef = new Map([
+    ['mansell',        { driverRef: 'mansell',        forename: 'Nigel', surname: 'Mansell',  code: 'MAN', natInfo: { country: 'GB', flag: 'X' } }],
+    ['max_verstappen', { driverRef: 'max_verstappen', forename: 'Max',   surname: 'Verstappen', code: 'VER', natInfo: { country: 'NL', flag: 'Y' } }],
+    ['hunt',           { driverRef: 'hunt',           forename: 'James', surname: 'Hunt',     code: 'HUN', natInfo: { country: 'GB', flag: 'Z' } }],
+  ]);
+
+  it('returns one entry per year, sorted by margin desc', () => {
+    const entries = generateTitleMarginEntries(yearStandings, driversByRef, 'all-time', 2026);
+    expect(entries[0].driverRef).toBe('max_verstappen');
+    expect(entries[0].value).toBe(290);
+    expect(entries[0].context).toBe('2023 - beat Pérez');
+    expect(entries[1].driverRef).toBe('mansell');
+  });
+
+  it('modern era drops 1976', () => {
+    const entries = generateTitleMarginEntries(yearStandings, driversByRef, 'modern', 2026);
+    expect(entries.find(e => e.context.startsWith('1976'))).toBeUndefined();
   });
 });
