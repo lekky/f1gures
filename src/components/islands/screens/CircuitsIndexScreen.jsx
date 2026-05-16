@@ -19,7 +19,7 @@ export default function CircuitsIndexScreen({ data }) {
         {F.calendar.map(race => {
           const c = F.circuits[race.circuit] || { name: race.circuit, city: '-', country: '-', type: '-', length: 0, corners: 0, lapRecord: { time: '-' } };
           return (
-            <a key={race.round} className="race-card"
+            <a key={race.round} className="race-card race-card-link"
                style={{ textDecoration: 'none', color: 'inherit' }}
                href={urlFor({ name: 'circuit', id: race.circuit })}>
               <div className="race-card-head">

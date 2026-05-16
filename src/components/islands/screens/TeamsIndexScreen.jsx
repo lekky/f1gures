@@ -35,6 +35,7 @@ function FeatureCard({ team }) {
   const teamColor = team.color || 'var(--accent)';
   return (
     <a
+      className="f1-card-link"
       href={urlFor({ name: 'team', ref: team.constructorRef })}
       style={{
         position: 'relative',
@@ -88,6 +89,7 @@ function CompactRow({ team, mob }) {
   const teamColor = team.color || 'var(--accent)';
   return (
     <a
+      className="f1-row-link"
       href={urlFor({ name: 'team', ref: team.constructorRef })}
       style={{
         display: 'grid',
