@@ -72,9 +72,12 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
         </span>
         <span class="next-session-countdown" data-next-countdown>-</span>
       </div>
-      <div class="tz-toggle" role="tablist" aria-label="Time zone">
-        <button type="button" class="tz-btn is-active" data-tz="track" role="tab" aria-selected="true">Track</button>
-        <button type="button" class="tz-btn" data-tz="user" role="tab" aria-selected="false">You</button>
+      <div class="tz-toggle-row">
+        <span class="tz-toggle-caption">Show times in</span>
+        <div class="tz-toggle" role="tablist" aria-label="Time zone">
+          <button type="button" class="tz-btn is-active" data-tz="track" role="tab" aria-selected="true">Track</button>
+          <button type="button" class="tz-btn" data-tz="user" role="tab" aria-selected="false">You</button>
+        </div>
       </div>
       <table class="session-table">
         <tbody>
