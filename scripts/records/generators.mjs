@@ -10,7 +10,7 @@
 //   perRace[]: { year, round, position, grid, fastestLapRank, constructorRef, constructorName, circuitId, date, statusId }
 //   finalStandingByYear: { [year]: { position } }   (championship lookup)
 
-import { filterPerRaceByEra, formatYearsRange, compareEntries, assignRanksWithTies } from './helpers.mjs';
+import { filterPerRaceByEra, formatYearsRange, compareEntries, assignRanksWithTies, formatAge } from './helpers.mjs';
 
 function shortName(d) {
   const first = (d.forename || '').trim();
@@ -242,6 +242,95 @@ export function generateTitleMarginEntries(yearStandings, driversByRef, era, cur
     });
   }
   entries.sort(compareEntries);
+  assignRanksWithTies(entries);
+  return entries;
+}
+
+// Age in days as the leaderboard's `value` so sort comparator works naturally.
+// `valueLabel` is the human "Xy Yd" string.
+function ageInDays(dobIso, eventIso) {
+  if (!dobIso || !eventIso) return null;
+  const dob = new Date(dobIso + 'T00:00:00Z');
+  const evt = new Date(eventIso + 'T00:00:00Z');
+  if (isNaN(dob) || isNaN(evt)) return null;
+  return Math.floor((evt - dob) / (24 * 60 * 60 * 1000));
+}
+
+export function generateYoungestChampionEntries(drivers, finalRoundDateByYear, era, currentYear) {
+  const entries = [];
+  for (const d of drivers) {
+    if (!d.dob) continue;
+    const champYears = Object.keys(d.finalStandingByYear || {})
+      .filter(y => d.finalStandingByYear[y]?.position === 1)
+      .map(Number)
+      .filter(y => y !== currentYear && (era !== 'modern' || y >= 1981));
+    if (!champYears.length) continue;
+    const firstChampYear = Math.min(...champYears);
+    const eventDate = finalRoundDateByYear[firstChampYear];
+    if (!eventDate) continue;
+    const ageDays = ageInDays(d.dob, eventDate);
+    if (ageDays == null) continue;
+
+    const team = primaryTeamFromRows((d.perRace || []).filter(r => r.year === firstChampYear));
+    entries.push({
+      value: ageDays,
+      valueLabel: formatAge(d.dob, eventDate) || `${ageDays}d`,
+      races: 0,
+      firstYear: firstChampYear,
+      driverRef: d.driverRef,
+      name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      shortName: shortName(d),
+      code: d.code || null,
+      flag: d.natInfo?.flag || null,
+      country: d.natInfo?.country || null,
+      teamRef: team.ref,
+      teamName: team.name,
+      teamColor: null,
+      context: `${firstChampYear}${team.name ? ` - ${team.name}` : ''}`,
+    });
+  }
+  // Youngest = smallest age in days. Override default sort.
+  entries.sort((a, b) => a.value - b.value);
+  // assignRanksWithTies expects descending sort. Use a sentinel: temporarily
+  // flip sign for ranking, then restore.
+  entries.forEach(e => { e.value = -e.value; });
+  assignRanksWithTies(entries);
+  entries.forEach(e => { e.value = -e.value; });
+  return entries;
+}
+
+export function generateOldestWinnerEntries(drivers, era, currentYear) {
+  const entries = [];
+  for (const d of drivers) {
+    if (!d.dob) continue;
+    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear)
+      .filter(r => r.position === 1 && r.date);
+    if (!rows.length) continue;
+    let oldestRow = rows[0], oldestDays = ageInDays(d.dob, rows[0].date) ?? -1;
+    for (const r of rows) {
+      const days = ageInDays(d.dob, r.date);
+      if (days != null && days > oldestDays) { oldestDays = days; oldestRow = r; }
+    }
+    if (oldestDays < 0) continue;
+
+    entries.push({
+      value: oldestDays,
+      valueLabel: formatAge(d.dob, oldestRow.date) || `${oldestDays}d`,
+      races: 0,
+      firstYear: oldestRow.year,
+      driverRef: d.driverRef,
+      name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      shortName: shortName(d),
+      code: d.code || null,
+      flag: d.natInfo?.flag || null,
+      country: d.natInfo?.country || null,
+      teamRef: oldestRow.constructorRef || null,
+      teamName: oldestRow.constructorName || null,
+      teamColor: null,
+      context: `${oldestRow.year} ${oldestRow.raceName || ''}`.trim(),
+    });
+  }
+  entries.sort(compareEntries); // value desc - oldest is largest
   assignRanksWithTies(entries);
   return entries;
 }

@@ -1,6 +1,6 @@
 // scripts/records/generators.test.js
 import { describe, it, expect } from 'vitest';
-import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries } from './generators.mjs';
+import { generateDriverCareerEntries, generateWinsInSeasonEntries, generateStreakEntries, generateTitleMarginEntries, generateYoungestChampionEntries, generateOldestWinnerEntries } from './generators.mjs';
 
 const DRIVERS = [
   {
@@ -207,5 +207,39 @@ describe('generateTitleMarginEntries', () => {
   it('modern era drops 1976', () => {
     const entries = generateTitleMarginEntries(yearStandings, driversByRef, 'modern', 2026);
     expect(entries.find(e => e.context.startsWith('1976'))).toBeUndefined();
+  });
+});
+
+describe('generateYoungestChampionEntries', () => {
+  const drivers = [{
+    driverRef: 'max_verstappen', forename: 'Max', surname: 'Verstappen', code: 'VER',
+    dob: '1997-09-30', natInfo: { country: 'NL', flag: 'X' },
+    perRace: [{ year: 2021, round: 22, position: 1, date: '2021-12-12', constructorRef: 'red_bull', constructorName: 'Red Bull' }],
+    finalStandingByYear: { 2021: { position: 1 } },
+  }];
+  const finalRoundDateByYear = { 2021: '2021-12-12' };
+
+  it('uses age at final-round date of the first championship', () => {
+    const entries = generateYoungestChampionEntries(drivers, finalRoundDateByYear, 'all-time', 2026);
+    expect(entries[0].driverRef).toBe('max_verstappen');
+    expect(entries[0].value).toBeLessThan(25 * 365); // value is age in days
+    expect(entries[0].valueLabel).toMatch(/24y \d+d/);
+  });
+});
+
+describe('generateOldestWinnerEntries', () => {
+  const drivers = [{
+    driverRef: 'farina', forename: 'Nino', surname: 'Farina', code: 'FAR',
+    dob: '1906-10-30', natInfo: { country: 'IT', flag: 'X' },
+    perRace: [
+      { year: 1953, round: 7, position: 1, date: '1953-09-13', constructorRef: 'ferrari', constructorName: 'Ferrari' },
+      { year: 1955, round: 3, position: 5, date: '1955-05-22', constructorRef: 'ferrari', constructorName: 'Ferrari' },
+    ],
+  }];
+
+  it('uses the oldest race-winning date', () => {
+    const entries = generateOldestWinnerEntries(drivers, 'all-time', 2026);
+    expect(entries[0].driverRef).toBe('farina');
+    expect(entries[0].valueLabel).toMatch(/46y \d+d/);
   });
 });
