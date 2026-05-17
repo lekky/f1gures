@@ -26,6 +26,7 @@ export default function StandingsDropdown({ active = false }) {
         <div className="nav-dropdown" style={{ top: 'calc(100% - 1px)' }}>
           <a href="/standings-drivers/">Drivers</a>
           <a href="/standings-constructors/">Constructors</a>
+          <a href="/records/">Records & milestones</a>
         </div>
       )}
     </div>

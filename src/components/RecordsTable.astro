@@ -1,0 +1,80 @@
+---
+// src/components/RecordsTable.astro
+//
+// Renders the top-50 table for one era of a record sub-page. The sub-page
+// includes two copies of this component (one per era); the era toggle script
+// flips `hidden` between them.
+
+interface Entry {
+  rank: number;
+  value: number;
+  valueLabel: string;
+  driverRef?: string;
+  constructorRef?: string;
+  name: string;
+  shortName?: string;
+  code?: string | null;
+  flag?: string | null;
+  country?: string | null;
+  teamRef?: string | null;
+  teamName?: string | null;
+  teamColor?: string | null;
+  circuitRef?: string | null;
+  circuitName?: string | null;
+  context?: string;
+}
+
+const { entries, subjectType, era } = Astro.props as {
+  entries: Entry[];
+  subjectType: 'driver' | 'team' | 'driver-at-circuit';
+  era: 'all-time' | 'modern';
+};
+
+const isDefault = era === 'all-time';
+---
+<table class="records-table" data-era-table={era} hidden={!isDefault}>
+  <thead>
+    <tr>
+      <th class="col-rank">#</th>
+      <th class="col-name">{subjectType === 'team' ? 'Team' : 'Driver'}</th>
+      {subjectType === 'driver-at-circuit' && <th class="col-circuit">Circuit</th>}
+      {subjectType === 'driver' && <th class="col-team">Team</th>}
+      <th class="col-value">Stat</th>
+      <th class="col-context">Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    {entries.map(e => (
+      <tr>
+        <td class="col-rank">{e.rank}</td>
+        <td class="col-name">
+          {subjectType === 'team' ? (
+            <>
+              {e.teamColor && <span class="records-team-chip" style={`background: ${e.teamColor}`}></span>}
+              <a href={`/teams/${e.constructorRef}/`}>{e.name}</a>
+            </>
+          ) : (
+            <>
+              {e.flag && <span class="records-flag">{e.flag}</span>}
+              <a href={`/drivers/${e.driverRef}/`}>{e.name}</a>
+            </>
+          )}
+        </td>
+        {subjectType === 'driver-at-circuit' && (
+          <td class="col-circuit">
+            <a href={`/circuits/${e.circuitRef}/`}>{e.circuitName}</a>
+          </td>
+        )}
+        {subjectType === 'driver' && (
+          <td class="col-team">
+            {e.teamRef ? (
+              <a href={`/teams/${e.teamRef}/`} style={e.teamColor ? `border-left: 3px solid ${e.teamColor}; padding-left: 6px;` : ''}>{e.teamName}</a>
+            ) : <span class="text-muted">—</span>}
+          </td>
+        )}
+        <td class="col-value">{e.valueLabel}</td>
+        <td class="col-context text-muted">{e.context || ''}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>

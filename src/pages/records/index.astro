@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RecordHeroCard from '../../components/RecordHeroCard.astro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const indexPath = resolve(process.cwd(), 'public/data/archive/_records-index.json');
+const data = JSON.parse(readFileSync(indexPath, 'utf8'));
+
+const title = 'F1 Records & Milestones - All-Time Leaderboards | f1gures';
+const description = 'Every F1 leaderboard, from most race wins to longest podium streaks. All-time and modern-era rankings since 1950.';
+const canonicalPath = '/records/';
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Records', path: '/records/' },
+];
+
+const ORIGIN = 'https://f1gures.app';
+const allRecords = data.groups.flatMap((g: any) => g.records);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'F1 Records & Milestones',
+  url: ORIGIN + canonicalPath,
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: allRecords.length,
+    itemListElement: allRecords.map((r: any, i: number) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `${ORIGIN}/records/${r.id}/`,
+      name: r.title,
+    })),
+  },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <main class="records-page records-hub">
+    <header class="records-page-head">
+      <h1>F1 Records & Milestones</h1>
+      <p class="page-sub">Every Formula 1 leaderboard worth knowing - career, single-season, streaks, milestones, teams and tracks. All-time and modern-era (1981+) rankings, computed from 1950 through the last completed season.</p>
+    </header>
+
+    {data.groups.map((group: any) => (
+      <section class="records-section">
+        <div class="section-head">
+          <h2>{group.label}</h2>
+          <div class="section-rule"></div>
+        </div>
+        <div class="records-grid">
+          {group.records.map((r: any) => <RecordHeroCard record={r} />)}
+        </div>
+      </section>
+    ))}
+  </main>
+</BaseLayout>

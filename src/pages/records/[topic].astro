@@ -1,0 +1,96 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RecordsTable from '../../components/RecordsTable.astro';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+
+export async function getStaticPaths() {
+  const recordsDir = resolve(process.cwd(), 'public/data/archive/records');
+  const files = readdirSync(recordsDir);
+  return files
+    .filter((f: string) => f.endsWith('.json'))
+    .map((f: string) => {
+      const data = JSON.parse(readFileSync(join(recordsDir, f), 'utf8'));
+      return { params: { topic: data.id }, props: { data } };
+    });
+}
+
+const { data } = Astro.props as { data: any };
+
+const title = `${data.title} - All-Time F1 Leaderboard | f1gures`;
+const description = `${data.blurb} Top 50 all-time and from 1981 onwards.`;
+const canonicalPath = `/records/${data.id}/`;
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Records', path: '/records/' },
+  { name: data.title, path: canonicalPath },
+];
+
+const ORIGIN = 'https://f1gures.app';
+const top = data.allTime.top50 || [];
+const jsonLd = top.length > 0 ? {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: `${data.title} (All-time top ${top.length})`,
+  numberOfItems: top.length,
+  itemListElement: top.map((e: any, i: number) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: e.name,
+    url: data.subjectType === 'team'
+      ? `${ORIGIN}/teams/${e.constructorRef}/`
+      : `${ORIGIN}/drivers/${e.driverRef}/`,
+  })),
+} : undefined;
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <main class="records-page records-sub">
+    <header class="records-page-head">
+      <h1>{data.title}</h1>
+      <p class="page-sub">{data.blurb}</p>
+    </header>
+
+    <div class="records-era-toggle">
+      <button class="active" data-era-toggle="all-time" aria-pressed="true">All-time (1950-present)</button>
+      <button data-era-toggle="modern" aria-pressed="false">Modern era (1981-present)</button>
+    </div>
+
+    {data.note && <p class="records-note">{data.note}</p>}
+
+    <div class="records-table-wrap" data-era="all-time">
+      <RecordsTable entries={data.allTime.top50 || []} subjectType={data.subjectType} era="all-time" />
+      <RecordsTable entries={data.modern.top50  || []} subjectType={data.subjectType} era="modern" />
+    </div>
+  </main>
+
+  <script is:inline>
+    (function () {
+      const root = document.querySelector('.records-page');
+      if (!root) return;
+      const wrap = root.querySelector('.records-table-wrap');
+      if (!wrap) return;
+      root.querySelectorAll('[data-era-toggle]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const era = btn.getAttribute('data-era-toggle');
+          wrap.setAttribute('data-era', era);
+          wrap.querySelectorAll('[data-era-table]').forEach(function (t) {
+            t.hidden = t.getAttribute('data-era-table') !== era;
+          });
+          root.querySelectorAll('[data-era-toggle]').forEach(function (b) {
+            const isActive = b.getAttribute('data-era-toggle') === era;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-pressed', String(isActive));
+          });
+        });
+      });
+    })();
+  </script>
+</BaseLayout>

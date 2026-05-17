@@ -1,0 +1,93 @@
+---
+// src/components/RecordHeroCard.astro
+//
+// Hero card for the records hub. Renders one record's all-time top-5:
+//   - eyebrow with record title
+//   - giant value + holder name + context
+//   - rows 2-5 compact list
+//   - footer link to /records/<id>/
+// Whole card is one <a>.
+
+interface Entry {
+  rank: number;
+  value: number;
+  valueLabel: string;
+  driverRef?: string;
+  constructorRef?: string;
+  name: string;
+  shortName?: string;
+  code?: string | null;
+  flag?: string | null;
+  country?: string | null;
+  teamRef?: string | null;
+  teamName?: string | null;
+  teamColor?: string | null;
+  circuitRef?: string | null;
+  circuitName?: string | null;
+  context?: string;
+}
+
+interface RecordIndex {
+  id: string;
+  title: string;
+  blurb: string;
+  subjectType: 'driver' | 'team' | 'driver-at-circuit';
+  allTime: { top5: Entry[] };
+}
+
+const { record } = Astro.props as { record: RecordIndex };
+const entries = record.allTime.top5 || [];
+const holder = entries[0];
+const rest = entries.slice(1);
+const accent = holder?.teamColor || 'var(--accent)';
+---
+{holder && (
+  <a class="records-hero-card" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
+    <div class="records-hero-eyebrow">{record.title}</div>
+
+    <div class="records-hero-value">{holder.valueLabel}</div>
+
+    <div class="records-hero-holder">
+      {record.subjectType === 'team' ? (
+        <>
+          <span class="records-team-chip" style={`background: ${accent}`}></span>
+          <span class="records-hero-name">{holder.name}</span>
+        </>
+      ) : (
+        <>
+          {holder.flag && <span class="records-flag">{holder.flag}</span>}
+          <span class="records-hero-name">{holder.name}</span>
+        </>
+      )}
+    </div>
+
+    {holder.context && <div class="records-hero-context">{holder.context}</div>}
+
+    {rest.length > 0 && (
+      <ul class="records-hero-rows">
+        {rest.map(e => (
+          <li class="records-hero-row">
+            <span class="records-rank">{e.rank}</span>
+            <span class="records-row-name">
+              {record.subjectType === 'team' && e.teamColor && (
+                <span class="records-team-chip records-team-chip-sm" style={`background: ${e.teamColor}`}></span>
+              )}
+              {e.flag && record.subjectType !== 'team' && <span class="records-flag-sm">{e.flag}</span>}
+              {record.subjectType === 'driver-at-circuit' ? (
+                <>
+                  {e.shortName || e.name}
+                  <span class="records-row-sub">{e.circuitName}</span>
+                </>
+              ) : (
+                <>{e.shortName || e.name}</>
+              )}
+            </span>
+            <span class="records-row-value">{e.valueLabel}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <div class="records-hero-footer">See full ranking →</div>
+  </a>
+)}
