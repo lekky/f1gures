@@ -2106,11 +2106,46 @@ html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
   padding: 8px 12px; background: var(--bg-2); border-left: 3px solid var(--card-accent, var(--accent));
 }
 
-/* Records sub-page column tweaks (sit on top of .data-table) */
-.records-table-wrap .col-rank { width: 44px; font-variant-numeric: tabular-nums; color: var(--fg-3); }
-.records-table-wrap .col-value { font-variant-numeric: tabular-nums; font-weight: 700; }
-.records-table-wrap .col-context { color: var(--fg-3); }
+/* Records sub-page table column tweaks (sit on top of .tbl) */
+.records-table-wrap .tbl .col-rank { width: 56px; }
+.records-table-wrap .tbl .col-value { font-variant-numeric: tabular-nums; font-weight: 700; }
+.records-table-wrap .tbl .col-context { color: var(--fg-3); white-space: nowrap; }
+
+.records-table-wrap .tbl .col-name {
+  border-left: 3px solid var(--team-color, var(--line-2));
+  padding-left: 10px;
+}
+
+.records-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.records-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.records-row-headshot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-2);
+  flex-shrink: 0;
+}
+.records-row-headshot.silhouette {
+  background: var(--team-color, var(--fg-4));
+  opacity: 0.6;
+}
+
+.records-cell .flag-img { height: 14px; }
 
 @media (max-width: 720px) {
-  .records-table-wrap .col-context { display: none; }
+  .records-table-wrap .tbl .col-context { display: none; }
 }
