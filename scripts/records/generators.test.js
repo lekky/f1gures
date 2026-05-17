@@ -56,12 +56,14 @@ describe('generateDriverCareerEntries - wins', () => {
     expect(generateDriverCareerEntries(drivers, 'wins', 'modern',   2026)[0].value).toBe(1);
   });
 
-  it('attaches teamRef / context / flag / shortName / valueLabel', () => {
+  it('attaches teamRef / context / flag / shortName / first+last / valueLabel', () => {
     const entries = generateDriverCareerEntries(DRIVERS, 'wins', 'all-time', 2026);
     const ham = entries.find(e => e.driverRef === 'hamilton');
     expect(ham.teamRef).toBe('mercedes'); // most-raced team
     expect(ham.flag).toBe('🇬🇧');
     expect(ham.shortName).toBe('L. Hamilton');
+    expect(ham.first).toBe('Lewis');
+    expect(ham.last).toBe('Hamilton');
     expect(ham.context).toBe('2007-2020');
     expect(ham.valueLabel).toBe('3 wins');
   });

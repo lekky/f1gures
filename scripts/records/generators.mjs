@@ -92,6 +92,8 @@ export function generateDriverCareerEntries(drivers, stat, era, currentYear) {
       firstYear,
       driverRef: d.driverRef,
       name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      first: d.forename || null,
+      last: d.surname || null,
       shortName: shortName(d),
       code: d.code || null,
       flag: d.natInfo?.flag || null,
@@ -134,6 +136,8 @@ export function generateWinsInSeasonEntries(drivers, era, currentYear) {
       firstYear: bestYear,
       driverRef: d.driverRef,
       name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      first: d.forename || null,
+      last: d.surname || null,
       shortName: shortName(d),
       code: d.code || null,
       flag: d.natInfo?.flag || null,
@@ -194,6 +198,8 @@ export function generateStreakEntries(drivers, kind, era, currentYear) {
       firstYear: bestStart.year,
       driverRef: d.driverRef,
       name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      first: d.forename || null,
+      last: d.surname || null,
       shortName: shortName(d),
       code: d.code || null,
       flag: d.natInfo?.flag || null,
@@ -225,6 +231,8 @@ export function generateTitleMarginEntries(yearStandings, driversByRef, era, cur
 
     const champ = driversByRef.get(row.p1.driverRef);
     const champTeam = champ ? primaryTeamFromRows((champ.perRace || []).filter(r => r.year === year)) : { ref: null, name: null };
+    const champFirst = champ?.forename || null;
+    const champLast = champ?.surname || row.p1.surname || null;
     entries.push({
       value: margin,
       valueLabel: `${margin} pts`,
@@ -232,6 +240,8 @@ export function generateTitleMarginEntries(yearStandings, driversByRef, era, cur
       firstYear: year,
       driverRef: row.p1.driverRef,
       name: row.p1.name,
+      first: champFirst,
+      last: champLast,
       shortName: champ ? shortName(champ) : row.p1.name,
       code: champ?.code || null,
       flag: champ?.natInfo?.flag || null,
@@ -280,6 +290,8 @@ export function generateYoungestChampionEntries(drivers, finalRoundDateByYear, e
       firstYear: firstChampYear,
       driverRef: d.driverRef,
       name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      first: d.forename || null,
+      last: d.surname || null,
       shortName: shortName(d),
       code: d.code || null,
       flag: d.natInfo?.flag || null,
@@ -321,6 +333,8 @@ export function generateOldestWinnerEntries(drivers, era, currentYear) {
       firstYear: oldestRow.year,
       driverRef: d.driverRef,
       name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+      first: d.forename || null,
+      last: d.surname || null,
       shortName: shortName(d),
       code: d.code || null,
       flag: d.natInfo?.flag || null,
@@ -454,6 +468,8 @@ export function generateDriverAtCircuitEntries(drivers, kind, era, currentYear) 
         firstYear,
         driverRef: d.driverRef,
         name: `${d.forename || ''} ${d.surname || ''}`.trim(),
+        first: d.forename || null,
+        last: d.surname || null,
         shortName: shortName(d),
         code: d.code || null,
         flag: d.natInfo?.flag || null,
