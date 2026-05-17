@@ -1594,7 +1594,7 @@ html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
   font-size: 13px;
 }
 .records-rank { color: var(--fg-3); font-variant-numeric: tabular-nums; font-weight: 600; }
-.records-row-name { display: inline-flex; align-items: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-direction: column; align-items: flex-start; }
+.records-row-name { display: inline-flex; flex-direction: column; align-items: flex-start; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .records-row-sub { font-size: 11px; color: var(--fg-3); }
 .records-row-value { font-variant-numeric: tabular-nums; font-weight: 600; }
 

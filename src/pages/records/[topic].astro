@@ -59,8 +59,8 @@ const jsonLd = top.length > 0 ? {
     </header>
 
     <div class="records-era-toggle">
-      <button class="active" data-era-toggle="all-time">All-time (1950-present)</button>
-      <button data-era-toggle="modern">Modern era (1981-present)</button>
+      <button class="active" data-era-toggle="all-time" aria-pressed="true">All-time (1950-present)</button>
+      <button data-era-toggle="modern" aria-pressed="false">Modern era (1981-present)</button>
     </div>
 
     {data.note && <p class="records-note">{data.note}</p>}
@@ -85,7 +85,9 @@ const jsonLd = top.length > 0 ? {
             t.hidden = t.getAttribute('data-era-table') !== era;
           });
           root.querySelectorAll('[data-era-toggle]').forEach(function (b) {
-            b.classList.toggle('active', b.getAttribute('data-era-toggle') === era);
+            const isActive = b.getAttribute('data-era-toggle') === era;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-pressed', String(isActive));
           });
         });
       });

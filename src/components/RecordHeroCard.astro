@@ -45,7 +45,7 @@ const accent = holder?.teamColor || 'var(--accent)';
   <a class="records-hero-card" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
     <div class="records-hero-eyebrow">{record.title}</div>
 
-    <div class="records-hero-value">{holder.value}</div>
+    <div class="records-hero-value">{holder.valueLabel}</div>
 
     <div class="records-hero-holder">
       {record.subjectType === 'team' ? (
@@ -82,7 +82,7 @@ const accent = holder?.teamColor || 'var(--accent)';
                 <>{e.shortName || e.name}</>
               )}
             </span>
-            <span class="records-row-value">{e.value}</span>
+            <span class="records-row-value">{e.valueLabel}</span>
           </li>
         ))}
       </ul>
