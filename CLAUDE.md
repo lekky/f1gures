@@ -9,11 +9,14 @@ npm install
 npm run build       # runs prebuild → astro build
 npm run preview     # serve dist/ for production-shape preview
 npm run dev         # dev server with HMR at http://localhost:4321/
+npm test            # vitest - covers src/lib/ and scripts/records/
 ```
 
-`prebuild` runs two scripts in order:
+`prebuild` runs four scripts in order:
 1. `scripts/build-archive.mjs` - parses `data/history/*.csv` (Ergast dump) and writes per-entity JSONs into `public/data/archive/` (gitignored). Then does a second pass over every `public/data/<year>.json` bundle with year > 2024: emits race archive JSONs for completed rounds (those with results), appends them to `_races-index.json` so `getStaticPaths` prerenders them, and merges race entries + championship standings into driver docs. The Astro routes' `getStaticPaths` reads those at build time.
-2. `scripts/sync-current-season.mjs` - copies the highest-numbered `public/data/<year>.json` to `src/data/currentSeason.json` (gitignored). The 5 listing-page islands import that JSON via [src/data/currentSeason.js](src/data/currentSeason.js) so the prerendered HTML reflects real current standings instead of the speculative grid in `buildFallback.js`.
+2. `scripts/generate-og-images.mjs` - renders per-page Open Graph PNGs into `public/og/` using satori + resvg. Cached: only regenerates images whose source data has changed.
+3. `scripts/sync-current-season.mjs` - copies the highest-numbered `public/data/<year>.json` to `src/data/currentSeason.json` (gitignored). The 5 listing-page islands import that JSON via [src/data/currentSeason.js](src/data/currentSeason.js) so the prerendered HTML reflects real current standings instead of the speculative grid in `buildFallback.js`.
+4. `scripts/fetch-weather.mjs` - pulls next-race weather from Open-Meteo. Non-fatal if the API is down (existing data is reused).
 
 Both are idempotent - safe to run repeatedly.
 
@@ -44,6 +47,7 @@ If you only touch the importer and want to skip Astro: `npm run build:archive`. 
 - `src/pages/races/[year]/[round].astro` → `src/components/RacePage.astro` - ~1,153 race pages (1,125 Ergast + 28 from hand-curated bundles)
 - `src/pages/circuits/[circuitRef].astro` → `src/components/CircuitPage.astro` - ~77 circuits
 - `src/pages/teams/[constructorRef].astro` → `src/components/TeamPage.astro` - ~212 constructors
+- `src/pages/records/index.astro` + `src/pages/records/[topic].astro` - hub + 17 sub-pages (one per leaderboard). Uses `RecordHeroCard.astro` and `RecordsTable.astro`. Era toggle on sub-pages is a ~15-line inline `<script is:inline>` - no island.
 - `src/pages/404.astro`
 
 **Legacy URL redirects** in `public/`:
@@ -59,8 +63,12 @@ If you only touch the importer and want to skip Astro: `npm run build:archive`. 
   - `_races-index.json`, `races/<year>/<round>.json`
   - `_circuits-index.json`, `circuits/<circuitRef>.json`
   - `_teams-index.json`, `teams/<constructorRef>.json`
+  - `_records-index.json`, `records/<topic>.json` - 17 curated leaderboards (top-5 for hub, top-50 for sub-pages, all-time + modern era). Computed by the records pass in `build-archive.mjs` from already-merged driver/team docs.
   - `_driver-codes.json` - code→driverRef map for the `/driver.html?id=NOR` redirect
 - `data/history/*.csv` - Ergast Database CSV dump (1950–2024, ~22 MB). Build-time only, never served. Excluded from `dist/` because it's at repo root, not in `public/`.
+
+### Records library
+- `scripts/records/{configs,helpers,generators,index}.mjs` - pure-function records computation: 17 record configs, era filter / rank-with-ties / formatters, 9 generators (one per record type), and an orchestrator. Called as the final pass of `build-archive.mjs`. Has vitest unit tests in `scripts/records/*.test.js`.
 
 ### Assets
 - `public/css/{app,site}.css` - design tokens + global styles. Linked from BaseLayout with content-hashed `?v=<hash>`.
@@ -79,6 +87,7 @@ If you only touch the importer and want to skip Astro: `npm run build:archive`. 
   - `CIRCUIT_ID_ALIAS`: `albert` → `albert_park`, `marina` → `marina_bay`, `lasvegas` → `vegas`, `yas` → `yas_marina`, `montreal` → `villeneuve`, `cota` → `americas`, `spielberg` → `red_bull_ring`
   - `ARCHIVE_MAX_YEAR = 2025` - race URLs for years ≤ this generate `/races/<y>/<r>/` links directly; years past it fall through to `/race.html?round=N&year=Y`. The redirect checks `_races-index.json` (which now includes completed bundle rounds), so 2026 completed races redirect correctly to their prerendered pages; future rounds redirect to `/calendar/`. The same guard is duplicated in `DriverPage.astro` and `CircuitPage.astro` via local `raceUrl()` helpers - bump in all three when a new year's data is complete enough to fully prerender (i.e. the season bundle is finalised and all rounds have results).
 - **Astro template gotcha**: don't write `r.year <= ARCHIVE_MAX_YEAR` inline in a JSX expression - Astro's compiler parses `<=` as a tag opener and errors with *"Unable to assign attributes when using <> Fragment shorthand syntax"*. Wrap the comparison in a function defined in the frontmatter.
+- **Astro frontmatter fs reads**: when an `.astro` page reads JSON from the filesystem at build time, use `resolve(process.cwd(), 'public/data/...')` - NOT `import.meta.url + fileURLToPath`. Vite bundles frontmatter into `dist/chunks/astro/server_*.mjs`, so `import.meta.url` resolves relative to the bundle path, not the source file. Existing examples: `src/data/archive.js`, `src/pages/records/index.astro`, `src/pages/records/[topic].astro`.
 - **Dark mode tokens**: `:root` holds dark defaults; `html.light` overrides for light mode. Pre-hydration `<script is:inline>` in BaseLayout reads `localStorage.f1-theme` and toggles `html.light` *before* paint, killing the dark→light flash.
 - **Mobile responsive**: prefer CSS `@media (max-width: 720px)` over JS `useIsMobile()` for layout-only decisions. SSR has no `window` so JS-driven layouts emit the desktop variant in HTML and snap to mobile only after hydration - visible flash on slow phones, persistent breakage if JS fails. `css/site.css` has overrides forcing `repeat(N, 1fr)` inline grids back to `1fr` below 720px.
 - **Driver code collisions**: many historic drivers have no Ergast `code` field, so the importer derives one from surname (first 3 chars). For per-season bundles, that collides for shared surnames (1961: Phil Hill + Graham Hill → both `HIL`). Use `driverRef` (always unique slug like `phil_hill`) as `id` in season JSONs; `code` stays as the display label only.
