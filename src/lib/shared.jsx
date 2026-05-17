@@ -13,6 +13,7 @@ export function urlFor(target) {
     case 'home':         return '/';
     case 'standings-d':  return '/standings-drivers/';
     case 'standings-c':  return '/standings-constructors/';
+    case 'records':      return '/records/';
     case 'calendar':     return '/calendar/';
     case 'circuits':     return '/circuits/';
     case 'race': {

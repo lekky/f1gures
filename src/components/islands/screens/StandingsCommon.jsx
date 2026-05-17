@@ -17,6 +17,10 @@ export function StandingsTypeToggle({ active }) {
          href={urlFor({ name: 'standings-c' })} aria-current={active === 'c' ? 'page' : undefined}>
         Constructors
       </a>
+      <a className={`standings-toggle-opt ${active === 'r' ? 'active' : ''}`}
+         href={urlFor({ name: 'records' })} aria-current={active === 'r' ? 'page' : undefined}>
+        Records
+      </a>
     </div>
   );
 }
