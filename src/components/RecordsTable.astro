@@ -34,7 +34,7 @@ interface Entry {
 const { entries, subjectType, era } = Astro.props as {
   entries: Entry[];
   subjectType: 'driver' | 'team' | 'driver-at-circuit';
-  era: 'all-time' | 'modern';
+  era: 'all-time' | 'modern' | 'classic';
 };
 
 const isDefault = era === 'all-time';
