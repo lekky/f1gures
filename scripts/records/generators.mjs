@@ -63,6 +63,7 @@ function countStat(rows, stat, finalStandingByYear, era, currentYear) {
         const year = Number(yearStr);
         if (year === currentYear) continue;
         if (era === 'modern' && year < 1981) continue;
+        if (era === 'classic' && year >= 1981) continue;
         if (finalStandingByYear[yearStr]?.position === 1) n++;
       }
       return n;
@@ -223,6 +224,7 @@ export function generateTitleMarginEntries(yearStandings, driversByRef, era, cur
     const year = Number(yearStr);
     if (year === currentYear) continue;
     if (era === 'modern' && year < 1981) continue;
+    if (era === 'classic' && year >= 1981) continue;
 
     const row = yearStandings[yearStr];
     if (!row?.p1 || !row?.p2) continue;
@@ -274,7 +276,9 @@ export function generateYoungestChampionEntries(drivers, finalRoundDateByYear, e
     const champYears = Object.keys(d.finalStandingByYear || {})
       .filter(y => d.finalStandingByYear[y]?.position === 1)
       .map(Number)
-      .filter(y => y !== currentYear && (era !== 'modern' || y >= 1981));
+      .filter(y => y !== currentYear
+        && (era !== 'modern' || y >= 1981)
+        && (era !== 'classic' || y < 1981));
     if (!champYears.length) continue;
     const firstChampYear = Math.min(...champYears);
     const eventDate = finalRoundDateByYear[firstChampYear];
@@ -364,6 +368,7 @@ export function generateTeamCareerEntries(teams, stat, era, currentYear) {
         const year = Number(yearStr);
         if (year === currentYear) continue;
         if (era === 'modern' && year < 1981) continue;
+        if (era === 'classic' && year >= 1981) continue;
         if (t.finalStandingByYear[yearStr]?.position === 1) value++;
       }
     }
@@ -397,6 +402,7 @@ export function generateTeam12FinishesEntries(results, teamsByRef, era, currentY
   for (const r of results) {
     if (r.year == null || r.year === currentYear) continue;
     if (era === 'modern' && r.year < 1981) continue;
+    if (era === 'classic' && r.year >= 1981) continue;
     if (r.position !== 1 && r.position !== 2) continue;
     const key = `${r.year}-${r.round}`;
     if (!byRace.has(key)) byRace.set(key, { p1: null, p2: null, year: r.year });

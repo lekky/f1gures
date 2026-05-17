@@ -12,6 +12,7 @@ export function filterPerRaceByEra(rows, era, currentYear) {
     if (r.year == null) return false;
     if (r.year === currentYear) return false;
     if (era === 'modern' && r.year < MODERN_ERA_START_YEAR) return false;
+    if (era === 'classic' && r.year >= MODERN_ERA_START_YEAR) return false;
     return true;
   });
 }
