@@ -53,6 +53,7 @@ const jsonLd = top.length > 0 ? {
   breadcrumb={breadcrumb}
 >
   <main class="records-page records-sub">
+    <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/records/">← Records</a>
     <header class="records-page-head">
       <h1>{data.title}</h1>
       <p class="page-sub">{data.blurb}</p>
@@ -61,6 +62,7 @@ const jsonLd = top.length > 0 ? {
     <div class="records-era-toggle">
       <button class="active" data-era-toggle="all-time" aria-pressed="true">All-time (1950-present)</button>
       <button data-era-toggle="modern" aria-pressed="false">Modern era (1981-present)</button>
+      <button data-era-toggle="classic" aria-pressed="false">Classic era (1950-1980)</button>
     </div>
 
     {data.note && <p class="records-note">{data.note}</p>}
@@ -68,6 +70,7 @@ const jsonLd = top.length > 0 ? {
     <div class="records-table-wrap" data-era="all-time">
       <RecordsTable entries={data.allTime.top50 || []} subjectType={data.subjectType} era="all-time" />
       <RecordsTable entries={data.modern.top50  || []} subjectType={data.subjectType} era="modern" />
+      <RecordsTable entries={data.classic?.top50 || []} subjectType={data.subjectType} era="classic" />
     </div>
   </main>
 

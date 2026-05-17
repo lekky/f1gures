@@ -89,12 +89,15 @@ export function buildRecords({
   for (const cfg of RECORD_CONFIGS) {
     const allTime = dispatch(cfg.id, driverDocs, teamDocs, yearStandings, finalRoundDateByYear, allResults, 'all-time', currentYear);
     const modern  = dispatch(cfg.id, driverDocs, teamDocs, yearStandings, finalRoundDateByYear, allResults, 'modern',   currentYear);
+    const classic = dispatch(cfg.id, driverDocs, teamDocs, yearStandings, finalRoundDateByYear, allResults, 'classic',  currentYear);
 
     attachTeamColor(allTime, teamColorByRef);
     attachTeamColor(modern,  teamColorByRef);
+    attachTeamColor(classic, teamColorByRef);
 
     const top5 = allTime.slice(0, TOP5).map(strip);
     const modernTop5 = modern.slice(0, TOP5).map(strip);
+    const classicTop5 = classic.slice(0, TOP5).map(strip);
 
     byTopic[cfg.id] = {
       id: cfg.id,
@@ -105,6 +108,7 @@ export function buildRecords({
       note: cfg.note || null,
       allTime: { top50: allTime.slice(0, TOP50).map(strip) },
       modern:  { top50: modern.slice(0, TOP50).map(strip) },
+      classic: { top50: classic.slice(0, TOP50).map(strip) },
     };
 
     indexRecordsByGroup.get(cfg.group).push({
@@ -116,6 +120,7 @@ export function buildRecords({
       subjectType: cfg.subjectType,
       allTime: { top5 },
       modern:  { top5: modernTop5 },
+      classic: { top5: classicTop5 },
     });
   }
 

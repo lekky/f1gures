@@ -56,12 +56,27 @@ describe('generateDriverCareerEntries - wins', () => {
     expect(generateDriverCareerEntries(drivers, 'wins', 'modern',   2026)[0].value).toBe(1);
   });
 
-  it('attaches teamRef / context / flag / shortName / valueLabel', () => {
+  it('classic-era filter drops a post-1980 row', () => {
+    const drivers = [{
+      driverRef: 'lauda', forename: 'Niki', surname: 'Lauda', code: 'LAU',
+      dob: '1949-02-22', natInfo: { country: 'AT', flag: 'X' },
+      perRace: [
+        { year: 1975, round: 1, position: 1, grid: 1, fastestLapRank: null, constructorRef: 'ferrari', constructorName: 'Ferrari' },
+        { year: 1984, round: 1, position: 1, grid: 1, fastestLapRank: null, constructorRef: 'mclaren', constructorName: 'McLaren' },
+      ],
+      finalStandingByYear: { 1975: { position: 1 }, 1984: { position: 1 } },
+    }];
+    expect(generateDriverCareerEntries(drivers, 'wins', 'classic', 2026)[0].value).toBe(1);
+  });
+
+  it('attaches teamRef / context / flag / shortName / first+last / valueLabel', () => {
     const entries = generateDriverCareerEntries(DRIVERS, 'wins', 'all-time', 2026);
     const ham = entries.find(e => e.driverRef === 'hamilton');
     expect(ham.teamRef).toBe('mercedes'); // most-raced team
     expect(ham.flag).toBe('🇬🇧');
     expect(ham.shortName).toBe('L. Hamilton');
+    expect(ham.first).toBe('Lewis');
+    expect(ham.last).toBe('Hamilton');
     expect(ham.context).toBe('2007-2020');
     expect(ham.valueLabel).toBe('3 wins');
   });
