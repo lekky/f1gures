@@ -53,6 +53,11 @@ const jsonLd = top.length > 0 ? {
   breadcrumb={breadcrumb}
 >
   <main class="records-page records-sub">
+    <div class="standings-toggle standings-toggle-mobile" role="group" aria-label="Standings type">
+      <a class="standings-toggle-opt" href="/standings-drivers/">Drivers</a>
+      <a class="standings-toggle-opt" href="/standings-constructors/">Constructors</a>
+      <a class="standings-toggle-opt active" href="/records/" aria-current="page">Records</a>
+    </div>
     <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/records/">← Records</a>
     <header class="records-page-head">
       <h1>{data.title}</h1>
