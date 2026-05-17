@@ -1,0 +1,86 @@
+---
+// Horizontal era timeline above the records sections. Each record's #1
+// holder is plotted as a dot at the year their record was last updated.
+
+interface Group { id: string; label: string; records: any[]; }
+const { groups } = Astro.props as { groups: Group[] };
+
+const ERAS = [
+  { id: 'pre',    label: '1950-80 · Pre-Wars',  start: 1950, end: 1980 },
+  { id: 'turbo',  label: '1981-93 · Turbo',     start: 1981, end: 1993 },
+  { id: 'v10v8',  label: '1994-2013 · V10/V8',  start: 1994, end: 2013 },
+  { id: 'hybrid', label: '2014-23 · V6 hybrid', start: 2014, end: 2023 },
+  { id: 'now',    label: '2024+ · Hybrid',      start: 2024, end: 2027 },
+];
+const TIMELINE_START = 1950;
+const TIMELINE_END = 2027;
+
+function lastYear(s: string | null | undefined): number | null {
+  if (!s) return null;
+  const m = s.match(/\b(19|20)\d{2}\b/g);
+  if (!m) return null;
+  return Math.max(...m.map(Number));
+}
+function pct(y: number): number {
+  const p = (y - TIMELINE_START) / (TIMELINE_END - TIMELINE_START);
+  return Math.max(0, Math.min(100, p * 100));
+}
+
+type Dot = { id: string; title: string; year: number; x: number; era: string; accent: string; stack: number };
+const dots: Dot[] = [];
+let total = 0;
+for (const g of groups) for (const r of g.records) {
+  total++;
+  const top = r.allTime?.top5?.[0];
+  if (!top) continue;
+  const y = lastYear(top.context) || lastYear(top.valueLabel);
+  if (!y) continue;
+  const era = ERAS.find(e => y >= e.start && y <= e.end);
+  const accent = top.teamColor || '#cccccc';
+  dots.push({ id: r.id, title: r.title, year: y, x: pct(y), era: era?.id || 'now', accent, stack: 0 });
+}
+dots.sort((a, b) => a.year - b.year || a.id.localeCompare(b.id));
+// Stack dots that share a year so they don't overlap visually.
+const stackByYear = new Map<number, number>();
+for (const d of dots) {
+  const n = stackByYear.get(d.year) || 0;
+  d.stack = n;
+  stackByYear.set(d.year, n + 1);
+}
+
+const ticks = [1950, 1970, 1990, 2010, 2025];
+---
+<section class="records-timeline">
+  <header class="records-timeline-head">
+    <h3>Where the records live</h3>
+    <p>{total} leaderboards plotted by era of last update</p>
+  </header>
+
+  <div class="records-timeline-band">
+    {ERAS.map(e => (
+      <div
+        class={`records-timeline-era era-${e.id}`}
+        style={`left:${pct(e.start)}%; width:${pct(e.end + 1) - pct(e.start)}%;`}
+      >
+        <span class="records-timeline-era-label">{e.label}</span>
+      </div>
+    ))}
+
+    {dots.map(d => (
+      <a
+        class={`records-timeline-dot era-dot-${d.era}`}
+        href={`/records/${d.id}/`}
+        style={`left:${d.x}%; bottom:${12 + d.stack * 12}px; background:${d.accent};`}
+        title={`${d.title} - ${d.year}`}
+      >
+        <span class="sr-only">{d.title} ({d.year})</span>
+      </a>
+    ))}
+  </div>
+
+  <div class="records-timeline-axis">
+    {ticks.map(y => (
+      <span class="records-timeline-tick" style={`left:${pct(y)}%;`}>{y}</span>
+    ))}
+  </div>
+</section>

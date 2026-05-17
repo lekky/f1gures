@@ -1,12 +1,11 @@
 ---
-// src/components/RecordHeroCard.astro
-//
-// Hero card for the records hub. Renders one record's all-time top-5:
-//   - eyebrow with record title
-//   - giant value + holder name + context
-//   - rows 2-5 compact list
-//   - footer link to /records/<id>/
-// Whole card is one <a>.
+// Hub card for one record: eyebrow, giant value, holder block, and a
+// horizontal bar chart of the top-5. Whole card is a single link to
+// /records/<id>/.
+
+import Flag from './Flag.astro';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 interface Entry {
   rank: number;
@@ -35,59 +34,120 @@ interface RecordIndex {
   allTime: { top5: Entry[] };
 }
 
+const TEAM_LOGO_ALIAS: Record<string, string> = {
+  red_bull: 'redbull',
+  aston_martin: 'aston',
+};
+
+function driverImg(ref?: string | null): string | null {
+  if (!ref) return null;
+  const rel = `images/drivers/${ref}.webp`;
+  return existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null;
+}
+function teamLogo(ref?: string | null): string | null {
+  if (!ref) return null;
+  const slug = TEAM_LOGO_ALIAS[ref] || ref;
+  const rel = `images/teams/${slug}.jpg`;
+  return existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null;
+}
+
 const { record } = Astro.props as { record: RecordIndex };
 const entries = record.allTime.top5 || [];
 const holder = entries[0];
-const rest = entries.slice(1);
+const maxValue = Math.max(...entries.map(e => e.value), 1);
 const accent = holder?.teamColor || 'var(--accent)';
+
+const UNIT_ABBR: Record<string, string> = {
+  'wins': 'win', 'podiums': 'pod', 'poles': 'pol', 'championships': 'tit',
+  'starts': 'sta', 'fastest-laps': 'fas',
+  'wins-in-season': 'win', 'podium-streak': 'pod', 'win-streak': 'win',
+  'title-margin': 'pts',
+  'youngest-champion': '', 'oldest-winner': '',
+  'team-titles': 'tit', 'team-wins': 'win', 'team-1-2-finishes': '1-2',
+  'wins-at-circuit': 'win', 'poles-at-circuit': 'pol',
+};
+const rowUnit = UNIT_ABBR[record.id] ?? '';
+
+function splitValue(label: string) {
+  if (!label) return { num: '', unit: '' };
+  const m = label.match(/^(\d+y\s*\d+d)\b\s*(.*)$/);
+  if (m) return { num: m[1], unit: m[2] };
+  const m2 = label.match(/^([\d.,]+)\s*(.*)$/);
+  if (m2) return { num: m2[1], unit: m2[2] };
+  return { num: label, unit: '' };
+}
+const big = splitValue(holder?.valueLabel || '');
+const holderDriverImg = record.subjectType !== 'team' ? driverImg(holder?.driverRef) : null;
+const holderTeamLogo  = record.subjectType === 'team' ? teamLogo(holder?.constructorRef) : null;
 ---
 {holder && (
-  <a class="records-hero-card" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
-    <div class="records-hero-eyebrow">{record.title}</div>
+  <a class="rec-card" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
+    <header class="rec-card-head">
+      <span class="rec-card-eyebrow">{record.title}</span>
+      <span class="rec-card-arrow" aria-hidden="true">↗</span>
+    </header>
 
-    <div class="records-hero-value">{holder.valueLabel}</div>
-
-    <div class="records-hero-holder">
-      {record.subjectType === 'team' ? (
-        <>
-          <span class="records-team-chip" style={`background: ${accent}`}></span>
-          <span class="records-hero-name">{holder.name}</span>
-        </>
-      ) : (
-        <>
-          {holder.flag && <span class="records-flag">{holder.flag}</span>}
-          <span class="records-hero-name">{holder.name}</span>
-        </>
-      )}
+    <div class="rec-card-value">
+      <span class="rec-card-num">{big.num}</span>
+      {big.unit && <span class="rec-card-unit">{big.unit}</span>}
     </div>
 
-    {holder.context && <div class="records-hero-context">{holder.context}</div>}
+    <div class="rec-card-holder">
+      <div class={`rec-card-avatar${holderDriverImg || holderTeamLogo ? ' rec-card-avatar-image' : ''}`}>
+        {record.subjectType === 'team' ? (
+          holderTeamLogo ? (
+            <img src={holderTeamLogo} alt="" loading="lazy" />
+          ) : (
+            <>
+              <span class="rec-card-avatar-chip" style={`background: ${accent}`}></span>
+              <span class="rec-card-avatar-tag">LOGO</span>
+            </>
+          )
+        ) : (
+          holderDriverImg ? (
+            <img src={holderDriverImg} alt="" loading="lazy" />
+          ) : (
+            <span class="rec-card-avatar-tag">DRIVER</span>
+          )
+        )}
+      </div>
+      <div class="rec-card-holder-text">
+        <div class="rec-card-holder-name">
+          {holder.country && <Flag cc={holder.country} flag={holder.flag} name={holder.name} class="rec-card-flag" />}
+          <span>{holder.name}</span>
+        </div>
+        {holder.context && <div class="rec-card-holder-ctx">{holder.context}</div>}
+      </div>
+    </div>
 
-    {rest.length > 0 && (
-      <ul class="records-hero-rows">
-        {rest.map(e => (
-          <li class="records-hero-row">
-            <span class="records-rank">{e.rank}</span>
-            <span class="records-row-name">
-              {record.subjectType === 'team' && e.teamColor && (
-                <span class="records-team-chip records-team-chip-sm" style={`background: ${e.teamColor}`}></span>
-              )}
-              {e.flag && record.subjectType !== 'team' && <span class="records-flag-sm">{e.flag}</span>}
-              {record.subjectType === 'driver-at-circuit' ? (
-                <>
-                  {e.shortName || e.name}
-                  <span class="records-row-sub">{e.circuitName}</span>
-                </>
-              ) : (
-                <>{e.shortName || e.name}</>
-              )}
+    <ol class="rec-bars">
+      {entries.map((e, i) => {
+        const v = splitValue(e.valueLabel);
+        const width = (e.value / maxValue) * 100;
+        const isLead = i === 0;
+        const rowColor = e.teamColor || 'var(--fg-3)';
+        return (
+          <li class={`rec-bar${isLead ? ' rec-bar-lead' : ''}`}>
+            <span class="rec-bar-rank">{e.rank}</span>
+            <span class="rec-bar-cc">
+              {e.country ? <Flag cc={e.country} flag={e.flag} name={e.name} class="rec-bar-flag" /> : null}
             </span>
-            <span class="records-row-value">{e.valueLabel}</span>
+            <div class="rec-bar-track">
+              <span class="rec-bar-fill" style={`width:${width}%; background:${rowColor};`}></span>
+              <span class="rec-bar-name">
+                {e.shortName || e.name}
+              </span>
+            </div>
+            <span class="rec-bar-value">
+              <span class="rec-bar-num">{v.num}</span>
+              {rowUnit && <span class="rec-bar-unit"> {rowUnit}</span>}
+            </span>
+            {record.subjectType === 'driver-at-circuit' && e.circuitName && (
+              <span class="rec-bar-sub">{e.circuitName}</span>
+            )}
           </li>
-        ))}
-      </ul>
-    )}
-
-    <div class="records-hero-footer">See full ranking →</div>
+        );
+      })}
+    </ol>
   </a>
 )}
