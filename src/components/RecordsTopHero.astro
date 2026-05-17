@@ -1,0 +1,111 @@
+---
+// Hero block for /records/ - the "most decorated" driver/team across all
+// outright #1 spots. Built at build time in records/index.astro.
+
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import Flag from './Flag.astro';
+
+interface HeroRecord {
+  id: string;
+  title: string;
+  valueLabel: string;
+  value: number;
+  context?: string;
+  shortLabel: string;
+  shortSub?: string;
+}
+
+interface Hero {
+  subjectType: 'driver' | 'team';
+  ref: string;
+  name: string;
+  flag?: string | null;
+  country?: string | null;
+  teamColor?: string | null;
+  records: HeroRecord[];
+}
+
+const { hero, totalRecords, blurb } = Astro.props as {
+  hero: Hero;
+  totalRecords: number;
+  blurb: string;
+};
+
+let yearsLabel = '';
+let seasons = 0;
+let teamsList: string[] = [];
+let backgroundMark: string | null = null;
+
+if (hero.subjectType === 'driver') {
+  const docPath = resolve(process.cwd(), `public/data/archive/drivers/${hero.ref}.json`);
+  if (existsSync(docPath)) {
+    const doc = JSON.parse(readFileSync(docPath, 'utf8'));
+    // Year range from the records' context (those reflect last completed
+    // season). career.lastYear may include the in-progress current year.
+    const yearsInContexts = hero.records
+      .flatMap(r => (r.context || '').match(/\b(19|20)\d{2}\b/g) || [])
+      .map(Number);
+    const lastYear = yearsInContexts.length ? Math.max(...yearsInContexts) : (doc.career?.lastYear || 9999);
+    const firstYear = doc.career?.firstYear || (yearsInContexts.length ? Math.min(...yearsInContexts) : null);
+    if (firstYear) {
+      yearsLabel = `${firstYear}-${lastYear}`;
+      seasons = lastYear - firstYear + 1;
+    }
+    const seen = new Set<string>();
+    const ordered = (doc.perSeason || [])
+      .filter((p: any) => p.year <= lastYear)
+      .sort((a: any, b: any) => a.year - b.year);
+    for (const p of ordered) {
+      if (p.constructorName && !seen.has(p.constructorName)) {
+        seen.add(p.constructorName);
+        teamsList.push(p.constructorName);
+      }
+    }
+    if (doc.number != null) backgroundMark = String(doc.number);
+  }
+}
+const accent = hero.teamColor || 'var(--accent)';
+const cc = hero.country || '';
+const heroImage = hero.subjectType === 'driver' && existsSync(resolve(process.cwd(), `public/images/drivers/${hero.ref}.webp`))
+  ? `/images/drivers/${hero.ref}.webp`
+  : null;
+---
+<section class="records-hero" style={`--hero-accent: ${accent}`}>
+  <div class="records-hero-eyebrow">
+    <span class="records-hero-eyebrow-dot" aria-hidden="true"></span>
+    Most Decorated · {hero.records.length} of {totalRecords} all-time records
+  </div>
+
+  <div class="records-hero-grid">
+    <div class="records-hero-ident">
+      {heroImage && (
+        <div class="records-hero-portrait">
+          <img src={heroImage} alt={hero.name} loading="eager" />
+        </div>
+      )}
+      <h2 class="records-hero-name">{hero.name}</h2>
+      <p class="records-hero-bio">
+        {cc && <Flag cc={cc} name={hero.name} class="records-hero-flag" />}
+        {yearsLabel && <span>{yearsLabel}</span>}
+        {seasons > 0 && <><span class="sep">·</span><span>{seasons} seasons</span></>}
+        {teamsList.length > 0 && <><span class="sep">·</span><span>{teamsList.join(' · ')}</span></>}
+      </p>
+      <p class="records-hero-blurb">{blurb}</p>
+    </div>
+
+    <ul class="records-hero-stats">
+      {hero.records.map(r => (
+        <li class="records-hero-stat">
+          <a href={`/records/${r.id}/`}>
+            <div class="records-hero-stat-label">{r.shortLabel}</div>
+            <div class="records-hero-stat-value">{r.value}</div>
+            {r.shortSub && <div class="records-hero-stat-sub">{r.shortSub}</div>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  {backgroundMark && <div class="records-hero-mark" aria-hidden="true">{backgroundMark}</div>}
+</section>

@@ -224,6 +224,7 @@ export function generateTitleMarginEntries(yearStandings, driversByRef, era, cur
     if (margin <= 0) continue;
 
     const champ = driversByRef.get(row.p1.driverRef);
+    const champTeam = champ ? primaryTeamFromRows((champ.perRace || []).filter(r => r.year === year)) : { ref: null, name: null };
     entries.push({
       value: margin,
       valueLabel: `${margin} pts`,
@@ -235,9 +236,9 @@ export function generateTitleMarginEntries(yearStandings, driversByRef, era, cur
       code: champ?.code || null,
       flag: champ?.natInfo?.flag || null,
       country: champ?.natInfo?.country || null,
-      teamRef: null,        // filled by orchestrator from the per-driver season team
-      teamName: null,
-      teamColor: null,
+      teamRef: champTeam.ref,
+      teamName: champTeam.name,
+      teamColor: null,        // filled by orchestrator from teamColorByRef
       context: `${year} - beat ${row.p2.surname}`,
     });
   }
