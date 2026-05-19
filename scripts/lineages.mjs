@@ -31,3 +31,30 @@ export function validateLineages(chains, teamsIndex) {
     }
   }
 }
+
+export function buildLineageAttachment(doc, chains, lookupTeam) {
+  for (const chain of chains) {
+    for (let idx = 0; idx < chain.nodes.length; idx++) {
+      if (chain.nodes[idx].ref !== doc.constructorRef) continue;
+      doc.lineage = {
+        chainId: chain.id,
+        selfIndex: idx,
+        nodes: chain.nodes.map((n, i) => {
+          const other = lookupTeam(n.ref);
+          const stats = eraStats(other, n.from, n.to);
+          return {
+            ref: n.ref,
+            name: other?.name ?? n.ref,
+            displayNameOverride: n.displayNameOverride,
+            color: other?.color ?? '#888',
+            from: n.from,
+            to: n.to,
+            ...stats,
+            isSelf: i === idx,
+          };
+        }),
+      };
+      return;
+    }
+  }
+}
