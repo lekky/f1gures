@@ -4,7 +4,101 @@
 // JSON doc. Same-ref-appearing-twice is allowed (e.g. Renault 2002-11
 // and 2016-20). Linear chains only - no fork/merge support.
 
-export const lineages = [];
+// Eight starter chains covering the modern grid's heritage plus a few
+// short-lived 2010s outfits. Year ranges are inclusive on both ends;
+// `to: null` means "current". Same ref appearing twice is allowed and
+// renders as two separate pills.
+//
+// Notes on ref choices:
+//   - Ergast uses `mf1` for the 2006 Midland team. We use `mf1` with
+//     `displayNameOverride: 'Midland'` so the pill reads naturally.
+//   - We skip Ergast's `spyker_mf1` (the 2006 mid-season rename); only
+//     `spyker` (full 2007 season) is in the chain.
+//   - Ergast uses `alfa` for the Alfa Romeo-sponsored Sauber era.
+//   - Sauber's 2024-2025 entry stays as ref `sauber` in Ergast/the
+//     2025 bundle; we use displayNameOverride 'Kick Sauber'.
+//   - `lotus_f1` (2012-2015) is the Toleman/Renault Enstone line, not
+//     related to Team Lotus or to `lotus_racing`/`caterham`.
+//   - `team_lotus` (Colin Chapman's outfit, 1958-1994) is NOT in any
+//     chain - solo and historic.
+
+export const lineages = [
+  {
+    id: 'jordan-aston',
+    nodes: [
+      { ref: 'jordan',       from: 1991, to: 2005 },
+      { ref: 'mf1',          from: 2006, to: 2006, displayNameOverride: 'Midland' },
+      { ref: 'spyker',       from: 2007, to: 2007 },
+      { ref: 'force_india',  from: 2008, to: 2018 },
+      { ref: 'racing_point', from: 2019, to: 2020 },
+      { ref: 'aston_martin', from: 2021, to: null },
+    ],
+  },
+  {
+    id: 'sauber-audi',
+    nodes: [
+      { ref: 'sauber',     from: 1993, to: 2005 },
+      { ref: 'bmw_sauber', from: 2006, to: 2009 },
+      { ref: 'sauber',     from: 2010, to: 2018 },
+      { ref: 'alfa',       from: 2019, to: 2023 },
+      { ref: 'sauber',     from: 2024, to: 2025, displayNameOverride: 'Kick Sauber' },
+      { ref: 'audi',       from: 2026, to: null },
+    ],
+  },
+  {
+    id: 'tyrrell-mercedes',
+    nodes: [
+      { ref: 'tyrrell',  from: 1968, to: 1998 },
+      { ref: 'bar',      from: 1999, to: 2005 },
+      { ref: 'honda',    from: 2006, to: 2008 },
+      { ref: 'brawn',    from: 2009, to: 2009 },
+      { ref: 'mercedes', from: 2010, to: null },
+    ],
+  },
+  {
+    id: 'toleman-alpine',
+    nodes: [
+      { ref: 'toleman',  from: 1981, to: 1985 },
+      { ref: 'benetton', from: 1986, to: 2001 },
+      { ref: 'renault',  from: 2002, to: 2011 },
+      { ref: 'lotus_f1', from: 2012, to: 2015 },
+      { ref: 'renault',  from: 2016, to: 2020 },
+      { ref: 'alpine',   from: 2021, to: null },
+    ],
+  },
+  {
+    id: 'stewart-redbull',
+    nodes: [
+      { ref: 'stewart',  from: 1997, to: 1999 },
+      { ref: 'jaguar',   from: 2000, to: 2004 },
+      { ref: 'red_bull', from: 2005, to: null },
+    ],
+  },
+  {
+    id: 'minardi-rb',
+    nodes: [
+      { ref: 'minardi',    from: 1985, to: 2005 },
+      { ref: 'toro_rosso', from: 2006, to: 2019 },
+      { ref: 'alphatauri', from: 2020, to: 2023 },
+      { ref: 'rb',         from: 2024, to: null },
+    ],
+  },
+  {
+    id: 'lotus-caterham',
+    nodes: [
+      { ref: 'lotus_racing', from: 2010, to: 2011 },
+      { ref: 'caterham',     from: 2012, to: 2014 },
+    ],
+  },
+  {
+    id: 'virgin-manor',
+    nodes: [
+      { ref: 'virgin',   from: 2010, to: 2011 },
+      { ref: 'marussia', from: 2012, to: 2014 },
+      { ref: 'manor',    from: 2015, to: 2016 },
+    ],
+  },
+];
 
 export function eraStats(teamDoc, from, to) {
   if (!teamDoc?.perSeason) return { seasons: 0, wins: 0, championships: 0 };
