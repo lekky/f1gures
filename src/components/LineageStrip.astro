@@ -1,0 +1,186 @@
+---
+// Horizontal timeline strip showing every era of a constructor's lineage
+// chain. Server-rendered, no client JS. Receives a fully-resolved lineage
+// object (chainId, selfIndex, nodes[]) that build-archive.mjs has merged
+// into the team doc via scripts/lineages.mjs.
+
+interface LineageNode {
+  ref: string;
+  name: string;
+  displayNameOverride?: string;
+  color: string;
+  from: number;
+  to: number | null;
+  seasons: number;
+  wins: number;
+  championships: number;
+  isSelf: boolean;
+}
+
+interface Props {
+  lineage: {
+    chainId: string;
+    selfIndex: number;
+    nodes: LineageNode[];
+  };
+}
+
+const { lineage } = Astro.props;
+const { nodes } = lineage;
+
+const totalSeasons = nodes.reduce((s, n) => s + n.seasons, 0);
+const totalWins    = nodes.reduce((s, n) => s + n.wins, 0);
+const totalTitles  = nodes.reduce((s, n) => s + n.championships, 0);
+
+function formatYears(from: number, to: number | null): string {
+  if (to == null) return `${from}-now`;
+  if (to === from) return `${from}`;
+  return `${from}-${to}`;
+}
+---
+
+<div class="section-head">
+  <h2>Lineage</h2>
+  <div class="section-rule"></div>
+  <span class="t-eyebrow lineage-summary">
+    {nodes.length} eras &middot; {totalSeasons} seasons &middot; {totalWins}W &middot; {totalTitles}T
+  </span>
+</div>
+
+<div class="panel lineage-strip">
+  {nodes.map((n, i) => (
+    <a
+      class:list={['lin-node', n.isSelf && 'is-self']}
+      style={`--c:${n.color};`}
+      href={`/teams/${n.ref}/`}
+      aria-current={n.isSelf ? 'page' : undefined}
+    >
+      <div class="lin-years">{formatYears(n.from, n.to)}</div>
+      <div class="lin-name">
+        <span class="lin-name-text">{n.displayNameOverride ?? n.name}</span>
+        {n.championships > 0 && <span class="lin-star">&#9733;{n.championships}</span>}
+      </div>
+      <div class="lin-stats">
+        {n.seasons} {n.seasons === 1 ? 'yr' : 'yrs'}
+        {n.wins > 0 && (<span> &middot; <span class="win">{n.wins}W</span></span>)}
+      </div>
+      {i < nodes.length - 1 && <span class="lin-arrow" aria-hidden="true"></span>}
+    </a>
+  ))}
+</div>
+
+<style>
+  .lineage-summary {
+    margin-left: auto;
+    color: var(--fg-3);
+  }
+  .lineage-strip {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 2px;
+    padding: 0;
+    overflow: visible;
+    margin-bottom: 24px;
+  }
+  .lin-node {
+    position: relative;
+    padding: 12px 12px 14px;
+    border-top: 3px solid var(--c);
+    background: color-mix(in srgb, var(--c) 8%, var(--bg-2));
+    text-decoration: none;
+    color: inherit;
+    transition: background .15s;
+    min-width: 0;
+  }
+  .lin-node + .lin-node { border-left: 1px solid var(--line-1); }
+  .lin-node:hover { background: color-mix(in srgb, var(--c) 16%, var(--bg-2)); }
+  .lin-node.is-self {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--c) 28%, var(--bg-2)),
+      color-mix(in srgb, var(--c) 8%, var(--bg-2)) 70%
+    );
+  }
+  .lin-node.is-self:hover {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--c) 38%, var(--bg-2)),
+      color-mix(in srgb, var(--c) 14%, var(--bg-2)) 70%
+    );
+  }
+  .lin-years {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+  }
+  .lin-name {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1.15;
+    margin: 2px 0 6px;
+    color: var(--fg-1);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    min-width: 0;
+  }
+  .lin-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .lin-node.is-self .lin-name { color: var(--c); }
+  .lin-star {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .lin-stats {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+  }
+  .lin-stats .win {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .lin-arrow {
+    position: absolute;
+    right: -7px;
+    top: 26px;
+    width: 12px;
+    height: 12px;
+    border-top: 1px solid var(--line-2);
+    border-right: 1px solid var(--line-2);
+    transform: rotate(45deg);
+    background: var(--bg-2);
+    z-index: 2;
+  }
+  @media (max-width: 720px) {
+    .lineage-strip {
+      grid-auto-flow: row;
+      grid-auto-columns: auto;
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+    .lin-node {
+      border-top: 0;
+      border-left: 3px solid var(--c);
+    }
+    .lin-node + .lin-node {
+      border-left: 3px solid var(--c);
+    }
+    .lin-arrow {
+      right: auto;
+      left: 50%;
+      top: auto;
+      bottom: -8px;
+      transform: translateX(-50%) rotate(135deg);
+    }
+  }
+</style>
