@@ -155,7 +155,7 @@ describe('buildLineageAttachment', () => {
     expect(doc.lineage.nodes[0].name).toBe('Jordan');
   });
 
-  it('picks first occurrence as selfIndex when ref appears twice in one chain', () => {
+  it('picks the era covering the latest perSeason year when ref appears twice in one chain', () => {
     const renaultDoc = {
       constructorRef: 'renault',
       name: 'Renault',
@@ -177,14 +177,68 @@ describe('buildLineageAttachment', () => {
     const dupLookup = (ref) => ref === 'renault' ? renaultDoc : null;
     const doc = JSON.parse(JSON.stringify(renaultDoc));
     buildLineageAttachment(doc, chainWithDup, dupLookup);
-    expect(doc.lineage.selfIndex).toBe(0);
-    expect(doc.lineage.nodes[0].isSelf).toBe(true);
-    expect(doc.lineage.nodes[1].isSelf).toBe(false);
+    // Latest perSeason year is 2020 -> falls in era 2 (idx 1), not era 1 (idx 0)
+    expect(doc.lineage.selfIndex).toBe(1);
+    expect(doc.lineage.nodes[0].isSelf).toBe(false);
+    expect(doc.lineage.nodes[1].isSelf).toBe(true);
     // Era stats differ per-pill (date-range filtered)
     expect(doc.lineage.nodes[0].wins).toBe(16);    // 2005+2006 wins
     expect(doc.lineage.nodes[0].championships).toBe(2);
     expect(doc.lineage.nodes[1].wins).toBe(0);     // 2016-2020 wins
     expect(doc.lineage.nodes[1].championships).toBe(0);
+  });
+
+  it('picks the era covering the latest perSeason year when ref appears multiple times', () => {
+    const sauberDoc = {
+      constructorRef: 'sauber',
+      name: 'Sauber',
+      color: '#52E252',
+      perSeason: [
+        { year: 1993, position: 8,  wins: 0 },
+        { year: 2018, position: 8,  wins: 0 },
+        { year: 2024, position: 9,  wins: 0 },
+        { year: 2025, position: 10, wins: 0 },  // latest year - in third era
+      ],
+    };
+    const chain = [{
+      id: 'sauber-audi',
+      nodes: [
+        { ref: 'sauber',     from: 1993, to: 2005 },                                       // era 1 (idx 0)
+        { ref: 'bmw_sauber', from: 2006, to: 2009 },                                       // idx 1
+        { ref: 'sauber',     from: 2010, to: 2018 },                                       // era 2 (idx 2)
+        { ref: 'alfa',       from: 2019, to: 2023 },                                       // idx 3
+        { ref: 'sauber',     from: 2024, to: 2025, displayNameOverride: 'Kick Sauber' },   // era 3 (idx 4)
+        { ref: 'audi',       from: 2026, to: null },                                       // idx 5
+      ],
+    }];
+    const lookup = (ref) => ref === 'sauber' ? sauberDoc : null;
+    const doc = JSON.parse(JSON.stringify(sauberDoc));
+    buildLineageAttachment(doc, chain, lookup);
+    // Latest perSeason year is 2025 -> falls in era 3 (idx 4), not era 1 (idx 0)
+    expect(doc.lineage.selfIndex).toBe(4);
+    expect(doc.lineage.nodes[0].isSelf).toBe(false);
+    expect(doc.lineage.nodes[2].isSelf).toBe(false);
+    expect(doc.lineage.nodes[4].isSelf).toBe(true);
+  });
+
+  it('falls back to first occurrence when no era covers the latest perSeason year (defensive)', () => {
+    const orphanDoc = {
+      constructorRef: 'sauber',
+      name: 'Sauber',
+      color: '#52E252',
+      perSeason: [{ year: 1900, position: 8, wins: 0 }],  // pathological - before any era
+    };
+    const chain = [{
+      id: 'sauber-audi',
+      nodes: [
+        { ref: 'sauber', from: 1993, to: 2005 },
+        { ref: 'sauber', from: 2010, to: 2018 },
+      ],
+    }];
+    const lookup = (ref) => ref === 'sauber' ? orphanDoc : null;
+    const doc = JSON.parse(JSON.stringify(orphanDoc));
+    buildLineageAttachment(doc, chain, lookup);
+    expect(doc.lineage.selfIndex).toBe(0);
   });
 
   it('falls back to ref-as-name and grey color when lookup returns null', () => {

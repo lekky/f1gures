@@ -127,28 +127,43 @@ export function validateLineages(chains, teamsIndex) {
 }
 
 export function buildLineageAttachment(doc, chains, lookupTeam) {
+  const latestYear = doc.perSeason?.length
+    ? Math.max(...doc.perSeason.map(s => s.year))
+    : null;
   for (const chain of chains) {
-    for (let idx = 0; idx < chain.nodes.length; idx++) {
-      if (chain.nodes[idx].ref !== doc.constructorRef) continue;
-      doc.lineage = {
-        chainId: chain.id,
-        selfIndex: idx,
-        nodes: chain.nodes.map((n, i) => {
-          const other = lookupTeam(n.ref);
-          const stats = eraStats(other, n.from, n.to);
-          return {
-            ref: n.ref,
-            name: other?.name ?? n.ref,
-            displayNameOverride: n.displayNameOverride,
-            color: other?.color ?? '#888',
-            from: n.from,
-            to: n.to,
-            ...stats,
-            isSelf: i === idx,
-          };
-        }),
-      };
-      return;
+    const matchingIndices = [];
+    for (let i = 0; i < chain.nodes.length; i++) {
+      if (chain.nodes[i].ref === doc.constructorRef) matchingIndices.push(i);
     }
+    if (matchingIndices.length === 0) continue;
+    // Prefer the era whose range contains the doc's latest perSeason year.
+    // Falls back to first occurrence if no era covers it.
+    let idx = matchingIndices[0];
+    if (latestYear != null) {
+      for (const i of matchingIndices) {
+        const node = chain.nodes[i];
+        const upper = node.to ?? Infinity;
+        if (latestYear >= node.from && latestYear <= upper) { idx = i; break; }
+      }
+    }
+    doc.lineage = {
+      chainId: chain.id,
+      selfIndex: idx,
+      nodes: chain.nodes.map((n, i) => {
+        const other = lookupTeam(n.ref);
+        const stats = eraStats(other, n.from, n.to);
+        return {
+          ref: n.ref,
+          name: other?.name ?? n.ref,
+          displayNameOverride: n.displayNameOverride,
+          color: other?.color ?? '#888',
+          from: n.from,
+          to: n.to,
+          ...stats,
+          isSelf: i === idx,
+        };
+      }),
+    };
+    return;
   }
 }

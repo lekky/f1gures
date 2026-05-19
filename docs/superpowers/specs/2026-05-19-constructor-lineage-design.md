@@ -140,8 +140,9 @@ team.lineage = {
 
 1. Build `lineageByRef: Map<ref, Array<{chain, idx}>>` once.
 2. For each team doc, look up its ref. If absent, skip.
-3. Use the first occurrence's chain + idx as `selfIndex`. (Same ref appearing
-   twice rare; only affects which pill is highlighted on shared-ref teams.)
+3. Prefer the era whose `[from, to]` range contains the doc's latest
+   `perSeason` year as `selfIndex`. Falls back to first occurrence if no era
+   covers the latest year (defensive - shouldn't happen for well-curated chains).
 4. Map every node in the chain to `{ ref, name, displayNameOverride, color,
    from, to, seasons, wins, championships, isSelf }`, pulling `name`/`color`
    from the resolved team doc, carrying `displayNameOverride` through from
@@ -257,7 +258,7 @@ Mirror the `scripts/records/` pattern: pure-function modules in
 2. `eraStats` with `to: null` treats the range as open-ended.
 3. `buildLineageAttachment` populates `nodes[]` with name/color from the
    resolved team doc.
-4. `selfIndex` for a ref appearing twice in one chain -> first occurrence.
+4. `selfIndex` for a ref appearing twice in one chain -> era covering the doc's latest perSeason year (falls back to first occurrence).
 5. `displayNameOverride` is preserved in the attached node.
 6. Validation throws on unknown ref (message contains chain id + ref).
 7. Validation throws on chain length < 2.
