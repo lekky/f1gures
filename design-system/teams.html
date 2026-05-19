@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Teams · F1gures Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../public/css/app.css">
+<link rel="stylesheet" href="../public/css/site.css">
+<link rel="stylesheet" href="ds.css">
+
+<style>
+  /* Team grid — large reference sheet */
+  .team-sheet {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 900px) { .team-sheet { grid-template-columns: 1fr; } }
+
+  .team-card {
+    background: var(--bg-2);
+    border: 1px solid var(--line-1);
+    border-top: 4px solid var(--team-color);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .team-card-head {
+    padding: 18px 20px 14px;
+    display: flex; align-items: flex-start; gap: 14px;
+    border-bottom: 1px solid var(--line-1);
+  }
+  .team-card-chip {
+    width: 56px; height: 56px;
+    background: var(--team-color);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .team-card-chip::after {
+    content: ''; position: absolute;
+    top: 6px; right: 6px;
+    width: 6px; height: 6px;
+    background: rgba(255,255,255,0.6);
+  }
+  .team-card-meta { flex: 1; min-width: 0; }
+  .team-card-name {
+    font-family: var(--f-display); font-weight: 800;
+    font-size: 22px; letter-spacing: 0.02em;
+    text-transform: uppercase; line-height: 1; margin-bottom: 4px;
+  }
+  .team-card-row {
+    display: flex; gap: 14px; font-size: 12px;
+    color: var(--fg-2);
+    font-family: var(--f-mono);
+    margin-top: 6px;
+  }
+  .team-card-row .sep { color: var(--line-2); }
+  .team-card-row .lbl { color: var(--fg-3); margin-right: 4px; text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px; }
+
+  .team-card-uses {
+    padding: 14px 20px 18px;
+    display: grid; gap: 10px;
+  }
+  .team-card-use-row {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 12px;
+  }
+  .team-card-use-row .use-lbl {
+    font-family: var(--f-mono); font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--fg-3); width: 100px; flex-shrink: 0;
+  }
+
+  /* Use demos */
+  .demo-strip { width: 3px; height: 24px; background: var(--team-color); }
+  .demo-rule  { width: 80px; height: 2px; background: var(--team-color); }
+  .demo-dot   { width: 10px; height: 10px; border-radius: 50%; background: var(--team-color); }
+  .demo-chip  {
+    background: var(--bg-3); border: 1px solid var(--line-2);
+    border-left: 2px solid var(--team-color);
+    font-family: var(--f-display); font-weight: 700;
+    font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; padding: 3px 9px;
+  }
+  .demo-driver-cell {
+    border-left: 3px solid var(--team-color);
+    padding-left: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .demo-driver-cell .num {
+    font-family: var(--f-display); font-weight: 700;
+    font-size: 16px; color: var(--fg-3);
+  }
+  .demo-driver-cell .name {
+    font-family: var(--f-display); font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .demo-pill {
+    font-family: var(--f-display); font-weight: 700;
+    font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    background: var(--team-color); color: #fff;
+  }
+
+  /* Contrast pane */
+  .team-contrast {
+    margin-top: 12px;
+    border-top: 1px solid var(--line-1);
+    display: grid; grid-template-columns: 1fr 1fr;
+  }
+  .team-contrast > div {
+    padding: 10px 14px;
+    font-family: var(--f-mono); font-size: 11px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .team-contrast > div + div { border-left: 1px solid var(--line-1); }
+  .team-contrast .on-bg-2 { background: var(--bg-2); color: var(--team-color); }
+  .team-contrast .on-team { background: var(--team-color); color: #fff; }
+  .team-contrast .ratio { opacity: 0.7; font-size: 10px; }
+
+  /* Full grid showcase */
+  .team-bar-set {
+    display: grid; grid-template-columns: 1fr;
+    border: 1px solid var(--line-1);
+    background: var(--bg-2);
+  }
+  .team-bar-row {
+    display: grid;
+    grid-template-columns: 12px 60px 1fr 60px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-1);
+  }
+  .team-bar-row:last-child { border-bottom: 0; }
+  .team-bar-row .stripe { width: 4px; height: 26px; background: var(--team-color); justify-self: start; }
+  .team-bar-row .short {
+    font-family: var(--f-mono); font-size: 11px;
+    color: var(--fg-3); letter-spacing: 0.06em;
+  }
+  .team-bar-row .team-name {
+    font-family: var(--f-display); font-weight: 700;
+    font-size: 14px; letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .team-bar-row .hex {
+    font-family: var(--f-mono); font-size: 11px;
+    color: var(--fg-2); text-align: right;
+  }
+</style>
+</head>
+<body>
+
+<header class="ds-nav">
+  <a class="ds-logo" href="index.html"><span class="dot"></span>F1GURES<small>DESIGN SYSTEM</small></a>
+  <nav class="ds-nav-items">
+    <a class="ds-nav-item" href="index.html">Overview</a>
+    <a class="ds-nav-item" href="foundations.html">Foundations</a>
+    <a class="ds-nav-item" href="colors.html">Color</a>
+    <a class="ds-nav-item" href="teams.html">Teams</a>
+    <a class="ds-nav-item" href="components.html">Components</a>
+    <a class="ds-nav-item" href="patterns.html">Patterns</a>
+    <a class="ds-nav-item" href="audit.html">Audit</a>
+  </nav>
+  <div class="ds-nav-spacer"></div>
+  <div class="ds-theme" role="group" aria-label="Theme">
+    <button data-theme="light">Light</button><button data-theme="dark">Dark</button>
+  </div>
+</header>
+
+<main class="ds-page">
+
+  <div class="ds-head">
+    <span class="eyebrow">03 / TEAMS</span>
+    <h1>Constructor colors.</h1>
+    <p>The 2026 grid. Team colour lives on the strip, the dot, the chip and the leader bar — never as a panel background. Every value below comes from <code>src/data/buildFallback.js</code>; the importer also harvests historical team colours from <code>data/history</code> for archive pages.</p>
+  </div>
+
+  <!-- ============================================================
+       APPLICATION RULES
+       ============================================================ -->
+  <section class="ds-section" id="rules">
+    <div class="ds-section-head"><h2>01 · Where team colour can land</h2><span class="rule"></span></div>
+    <p class="ds-prose">Five surfaces are allowed. Anywhere else, fall back to <code>--fg-1</code>, <code>--accent</code> or a podium colour.</p>
+
+    <div class="ds-cols-3">
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="padding: 20px; display:flex; align-items:center; justify-content:center; --team-color: #FF8000;">
+          <div style="border-left: 3px solid var(--team-color); padding-left: 12px; display:flex; align-items:center; gap: 10px;">
+            <span style="font-family:var(--f-display); font-weight:700; font-size:18px; color:var(--fg-3);">4</span>
+            <span style="font-family:var(--f-display); font-weight:600; font-size:14px; letter-spacing:0.04em; text-transform:uppercase;">L. Norris</span>
+          </div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Strip</span><span class="meta-val">3 px left border on driver cells</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="padding: 20px; display:flex; align-items:center; justify-content:center; --team-color: #E80020;">
+          <div style="width: 100px; height: 4px; background: var(--team-color);"></div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Rule</span><span class="meta-val">2–4 px top rule on team cards &amp; bar charts</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="padding: 20px; display:flex; align-items:center; justify-content:center; --team-color: #27F4D2;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--team-color);"></div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Dot</span><span class="meta-val">8–12 px round chip in search palette, chart legends</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="padding: 20px; display:flex; align-items:center; justify-content:center; --team-color: #3671C6;">
+          <div style="background: var(--bg-3); border: 1px solid var(--line-2); border-left: 2px solid var(--team-color); font-family: var(--f-display); font-weight: 700; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 9px;">VER · #1</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Chip</span><span class="meta-val">.driver-chip with 2 px left strip</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage padless" style="--team-color: #E80020;">
+          <div style="height: 100%; width: 100%; display:flex; align-items: stretch;">
+            <div style="width: 26px; background: var(--team-color); opacity: 1;"></div>
+            <div style="flex: 1; padding: 14px; display:flex; align-items:center; color: #fff; font-family: var(--f-display); font-weight: 700;">LECLERC <span style="margin-left:auto; font-family: var(--f-mono); opacity: 0.8;">347</span></div>
+          </div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Bar fill</span><span class="meta-val">Lead row in records chart — full bar fill</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="padding: 20px; display:flex; align-items:center; justify-content:center; --team-color: #229971;">
+          <span style="font-family:var(--f-display); font-weight:700; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; padding:3px 9px; background:var(--team-color); color:#fff;">SPRINT WINNER</span>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Solid pill</span><span class="meta-val">Rare — team-specific pills only</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FULL TEAM SHEET
+       ============================================================ -->
+  <section class="ds-section" id="grid">
+    <div class="ds-section-head"><h2>02 · 2026 grid</h2><span class="rule"></span><span class="count">10 teams</span></div>
+
+    <div class="team-sheet">
+
+      <article class="team-card" style="--team-color: #FF8000;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">McLaren</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>mclaren</span><span class="sep">·</span><span><span class="lbl">SHORT</span>MCL</span><span class="sep">·</span><span><span class="lbl">HEX</span>#FF8000</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>NOR · PIA</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">4</span><span class="name">L. Norris</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team"><span>Aa on team</span><span class="ratio">color: #fff</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #E80020;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Ferrari</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>ferrari</span><span class="sep">·</span><span><span class="lbl">SHORT</span>FER</span><span class="sep">·</span><span><span class="lbl">HEX</span>#E80020</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>LEC · HAM</span><span class="sep">·</span><span style="color:var(--warn);">⚠ near-collision with --accent</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">16</span><span class="name">C. Leclerc</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team"><span>Aa on team</span><span class="ratio">color: #fff</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #27F4D2;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Mercedes</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>mercedes</span><span class="sep">·</span><span><span class="lbl">SHORT</span>MER</span><span class="sep">·</span><span><span class="lbl">HEX</span>#27F4D2</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>RUS · ANT</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">63</span><span class="name">G. Russell</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team" style="color: #0d0e12;"><span>Aa on team</span><span class="ratio">color: #0D0E12 (light text fails)</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #3671C6;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Red Bull Racing</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>redbull</span><span class="sep">·</span><span><span class="lbl">SHORT</span>RBR</span><span class="sep">·</span><span><span class="lbl">HEX</span>#3671C6</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>VER · TSU</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">1</span><span class="name">M. Verstappen</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team"><span>Aa on team</span><span class="ratio">color: #fff</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #229971;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Aston Martin</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>aston</span><span class="sep">·</span><span><span class="lbl">SHORT</span>AST</span><span class="sep">·</span><span><span class="lbl">HEX</span>#229971</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>ALO · STR</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">14</span><span class="name">F. Alonso</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team"><span>Aa on team</span><span class="ratio">color: #fff</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #0093CC;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Alpine</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>alpine</span><span class="sep">·</span><span><span class="lbl">SHORT</span>ALP</span><span class="sep">·</span><span><span class="lbl">HEX</span>#0093CC</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>GAS · DOO</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">10</span><span class="name">P. Gasly</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team"><span>Aa on team</span><span class="ratio">color: #fff</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #64C4FF;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Williams</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>williams</span><span class="sep">·</span><span><span class="lbl">SHORT</span>WIL</span><span class="sep">·</span><span><span class="lbl">HEX</span>#64C4FF</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>ALB · SAI</span><span class="sep">·</span><span style="color:var(--warn);">⚠ near-collision with Racing Bulls</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">23</span><span class="name">A. Albon</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team" style="color: #0d0e12;"><span>Aa on team</span><span class="ratio">color: #0D0E12</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #6692FF;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Racing Bulls</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>rb</span><span class="sep">·</span><span><span class="lbl">SHORT</span>RBL</span><span class="sep">·</span><span><span class="lbl">HEX</span>#6692FF</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>LAW · HAD</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">30</span><span class="name">L. Lawson</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team"><span>Aa on team</span><span class="ratio">color: #fff</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #52E252;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Kick Sauber</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>sauber</span><span class="sep">·</span><span><span class="lbl">SHORT</span>SAU</span><span class="sep">·</span><span><span class="lbl">HEX</span>#52E252</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>HUL · BOR</span><span class="sep">·</span><span style="color:var(--warn);">⚠ near-collision with --pos</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">27</span><span class="name">N. Hülkenberg</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team" style="color: #0d0e12;"><span>Aa on team</span><span class="ratio">color: #0D0E12</span></div>
+        </div>
+      </article>
+
+      <article class="team-card" style="--team-color: #B6BABD;">
+        <header class="team-card-head">
+          <div class="team-card-chip"></div>
+          <div class="team-card-meta">
+            <div class="team-card-name">Haas</div>
+            <div class="team-card-row"><span><span class="lbl">ID</span>haas</span><span class="sep">·</span><span><span class="lbl">SHORT</span>HAA</span><span class="sep">·</span><span><span class="lbl">HEX</span>#B6BABD</span></div>
+            <div class="team-card-row"><span><span class="lbl">DRIVERS</span>OCO · BEA</span></div>
+          </div>
+        </header>
+        <div class="team-card-uses">
+          <div class="team-card-use-row"><span class="use-lbl">Strip</span><span class="demo-strip"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Rule</span><span class="demo-rule"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Dot</span><span class="demo-dot"></span></div>
+          <div class="team-card-use-row"><span class="use-lbl">Driver cell</span><span class="demo-driver-cell"><span class="num">31</span><span class="name">E. Ocon</span></span></div>
+        </div>
+        <div class="team-contrast">
+          <div class="on-bg-2"><span>Aa on bg-2</span><span class="ratio">color: var(--team-color)</span></div>
+          <div class="on-team" style="color: #0d0e12;"><span>Aa on team</span><span class="ratio">color: #0D0E12</span></div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       QUICK REFERENCE
+       ============================================================ -->
+  <section class="ds-section" id="ref">
+    <div class="ds-section-head"><h2>03 · Quick reference</h2><span class="rule"></span><span class="count">Copy-friendly</span></div>
+    <p class="ds-prose">A single source for grabbing the hex when wiring a chart, a chip, or an MDX <code>&lt;blog-chip team="x"&gt;</code>.</p>
+
+    <div class="team-bar-set">
+      <div class="team-bar-row" style="--team-color: #FF8000;"><span class="stripe"></span><span class="short">MCL</span><span class="team-name">McLaren</span><span class="hex">#FF8000</span></div>
+      <div class="team-bar-row" style="--team-color: #E80020;"><span class="stripe"></span><span class="short">FER</span><span class="team-name">Ferrari</span><span class="hex">#E80020</span></div>
+      <div class="team-bar-row" style="--team-color: #27F4D2;"><span class="stripe"></span><span class="short">MER</span><span class="team-name">Mercedes</span><span class="hex">#27F4D2</span></div>
+      <div class="team-bar-row" style="--team-color: #3671C6;"><span class="stripe"></span><span class="short">RBR</span><span class="team-name">Red Bull Racing</span><span class="hex">#3671C6</span></div>
+      <div class="team-bar-row" style="--team-color: #229971;"><span class="stripe"></span><span class="short">AST</span><span class="team-name">Aston Martin</span><span class="hex">#229971</span></div>
+      <div class="team-bar-row" style="--team-color: #0093CC;"><span class="stripe"></span><span class="short">ALP</span><span class="team-name">Alpine</span><span class="hex">#0093CC</span></div>
+      <div class="team-bar-row" style="--team-color: #64C4FF;"><span class="stripe"></span><span class="short">WIL</span><span class="team-name">Williams</span><span class="hex">#64C4FF</span></div>
+      <div class="team-bar-row" style="--team-color: #6692FF;"><span class="stripe"></span><span class="short">RBL</span><span class="team-name">Racing Bulls</span><span class="hex">#6692FF</span></div>
+      <div class="team-bar-row" style="--team-color: #52E252;"><span class="stripe"></span><span class="short">SAU</span><span class="team-name">Kick Sauber</span><span class="hex">#52E252</span></div>
+      <div class="team-bar-row" style="--team-color: #B6BABD;"><span class="stripe"></span><span class="short">HAA</span><span class="team-name">Haas</span><span class="hex">#B6BABD</span></div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       COLLISIONS & GUARDRAILS
+       ============================================================ -->
+  <section class="ds-section" id="collisions">
+    <div class="ds-section-head"><h2>04 · Collisions &amp; guardrails</h2><span class="rule"></span></div>
+    <p class="ds-prose">Three team colours sit dangerously close to semantic tokens. When they appear together — chart legends, leaderboards — apply the disambiguation below.</p>
+
+    <table class="ds-spec">
+      <thead><tr><th>Team</th><th class="mono">HEX</th><th>Collides with</th><th>Disambiguation rule</th></tr></thead>
+      <tbody>
+        <tr><td>Ferrari</td><td class="val">#E80020</td><td><code>--accent</code> (#E8002D)</td><td>In any UI showing <em>both</em> Ferrari and an active-state cue, route the active state to a 2 px underline + bold weight; reserve the red fill for Ferrari.</td></tr>
+        <tr><td>Kick Sauber</td><td class="val">#52E252</td><td><code>--pos</code> (#2ECC71)</td><td>Never colour a Sauber driver's "position up" cell green; use the position cell colour (<code>fg-1</code>) and let the team strip carry the green.</td></tr>
+        <tr><td>Williams ↔ Racing Bulls</td><td class="val">#64C4FF / #6692FF</td><td>Each other</td><td>Always pair the strip with the team short-code (WIL / RBL) when both teams appear in the same view (e.g. season standings chart).</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="ds-footer">
+    <div class="left"><span class="dot"></span>F1GURES · TEAMS</div>
+    <div class="right"><a href="components.html">Components →</a></div>
+  </footer>
+
+</main>
+
+<script src="ds.js"></script>
+</body>
+</html>

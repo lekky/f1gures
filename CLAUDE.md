@@ -22,6 +22,39 @@ Both are idempotent - safe to run repeatedly.
 
 If you only touch the importer and want to skip Astro: `npm run build:archive`. To refresh the current-season JSON from Jolpica without waiting for the nightly cron: `npm run fetch:current` then `npm run sync:current`.
 
+## Design system
+
+The canonical design reference for f1gures lives at `design-system/`.
+
+**Before touching any UI:**
+
+1. Skim `design-system/TOKENS.md` — single-file reference for every token,
+   component class name + role, and the drift to avoid. Loads fast.
+2. For visual reference, open `design-system/index.html` in a browser —
+   the same content rendered with live examples, in both themes.
+
+**Authoring rules:**
+
+- Never hardcode hex. Use the CSS custom properties defined in
+  `public/css/app.css`. The light-mode override (`html.light`) remaps
+  the same names — hardcoded values break theme parity.
+- Two themes are required. Verify dark and `html.light` before merging.
+- Don't introduce new card / table variants. Five card classes and two
+  table classes already exist — see `design-system/audit.html` for the
+  drift to avoid and the migration order.
+- The records hero card pattern (`.rec-card` + `.rec-bars`) is the
+  "colourful and dynamic" pattern to copy for any new leaderboard
+  surface (circuit all-time records, home page top-3, etc.).
+- Team colour goes on a strip (3 px left), rule (2–4 px top), dot
+  (8–12 px round), chip left-edge, or bar fill — never as a panel
+  background. The collisions with `--accent` (Ferrari), `--pos`
+  (Sauber), and Williams ↔ Racing Bulls are documented in
+  `design-system/teams.html`.
+
+When in doubt: the system favors data density, hard corners, condensed
+uppercase labels, mono numerics, and `--accent` red used at most once
+per screen as a signal of "now / active / leader".
+
 ## Key files
 
 ### Astro shell

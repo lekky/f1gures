@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Foundations · F1gures Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../public/css/app.css">
+<link rel="stylesheet" href="../public/css/site.css">
+<link rel="stylesheet" href="ds.css">
+</head>
+<body>
+
+<header class="ds-nav">
+  <a class="ds-logo" href="index.html"><span class="dot"></span>F1GURES<small>DESIGN SYSTEM</small></a>
+  <nav class="ds-nav-items">
+    <a class="ds-nav-item" href="index.html">Overview</a>
+    <a class="ds-nav-item" href="foundations.html">Foundations</a>
+    <a class="ds-nav-item" href="colors.html">Color</a>
+    <a class="ds-nav-item" href="teams.html">Teams</a>
+    <a class="ds-nav-item" href="components.html">Components</a>
+    <a class="ds-nav-item" href="patterns.html">Patterns</a>
+    <a class="ds-nav-item" href="audit.html">Audit</a>
+  </nav>
+  <div class="ds-nav-spacer"></div>
+  <div class="ds-theme" role="group" aria-label="Theme">
+    <button data-theme="light">Light</button><button data-theme="dark">Dark</button>
+  </div>
+</header>
+
+<main class="ds-page">
+
+  <div class="ds-head">
+    <span class="eyebrow">01 / FOUNDATIONS</span>
+    <h1>Type, space &amp; motion.</h1>
+    <p>The skeleton beneath every screen. F1gures is a numbers-first product — these are the rules that make 22 driver names, 1,153 race results and 17 leaderboards legible at any density.</p>
+  </div>
+
+  <!-- ============================================================
+       TYPE
+       ============================================================ -->
+  <section class="ds-section" id="type">
+    <div class="ds-section-head"><h2>01 · Typography</h2><span class="rule"></span></div>
+
+    <h3>Families</h3>
+    <p class="ds-prose">Three families do everything. The display face does the talking; the body face does the reading; the mono face does the numbers. No fourth font — ever.</p>
+
+    <div class="ds-cols-3">
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center">
+          <div class="ts-display" style="font-size:64px; line-height:0.95;">F1<br>GURES</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Family</span><span class="meta-val">Barlow Condensed</span></div>
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--f-display</span></div>
+          <div class="meta-row"><span class="meta-lbl">Weights</span><span class="meta-val">600, 700, 800</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Titles, eyebrows, labels</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center">
+          <div class="ts-body" style="font-size:32px; line-height:1.2; font-weight:500;">The infamous Wall of Champions.</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Family</span><span class="meta-val">Barlow</span></div>
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--f-body</span></div>
+          <div class="meta-row"><span class="meta-lbl">Weights</span><span class="meta-val">400, 500, 600, 700</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Body copy, prose, descriptions</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center">
+          <div class="ts-mono" style="font-size:32px;">1:13.078</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Family</span><span class="meta-val">JetBrains Mono</span></div>
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--f-mono</span></div>
+          <div class="meta-row"><span class="meta-lbl">Weights</span><span class="meta-val">400, 500, 600</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Lap times, gaps, hex, code, eyebrows</span></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Display scale</h3>
+    <p class="ds-prose">Display sizes drop in big steps — no fine-grained continuum. Every step has a job. Letter spacing is near-zero on big sizes (the condensed face supplies the rhythm) and increases on small uppercase labels.</p>
+
+    <div class="ds-specimen">
+      <div class="ds-specimen-stage" style="padding: 28px 32px; display:block;">
+        <div style="display:flex; align-items:baseline; gap:24px; margin-bottom: 12px;"><span style="font-family:var(--f-mono);font-size:11px;color:var(--fg-3);width:120px;">Hero — 88 / 0.9</span><div class="ts-display" style="font-size:88px;">RECORDS</div></div>
+        <div style="display:flex; align-items:baseline; gap:24px; margin-bottom: 12px;"><span style="font-family:var(--f-mono);font-size:11px;color:var(--fg-3);width:120px;">Page — 56 / 1.0</span><div class="ts-display" style="font-size:56px;">Race weekend</div></div>
+        <div style="display:flex; align-items:baseline; gap:24px; margin-bottom: 12px;"><span style="font-family:var(--f-mono);font-size:11px;color:var(--fg-3);width:120px;">H1 — 36 / 1.02</span><div class="ts-display" style="font-size:36px;">Circuit Gilles Villeneuve</div></div>
+        <div style="display:flex; align-items:baseline; gap:24px; margin-bottom: 12px;"><span style="font-family:var(--f-mono);font-size:11px;color:var(--fg-3);width:120px;">H2 — 22 / 1.0</span><div class="ts-display" style="font-size:22px;">CANADIAN GRAND PRIX</div></div>
+        <div style="display:flex; align-items:baseline; gap:24px; margin-bottom: 12px;"><span style="font-family:var(--f-mono);font-size:11px;color:var(--fg-3);width:120px;">Stat — 28 / 1.0</span><div class="ts-display" style="font-size:28px;">412</div></div>
+        <div style="display:flex; align-items:baseline; gap:24px;"><span style="font-family:var(--f-mono);font-size:11px;color:var(--fg-3);width:120px;">Section — 16 / 1.0</span><div class="ts-display" style="font-size:16px; letter-spacing:0.12em;">TRACK CHARACTERISTICS</div></div>
+      </div>
+    </div>
+
+    <h3>Eyebrows &amp; labels</h3>
+    <p class="ds-prose">Two patterns. <strong>Display eyebrows</strong> (uppercase, condensed, +0.16 letter-spacing) label sections and chrome. <strong>Mono eyebrows</strong> (uppercase, mono, +0.18 letter-spacing) label metadata — record dates, lap times, scientific labels.</p>
+
+    <div class="ds-cols-2">
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="padding:36px;">
+          <div class="t-eyebrow">TRACK CHARACTERISTICS</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Class</span><span class="meta-val">.t-eyebrow</span></div>
+          <div class="meta-row"><span class="meta-lbl">Spec</span><span class="meta-val">11 / 1.0 · 0.16 · 600</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="padding:36px;">
+          <div style="font-family:var(--f-mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--fg-3);">CIRCUIT · 2024 · LAP RECORD</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Class</span><span class="meta-val">mono eyebrow (inline)</span></div>
+          <div class="meta-row"><span class="meta-lbl">Spec</span><span class="meta-val">11 / 1.0 · 0.18 · 500</span></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Body &amp; numerics</h3>
+    <div class="ds-specimen">
+      <div class="ds-specimen-stage" style="display:block; padding:24px 32px;">
+        <p class="ts-body" style="font-size:16px; line-height:1.55; color:var(--fg-1); margin-bottom: 10px; max-width: 60ch;">Île Notre‑Dame park circuit. Long straights, heavy braking and the infamous Wall of Champions make engine and brake management the priority.</p>
+        <p class="ts-body" style="font-size:14px; line-height:1.5; color:var(--fg-2); margin-bottom: 10px; max-width: 60ch;">Default body — 14px / 1.4 from <code style="font-family:var(--f-mono);font-size:12px;background:var(--bg-3);padding:1px 5px;">html, body</code>.</p>
+        <p class="ts-body" style="font-size:13px; line-height:1.4; color:var(--fg-3); margin-bottom: 10px; max-width: 60ch;">Secondary descriptions — 13px / 1.4 / fg-3.</p>
+        <p class="ts-mono" style="font-size:13px; color:var(--fg-2); font-feature-settings:'tnum'; margin-top:14px;">+1.428s · 1:13.078 · 4.361 km · 70 laps</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SPACING
+       ============================================================ -->
+  <section class="ds-section" id="space">
+    <div class="ds-section-head"><h2>02 · Spacing &amp; layout</h2><span class="rule"></span></div>
+    <p class="ds-prose">f1gures has no formal spacing token scale yet — values appear inline. <strong>Recommendation:</strong> standardise on a 4-unit base scale below. Every existing pad/gap already lines up to one of these stops.</p>
+
+    <table class="ds-spec">
+      <thead><tr><th>Token</th><th class="mono">PX</th><th>Usage</th><th>Found in</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">--sp-0</td><td class="val">4</td><td>Sub-element gaps, micro chips</td><td><code>gap: 4px</code> · pill icon spacing</td></tr>
+        <tr><td class="mono">--sp-1</td><td class="val">6</td><td>Compact rows, inline metadata</td><td><code>gap: 6px</code> · chip dot, flag spacing</td></tr>
+        <tr><td class="mono">--sp-2</td><td class="val">8</td><td>Default cell padding (compact tables)</td><td><code>padding: 8px 12px</code> · .data-table</td></tr>
+        <tr><td class="mono">--sp-3</td><td class="val">12</td><td>Default panel-body padding, grid gaps</td><td>.panel-body, .grid {gap}</td></tr>
+        <tr><td class="mono">--sp-4</td><td class="val">14</td><td>Card body, medium cell padding</td><td>.race-card, .driver-card, .stat</td></tr>
+        <tr><td class="mono">--sp-5</td><td class="val">16</td><td>Section-level container padding</td><td>.callout, .blog-card-body</td></tr>
+        <tr><td class="mono">--sp-6</td><td class="val">20</td><td>Page padding (mobile inner)</td><td>.page padding</td></tr>
+        <tr><td class="mono">--sp-7</td><td class="val">24</td><td>Page padding (desktop), hero pad</td><td>.page, .hero-grid</td></tr>
+        <tr><td class="mono">--sp-8</td><td class="val">32</td><td>Vertical separator between sections</td><td>.ds-section spacing</td></tr>
+        <tr><td class="mono">--sp-9</td><td class="val">40</td><td>Page-bottom breathing room</td><td>.page bottom</td></tr>
+        <tr><td class="mono">--sp-10</td><td class="val">56</td><td>Nav height, hero vertical</td><td>--nav-h</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Container widths</h3>
+    <table class="ds-spec">
+      <thead><tr><th>Container</th><th class="mono">MAX</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>.page</td><td class="val">1280px</td><td>All listing &amp; profile pages</td></tr>
+        <tr><td>.records-page</td><td class="val">1200px</td><td>Records hub + sub-pages</td></tr>
+        <tr><td>.blog-article</td><td class="val">720px</td><td>Long-form reading width</td></tr>
+        <tr><td>.ds-prose / max-width</td><td class="val">65ch</td><td>Race + driver summaries; ds-prose default</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Breakpoints</h3>
+    <table class="ds-spec">
+      <thead><tr><th>BP</th><th class="mono">QUERY</th><th>What changes</th></tr></thead>
+      <tbody>
+        <tr><td>Mobile</td><td class="val">max-width: 720</td><td>Bottom nav appears, all grids → 1fr, page padding 16/14, font scales</td></tr>
+        <tr><td>Tablet</td><td class="val">max-width: 1024</td><td>.records-grid drops 3→2 columns</td></tr>
+        <tr><td>Desktop</td><td class="val">≥ 721</td><td>Top nav, full grids, full padding</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================
+       BORDERS / RADII / ELEVATION
+       ============================================================ -->
+  <section class="ds-section" id="surface">
+    <div class="ds-section-head"><h2>03 · Surface mechanics</h2><span class="rule"></span></div>
+
+    <h3>Border-only language</h3>
+    <p class="ds-prose">F1gures separates surfaces with <strong>1px borders</strong>, not shadows. Three line tokens (<code>--line-1/2/3</code>) escalate from quiet to active. Shadows exist only for floating elements (search palette, nav dropdown, BMC widget).</p>
+
+    <div class="ds-cols-3">
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center" style="padding:32px;">
+          <div style="border:1px solid var(--line-1); padding: 14px 18px; background:var(--bg-2); width: 80%; text-align:center;">PANEL</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--line-1</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Quiet · default panel border, table row dividers</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center" style="padding:32px;">
+          <div style="border:1px solid var(--line-2); padding: 14px 18px; background:var(--bg-2); width: 80%; text-align:center;">PANEL · MID</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--line-2</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Default · interactive borders, segmented controls, pills</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center" style="padding:32px;">
+          <div style="border:1px solid var(--line-3); padding: 14px 18px; background:var(--bg-2); width: 80%; text-align:center;">PANEL · HOVER</div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--line-3</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Active · hover state, focused inputs (non-error)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Border-radius</h3>
+    <p class="ds-prose"><strong>0px is the rule.</strong> Surfaces have hard corners — the masthead, panels, cards, callouts, pills, tables. The exceptions are deliberate:</p>
+
+    <table class="ds-spec">
+      <thead><tr><th>Radius</th><th class="mono">PX</th><th>Where</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>None</td><td class="val">0</td><td>All surfaces, pills, tables, race cards, panels</td><td>Default. Always.</td></tr>
+        <tr><td>Round</td><td class="val">50%</td><td>Status dots, accent dot, position badge, podium chip</td><td>For points-of-light: 6–10px coloured dots</td></tr>
+        <tr><td>Soft</td><td class="val">6</td><td>Listing-card, theme-switcher, sort buttons, listing inputs</td><td><span class="ds-tag dont">FLAGGED</span> See <a href="audit.html#radius">Audit · radius</a> — to be unified</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Elevation</h3>
+    <p class="ds-prose">Shadows are reserved for things that <strong>float above the page</strong>. Anything else uses borders.</p>
+
+    <table class="ds-spec">
+      <thead><tr><th>Level</th><th class="mono">SHADOW</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td>flat</td><td class="val">none</td><td>Cards, panels, tables, callouts. Everything in document flow.</td></tr>
+        <tr><td>raised</td><td class="val">0 12px 32px rgba(0,0,0,0.5)</td><td>Nav dropdown (year picker)</td></tr>
+        <tr><td>floating</td><td class="val">0 24px 64px rgba(0,0,0,0.45)</td><td>Cmd+K search palette</td></tr>
+        <tr><td>accent</td><td class="val">0 8px 32px rgba(232,0,45,0.14)</td><td>.race-card.is-next — only the live race</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================
+       MOTION
+       ============================================================ -->
+  <section class="ds-section" id="motion">
+    <div class="ds-section-head"><h2>04 · Motion</h2><span class="rule"></span></div>
+    <p class="ds-prose">Animation is hover-feedback only. There are no entrance animations, no parallax, no springs. Three durations, one easing.</p>
+
+    <table class="ds-spec">
+      <thead><tr><th>Token</th><th class="mono">DURATION</th><th>Easing</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">--mo-1</td><td class="val">80ms</td><td>linear</td><td>Table row hover (.tbl tbody tr)</td></tr>
+        <tr><td class="mono">--mo-2</td><td class="val">120ms</td><td>ease</td><td>Default — borders, color, opacity, transform on cards</td></tr>
+        <tr><td class="mono">--mo-3</td><td class="val">150ms</td><td>ease</td><td>Listing card box-shadow, inputs</td></tr>
+        <tr><td class="mono">--mo-4</td><td class="val">300ms</td><td>ease</td><td>Blog card image zoom on hover</td></tr>
+        <tr><td class="mono">--mo-pulse</td><td class="val">1.2s</td><td>ease-in-out</td><td>.pill-live dot pulse</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Hover affordances</h3>
+    <table class="ds-spec">
+      <thead><tr><th>Surface</th><th>Hover effect</th></tr></thead>
+      <tbody>
+        <tr><td>Card (panel / race-card / driver-card)</td><td>border-color → line-3 (or accent on records cards); transform translateY(-1px) on links</td></tr>
+        <tr><td>Table row</td><td>background → var(--bg-hover); 80ms</td></tr>
+        <tr><td>Button</td><td>background or border-color shifts; never scale</td></tr>
+        <tr><td>Inline link</td><td>text-decoration-thickness 1 → 2px; color → currentColor</td></tr>
+        <tr><td>Sort button (active)</td><td>background → var(--accent), color → #fff</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================
+       ICONOGRAPHY
+       ============================================================ -->
+  <section class="ds-section" id="icons">
+    <div class="ds-section-head"><h2>05 · Iconography &amp; symbols</h2><span class="rule"></span></div>
+    <p class="ds-prose">F1gures uses symbols sparingly. There is no full icon set — text labels and characters do most of the work. The system has four iconographic constants:</p>
+
+    <div class="ds-cols-4">
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center" style="padding:32px;">
+          <span style="font-family:var(--f-mono); font-size:36px; color:var(--fg-4);">›</span>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">U+203A</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Row chevron — "this row navigates"</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center" style="padding:32px;">
+          <span style="font-family:var(--f-mono); font-size:36px; color:var(--fg-4);">↗</span>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">U+2197</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Card-corner — "card navigates", record card head</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center" style="padding:32px;">
+          <span style="font-family:var(--f-mono); font-size:36px; color:var(--fg-4);">←</span>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">U+2190</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Back link — "← CIRCUITS", "← RECORDS"</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage center" style="padding:32px;">
+          <span style="font-size:32px;">🇨🇦</span>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Flag</span><span class="meta-val">2-char country code → SVG asset (lipis/flag-icons) or emoji fallback. Rounded 2px, 1px line-1 shadow.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Country flag specimen</h3>
+    <div class="ds-specimen">
+      <div class="ds-specimen-stage" style="padding:24px; display:flex; flex-wrap:wrap; gap:14px; align-items:center;">
+        <span style="font-size:24px;">🇬🇧</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">GB</span>
+        <span style="font-size:24px;">🇲🇨</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">MC</span>
+        <span style="font-size:24px;">🇮🇹</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">IT</span>
+        <span style="font-size:24px;">🇳🇱</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">NL</span>
+        <span style="font-size:24px;">🇧🇷</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">BR</span>
+        <span style="font-size:24px;">🇨🇦</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">CA</span>
+        <span style="font-size:24px;">🇩🇪</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">DE</span>
+        <span style="font-size:24px;">🇪🇸</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">ES</span>
+        <span style="font-size:24px;">🇦🇺</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">AU</span>
+        <span style="font-size:24px;">🇫🇷</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">FR</span>
+        <span style="font-size:24px;">🇯🇵</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">JP</span>
+        <span style="font-size:24px;">🇹🇭</span> <span class="t-mono" style="color:var(--fg-3); font-size:11px;">TH</span>
+      </div>
+    </div>
+  </section>
+
+  <footer class="ds-footer">
+    <div class="left"><span class="dot"></span>F1GURES · FOUNDATIONS</div>
+    <div class="right"><a href="colors.html">Color →</a></div>
+  </footer>
+
+</main>
+
+<script src="ds.js"></script>
+</body>
+</html>

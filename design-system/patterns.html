@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Patterns · F1gures Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../public/css/app.css">
+<link rel="stylesheet" href="../public/css/site.css">
+<link rel="stylesheet" href="ds.css">
+
+<style>
+  /* Track placeholder SVG silhouette */
+  .track-placeholder {
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 6px, rgba(255,255,255,.04) 6px 12px),
+      var(--bg-3);
+    border: 1px solid var(--line-1);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 220px;
+    position: relative;
+  }
+  html.light .track-placeholder {
+    background:
+      repeating-linear-gradient(135deg, rgba(0,0,0,.04) 0 6px, rgba(0,0,0,.02) 6px 12px),
+      var(--bg-3);
+  }
+  .track-placeholder svg { width: 60%; height: 80%; }
+  .track-placeholder .lbl {
+    position: absolute; bottom: 10px; left: 10px;
+    font-family: var(--f-mono); font-size: 10px;
+    color: var(--fg-4); letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .pattern-frame {
+    background: var(--bg-1);
+    border: 1px solid var(--line-1);
+    padding: 28px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .pattern-frame::before {
+    content: attr(data-label);
+    position: absolute; top: 8px; right: 12px;
+    font-family: var(--f-mono); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--fg-4);
+  }
+</style>
+</head>
+<body>
+
+<header class="ds-nav">
+  <a class="ds-logo" href="index.html"><span class="dot"></span>F1GURES<small>DESIGN SYSTEM</small></a>
+  <nav class="ds-nav-items">
+    <a class="ds-nav-item" href="index.html">Overview</a>
+    <a class="ds-nav-item" href="foundations.html">Foundations</a>
+    <a class="ds-nav-item" href="colors.html">Color</a>
+    <a class="ds-nav-item" href="teams.html">Teams</a>
+    <a class="ds-nav-item" href="components.html">Components</a>
+    <a class="ds-nav-item" href="patterns.html">Patterns</a>
+    <a class="ds-nav-item" href="audit.html">Audit</a>
+  </nav>
+  <div class="ds-nav-spacer"></div>
+  <div class="ds-theme" role="group" aria-label="Theme">
+    <button data-theme="light">Light</button><button data-theme="dark">Dark</button>
+  </div>
+</header>
+
+<main class="ds-page">
+
+  <div class="ds-head">
+    <span class="eyebrow">05 / PATTERNS</span>
+    <h1>Page-level recipes.</h1>
+    <p>How the components combine on real screens. The Records hub is the lodestar — every other page should feel as colourful and dynamic. These are the templates to follow.</p>
+  </div>
+
+  <!-- ============================================================
+       1. RECORDS HERO CARD (the user's favourite)
+       ============================================================ -->
+  <section class="ds-section" id="records">
+    <div class="ds-section-head"><h2>01 · Records hero card</h2><span class="rule"></span><span class="count">THE PATTERN TO FOLLOW</span></div>
+    <p class="ds-prose">This is the colourful, dynamic card pattern the Records page is built from. Six anatomical pieces: eyebrow, big value, holder block (avatar + name + flag + context), top-5 bar chart with team-coloured fills, and an accent rule that hugs the card's top border on hover. Make every comparable card on the site behave like this one.</p>
+
+    <div class="pattern-frame" data-label="LIVE INSTANCE · DARK">
+      <div class="records-grid">
+
+        <a class="rec-card" href="#" style="--card-accent: #FFD700;">
+          <header class="rec-card-head">
+            <span class="rec-card-eyebrow">Race wins</span>
+            <span class="rec-card-arrow" aria-hidden="true">↗</span>
+          </header>
+          <div class="rec-card-value">
+            <span class="rec-card-num">105</span>
+            <span class="rec-card-unit">wins</span>
+          </div>
+          <div class="rec-card-holder">
+            <div class="rec-card-avatar rec-card-avatar-image" style="background: var(--bg-3); display:flex; align-items:center; justify-content:center;">
+              <span class="rec-card-avatar-tag">DRIVER</span>
+            </div>
+            <div class="rec-card-holder-text">
+              <div class="rec-card-holder-name">
+                <span style="font-size:14px;">🇬🇧</span>
+                <span>Lewis Hamilton</span>
+              </div>
+              <div class="rec-card-holder-ctx">7 × champion · 369 starts</div>
+            </div>
+          </div>
+          <ol class="rec-bars">
+            <li class="rec-bar rec-bar-lead">
+              <span class="rec-bar-rank">1</span>
+              <span class="rec-bar-cc">🇬🇧</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:100%; background: #00D2BE;"></span>
+                <span class="rec-bar-name">Hamilton</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">105</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">2</span>
+              <span class="rec-bar-cc">🇩🇪</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:87%; background: #DC0000;"></span>
+                <span class="rec-bar-name">Schumacher</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">91</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">3</span>
+              <span class="rec-bar-cc">🇳🇱</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:62%; background: #3671C6;"></span>
+                <span class="rec-bar-name">Verstappen</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">65</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">4</span>
+              <span class="rec-bar-cc">🇫🇷</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:48%; background: #FFCC00;"></span>
+                <span class="rec-bar-name">Prost</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">51</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">5</span>
+              <span class="rec-bar-cc">🇧🇷</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:38%; background: #FF8000;"></span>
+                <span class="rec-bar-name">Senna</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">41</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+          </ol>
+        </a>
+
+        <a class="rec-card" href="#" style="--card-accent: #DC0000;">
+          <header class="rec-card-head">
+            <span class="rec-card-eyebrow">Pole positions</span>
+            <span class="rec-card-arrow" aria-hidden="true">↗</span>
+          </header>
+          <div class="rec-card-value">
+            <span class="rec-card-num">104</span>
+            <span class="rec-card-unit">poles</span>
+          </div>
+          <div class="rec-card-holder">
+            <div class="rec-card-avatar rec-card-avatar-image" style="background: var(--bg-3); display:flex; align-items:center; justify-content:center;">
+              <span class="rec-card-avatar-tag">DRIVER</span>
+            </div>
+            <div class="rec-card-holder-text">
+              <div class="rec-card-holder-name">
+                <span style="font-size:14px;">🇬🇧</span>
+                <span>Lewis Hamilton</span>
+              </div>
+              <div class="rec-card-holder-ctx">7 × champion · 369 starts</div>
+            </div>
+          </div>
+          <ol class="rec-bars">
+            <li class="rec-bar rec-bar-lead">
+              <span class="rec-bar-rank">1</span>
+              <span class="rec-bar-cc">🇬🇧</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:100%; background: #DC0000;"></span>
+                <span class="rec-bar-name">Hamilton</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">104</span><span class="rec-bar-unit"> pol</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">2</span>
+              <span class="rec-bar-cc">🇩🇪</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:65%; background: #DC0000;"></span>
+                <span class="rec-bar-name">Schumacher</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">68</span><span class="rec-bar-unit"> pol</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">3</span>
+              <span class="rec-bar-cc">🇧🇷</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:62%; background: #FF8000;"></span>
+                <span class="rec-bar-name">Senna</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">65</span><span class="rec-bar-unit"> pol</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">4</span>
+              <span class="rec-bar-cc">🇳🇱</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:42%; background: #3671C6;"></span>
+                <span class="rec-bar-name">Verstappen</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">44</span><span class="rec-bar-unit"> pol</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">5</span>
+              <span class="rec-bar-cc">🇩🇪</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:32%; background: #FFCC00;"></span>
+                <span class="rec-bar-name">Vettel</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">57</span><span class="rec-bar-unit"> pol</span></span>
+            </li>
+          </ol>
+        </a>
+
+        <a class="rec-card" href="#" style="--card-accent: #3671C6;">
+          <header class="rec-card-head">
+            <span class="rec-card-eyebrow">Win streak</span>
+            <span class="rec-card-arrow" aria-hidden="true">↗</span>
+          </header>
+          <div class="rec-card-value">
+            <span class="rec-card-num">10</span>
+            <span class="rec-card-unit">in a row</span>
+          </div>
+          <div class="rec-card-holder">
+            <div class="rec-card-avatar rec-card-avatar-image" style="background: var(--bg-3); display:flex; align-items:center; justify-content:center;">
+              <span class="rec-card-avatar-tag">DRIVER</span>
+            </div>
+            <div class="rec-card-holder-text">
+              <div class="rec-card-holder-name">
+                <span style="font-size:14px;">🇳🇱</span>
+                <span>Max Verstappen</span>
+              </div>
+              <div class="rec-card-holder-ctx">May → Oct 2023</div>
+            </div>
+          </div>
+          <ol class="rec-bars">
+            <li class="rec-bar rec-bar-lead">
+              <span class="rec-bar-rank">1</span>
+              <span class="rec-bar-cc">🇳🇱</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:100%; background: #3671C6;"></span>
+                <span class="rec-bar-name">Verstappen</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">10</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">2</span>
+              <span class="rec-bar-cc">🇩🇪</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:90%; background: #DC0000;"></span>
+                <span class="rec-bar-name">Vettel</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">9</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">3</span>
+              <span class="rec-bar-cc">🇩🇪</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:70%; background: #DC0000;"></span>
+                <span class="rec-bar-name">Schumacher</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">7</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">4</span>
+              <span class="rec-bar-cc">🇮🇹</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:60%; background: #DC0000;"></span>
+                <span class="rec-bar-name">Ascari</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">6</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+            <li class="rec-bar">
+              <span class="rec-bar-rank">5</span>
+              <span class="rec-bar-cc">🇬🇧</span>
+              <div class="rec-bar-track">
+                <span class="rec-bar-fill" style="width:50%; background: #00D2BE;"></span>
+                <span class="rec-bar-name">Hamilton</span>
+              </div>
+              <span class="rec-bar-value"><span class="rec-bar-num">5</span><span class="rec-bar-unit"> win</span></span>
+            </li>
+          </ol>
+        </a>
+
+      </div>
+    </div>
+
+    <h3>Anatomy</h3>
+    <table class="ds-spec">
+      <thead><tr><th>Slot</th><th>Class</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Card</td><td><code>.rec-card</code></td><td>Anchor — entire card navigates. <code>--card-accent</code> CSS var drives border + hover + leader value</td></tr>
+        <tr><td>Eyebrow</td><td><code>.rec-card-eyebrow</code></td><td>Mono, 10 px, 0.18 letter-spacing, FG-3</td></tr>
+        <tr><td>Top-right arrow</td><td><code>.rec-card-arrow</code></td><td>Mono ↗ in a 1 px <code>--line-2</code> box, hover turns accent</td></tr>
+        <tr><td>Big value</td><td><code>.rec-card-num + .rec-card-unit</code></td><td>44 px condensed 800 + 13 px lowercase unit</td></tr>
+        <tr><td>Holder</td><td><code>.rec-card-holder</code></td><td>48 px avatar + name (with flag) + mono context line. 14 px bottom padding, line-1 divider</td></tr>
+        <tr><td>Bar chart</td><td><code>.rec-bars / .rec-bar / .rec-bar-fill</code></td><td>Top-5. Lead row gets full opacity + white text + 26 px height; others 0.45 opacity</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Section accent</h3>
+    <p class="ds-prose">Every record section on the page takes a 2 px accent rule under its title, colored by the leader's team. This is what makes the page <em>feel</em> alive even before the bars load — each section has its own team identity.</p>
+
+    <div class="pattern-frame" data-label="SECTION HEADS · DARK">
+      <section class="records-section" style="--section-accent: #FFD700;">
+        <div class="section-head records-section-head">
+          <h2>Career milestones</h2>
+          <span class="records-section-count">6 leaderboards</span>
+        </div>
+        <div class="records-section-rule"></div>
+      </section>
+      <section class="records-section" style="--section-accent: #00D2BE; margin-top: 24px;">
+        <div class="section-head records-section-head">
+          <h2>Single-season records</h2>
+          <span class="records-section-count">4 leaderboards</span>
+        </div>
+        <div class="records-section-rule"></div>
+      </section>
+      <section class="records-section" style="--section-accent: #DC0000; margin-top: 24px;">
+        <div class="section-head records-section-head">
+          <h2>Constructors' records</h2>
+          <span class="records-section-count">3 leaderboards</span>
+        </div>
+        <div class="records-section-rule"></div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       2. CIRCUIT PROFILE
+       ============================================================ -->
+  <section class="ds-section" id="circuit">
+    <div class="ds-section-head"><h2>02 · Circuit profile</h2><span class="rule"></span></div>
+    <p class="ds-prose">The screenshot you shared. Hero with breadcrumb → title → flag, country, year, race-count, and a Changeable / Permanent pill → blurb. Track-map silhouette on the right. Then a bar-set panel for track characteristics, twin callouts (lap record, next race), all-time records leaderboards, and a historical winners table.</p>
+
+    <div class="pattern-frame" data-label="CIRCUIT PAGE · UPPER HALF">
+
+      <!-- Hero -->
+      <div style="margin-bottom: 28px;">
+        <div style="margin-bottom: 12px;"><a href="#" class="btn btn-ghost btn-sm" style="padding-left:0;">← CIRCUITS</a></div>
+        <div class="circuit-hero" style="grid-template-columns: 1.4fr 1fr;">
+          <div>
+            <div class="t-eyebrow" style="margin-bottom:6px;">CIRCUIT PROFILE</div>
+            <div class="t-display circuit-title" style="font-size: 44px;">Circuit Gilles Villeneuve</div>
+            <div style="display:flex; gap:10px; align-items:center; margin-top: 4px;">
+              <span style="font-size:16px;">🇨🇦</span>
+              <span style="font-family:var(--f-mono); color:var(--fg-2); font-size: 13px; letter-spacing: 0.04em;">MONTREAL, CANADA</span>
+            </div>
+            <div class="ds-row" style="margin-top: 12px;">
+              <span class="pill pill-finished">FIRST F1: 1978</span>
+              <span class="pill pill-finished">45 RACES HELD</span>
+              <span class="pill pill-next">⚠ CHANGEABLE</span>
+            </div>
+            <p style="margin-top: 14px; color: var(--fg-2); font-size: 14px; line-height: 1.55; max-width: 60ch;">Île Notre‑Dame park circuit. Long straights, heavy braking and the infamous Wall of Champions make engine and brake management the priority.</p>
+          </div>
+          <div class="track-placeholder">
+            <svg viewBox="0 0 200 220" fill="none" stroke="currentColor" stroke-width="3">
+              <path d="M 100 20 Q 60 30 50 80 Q 45 130 55 150 Q 70 200 100 200 Q 130 200 145 150 Q 155 130 150 80 Q 140 30 100 20 Z M 60 100 Q 50 110 60 130 M 145 100 Q 155 110 145 130" />
+            </svg>
+            <span class="lbl">TRACK MAP · /images/circuits/&lt;slug&gt;.svg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Track characteristics -->
+      <div class="t-eyebrow" style="margin: 24px 0 8px;">TRACK CHARACTERISTICS</div>
+      <div class="panel" style="margin-bottom: 16px;">
+        <div class="panel-body">
+          <div class="barset">
+            <div class="bar-row"><span class="bar-lbl">Length</span><div class="bar-track"><span class="bar-fill" style="width:68%;"></span></div><span class="bar-val">4.361 km</span></div>
+            <div class="bar-row"><span class="bar-lbl">Laps</span><div class="bar-track"><span class="bar-fill" style="width:78%;"></span></div><span class="bar-val">70</span></div>
+            <div class="bar-row"><span class="bar-lbl">Corners</span><div class="bar-track"><span class="bar-fill" style="width:35%;"></span></div><span class="bar-val">14</span></div>
+            <div class="bar-row"><span class="bar-lbl">Longest Straight</span><div class="bar-track"><span class="bar-fill" style="width:60%;"></span></div><span class="bar-val">850 m</span></div>
+            <div class="bar-row"><span class="bar-lbl">DRS Zones</span><div class="bar-track"><span class="bar-fill" style="width:50%;"></span></div><span class="bar-val">3</span></div>
+            <div class="bar-row"><span class="bar-lbl">Track Type</span><div class="bar-track"><span class="bar-fill" style="width:65%;"></span></div><span class="bar-val">Permanent</span></div>
+            <div class="bar-row"><span class="bar-lbl">Tyre Deg.</span><div class="bar-track"><span class="bar-fill" style="width:55%; background: var(--warn);"></span></div><span class="bar-rating medium">Medium</span></div>
+            <div class="bar-row"><span class="bar-lbl">Overtaking</span><div class="bar-track"><span class="bar-fill" style="width:90%;"></span></div><span class="bar-rating high">High</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Twin callouts -->
+      <div class="grid grid-2" style="grid-template-columns: 1fr 1fr;">
+        <div class="callout">
+          <div class="callout-icon">⏱</div>
+          <div class="callout-body">
+            <div class="callout-lbl">Lap record</div>
+            <div class="callout-driver">Valtteri Bottas</div>
+            <div class="callout-time">1:13.078 · 2019</div>
+          </div>
+        </div>
+        <div class="callout">
+          <div class="callout-icon">🏁</div>
+          <div class="callout-body">
+            <div class="callout-lbl">Next race</div>
+            <div class="callout-driver">Canadian Grand Prix</div>
+            <div class="callout-time">Sun, 14 Jun 2026 · Round 10</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>All-time records — circuit-scoped</h3>
+    <p class="ds-prose">Two panels — Most Wins, Most Poles — limited to drivers who've appeared at this circuit. The page currently renders them as plain table panels. <strong>Recommendation:</strong> use the records hero card pattern from § 01 here, scoped to circuit and with the team-coloured bar chart. It restores the "colourful" feel to circuit profiles.</p>
+
+    <div class="pattern-frame" data-label="RECOMMENDED · CIRCUIT-SCOPED RECORDS">
+      <div class="records-grid" style="grid-template-columns: 1fr 1fr;">
+
+        <a class="rec-card" href="#" style="--card-accent: #00D2BE;">
+          <header class="rec-card-head">
+            <span class="rec-card-eyebrow">Most wins · Canada</span>
+            <span class="rec-card-arrow" aria-hidden="true">↗</span>
+          </header>
+          <div class="rec-card-value">
+            <span class="rec-card-num">7</span>
+            <span class="rec-card-unit">wins</span>
+          </div>
+          <div class="rec-card-holder">
+            <div class="rec-card-avatar" style="background: var(--bg-3); display:flex; align-items:center; justify-content:center;">
+              <span class="rec-card-avatar-tag">DRIVER</span>
+            </div>
+            <div class="rec-card-holder-text">
+              <div class="rec-card-holder-name"><span style="font-size:14px;">🇬🇧</span><span>Lewis Hamilton</span></div>
+              <div class="rec-card-holder-ctx">7 wins from 16 starts here</div>
+            </div>
+          </div>
+          <ol class="rec-bars">
+            <li class="rec-bar rec-bar-lead"><span class="rec-bar-rank">1</span><span class="rec-bar-cc">🇬🇧</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:100%; background:#00D2BE;"></span><span class="rec-bar-name">Hamilton</span></div><span class="rec-bar-value"><span class="rec-bar-num">7</span><span class="rec-bar-unit"> win</span></span></li>
+            <li class="rec-bar"><span class="rec-bar-rank">2</span><span class="rec-bar-cc">🇩🇪</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:100%; background:#DC0000;"></span><span class="rec-bar-name">Schumacher</span></div><span class="rec-bar-value"><span class="rec-bar-num">7</span><span class="rec-bar-unit"> win</span></span></li>
+            <li class="rec-bar"><span class="rec-bar-rank">3</span><span class="rec-bar-cc">🇳🇱</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:42%; background:#3671C6;"></span><span class="rec-bar-name">Verstappen</span></div><span class="rec-bar-value"><span class="rec-bar-num">3</span><span class="rec-bar-unit"> win</span></span></li>
+            <li class="rec-bar"><span class="rec-bar-rank">4</span><span class="rec-bar-cc">🇧🇷</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:42%; background:#003DA5;"></span><span class="rec-bar-name">Piquet</span></div><span class="rec-bar-value"><span class="rec-bar-num">3</span><span class="rec-bar-unit"> win</span></span></li>
+            <li class="rec-bar"><span class="rec-bar-rank">5</span><span class="rec-bar-cc">🇩🇪</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:28%; background:#FFCC00;"></span><span class="rec-bar-name">Vettel</span></div><span class="rec-bar-value"><span class="rec-bar-num">2</span><span class="rec-bar-unit"> win</span></span></li>
+          </ol>
+        </a>
+
+        <a class="rec-card" href="#" style="--card-accent: #00D2BE;">
+          <header class="rec-card-head">
+            <span class="rec-card-eyebrow">Most poles · Canada</span>
+            <span class="rec-card-arrow" aria-hidden="true">↗</span>
+          </header>
+          <div class="rec-card-value">
+            <span class="rec-card-num">6</span>
+            <span class="rec-card-unit">poles</span>
+          </div>
+          <div class="rec-card-holder">
+            <div class="rec-card-avatar" style="background: var(--bg-3); display:flex; align-items:center; justify-content:center;">
+              <span class="rec-card-avatar-tag">DRIVER</span>
+            </div>
+            <div class="rec-card-holder-text">
+              <div class="rec-card-holder-name"><span style="font-size:14px;">🇬🇧</span><span>Lewis Hamilton</span></div>
+              <div class="rec-card-holder-ctx">Tied with Schumacher</div>
+            </div>
+          </div>
+          <ol class="rec-bars">
+            <li class="rec-bar rec-bar-lead"><span class="rec-bar-rank">1</span><span class="rec-bar-cc">🇬🇧</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:100%; background:#00D2BE;"></span><span class="rec-bar-name">Hamilton</span></div><span class="rec-bar-value"><span class="rec-bar-num">6</span><span class="rec-bar-unit"> pol</span></span></li>
+            <li class="rec-bar"><span class="rec-bar-rank">2</span><span class="rec-bar-cc">🇩🇪</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:100%; background:#DC0000;"></span><span class="rec-bar-name">Schumacher</span></div><span class="rec-bar-value"><span class="rec-bar-num">6</span><span class="rec-bar-unit"> pol</span></span></li>
+            <li class="rec-bar"><span class="rec-bar-rank">3</span><span class="rec-bar-cc">🇩🇪</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:83%; background:#DC0000;"></span><span class="rec-bar-name">Vettel</span></div><span class="rec-bar-value"><span class="rec-bar-num">5</span><span class="rec-bar-unit"> pol</span></span></li>
+            <li class="rec-bar"><span class="rec-bar-rank">4</span><span class="rec-bar-cc">🇧🇷</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:50%; background:#FF8000;"></span><span class="rec-bar-name">Senna</span></div><span class="rec-bar-value"><span class="rec-bar-num">3</span><span class="rec-bar-unit"> pol</span></span></li>
+            <li class="rec-bar"><span class="rec-bar-rank">5</span><span class="rec-bar-cc">🇧🇷</span><div class="rec-bar-track"><span class="rec-bar-fill" style="width:50%; background:#003DA5;"></span><span class="rec-bar-name">Piquet</span></div><span class="rec-bar-value"><span class="rec-bar-num">3</span><span class="rec-bar-unit"> pol</span></span></li>
+          </ol>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       3. CALENDAR
+       ============================================================ -->
+  <section class="ds-section" id="calendar">
+    <div class="ds-section-head"><h2>03 · Calendar grid</h2><span class="rule"></span></div>
+    <p class="ds-prose">A grid of <code>.race-card</code>s — three states share the row. Completed cards recede to 0.45 opacity; the next race dominates with a 2 px accent border + radial glow; everything after is a quiet upcoming card.</p>
+
+    <div class="pattern-frame" data-label="CALENDAR · GRID OF RACE CARDS">
+      <div class="grid grid-3">
+        <a class="race-card race-card-link is-completed" href="#">
+          <div class="race-card-head"><span class="race-round">R5 · CHINA</span><span class="pill pill-completed">Completed</span></div>
+          <div><div class="race-name">Chinese GP</div><div class="race-circuit">Shanghai International Circuit</div></div>
+          <div class="race-meta"><span class="race-flag">🇨🇳</span><span style="font-family:var(--f-mono); color:var(--fg-3); font-size: 11px;">SUN · 19 APR</span><span class="pill pill-sprint">Sprint</span></div>
+          <div class="race-card-foot">
+            <div class="race-mini-row"><span class="lbl">Winner</span><span class="val">O. PIASTRI</span></div>
+            <div class="race-mini-row"><span class="lbl">Sprint</span><span class="val">L. NORRIS</span></div>
+          </div>
+        </a>
+        <a class="race-card race-card-link is-completed" href="#">
+          <div class="race-card-head"><span class="race-round">R6 · MIAMI</span><span class="pill pill-completed">Completed</span></div>
+          <div><div class="race-name">Miami GP</div><div class="race-circuit">Miami International Autodrome</div></div>
+          <div class="race-meta"><span class="race-flag">🇺🇸</span><span style="font-family:var(--f-mono); color:var(--fg-3); font-size: 11px;">SUN · 03 MAY</span><span class="pill pill-sprint">Sprint</span></div>
+          <div class="race-card-foot">
+            <div class="race-mini-row"><span class="lbl">Winner</span><span class="val">L. NORRIS</span></div>
+            <div class="race-mini-row"><span class="lbl">Sprint</span><span class="val">O. PIASTRI</span></div>
+          </div>
+        </a>
+        <a class="race-card race-card-link is-next" href="#">
+          <div class="race-card-head"><span class="race-round">R7 · IMOLA</span><span class="pill pill-next">Next</span></div>
+          <div><div class="race-name">Emilia-Romagna GP</div><div class="race-circuit">Autodromo Enzo e Dino Ferrari</div></div>
+          <div class="race-meta"><span class="race-flag">🇮🇹</span><span style="font-family:var(--f-mono); color:var(--fg-2); font-size: 11px;">SUN · 17 MAY · 14:00 GMT</span></div>
+          <div class="race-card-foot">
+            <div class="race-mini-row"><span class="lbl">Countdown</span><span class="val">2D 14H</span></div>
+          </div>
+        </a>
+        <a class="race-card race-card-link" href="#">
+          <div class="race-card-head"><span class="race-round">R8 · MONACO</span><span class="pill pill-upcoming">Upcoming</span></div>
+          <div><div class="race-name">Monaco GP</div><div class="race-circuit">Circuit de Monaco</div></div>
+          <div class="race-meta"><span class="race-flag">🇲🇨</span><span style="font-family:var(--f-mono); color:var(--fg-3); font-size: 11px;">SUN · 24 MAY</span></div>
+        </a>
+        <a class="race-card race-card-link" href="#">
+          <div class="race-card-head"><span class="race-round">R9 · SPAIN</span><span class="pill pill-upcoming">Upcoming</span></div>
+          <div><div class="race-name">Spanish GP</div><div class="race-circuit">Circuit de Barcelona-Catalunya</div></div>
+          <div class="race-meta"><span class="race-flag">🇪🇸</span><span style="font-family:var(--f-mono); color:var(--fg-3); font-size: 11px;">SUN · 07 JUN</span></div>
+        </a>
+        <a class="race-card race-card-link" href="#">
+          <div class="race-card-head"><span class="race-round">R10 · CANADA</span><span class="pill pill-upcoming">Upcoming</span></div>
+          <div><div class="race-name">Canadian GP</div><div class="race-circuit">Circuit Gilles Villeneuve</div></div>
+          <div class="race-meta"><span class="race-flag">🇨🇦</span><span style="font-family:var(--f-mono); color:var(--fg-3); font-size: 11px;">SUN · 14 JUN</span></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       4. STANDINGS
+       ============================================================ -->
+  <section class="ds-section" id="standings">
+    <div class="ds-section-head"><h2>04 · Standings table</h2><span class="rule"></span></div>
+    <p class="ds-prose">The canonical <code>.tbl</code> usage. Sticky header, team-coloured driver-cell strip, mono numerics, position cell with podium colours, change indicator at the end. Rows are clickable — the chevron is auto-injected via the <code>.tbl tbody tr.clickable td:last-child::after</code> rule.</p>
+
+    <div class="pattern-frame" data-label="STANDINGS · DRIVER">
+      <div class="panel panel-tight">
+        <table class="tbl">
+          <thead><tr>
+            <th class="center" style="width:36px;">P</th>
+            <th>Driver</th>
+            <th>Team</th>
+            <th class="right">Wins</th>
+            <th class="right">Pod.</th>
+            <th class="right">Poles</th>
+            <th class="right">Pts</th>
+            <th style="width:44px;">Δ</th>
+          </tr></thead>
+          <tbody>
+            <tr class="clickable"><td class="center"><span class="pos pos-1">1</span></td><td><div class="driver-cell" style="--team-color: #FF8000;"><span class="driver-num">4</span><span class="driver-firstlast"><span class="first">L.</span><span class="last">Norris</span></span></div></td><td>McLaren</td><td class="right num">3</td><td class="right num">5</td><td class="right num">4</td><td class="right num"><strong>148</strong></td><td><span class="chg up">▲1</span></td></tr>
+            <tr class="clickable"><td class="center"><span class="pos pos-2">2</span></td><td><div class="driver-cell" style="--team-color: #FF8000;"><span class="driver-num">81</span><span class="driver-firstlast"><span class="first">O.</span><span class="last">Piastri</span></span></div></td><td>McLaren</td><td class="right num">2</td><td class="right num">5</td><td class="right num">2</td><td class="right num"><strong>132</strong></td><td><span class="chg down">▼1</span></td></tr>
+            <tr class="clickable"><td class="center"><span class="pos pos-3">3</span></td><td><div class="driver-cell" style="--team-color: #3671C6;"><span class="driver-num">1</span><span class="driver-firstlast"><span class="first">M.</span><span class="last">Verstappen</span></span></div></td><td>Red Bull Racing</td><td class="right num">1</td><td class="right num">3</td><td class="right num">1</td><td class="right num"><strong>119</strong></td><td><span class="chg flat">— 0</span></td></tr>
+            <tr class="clickable"><td class="center"><span class="pos">4</span></td><td><div class="driver-cell" style="--team-color: #E80020;"><span class="driver-num">16</span><span class="driver-firstlast"><span class="first">C.</span><span class="last">Leclerc</span></span></div></td><td>Ferrari</td><td class="right num">0</td><td class="right num">2</td><td class="right num">0</td><td class="right num"><strong>92</strong></td><td><span class="chg up">▲2</span></td></tr>
+            <tr class="clickable"><td class="center"><span class="pos">5</span></td><td><div class="driver-cell" style="--team-color: #E80020;"><span class="driver-num">44</span><span class="driver-firstlast"><span class="first">L.</span><span class="last">Hamilton</span></span></div></td><td>Ferrari</td><td class="right num">0</td><td class="right num">1</td><td class="right num">0</td><td class="right num"><strong>74</strong></td><td><span class="chg up">▲1</span></td></tr>
+            <tr class="clickable"><td class="center"><span class="pos">6</span></td><td><div class="driver-cell" style="--team-color: #27F4D2;"><span class="driver-num">63</span><span class="driver-firstlast"><span class="first">G.</span><span class="last">Russell</span></span></div></td><td>Mercedes</td><td class="right num">0</td><td class="right num">1</td><td class="right num">0</td><td class="right num"><strong>62</strong></td><td><span class="chg down">▼2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       5. DRIVER PROFILE
+       ============================================================ -->
+  <section class="ds-section" id="driver">
+    <div class="ds-section-head"><h2>05 · Driver profile hero</h2><span class="rule"></span></div>
+    <p class="ds-prose">3-column hero — silhouette, name + team + meta, big championship position on the right. Below the hero, stat blocks (4-column) and a career table.</p>
+
+    <div class="pattern-frame" data-label="DRIVER PROFILE · HERO">
+      <div style="margin-bottom: 12px;"><a href="#" class="btn btn-ghost btn-sm" style="padding-left:0;">← DRIVERS</a></div>
+      <div class="panel">
+        <div class="driver-hero" style="--team-color: #FF8000;">
+          <div class="silhouette silhouette-photo" style="height: 200px; border: 1px solid var(--line-1);">
+            <span>DRIVER · NORRIS</span>
+          </div>
+          <div>
+            <div class="t-eyebrow" style="margin-bottom: 4px;">DRIVER · 2026 SEASON</div>
+            <div class="t-display driver-hero-name" style="font-size: 56px;">Lando Norris</div>
+            <div class="ds-row" style="margin-top: 8px;">
+              <span class="team-strip" style="--team-color: #FF8000;"></span>
+              <span style="font-family:var(--f-display); font-weight: 700; letter-spacing:0.06em; text-transform:uppercase;">McLaren</span>
+              <span style="color: var(--fg-3);">·</span>
+              <span style="font-family:var(--f-mono); color: var(--fg-2);">#4 · GB 🇬🇧</span>
+            </div>
+            <p style="margin-top: 12px; color: var(--fg-2); font-size: 14px; line-height: 1.55; max-width: 50ch;">2026 championship leader. Norris won 3 of the opening 6 rounds en route to a 16-point cushion over team-mate Piastri.</p>
+          </div>
+          <div class="driver-hero-right" style="text-align:right;">
+            <div class="t-eyebrow" style="margin-bottom:4px;">CHAMPIONSHIP</div>
+            <div class="t-display" style="font-size: 64px; color: var(--accent);">P 1</div>
+            <div style="font-family:var(--f-mono); color: var(--fg-2); margin-top:4px;">148 PTS · +16 GAP</div>
+          </div>
+        </div>
+        <div class="panel-body" style="border-top: 1px solid var(--line-1);">
+          <div class="grid grid-4">
+            <div class="stat"><span class="stat-lbl">Wins</span><span class="stat-val">3</span><span class="stat-sub">2026 season</span></div>
+            <div class="stat"><span class="stat-lbl">Podiums</span><span class="stat-val">5</span></div>
+            <div class="stat"><span class="stat-lbl">Poles</span><span class="stat-val">4</span></div>
+            <div class="stat"><span class="stat-lbl">Career starts</span><span class="stat-val">147</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="ds-footer">
+    <div class="left"><span class="dot"></span>F1GURES · PATTERNS</div>
+    <div class="right"><a href="audit.html">Audit →</a></div>
+  </footer>
+
+</main>
+
+<script src="ds.js"></script>
+</body>
+</html>

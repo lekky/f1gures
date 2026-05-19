@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Components · F1gures Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../public/css/app.css">
+<link rel="stylesheet" href="../public/css/site.css">
+<link rel="stylesheet" href="ds.css">
+
+<style>
+  .toc {
+    position: sticky; top: 70px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-1);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 4px;
+    font-family: var(--f-display);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    align-self: start;
+  }
+  .toc a { color: inherit; text-decoration: none; padding: 4px 0; border-bottom: 1px dashed transparent; }
+  .toc a:hover { color: var(--fg-1); }
+  .toc-head {
+    font-family: var(--f-mono); font-size: 10px;
+    letter-spacing: 0.18em; color: var(--fg-3);
+    border-bottom: 1px solid var(--line-1);
+    padding-bottom: 8px; margin-bottom: 8px;
+  }
+
+  .with-toc {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .with-toc { grid-template-columns: 1fr; }
+    .toc { position: relative; top: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="ds-nav">
+  <a class="ds-logo" href="index.html"><span class="dot"></span>F1GURES<small>DESIGN SYSTEM</small></a>
+  <nav class="ds-nav-items">
+    <a class="ds-nav-item" href="index.html">Overview</a>
+    <a class="ds-nav-item" href="foundations.html">Foundations</a>
+    <a class="ds-nav-item" href="colors.html">Color</a>
+    <a class="ds-nav-item" href="teams.html">Teams</a>
+    <a class="ds-nav-item" href="components.html">Components</a>
+    <a class="ds-nav-item" href="patterns.html">Patterns</a>
+    <a class="ds-nav-item" href="audit.html">Audit</a>
+  </nav>
+  <div class="ds-nav-spacer"></div>
+  <div class="ds-theme" role="group" aria-label="Theme">
+    <button data-theme="light">Light</button><button data-theme="dark">Dark</button>
+  </div>
+</header>
+
+<main class="ds-page">
+
+  <div class="ds-head">
+    <span class="eyebrow">04 / COMPONENTS</span>
+    <h1>Every primitive,<br>both themes.</h1>
+    <p>Every reusable component on f1gures.app, defined by the class names you'll see in <code>app.css</code> and demonstrated in both light and dark. If a component is not here, it's an instance — see <a href="patterns.html">Patterns</a>.</p>
+  </div>
+
+  <div class="with-toc">
+
+    <aside class="toc">
+      <div class="toc-head">On this page</div>
+      <a href="#buttons">Buttons</a>
+      <a href="#inputs">Inputs &amp; selects</a>
+      <a href="#pills">Pills &amp; badges</a>
+      <a href="#position">Position cells</a>
+      <a href="#change">Change indicator</a>
+      <a href="#tabs">Tabs</a>
+      <a href="#segmented">Segmented controls</a>
+      <a href="#sort">Sort buttons</a>
+      <a href="#panel">Panels</a>
+      <a href="#stat">Stat blocks</a>
+      <a href="#callout">Callouts</a>
+      <a href="#bars">Bar sets</a>
+      <a href="#countdown">Countdown</a>
+      <a href="#tables">Tables</a>
+      <a href="#race-card">Race card</a>
+      <a href="#driver-card">Driver card</a>
+      <a href="#listing-card">Listing card</a>
+      <a href="#blog-card">Blog card</a>
+      <a href="#search">Search palette</a>
+    </aside>
+
+    <div>
+
+    <!-- ============================================================
+         BUTTONS
+         ============================================================ -->
+    <section class="ds-section" id="buttons">
+      <div class="ds-section-head"><h2>01 · Buttons</h2><span class="rule"></span></div>
+      <p class="ds-prose">Three variants. Hard corners, condensed uppercase label, <code>0.14em</code> letter-spacing. No drop shadows. <code>.btn-sm</code> drops to 11 px / 6 × 10 px padding for inline use.</p>
+
+      <div class="ds-split">
+        <div class="pane-dark"><span class="pane-lbl">DARK</span>
+          <div class="ds-row">
+            <button class="btn btn-primary">Primary CTA</button>
+            <button class="btn btn-secondary">Secondary</button>
+            <button class="btn btn-ghost">Ghost</button>
+            <button class="btn btn-secondary btn-sm">Small</button>
+          </div>
+        </div>
+        <div class="pane-light theme-locked-light" style="--fg-1:#0d0e12;--fg-2:#3d3e48;--fg-3:#6a6b75;--bg-2:#fff;--bg-3:#ededf1;--bg-hover:#e6e6ea;--line-1:#e0e1e6;--line-2:#cccdd4;--line-3:#b2b3bc;--accent:#E8002D;"><span class="pane-lbl">LIGHT</span>
+          <div class="ds-row">
+            <button class="btn btn-primary">Primary CTA</button>
+            <button class="btn btn-secondary">Secondary</button>
+            <button class="btn btn-ghost">Ghost</button>
+            <button class="btn btn-secondary btn-sm">Small</button>
+          </div>
+        </div>
+      </div>
+
+      <table class="ds-spec">
+        <thead><tr><th>Variant</th><th>Class</th><th>Background</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Primary</td><td><code>.btn-primary</code></td><td><code>--accent</code></td><td>One per surface — the dominant call to action</td></tr>
+          <tr><td>Secondary</td><td><code>.btn-secondary</code></td><td><code>--bg-3</code></td><td>Sibling actions, applies/cancels</td></tr>
+          <tr><td>Ghost</td><td><code>.btn-ghost</code></td><td>transparent</td><td>Subtle navigation ("← BACK"), tertiary actions</td></tr>
+          <tr><td>Small</td><td><code>+ .btn-sm</code></td><td>—</td><td>Toolbar utility, in-table actions</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============================================================
+         INPUTS
+         ============================================================ -->
+    <section class="ds-section" id="inputs">
+      <div class="ds-section-head"><h2>02 · Inputs &amp; selects</h2><span class="rule"></span></div>
+
+      <div class="ds-split">
+        <div class="pane-dark"><span class="pane-lbl">DARK</span>
+          <div class="ds-row">
+            <input class="input" placeholder="Driver name" style="width: 200px;" />
+            <select class="sel"><option>2026</option><option>2025</option><option>2024</option></select>
+          </div>
+        </div>
+        <div class="pane-light theme-locked-light" style="--fg-1:#0d0e12;--fg-2:#3d3e48;--fg-3:#6a6b75;--bg-2:#fff;--bg-3:#ededf1;--bg-hover:#e6e6ea;--line-1:#e0e1e6;--line-2:#cccdd4;--line-3:#b2b3bc;--accent:#E8002D;"><span class="pane-lbl">LIGHT</span>
+          <div class="ds-row">
+            <input class="input" placeholder="Driver name" style="width: 200px;" />
+            <select class="sel"><option>2026</option><option>2025</option><option>2024</option></select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PILLS
+         ============================================================ -->
+    <section class="ds-section" id="pills">
+      <div class="ds-section-head"><h2>03 · Pills &amp; badges</h2><span class="rule"></span><span class="count">8 statuses</span></div>
+      <p class="ds-prose">Status indicators on race results, calendar entries, driver rows. 10 px label, 0.14em tracking, 3 px × 8 px padding. Sprint and Live are the only pills that override the surface — everything else uses outlined + tinted-background.</p>
+
+      <div class="ds-split">
+        <div class="pane-dark"><span class="pane-lbl">DARK</span>
+          <div class="ds-row">
+            <span class="pill pill-finished">Finished</span>
+            <span class="pill pill-dnf">DNF</span>
+            <span class="pill pill-dsq">DSQ</span>
+            <span class="pill pill-completed">Completed</span>
+            <span class="pill pill-next">Next</span>
+            <span class="pill pill-upcoming">Upcoming</span>
+            <span class="pill pill-sprint">Sprint</span>
+            <span class="pill pill-live"><span class="dot"></span>Live</span>
+          </div>
+        </div>
+        <div class="pane-light theme-locked-light" style="--fg-1:#0d0e12;--fg-2:#3d3e48;--fg-3:#6a6b75;--bg-2:#fff;--bg-3:#ededf1;--line-1:#e0e1e6;--line-2:#cccdd4;--neg:#dc2626;--warn:#b45309;--accent:#E8002D;--live:#ff1e1e;"><span class="pane-lbl">LIGHT</span>
+          <div class="ds-row">
+            <span class="pill pill-finished">Finished</span>
+            <span class="pill pill-dnf">DNF</span>
+            <span class="pill pill-dsq">DSQ</span>
+            <span class="pill pill-completed">Completed</span>
+            <span class="pill pill-next">Next</span>
+            <span class="pill pill-upcoming">Upcoming</span>
+            <span class="pill pill-sprint">Sprint</span>
+            <span class="pill pill-live"><span class="dot"></span>Live</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         POSITION CELLS
+         ============================================================ -->
+    <section class="ds-section" id="position">
+      <div class="ds-section-head"><h2>04 · Position cells</h2><span class="rule"></span></div>
+      <p class="ds-prose">The <code>.pos</code> cell renders P1–P3 with podium colours and the rest in <code>--fg-1</code>. Big condensed weight, no extra chrome.</p>
+
+      <div class="ds-split">
+        <div class="pane-dark"><span class="pane-lbl">DARK</span>
+          <div class="ds-row">
+            <span class="pos pos-1">1</span>
+            <span class="pos pos-2">2</span>
+            <span class="pos pos-3">3</span>
+            <span class="pos">4</span>
+            <span class="pos">5</span>
+            <span class="pos">10</span>
+            <span class="pos" style="color:var(--fg-3);">DNF</span>
+          </div>
+        </div>
+        <div class="pane-light theme-locked-light" style="--fg-1:#0d0e12;--fg-3:#6a6b75;"><span class="pane-lbl">LIGHT</span>
+          <div class="ds-row">
+            <span class="pos pos-1">1</span>
+            <span class="pos pos-2">2</span>
+            <span class="pos pos-3">3</span>
+            <span class="pos">4</span>
+            <span class="pos">5</span>
+            <span class="pos">10</span>
+            <span class="pos" style="color:var(--fg-3);">DNF</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         CHANGE INDICATOR
+         ============================================================ -->
+    <section class="ds-section" id="change">
+      <div class="ds-section-head"><h2>05 · Change indicator</h2><span class="rule"></span></div>
+      <p class="ds-prose">Round-over-round position movement. Mono font, fixed 36px width so columns align even when the value swings.</p>
+
+      <div class="ds-split">
+        <div class="pane-dark"><span class="pane-lbl">DARK</span>
+          <div class="ds-row">
+            <span class="chg up">▲ 2</span>
+            <span class="chg up">▲ 1</span>
+            <span class="chg flat">— 0</span>
+            <span class="chg down">▼ 1</span>
+            <span class="chg down">▼ 3</span>
+          </div>
+        </div>
+        <div class="pane-light theme-locked-light" style="--pos:#15803d;--neg:#dc2626;--fg-4:#9a9ba6;"><span class="pane-lbl">LIGHT</span>
+          <div class="ds-row">
+            <span class="chg up">▲ 2</span>
+            <span class="chg up">▲ 1</span>
+            <span class="chg flat">— 0</span>
+            <span class="chg down">▼ 1</span>
+            <span class="chg down">▼ 3</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TABS
+         ============================================================ -->
+    <section class="ds-section" id="tabs">
+      <div class="ds-section-head"><h2>06 · Tabs</h2><span class="rule"></span></div>
+      <p class="ds-prose">Used in the race-weekend session selector. Active tab gets a 2 px red underline; locked tabs grey out; the live session can re-colour its label.</p>
+
+      <div class="ds-split">
+        <div class="pane-dark"><span class="pane-lbl">DARK</span>
+          <div class="tabs" style="width: 100%;">
+            <button class="tab">FP1</button>
+            <button class="tab">FP2</button>
+            <button class="tab active">Qualifying</button>
+            <button class="tab live"><span style="display:inline-block;width:6px;height:6px;background:var(--live);border-radius:50%;margin-right:4px;"></span>Race</button>
+            <button class="tab locked">Sprint <span class="tab-status">— LOCKED</span></button>
+          </div>
+        </div>
+        <div class="pane-light theme-locked-light" style="--fg-1:#0d0e12;--fg-2:#3d3e48;--fg-3:#6a6b75;--fg-4:#9a9ba6;--line-1:#e0e1e6;--accent:#E8002D;--live:#ff1e1e;"><span class="pane-lbl">LIGHT</span>
+          <div class="tabs" style="width: 100%;">
+            <button class="tab">FP1</button>
+            <button class="tab">FP2</button>
+            <button class="tab active">Qualifying</button>
+            <button class="tab live"><span style="display:inline-block;width:6px;height:6px;background:var(--live);border-radius:50%;margin-right:4px;"></span>Race</button>
+            <button class="tab locked">Sprint <span class="tab-status">— LOCKED</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SEGMENTED CONTROLS
+         ============================================================ -->
+    <section class="ds-section" id="segmented">
+      <div class="ds-section-head"><h2>07 · Segmented controls</h2><span class="rule"></span></div>
+      <p class="ds-prose">Top-right of the masthead carries the theme switcher; mobile standings pages get a Drivers / Constructors / Records toggle; record sub-pages get the era toggle. Same shape, different padding.</p>
+
+      <div class="ds-split">
+        <div class="pane-dark"><span class="pane-lbl">DARK</span>
+          <div class="ds-row">
+            <div class="theme-switcher">
+              <button class="theme-opt">Light</button>
+              <button class="theme-opt active">Dark</button>
+            </div>
+            <div class="standings-toggle" style="margin: 0;">
+              <span class="standings-toggle-opt active">Drivers</span>
+              <span class="standings-toggle-opt">Constructors</span>
+              <span class="standings-toggle-opt">Records</span>
+            </div>
+            <div class="records-era-toggle" style="margin: 0;">
+              <button class="active">All-time</button>
+              <button>Modern</button>
+              <button>Classic</button>
+            </div>
+          </div>
+        </div>
+        <div class="pane-light theme-locked-light" style="--fg-1:#0d0e12;--fg-2:#3d3e48;--fg-3:#6a6b75;--bg-2:#fff;--bg-3:#ededf1;--bg-hover:#e6e6ea;--line-1:#e0e1e6;--line-2:#cccdd4;--line-3:#b2b3bc;--accent:#E8002D;"><span class="pane-lbl">LIGHT</span>
+          <div class="ds-row">
+            <div class="theme-switcher">
+              <button class="theme-opt">Light</button>
+              <button class="theme-opt active">Dark</button>
+            </div>
+            <div class="standings-toggle" style="margin: 0;">
+              <span class="standings-toggle-opt active">Drivers</span>
+              <span class="standings-toggle-opt">Constructors</span>
+              <span class="standings-toggle-opt">Records</span>
+            </div>
+            <div class="records-era-toggle" style="margin: 0;">
+              <button class="active">All-time</button>
+              <button>Modern</button>
+              <button>Classic</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SORT BUTTONS
+         ============================================================ -->
+    <section class="ds-section" id="sort">
+      <div class="ds-section-head"><h2>08 · Sort buttons</h2><span class="rule"></span></div>
+      <p class="ds-prose">Used on the Drivers / Teams listing pages. Active value flips to <code>--accent</code> background with white text. Group is bordered; buttons inside are divided with a 1 px <code>--line-1</code>.</p>
+
+      <div class="ds-split">
+        <div class="pane-dark"><span class="pane-lbl">DARK</span>
+          <div class="sort-bar">
+            <span class="sort-bar-label">Sort</span>
+            <div class="sort-group">
+              <button class="sort-btn active">Wins <span class="sort-arrow">↓</span></button>
+              <button class="sort-btn">Poles</button>
+              <button class="sort-btn">Podiums</button>
+              <button class="sort-btn">Starts</button>
+            </div>
+          </div>
+        </div>
+        <div class="pane-light theme-locked-light" style="--fg-1:#0d0e12;--fg-2:#3d3e48;--fg-3:#6a6b75;--bg-2:#fff;--bg-3:#ededf1;--line-1:#e0e1e6;--accent:#E8002D;"><span class="pane-lbl">LIGHT</span>
+          <div class="sort-bar">
+            <span class="sort-bar-label">Sort</span>
+            <div class="sort-group">
+              <button class="sort-btn active">Wins <span class="sort-arrow">↓</span></button>
+              <button class="sort-btn">Poles</button>
+              <button class="sort-btn">Podiums</button>
+              <button class="sort-btn">Starts</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PANELS
+         ============================================================ -->
+    <section class="ds-section" id="panel">
+      <div class="ds-section-head"><h2>09 · Panel</h2><span class="rule"></span></div>
+      <p class="ds-prose">The neutral container. Hard corners, 1 px <code>--line-1</code> border, <code>--bg-2</code> fill. Optional <code>.panel-head</code> for an uppercase eyebrow row; <code>.panel-tight</code> kills body padding for tables.</p>
+
+      <div class="ds-cols-2">
+        <div class="panel">
+          <div class="panel-head">Track characteristics</div>
+          <div class="panel-body">
+            <div style="display: grid; grid-template-columns: 110px 1fr 50px; gap: 8px; row-gap: 8px; align-items:center; font-size: 12px;">
+              <span style="font-family:var(--f-display); letter-spacing:0.14em; text-transform:uppercase; color:var(--fg-3); font-size:10px;">Length</span>
+              <div style="height:6px; background:var(--bg-3); border:1px solid var(--line-1); position:relative;"><span style="position:absolute; inset:0 30% 0 0; background:var(--accent);"></span></div>
+              <span style="font-family:var(--f-mono); text-align:right; color:var(--fg-2);">4.361 km</span>
+              <span style="font-family:var(--f-display); letter-spacing:0.14em; text-transform:uppercase; color:var(--fg-3); font-size:10px;">Corners</span>
+              <div style="height:6px; background:var(--bg-3); border:1px solid var(--line-1); position:relative;"><span style="position:absolute; inset:0 60% 0 0; background:var(--accent);"></span></div>
+              <span style="font-family:var(--f-mono); text-align:right; color:var(--fg-2);">14</span>
+              <span style="font-family:var(--f-display); letter-spacing:0.14em; text-transform:uppercase; color:var(--fg-3); font-size:10px;">DRS Zones</span>
+              <div style="height:6px; background:var(--bg-3); border:1px solid var(--line-1); position:relative;"><span style="position:absolute; inset:0 50% 0 0; background:var(--accent);"></span></div>
+              <span style="font-family:var(--f-mono); text-align:right; color:var(--fg-2);">3</span>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Lap record · Canada</div>
+          <div class="panel-body">
+            <div style="display:flex; gap: 14px; align-items: center;">
+              <div style="font-family:var(--f-display); font-weight:800; font-size: 28px;">VAL. BOTTAS</div>
+            </div>
+            <div style="font-family:var(--f-mono); font-size:14px; color: var(--fg-2); margin-top:4px;">1:13.078 · 2019 · Mercedes</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         STAT BLOCKS
+         ============================================================ -->
+    <section class="ds-section" id="stat">
+      <div class="ds-section-head"><h2>10 · Stat block</h2><span class="rule"></span></div>
+      <p class="ds-prose">The <code>.stat</code> primitive — small uppercase label, big condensed value, optional caption. Stack 2/3/4 across; collapse to 1 column under 720 px.</p>
+
+      <div class="grid grid-4">
+        <div class="stat"><span class="stat-lbl">Race wins</span><span class="stat-val">8</span><span class="stat-sub">2 in 2024</span></div>
+        <div class="stat"><span class="stat-lbl">Poles</span><span class="stat-val">12</span></div>
+        <div class="stat"><span class="stat-lbl">Lap record</span><span class="stat-val mono">1:13.078</span><span class="stat-sub">Bottas · 2019</span></div>
+        <div class="stat"><span class="stat-lbl">Avg. position</span><span class="stat-val">P 4.2</span></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         CALLOUT
+         ============================================================ -->
+    <section class="ds-section" id="callout">
+      <div class="ds-section-head"><h2>11 · Callout</h2><span class="rule"></span></div>
+      <p class="ds-prose">The accent-railed highlight box. Used for the circuit's lap record and the next race summary. 3 px accent rail + soft radial accent glow.</p>
+
+      <div class="grid grid-2" style="grid-template-columns: 1fr 1fr;">
+        <div class="callout">
+          <div class="callout-icon">⏱</div>
+          <div class="callout-body">
+            <div class="callout-lbl">Lap record</div>
+            <div class="callout-driver">Valtteri Bottas</div>
+            <div class="callout-time">1:13.078 · 2019</div>
+          </div>
+        </div>
+        <div class="callout">
+          <div class="callout-icon">🏁</div>
+          <div class="callout-body">
+            <div class="callout-lbl">Next race</div>
+            <div class="callout-driver">Canadian Grand Prix</div>
+            <div class="callout-time">Sun, 14 Jun 2026 · Round 10</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         BAR SETS
+         ============================================================ -->
+    <section class="ds-section" id="bars">
+      <div class="ds-section-head"><h2>12 · Bar set</h2><span class="rule"></span></div>
+      <p class="ds-prose">The <code>.barset</code> primitive — label, track, value. Used on circuit profile pages for track characteristics. Fill colour can be accent, semantic, or team.</p>
+
+      <div class="panel">
+        <div class="panel-body">
+          <div class="barset">
+            <div class="bar-row"><span class="bar-lbl">Length</span><div class="bar-track"><span class="bar-fill" style="width:70%;"></span></div><span class="bar-val">4.361 km</span></div>
+            <div class="bar-row"><span class="bar-lbl">Laps</span><div class="bar-track"><span class="bar-fill" style="width:80%;"></span></div><span class="bar-val">70</span></div>
+            <div class="bar-row"><span class="bar-lbl">Corners</span><div class="bar-track"><span class="bar-fill" style="width:40%;"></span></div><span class="bar-val">14</span></div>
+            <div class="bar-row"><span class="bar-lbl">DRS Zones</span><div class="bar-track"><span class="bar-fill" style="width:50%;"></span></div><span class="bar-val">3</span></div>
+            <div class="bar-row"><span class="bar-lbl">Tyre Deg.</span><div class="bar-track"><span class="bar-fill" style="width:60%; background: var(--warn);"></span></div><span class="bar-rating medium">Medium</span></div>
+            <div class="bar-row"><span class="bar-lbl">Overtaking</span><div class="bar-track"><span class="bar-fill" style="width:90%;"></span></div><span class="bar-rating high">High</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         COUNTDOWN
+         ============================================================ -->
+    <section class="ds-section" id="countdown">
+      <div class="ds-section-head"><h2>13 · Countdown</h2><span class="rule"></span></div>
+      <p class="ds-prose">Four numeric cells, divided by 1 px lines. 44 px condensed numbers, 10 px uppercase labels. Lives on the home page and the next-race card.</p>
+
+      <div class="countdown" style="max-width: 480px;">
+        <div class="countdown-cell"><span class="countdown-num">26</span><span class="countdown-lbl">Days</span></div>
+        <div class="countdown-cell"><span class="countdown-num">14</span><span class="countdown-lbl">Hours</span></div>
+        <div class="countdown-cell"><span class="countdown-num">52</span><span class="countdown-lbl">Min</span></div>
+        <div class="countdown-cell"><span class="countdown-num">08</span><span class="countdown-lbl">Sec</span></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TABLES
+         ============================================================ -->
+    <section class="ds-section" id="tables">
+      <div class="ds-section-head"><h2>14 · Tables</h2><span class="rule"></span></div>
+
+      <p class="ds-prose">F1gures ships <strong>two table classes</strong>: <code>.tbl</code> for live data screens with sortable columns + hover affordances; <code>.data-table</code> for prerendered detail pages (race results, historical winners). They have different paddings, different header styles, different row hovers. See <a href="audit.html#tables">Audit · tables</a> for the proposed unification.</p>
+
+      <h3>.tbl — sortable, interactive</h3>
+      <div class="panel panel-tight" style="overflow:hidden;">
+        <table class="tbl">
+          <thead><tr>
+            <th class="center" style="width:36px;">P</th>
+            <th>Driver</th>
+            <th>Team</th>
+            <th class="right">Wins</th>
+            <th class="right">Poles</th>
+            <th class="right">Pts</th>
+            <th style="width:36px;">Δ</th>
+          </tr></thead>
+          <tbody>
+            <tr class="clickable">
+              <td class="center"><span class="pos pos-1">1</span></td>
+              <td><div class="driver-cell" style="--team-color: #FF8000;"><span class="driver-num">4</span><span class="driver-firstlast"><span class="first">L.</span><span class="last">Norris</span></span></div></td>
+              <td>McLaren</td>
+              <td class="right num">5</td>
+              <td class="right num">7</td>
+              <td class="right num"><strong>148</strong></td>
+              <td><span class="chg up">▲1</span></td>
+            </tr>
+            <tr class="clickable">
+              <td class="center"><span class="pos pos-2">2</span></td>
+              <td><div class="driver-cell" style="--team-color: #FF8000;"><span class="driver-num">81</span><span class="driver-firstlast"><span class="first">O.</span><span class="last">Piastri</span></span></div></td>
+              <td>McLaren</td>
+              <td class="right num">3</td>
+              <td class="right num">2</td>
+              <td class="right num"><strong>132</strong></td>
+              <td><span class="chg down">▼1</span></td>
+            </tr>
+            <tr class="clickable">
+              <td class="center"><span class="pos pos-3">3</span></td>
+              <td><div class="driver-cell" style="--team-color: #3671C6;"><span class="driver-num">1</span><span class="driver-firstlast"><span class="first">M.</span><span class="last">Verstappen</span></span></div></td>
+              <td>Red Bull Racing</td>
+              <td class="right num">1</td>
+              <td class="right num">1</td>
+              <td class="right num"><strong>119</strong></td>
+              <td><span class="chg flat">— 0</span></td>
+            </tr>
+            <tr class="clickable">
+              <td class="center"><span class="pos">4</span></td>
+              <td><div class="driver-cell" style="--team-color: #E80020;"><span class="driver-num">16</span><span class="driver-firstlast"><span class="first">C.</span><span class="last">Leclerc</span></span></div></td>
+              <td>Ferrari</td>
+              <td class="right num">0</td>
+              <td class="right num">0</td>
+              <td class="right num"><strong>92</strong></td>
+              <td><span class="chg up">▲2</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>.data-table — prerendered, read-only</h3>
+      <div class="panel panel-tight">
+        <div style="padding: 12px 14px;">
+          <table class="data-table">
+            <thead><tr><th>Year</th><th>Race</th><th>Winner</th><th>Team</th><th class="right">Fastest Lap</th></tr></thead>
+            <tbody>
+              <tr><td>2025</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">George Russell</a></td><td><a href="#" class="inline-link">Mercedes</a></td><td class="right">—</td></tr>
+              <tr><td>2024</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">Max Verstappen</a></td><td><a href="#" class="inline-link">Red Bull</a></td><td class="right">1:14.856</td></tr>
+              <tr><td>2023</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">Max Verstappen</a></td><td><a href="#" class="inline-link">Red Bull</a></td><td class="right">1:14.481</td></tr>
+              <tr><td>2019</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">Lewis Hamilton</a></td><td><a href="#" class="inline-link">Mercedes</a></td><td class="right">1:13.078</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         RACE CARD
+         ============================================================ -->
+    <section class="ds-section" id="race-card">
+      <div class="ds-section-head"><h2>15 · Race card</h2><span class="rule"></span></div>
+      <p class="ds-prose">Three states: <code>.is-completed</code> recedes; default is a quiet upcoming card; <code>.is-next</code> dominates with accent border + glow + radial gradient.</p>
+
+      <div class="grid grid-3">
+        <a class="race-card race-card-link is-completed" href="#">
+          <div class="race-card-head">
+            <span class="race-round">R6 · MIAMI</span>
+            <span class="pill pill-completed">Completed</span>
+          </div>
+          <div>
+            <div class="race-name">Miami GP</div>
+            <div class="race-circuit">Miami International Autodrome</div>
+          </div>
+          <div class="race-meta">
+            <span class="race-flag">🇺🇸</span>
+            <span style="font-family:var(--f-mono); color:var(--fg-3); font-size: 11px;">SUN · 03 MAY</span>
+          </div>
+          <div class="race-card-foot">
+            <div class="race-mini-row"><span class="lbl">Winner</span><span class="val">L. NORRIS</span></div>
+            <div class="race-mini-row"><span class="lbl">Pole</span><span class="val">L. NORRIS</span></div>
+          </div>
+        </a>
+        <a class="race-card race-card-link is-next" href="#">
+          <div class="race-card-head">
+            <span class="race-round">R7 · IMOLA</span>
+            <span class="pill pill-next">Next</span>
+          </div>
+          <div>
+            <div class="race-name">Emilia-Romagna GP</div>
+            <div class="race-circuit">Autodromo Enzo e Dino Ferrari</div>
+          </div>
+          <div class="race-meta">
+            <span class="race-flag">🇮🇹</span>
+            <span style="font-family:var(--f-mono); color:var(--fg-2); font-size: 11px;">SUN · 17 MAY · 14:00 GMT</span>
+          </div>
+          <div class="race-card-foot">
+            <div class="race-mini-row"><span class="lbl">Countdown</span><span class="val">2D 14H</span></div>
+          </div>
+        </a>
+        <a class="race-card race-card-link is-upcoming" href="#">
+          <div class="race-card-head">
+            <span class="race-round">R8 · MONACO</span>
+            <span class="pill pill-upcoming">Upcoming</span>
+          </div>
+          <div>
+            <div class="race-name">Monaco GP</div>
+            <div class="race-circuit">Circuit de Monaco</div>
+          </div>
+          <div class="race-meta">
+            <span class="race-flag">🇲🇨</span>
+            <span style="font-family:var(--f-mono); color:var(--fg-3); font-size: 11px;">SUN · 24 MAY</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         DRIVER CARD
+         ============================================================ -->
+    <section class="ds-section" id="driver-card">
+      <div class="ds-section-head"><h2>16 · Driver card</h2><span class="rule"></span></div>
+      <p class="ds-prose">Compact row card with team-coloured left strip. Position + name + team + points. Used in HomeScreen "top 3" and listing rows.</p>
+
+      <div class="grid grid-2">
+        <a class="driver-card" href="#" style="--team-color: #FF8000;">
+          <span class="pos pos-1">1</span>
+          <div class="meta">
+            <div class="name">L. Norris</div>
+            <div class="team">McLaren · #4</div>
+          </div>
+          <div class="pts">
+            <div class="pts-num">148</div>
+            <div class="pts-lbl">PTS</div>
+          </div>
+        </a>
+        <a class="driver-card" href="#" style="--team-color: #3671C6;">
+          <span class="pos pos-3">3</span>
+          <div class="meta">
+            <div class="name">M. Verstappen</div>
+            <div class="team">Red Bull Racing · #1</div>
+          </div>
+          <div class="pts">
+            <div class="pts-num">119</div>
+            <div class="pts-lbl">PTS</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         LISTING CARD
+         ============================================================ -->
+    <section class="ds-section" id="listing-card">
+      <div class="ds-section-head"><h2>17 · Listing card</h2><span class="rule"></span></div>
+      <p class="ds-prose">Used on the Drivers and Teams index pages. <strong>This card uses a 6 px border-radius — the only card in the system that does.</strong> See <a href="audit.html#radius">Audit · radius</a> for the proposed fix.</p>
+
+      <div class="grid grid-3">
+        <a class="listing-card f1-card-link" href="#">
+          <div class="listing-card-head">
+            <span class="listing-team-bar" style="background: #FF8000;"></span>
+            <div class="listing-driver-photo-fallback"></div>
+            <div>
+              <div class="listing-card-name">Lando Norris</div>
+              <div class="listing-card-sub">McLaren · #4 · GB 🇬🇧</div>
+            </div>
+          </div>
+          <div class="listing-stats">
+            <span><span class="lbl">Wins</span><span class="val">5</span></span>
+            <span><span class="lbl">Poles</span><span class="val">7</span></span>
+            <span><span class="lbl">Pts</span><span class="val">148</span></span>
+          </div>
+        </a>
+        <a class="listing-card f1-card-link" href="#">
+          <div class="listing-card-head">
+            <span class="listing-team-bar" style="background: #E80020;"></span>
+            <div class="listing-driver-photo-fallback"></div>
+            <div>
+              <div class="listing-card-name">Charles Leclerc</div>
+              <div class="listing-card-sub">Ferrari · #16 · MC 🇲🇨</div>
+            </div>
+          </div>
+          <div class="listing-stats">
+            <span><span class="lbl">Wins</span><span class="val">0</span></span>
+            <span><span class="lbl">Poles</span><span class="val">0</span></span>
+            <span><span class="lbl">Pts</span><span class="val">92</span></span>
+          </div>
+        </a>
+        <a class="listing-card f1-card-link" href="#">
+          <div class="listing-card-head">
+            <span class="listing-team-bar" style="background: #3671C6;"></span>
+            <div class="listing-driver-photo-fallback"></div>
+            <div>
+              <div class="listing-card-name">Max Verstappen</div>
+              <div class="listing-card-sub">Red Bull · #1 · NL 🇳🇱</div>
+            </div>
+          </div>
+          <div class="listing-stats">
+            <span><span class="lbl">Wins</span><span class="val">1</span></span>
+            <span><span class="lbl">Poles</span><span class="val">1</span></span>
+            <span><span class="lbl">Pts</span><span class="val">119</span></span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         BLOG CARD
+         ============================================================ -->
+    <section class="ds-section" id="blog-card">
+      <div class="ds-section-head"><h2>18 · Blog card</h2><span class="rule"></span></div>
+      <p class="ds-prose">Editorial post tile. 16:9 image area at top, accent left rail. Title is title-case (not uppercase) — the only place this is allowed. Hover scales the image and lifts the tile.</p>
+
+      <div class="grid grid-2">
+        <a class="blog-card f1-card-link" href="#">
+          <div class="blog-card-img" style="background: var(--bg-3);">
+            <div style="aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; background: repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 6px, rgba(255,255,255,.04) 6px 12px);">
+              <span style="font-family:var(--f-mono); font-size:11px; letter-spacing:0.12em; color:var(--fg-4); text-transform:uppercase;">HERO IMAGE · 16:9</span>
+            </div>
+            <div class="blog-card-over">
+              <span class="blog-card-cat">Race report</span>
+              <h3 class="blog-card-title">Norris breaks the Wall, then his rivals</h3>
+              <span class="blog-card-date">17 May 2026</span>
+            </div>
+          </div>
+        </a>
+        <article class="blog-card">
+          <div class="blog-card-body">
+            <div class="blog-card-meta">
+              <a class="blog-card-cat" href="#">Analysis</a>
+              <span class="blog-card-date">14 May 2026</span>
+            </div>
+            <h3 class="blog-card-title">How Imola became the season's pivot</h3>
+            <p class="blog-card-desc">Long-form variant — no hero image. Same border-radius (0), same accent rail, body padding 18 × 20.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SEARCH
+         ============================================================ -->
+    <section class="ds-section" id="search">
+      <div class="ds-section-head"><h2>19 · Search palette</h2><span class="rule"></span></div>
+      <p class="ds-prose">Cmd / Ctrl + K opens the floating search. Trigger sits in the nav (desktop) or compresses to a 32 px square button on mobile.</p>
+
+      <div class="ds-row">
+        <button class="search-trigger">
+          <svg class="search-trigger-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <span class="search-trigger-text">Search</span>
+          <span class="search-trigger-kbd">Ctrl K</span>
+        </button>
+        <button class="search-trigger-mobile" aria-label="Search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+      </div>
+
+      <p class="ds-prose" style="margin-top:20px;">Open state — the panel is fixed-position, 640 px wide, 12 vh from the top, with a backdrop blur. Groups separated by a 1 px <code>--line-1</code>.</p>
+
+      <div class="f1k-panel" style="position: static; max-width: 100%;">
+        <div class="f1k-input-row">
+          <svg class="f1k-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input class="f1k-input" type="search" value="ver" />
+          <span class="f1k-kbd f1k-kbd-esc">Esc</span>
+        </div>
+        <div class="f1k-results" style="min-height: auto;">
+          <div class="f1k-group">
+            <div class="f1k-group-head">Drivers</div>
+            <button class="f1k-row is-active">
+              <span class="f1k-row-icon"><span class="f1k-team-dot" style="background:#3671C6;"></span></span>
+              <div class="f1k-row-main">
+                <div class="f1k-row-title">Max Verstappen</div>
+                <div class="f1k-row-sub"><span>Red Bull Racing</span><span class="f1k-code">VER</span><span class="f1k-champ">4 × Champion</span></div>
+              </div>
+              <span class="f1k-row-kind">Driver</span>
+            </button>
+            <button class="f1k-row">
+              <span class="f1k-row-icon"><span class="f1k-team-dot" style="background:#3671C6;"></span></span>
+              <div class="f1k-row-main">
+                <div class="f1k-row-title">Jos Verstappen</div>
+                <div class="f1k-row-sub"><span>Honda · Tyrrell · Arrows</span><span class="f1k-code">VER</span><span>106 starts</span></div>
+              </div>
+              <span class="f1k-row-kind">Driver</span>
+            </button>
+          </div>
+          <div class="f1k-group">
+            <div class="f1k-group-head">Upcoming</div>
+            <button class="f1k-row">
+              <span class="f1k-row-icon">🇨🇦</span>
+              <div class="f1k-row-main">
+                <div class="f1k-row-title">Canadian Grand Prix</div>
+                <div class="f1k-row-sub"><span>R10 · 14 Jun 2026</span><span class="f1k-upcoming">In 27 days</span></div>
+              </div>
+              <span class="f1k-row-kind">Race</span>
+            </button>
+          </div>
+        </div>
+        <div class="f1k-footer">
+          <span><span class="f1k-kbd">↑↓</span> Navigate</span>
+          <span><span class="f1k-kbd">↵</span> Open</span>
+          <span><span class="f1k-kbd">esc</span> Close</span>
+        </div>
+      </div>
+    </section>
+
+    </div>
+  </div>
+
+  <footer class="ds-footer">
+    <div class="left"><span class="dot"></span>F1GURES · COMPONENTS</div>
+    <div class="right"><a href="patterns.html">Patterns →</a></div>
+  </footer>
+
+</main>
+
+<script src="ds.js"></script>
+</body>
+</html>

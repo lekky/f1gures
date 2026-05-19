@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Audit · F1gures Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../public/css/app.css">
+<link rel="stylesheet" href="../public/css/site.css">
+<link rel="stylesheet" href="ds.css">
+
+<style>
+  /* Demo blocks for each inconsistency */
+  .demo-card-a, .demo-card-b {
+    background: var(--bg-2);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  /* radius variants */
+  .demo-card-a { border: 1px solid var(--line-1); }
+  .demo-card-b { border: 1px solid var(--line-1); border-radius: 8px; }
+
+  .audit-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 900px) { .audit-summary { grid-template-columns: 1fr; } }
+  .audit-summary .stat {
+    border-top: 3px solid var(--accent-rule, var(--fg-3));
+    background: var(--bg-2);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .audit-summary .stat .num {
+    font-family: var(--f-display); font-weight: 800;
+    font-size: 44px; line-height: 1; color: var(--accent-rule);
+  }
+  .audit-summary .stat .lbl {
+    font-family: var(--f-display); font-weight: 600;
+    font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--fg-3);
+  }
+  .audit-summary .stat .sub {
+    font-size: 12px; color: var(--fg-2); margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<header class="ds-nav">
+  <a class="ds-logo" href="index.html"><span class="dot"></span>F1GURES<small>DESIGN SYSTEM</small></a>
+  <nav class="ds-nav-items">
+    <a class="ds-nav-item" href="index.html">Overview</a>
+    <a class="ds-nav-item" href="foundations.html">Foundations</a>
+    <a class="ds-nav-item" href="colors.html">Color</a>
+    <a class="ds-nav-item" href="teams.html">Teams</a>
+    <a class="ds-nav-item" href="components.html">Components</a>
+    <a class="ds-nav-item" href="patterns.html">Patterns</a>
+    <a class="ds-nav-item" href="audit.html">Audit</a>
+  </nav>
+  <div class="ds-nav-spacer"></div>
+  <div class="ds-theme" role="group" aria-label="Theme">
+    <button data-theme="light">Light</button><button data-theme="dark">Dark</button>
+  </div>
+</header>
+
+<main class="ds-page">
+
+  <div class="ds-head">
+    <span class="eyebrow">06 / AUDIT</span>
+    <h1>Inconsistencies<br>&amp; the fix.</h1>
+    <p>The drift in <code>app.css</code> that landed on your radar — two table classes, five card patterns, two inline-link conventions, mixed radii. For each, what's there today, why it diverged, and the single rule that brings the system back together.</p>
+  </div>
+
+  <div class="audit-summary">
+    <div class="stat" style="--accent-rule: var(--neg);">
+      <div class="num">7</div>
+      <div class="lbl">High-priority drifts</div>
+      <div class="sub">Tables, cards, inline links, radius — visible in normal use</div>
+    </div>
+    <div class="stat" style="--accent-rule: var(--warn);">
+      <div class="num">4</div>
+      <div class="lbl">Medium-priority drifts</div>
+      <div class="sub">Hover affordance, link affordance overlap, type-case rules</div>
+    </div>
+    <div class="stat" style="--accent-rule: var(--pos);">
+      <div class="num">3</div>
+      <div class="lbl">Low-priority polish</div>
+      <div class="sub">Spacing tokens, semantic chart colours, missing motion vars</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       TABLES
+       ============================================================ -->
+  <section class="ds-section" id="tables">
+
+    <div class="audit-row">
+      <div class="audit-side">
+        <span class="audit-tag severity-high">HIGH · Tables</span>
+        <h3>Two table systems</h3>
+        <span class="where">.tbl · .data-table · .blog-race-card-table</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Three table classes co-exist with overlapping but non-identical specs. Padding, header background, hover behaviour, row-divider rule, and the inline-link treatment differ.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is — .tbl (standings)</span>
+          <table class="tbl" style="font-size: 11px;">
+            <thead><tr><th>P</th><th>Driver</th><th class="right">Pts</th></tr></thead>
+            <tbody>
+              <tr><td><span class="pos pos-1">1</span></td><td><span class="driver-firstlast"><span class="first">L.</span><span class="last">Norris</span></span></td><td class="right num"><strong>148</strong></td></tr>
+              <tr><td><span class="pos pos-2">2</span></td><td><span class="driver-firstlast"><span class="first">O.</span><span class="last">Piastri</span></span></td><td class="right num"><strong>132</strong></td></tr>
+            </tbody>
+          </table>
+          <p style="margin: 0;"><strong>Spec:</strong> 12 px cell pad, BG-3 sticky header, 11 px tracked-out header label, row-zebra <code>rgba(255,255,255,.012)</code>, hover BG-hover at 80 ms.</p>
+        </div>
+        <div class="audit-half bad">
+          <span class="h-label">As it is — .data-table (race results)</span>
+          <table class="data-table" style="font-size: 11px;">
+            <thead><tr><th>Year</th><th>Winner</th><th class="right">Fastest</th></tr></thead>
+            <tbody>
+              <tr><td>2024</td><td><a href="#" class="inline-link">Verstappen</a></td><td class="right">1:14.856</td></tr>
+              <tr><td>2023</td><td><a href="#" class="inline-link">Verstappen</a></td><td class="right">1:14.481</td></tr>
+            </tbody>
+          </table>
+          <p style="margin: 0;"><strong>Spec:</strong> 8 × 12 px cell pad, BG-2 sticky header, 11 px tracked-out header label, no zebra, no hover.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="audit-row">
+      <div class="audit-side">
+        <span class="audit-tag severity-high">FIX</span>
+        <h3>Pick one base, one modifier</h3>
+        <span class="where">Recommendation</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Adopt <code>.tbl</code> as the single base and add a <code>.tbl-static</code> modifier that turns off hover, zebra and the chevron — for prerendered detail pages. Migrate <code>.data-table</code> consumers (DriverPage, RacePage, RecordsTable) in three commits — they already use identical column rules.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half good">
+          <span class="h-label">.tbl — interactive (live screens)</span>
+          <table class="tbl" style="font-size: 11px;">
+            <thead><tr><th>P</th><th>Driver</th><th class="right">Pts</th></tr></thead>
+            <tbody>
+              <tr class="clickable"><td><span class="pos pos-1">1</span></td><td>Norris</td><td class="right num"><strong>148</strong></td></tr>
+              <tr class="clickable"><td><span class="pos pos-2">2</span></td><td>Piastri</td><td class="right num"><strong>132</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">.tbl.tbl-static — read-only (detail pages)</span>
+          <table class="tbl" style="font-size: 11px;">
+            <thead><tr><th>Year</th><th>Winner</th><th class="right">Fastest</th></tr></thead>
+            <tbody>
+              <tr><td>2024</td><td><a href="#" class="inline-link">Verstappen</a></td><td class="right">1:14.856</td></tr>
+              <tr><td>2023</td><td><a href="#" class="inline-link">Verstappen</a></td><td class="right">1:14.481</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         CARDS
+         ============================================================ -->
+    <div class="audit-row" id="cards">
+      <div class="audit-side">
+        <span class="audit-tag severity-high">HIGH · Cards</span>
+        <h3>Five card systems</h3>
+        <span class="where">.race-card · .driver-card · .listing-card · .blog-card · .rec-card · .stat</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Every card has its own border-left rule, hover effect, arrow position, and (worst) <em>different border-radius</em>. The records card is the only one that feels alive.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is — five variants</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10.5px;">
+            <div style="background:var(--bg-2); border: 1px solid var(--line-1); border-left: 3px solid #FF8000; padding: 10px;"><strong>.driver-card</strong><br>3px left, 0 radius</div>
+            <div style="background:var(--bg-2); border: 1px solid var(--line-1); border-radius: 8px; padding: 10px;"><strong>.listing-card</strong><br>1px border, 8 px radius</div>
+            <div style="background:var(--bg-2); border: 1px solid var(--line-1); border-left: 3px solid var(--accent); padding: 10px;"><strong>.blog-card</strong><br>3 px accent left, 0 radius</div>
+            <div style="background:var(--bg-2); border: 1px solid var(--line-1); border-top: 3px solid #FFD700; padding: 10px;"><strong>.rec-card</strong><br>top accent, 0 radius</div>
+          </div>
+          <p style="margin: 0;">Different rails, different hover-borders, different radii — the user reads it as four unrelated card types.</p>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix — one base + 3 modifiers</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10.5px;">
+            <div style="background:var(--bg-2); border: 1px solid var(--line-1); border-left: 3px solid #FF8000; padding: 10px;"><strong>.card .card-team</strong><br>3 px team strip</div>
+            <div style="background:var(--bg-2); border: 1px solid var(--line-1); border-top: 3px solid #FFD700; padding: 10px;"><strong>.card .card-accent</strong><br>top rule, var-driven colour</div>
+            <div style="background:var(--bg-2); border: 1px solid var(--line-1); padding: 10px;"><strong>.card</strong><br>plain — no rail</div>
+            <div style="background:var(--bg-2); border: 2px solid var(--accent); padding: 10px;"><strong>.card .is-next</strong><br>accent border + glow</div>
+          </div>
+          <p style="margin: 0;">One radius (0), one hover (border → line-3 or accent), one arrow position (top-right). Variants only change where the colour lands.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         RADIUS
+         ============================================================ -->
+    <div class="audit-row" id="radius">
+      <div class="audit-side">
+        <span class="audit-tag severity-high">HIGH · Radius</span>
+        <h3>Mixed border-radius</h3>
+        <span class="where">.listing-card 8 px · .theme-switcher 6 px · everything else 0</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">f1gures is a hard-corner system — every panel, callout, pill and chart uses 0. Two outliers (listing card, theme switcher, sort buttons) carry an 8 / 6 px radius. Either kill the radius, or apply it consistently. Pick zero — it's the dominant rule.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is — radius mismatch</span>
+          <div style="background:var(--bg-2); border: 1px solid var(--line-1); border-radius: 8px; padding: 12px; font-size: 11px;"><strong>.listing-card</strong> (8 px)</div>
+          <div style="background:var(--bg-2); border: 1px solid var(--line-1); padding: 12px; font-size: 11px;"><strong>.race-card</strong> (0 px)</div>
+          <p style="margin: 0;">Two cards on the same page (the home screen embeds both) read as different components.</p>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix — unify on 0 px</span>
+          <div style="background:var(--bg-2); border: 1px solid var(--line-1); padding: 12px; font-size: 11px;"><strong>.listing-card</strong> (0 px)</div>
+          <div style="background:var(--bg-2); border: 1px solid var(--line-1); padding: 12px; font-size: 11px;"><strong>.race-card</strong> (0 px)</div>
+          <p style="margin: 0;">Keep <code>border-radius: 50%</code> for dots, and segmented-control rounding (6 px) if needed for trigger affordance — those are the documented exceptions.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         INLINE LINKS
+         ============================================================ -->
+    <div class="audit-row" id="links">
+      <div class="audit-side">
+        <span class="audit-tag severity-high">HIGH · Inline links</span>
+        <h3>Two link affordances</h3>
+        <span class="where">.inline-link (dotted border-bottom) vs :where(.data-table a …) underline override</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">The original <code>.inline-link</code> drew a 1 px dotted line-2 border-bottom. A later override in the "CONTENT LINK AFFORDANCE" section forces those same selectors to use a real underline. Both rules currently apply, fighting via <code>!important</code>. Net: <strong>links inside <code>.data-table</code> render correctly, but <code>.inline-link</code> elsewhere keeps the legacy dotted style on hover.</strong></p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is — two patterns coexist</span>
+          <p style="font-size: 13px;">Legacy: <span style="color: var(--fg-1); text-decoration: none; border-bottom: 1px dotted var(--line-2);">Lewis Hamilton</span> (dotted)</p>
+          <p style="font-size: 13px;">Override: <a href="#" class="inline-link">Lewis Hamilton</a> (real underline, 35 % currentColor)</p>
+          <p style="margin: 0;">Conflict resolved with <code>!important</code> — fragile. Hover state diverges across surfaces.</p>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix — one .inline-link, true underline</span>
+          <p style="font-size: 13px;">Default: <a href="#" class="inline-link">Lewis Hamilton</a></p>
+          <p style="font-size: 13px;">Hover: 1 px → 2 px thickness, color → currentColor.</p>
+          <p style="margin: 0;">Replace the <code>border-bottom: 1px dotted</code> rule in the base, drop the <code>!important</code> overrides. Cards/rows still get the top-right ↗ icon — that affordance is separate.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         AFFORDANCE OVERLAP
+         ============================================================ -->
+    <div class="audit-row" id="affordance">
+      <div class="audit-side">
+        <span class="audit-tag severity-med">MED · Affordance</span>
+        <h3>Card arrow + chevron overlap</h3>
+        <span class="where">.race-card-link ::after (↗) · .tbl tr.clickable td:last-child ::after (›)</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Cards get a top-right ↗ box-arrow; clickable rows get a right-aligned › chevron. Records cards have both — the .rec-card has a custom .rec-card-arrow <em>and</em> would inherit the generic card ↗ if it got the .f1-card-link class. Document the exclusivity rule.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is — easy to double-up</span>
+          <p style="font-size: 12px;">An author can apply <code>.race-card.race-card-link.f1-card-link</code> by accident — two ↗ arrows render. Records cards override with their own arrow but still rely on a separate class.</p>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix — one navigates-class</span>
+          <p style="font-size: 12px;">Replace the four <code>::after</code> openers with a single <code>[data-nav]</code> attribute selector. <code>[data-nav="card"]</code> → ↗ top-right; <code>[data-nav="row"]</code> → › right-center. No more class accumulation.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TYPE CASE
+         ============================================================ -->
+    <div class="audit-row" id="typecase">
+      <div class="audit-side">
+        <span class="audit-tag severity-med">MED · Type</span>
+        <h3>Title case mixed with uppercase</h3>
+        <span class="where">.race-name UPPER · .blog-card-title sentence · .records-page h1 UPPER</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Display headings are uppercase across the system — except blog titles and article H2/H3. The exception is intentional (long-form reading) but undocumented. Codify the rule and the system reads consistently.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is — no documented rule</span>
+          <div style="font-family:var(--f-display); font-weight: 700; font-size: 22px; text-transform: uppercase;">CIRCUIT GILLES VILLENEUVE</div>
+          <div style="font-family:var(--f-display); font-weight: 700; font-size: 22px;">How Imola became the season's pivot</div>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix — codify "editorial = sentence"</span>
+          <p style="font-size: 12px;">Add the rule to <a href="foundations.html#type">Foundations</a>: <strong>uppercase display</strong> for chrome and data screens; <strong>sentence case</strong> for blog/MDX where readability beats branding. <code>.blog-article-body h2/h3</code> already implement this.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         SEMANTIC vs TEAM COLLISION
+         ============================================================ -->
+    <div class="audit-row" id="palette">
+      <div class="audit-side">
+        <span class="audit-tag severity-med">MED · Color</span>
+        <h3>Ferrari ≈ accent</h3>
+        <span class="where">Ferrari #E80020 vs --accent #E8002D</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">A 3-byte hex away. On a Ferrari driver page, the accent rule and the team strip read as the same colour — the "active" cue collapses. Same story for Sauber vs <code>--pos</code>, and the Williams / Racing Bulls pair.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is — accent disappears</span>
+          <div style="background: var(--bg-2); border: 1px solid var(--line-1); padding: 12px; display:flex; gap: 12px; align-items:center;">
+            <span style="width: 4px; align-self: stretch; min-height: 30px; background: #E80020;"></span>
+            <span style="flex:1;"><strong style="color: var(--accent);">P 1</strong> · C. Leclerc · Ferrari</span>
+          </div>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix — see Teams · Collisions</span>
+          <p style="font-size: 12px;">On a Ferrari-context page, the active state shifts to a 2 px underline + weight 800. Strip keeps Ferrari red. Documented in <a href="teams.html#collisions">Teams · Collisions &amp; guardrails</a>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         SPACING TOKENS
+         ============================================================ -->
+    <div class="audit-row" id="spacing">
+      <div class="audit-side">
+        <span class="audit-tag severity-low">LOW · Tokens</span>
+        <h3>Spacing not tokenised</h3>
+        <span class="where">Inline pixel values in app.css</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Padding and gap values are inlined throughout app.css — 8 / 12 / 14 / 16 / 20 / 24. Already on a 4-unit scale; promoting them to <code>--sp-N</code> tokens (see <a href="foundations.html#space">Foundations</a>) makes refactors safer.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is — magic numbers</span>
+<div class="ds-code" style="font-size: 11px;"><span class="c-sel">.race-card</span> { <span class="c-key">padding</span>: <span class="c-val">16px</span>; <span class="c-key">gap</span>: <span class="c-val">12px</span>; }
+<span class="c-sel">.driver-card</span> { <span class="c-key">padding</span>: <span class="c-val">14px</span>; <span class="c-key">gap</span>: <span class="c-val">12px</span>; }</div>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix — tokenise</span>
+<div class="ds-code" style="font-size: 11px;"><span class="c-sel">:root</span> { <span class="c-key">--sp-3</span>: <span class="c-val">12px</span>; <span class="c-key">--sp-4</span>: <span class="c-val">14px</span>; <span class="c-key">--sp-5</span>: <span class="c-val">16px</span>; }
+<span class="c-sel">.race-card</span> { <span class="c-key">padding</span>: <span class="c-val">var(--sp-5)</span>; <span class="c-key">gap</span>: <span class="c-val">var(--sp-3)</span>; }</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         MOTION VARS
+         ============================================================ -->
+    <div class="audit-row" id="motion">
+      <div class="audit-side">
+        <span class="audit-tag severity-low">LOW · Motion</span>
+        <h3>Inlined durations</h3>
+        <span class="where">.12s · .15s · 120ms · 150ms · 300ms scattered</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Three different durations in <code>.race-card</code> alone. Pull to <code>--mo-fast</code>, <code>--mo</code>, <code>--mo-slow</code>. Tiny refactor, large legibility win.</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">As it is</span>
+<div class="ds-code" style="font-size: 11px;">.race-card { <span class="c-key">transition</span>: <span class="c-val">border-color .12s, background .12s</span>; }
+.listing-card { <span class="c-key">transition</span>: <span class="c-val">border-color 0.15s, box-shadow 0.15s</span>; }
+.blog-card img { <span class="c-key">transition</span>: <span class="c-val">transform 300ms</span>; }</div>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix</span>
+<div class="ds-code" style="font-size: 11px;"><span class="c-sel">:root</span> { <span class="c-key">--mo-fast</span>: <span class="c-val">80ms</span>; <span class="c-key">--mo</span>: <span class="c-val">120ms</span>; <span class="c-key">--mo-slow</span>: <span class="c-val">300ms</span>; }
+.race-card { <span class="c-key">transition</span>: <span class="c-val">border-color var(--mo), background var(--mo)</span>; }</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         CHART PALETTE
+         ============================================================ -->
+    <div class="audit-row" id="charts">
+      <div class="audit-side">
+        <span class="audit-tag severity-low">LOW · Charts</span>
+        <h3>Recharts uses literal colours</h3>
+        <span class="where">StandingsCommon.jsx · PointsChart / TeamProgressionChart</span>
+        <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">The progression charts already pull team colour for line stroke — but axis/tick/grid colours are hardcoded in the Recharts overrides. Move them to the existing <code>--fg-3</code> / <code>--line-1</code> tokens (they're partially there).</p>
+      </div>
+      <div class="audit-body">
+        <div class="audit-half bad">
+          <span class="h-label">Partial — already uses some tokens</span>
+          <p style="font-size: 12px; margin: 0;"><code>.recharts-cartesian-axis-tick text { fill: var(--fg-3) !important; }</code> — good. But tooltip border is literal <code>var(--line-2)</code>, not consistent.</p>
+        </div>
+        <div class="audit-half good">
+          <span class="h-label">Fix — finish the migration</span>
+          <p style="font-size: 12px; margin: 0;">Switch tooltip background to <code>--bg-3</code>, border to <code>--line-2</code>, label color to <code>--fg-2</code> across the board. One-line change.</p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============================================================
+       MIGRATION ORDER
+       ============================================================ -->
+  <section class="ds-section" id="order">
+    <div class="ds-section-head"><h2>Migration order</h2><span class="rule"></span></div>
+    <p class="ds-prose">Three PRs, lowest-risk first. Run the visual-regression checks against the records page, the home screen, the calendar grid, the standings table and the historical winners table — these surface every primitive.</p>
+
+    <table class="ds-spec">
+      <thead><tr><th>#</th><th>Scope</th><th>Files</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">PR 1</td>
+          <td>Tokenise spacing &amp; motion · cleanup affordance overlap</td>
+          <td>public/css/app.css</td>
+          <td>Low — purely additive</td>
+        </tr>
+        <tr>
+          <td class="mono">PR 2</td>
+          <td>Kill the dotted .inline-link border, drop the !important overrides</td>
+          <td>public/css/app.css</td>
+          <td>Med — touches every link surface; verify the records sub-pages and historical winners</td>
+        </tr>
+        <tr>
+          <td class="mono">PR 3</td>
+          <td>Unify .listing-card → 0 radius · normalise sort-group radius (or document the exception)</td>
+          <td>public/css/site.css · drivers/teams listing pages</td>
+          <td>Med — visible change on /drivers/, /teams/</td>
+        </tr>
+        <tr>
+          <td class="mono">PR 4</td>
+          <td>Migrate .data-table → .tbl.tbl-static · delete .data-table</td>
+          <td>DriverPage.astro · RacePage.astro · RecordsTable.astro · CSS</td>
+          <td>High — most-used component; ship behind a per-page rollout</td>
+        </tr>
+        <tr>
+          <td class="mono">PR 5</td>
+          <td>Promote rec-card to a generic .card-accent — re-skin circuit "All-time records" and home "Top 3"</td>
+          <td>CircuitPage.astro · HomeScreen.jsx · CSS</td>
+          <td>Med — feature-flag with a query param while iterating</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="ds-footer">
+    <div class="left"><span class="dot"></span>F1GURES · AUDIT</div>
+    <div class="right"><a href="index.html">← Overview</a></div>
+  </footer>
+
+</main>
+
+<script src="ds.js"></script>
+</body>
+</html>

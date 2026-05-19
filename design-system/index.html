@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>F1gures Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../public/css/app.css">
+<link rel="stylesheet" href="../public/css/site.css">
+<link rel="stylesheet" href="ds.css">
+</head>
+<body>
+
+<header class="ds-nav">
+  <a class="ds-logo" href="index.html">
+    <span class="dot"></span>F1GURES<small>DESIGN SYSTEM</small>
+  </a>
+  <nav class="ds-nav-items">
+    <a class="ds-nav-item" href="index.html">Overview</a>
+    <a class="ds-nav-item" href="foundations.html">Foundations</a>
+    <a class="ds-nav-item" href="colors.html">Color</a>
+    <a class="ds-nav-item" href="teams.html">Teams</a>
+    <a class="ds-nav-item" href="components.html">Components</a>
+    <a class="ds-nav-item" href="patterns.html">Patterns</a>
+    <a class="ds-nav-item" href="audit.html">Audit</a>
+  </nav>
+  <div class="ds-nav-spacer"></div>
+  <div class="ds-theme" role="group" aria-label="Theme">
+    <button data-theme="light">Light</button>
+    <button data-theme="dark">Dark</button>
+  </div>
+</header>
+
+<main class="ds-page">
+
+  <section class="ds-hero">
+    <div class="ds-hero-left">
+      <div class="ds-hero-mark">F1</div>
+      <div class="eyebrow">v 1.0 · MAY 2026 · LIGHT &amp; DARK</div>
+      <h1>The system<br>behind every<br>F1gure.</h1>
+      <p>A single source of truth for the f1gures.app stats portal — tokens, components and page patterns. Built directly on the production <code style="font-family:var(--f-mono); font-size:12.5px; color:var(--fg-1); background:rgba(255,255,255,0.06); padding:1px 6px;">app.css</code> so this site is the spec, not a mockup. Lifted from the same tokens that ship to the live build.</p>
+    </div>
+    <div class="ds-hero-right">
+      <div class="ds-hero-stat"><span class="accent-rule"></span>
+        <div class="num t-num">42</div>
+        <div class="lbl">Design tokens</div>
+      </div>
+      <div class="ds-hero-stat"><span class="accent-rule"></span>
+        <div class="num t-num">28</div>
+        <div class="lbl">Components</div>
+      </div>
+      <div class="ds-hero-stat"><span class="accent-rule"></span>
+        <div class="num t-num">10</div>
+        <div class="lbl">Team palettes</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <h2>Sections</h2>
+      <span class="rule"></span>
+      <span class="count">6 documents</span>
+    </div>
+
+    <div class="ds-index-grid">
+      <a class="ds-index-card" href="foundations.html">
+        <span class="num">01 / FOUNDATIONS</span>
+        <span class="title">Type, space &amp; motion</span>
+        <span class="desc">Barlow Condensed + Barlow + JetBrains Mono. Two themes built from the same surface scale. Border-only language, no border-radius.</span>
+        <span class="arr">Open ↗</span>
+      </a>
+      <a class="ds-index-card" href="colors.html">
+        <span class="num">02 / COLOR</span>
+        <span class="title">Semantic palette</span>
+        <span class="desc">Surfaces, lines, foregrounds, accent red, semantic pos/neg/warn, podium colors (gold/silver/bronze) and pill backgrounds — documented for both themes.</span>
+        <span class="arr">Open ↗</span>
+      </a>
+      <a class="ds-index-card" href="teams.html">
+        <span class="num">03 / TEAMS</span>
+        <span class="title">Constructor colors</span>
+        <span class="desc">The 2026 grid, hex values, where the color is allowed to land (3px left strip, 2px top rule, 4×4 chip), and the rule for color used standalone.</span>
+        <span class="arr">Open ↗</span>
+      </a>
+      <a class="ds-index-card" href="components.html">
+        <span class="num">04 / COMPONENTS</span>
+        <span class="title">Buttons → tables</span>
+        <span class="desc">Every primitive: panels, pills, position cells, tabs, callouts, countdown, search, race &amp; driver cards, bar sets, stat blocks, sort and era toggles.</span>
+        <span class="arr">Open ↗</span>
+      </a>
+      <a class="ds-index-card" href="patterns.html">
+        <span class="num">05 / PATTERNS</span>
+        <span class="title">Page-level recipes</span>
+        <span class="desc">The Records hero card and timeline (your favourite). Circuit profile blocks. Race hero + historical winners. Calendar grid. Listing pages.</span>
+        <span class="arr">Open ↗</span>
+      </a>
+      <a class="ds-index-card" href="audit.html">
+        <span class="num">06 / AUDIT</span>
+        <span class="title">Inconsistencies</span>
+        <span class="desc">Two table systems (<code style="font-family:var(--f-mono);font-size:11px;background:rgba(255,255,255,0.06);padding:1px 5px;">.tbl</code> vs <code style="font-family:var(--f-mono);font-size:11px;background:rgba(255,255,255,0.06);padding:1px 5px;">.data-table</code>), five card patterns, two inline-link styles, mixed radii. Recommendations for unifying.</span>
+        <span class="arr">Open ↗</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <h2>Principles</h2>
+      <span class="rule"></span>
+    </div>
+
+    <div class="ds-cols-3">
+      <div class="kbd-frame"><span class="kbd-c1"></span><span class="kbd-c2"></span>
+        <div class="t-eyebrow" style="color:var(--accent)">01 · Telemetry, not chrome</div>
+        <h3 style="margin: 8px 0 4px; font-size:22px;">Information is the brand.</h3>
+        <p class="ds-prose" style="margin:0; font-size:13px;">Data density wins. We use borders to separate, never shadows. Surfaces are 0 px radius. Headlines are condensed and uppercase, numbers are tabular and mono.</p>
+      </div>
+      <div class="kbd-frame"><span class="kbd-c1"></span><span class="kbd-c2"></span>
+        <div class="t-eyebrow" style="color:var(--accent)">02 · F1 red is a signal</div>
+        <h3 style="margin: 8px 0 4px; font-size:22px;">Red means now.</h3>
+        <p class="ds-prose" style="margin:0; font-size:13px;">Use <code>--accent</code> for the live race, the next event, the active state, the leader's value, and nothing else. Team colors do the team-shading work.</p>
+      </div>
+      <div class="kbd-frame"><span class="kbd-c1"></span><span class="kbd-c2"></span>
+        <div class="t-eyebrow" style="color:var(--accent)">03 · One system, two themes</div>
+        <h3 style="margin: 8px 0 4px; font-size:22px;">Light is not an afterthought.</h3>
+        <p class="ds-prose" style="margin:0; font-size:13px;">Every token has a paired light-mode value via <code>html.light</code>. Components must render correctly in both — verified pane-by-pane on the Color and Component pages.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <h2>Quick start</h2>
+      <span class="rule"></span>
+    </div>
+    <p class="ds-prose">Every token lives in <code>public/css/app.css</code>. Link it once and you have the entire system. The pre-hydration script in <code>BaseLayout.astro</code> reads <code>localStorage.f1-theme</code> and toggles <code>html.light</code> before paint to avoid a dark→light flash.</p>
+
+<div class="ds-code"><span class="c-com">/* 1. tokens (read-only, dark default) */</span>
+<span class="c-sel">:root</span> {
+  <span class="c-key">--bg-1</span>: <span class="c-val">#0a0a0a</span>;
+  <span class="c-key">--fg-1</span>: <span class="c-val">#f5f5f5</span>;
+  <span class="c-key">--accent</span>: <span class="c-val">#E8002D</span>;
+  <span class="c-key">--f-display</span>: <span class="c-val">'Barlow Condensed', sans-serif</span>;
+}
+
+<span class="c-com">/* 2. opt into light mode */</span>
+<span class="c-sel">html.light</span> {
+  <span class="c-key">--bg-1</span>: <span class="c-val">#f5f5f8</span>;
+  <span class="c-key">--fg-1</span>: <span class="c-val">#0d0e12</span>;
+}
+
+<span class="c-com">/* 3. consume — never hardcode */</span>
+<span class="c-sel">.race-card</span> {
+  <span class="c-key">background</span>: <span class="c-val">var(--bg-2)</span>;
+  <span class="c-key">border</span>: <span class="c-val">1px solid var(--line-1)</span>;
+}</div>
+  </section>
+
+  <footer class="ds-footer">
+    <div class="left">
+      <span class="dot"></span>
+      <span>F1GURES DESIGN SYSTEM · GENERATED FROM PRODUCTION TOKENS</span>
+    </div>
+    <div class="right">
+      <a href="https://f1gures.app/">f1gures.app</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/lekky/f1gures">github/lekky/f1gures</a>
+    </div>
+  </footer>
+
+</main>
+
+<script src="ds.js"></script>
+</body>
+</html>
