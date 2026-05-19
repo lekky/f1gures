@@ -1,6 +1,8 @@
 node_modules/
 .playwright-mcp/
 .claude/settings.local.json
+.claude/worktrees/
+.superpowers/
 .env
 
 # Block stray screenshots/photos at repo root, but allow site assets

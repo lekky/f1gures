@@ -1999,6 +1999,40 @@ if (postArchiveTeamYears > 0) {
   console.log(`[archive] merged ${postArchiveTeamYears} post-Ergast team-year entries into ${teamDocCache.size} team docs (${newlyCreatedTeams.size} new)`);
 }
 
+// ─── Attach lineage to team docs in any curated chain ─────────────────
+{
+  const { lineages, validateLineages, buildLineageAttachment } = await import('./lineages.mjs');
+  validateLineages(lineages, teamsIndex);
+
+  const teamDocsByRef = new Map();
+  function loadTeamDoc(ref) {
+    if (teamDocsByRef.has(ref)) return teamDocsByRef.get(ref);
+    const p = join(OUT, 'teams', `${ref}.json`);
+    if (!existsSync(p)) {
+      teamDocsByRef.set(ref, null);
+      return null;
+    }
+    const doc = JSON.parse(readFileSync(p, 'utf8'));
+    teamDocsByRef.set(ref, doc);
+    return doc;
+  }
+
+  const allChainRefs = new Set();
+  for (const chain of lineages) {
+    for (const node of chain.nodes) allChainRefs.add(node.ref);
+  }
+
+  let lineageRefsTouched = 0;
+  for (const ref of allChainRefs) {
+    const doc = loadTeamDoc(ref);
+    if (!doc) continue;
+    buildLineageAttachment(doc, lineages, loadTeamDoc);
+    writeFileSync(join(OUT, 'teams', `${ref}.json`), JSON.stringify(doc));
+    lineageRefsTouched += 1;
+  }
+  console.log(`[archive] attached lineage to ${lineageRefsTouched} team docs across ${lineages.length} chains`);
+}
+
 // ─── Enrich index entries with last5 and display data ───────────────────────
 {
   const teamRaceMap = new Map(); // constructorRef → Map<'year-round', {points,year,round}>
