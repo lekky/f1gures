@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Color · F1gures Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../public/css/app.css">
+<link rel="stylesheet" href="../public/css/site.css">
+<link rel="stylesheet" href="ds.css">
+
+<style>
+  /* Dual-theme swatch grid: each row shows the same token in both modes */
+  .color-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    border-bottom: 1px solid var(--line-1);
+    align-items: stretch;
+  }
+  .color-row:first-of-type { border-top: 1px solid var(--line-1); }
+  .color-row.head {
+    background: var(--bg-3);
+    border-bottom-color: var(--line-2);
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+  .color-row.head > div { padding: 10px 14px; }
+  .color-cell {
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    min-height: 56px;
+  }
+  .color-cell.chip-dark, .color-cell.chip-light {
+    border-left: 1px solid var(--line-1);
+  }
+  .color-cell.chip-dark { background: #050505; color: #f5f5f5; }
+  .color-cell.chip-light { background: #f5f5f8; color: #0d0e12; }
+  .color-cell .swatch {
+    width: 32px; height: 32px;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(127,127,127,0.25);
+  }
+  .color-cell .name {
+    font-family: var(--f-display); font-weight: 700;
+    font-size: 13px; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .color-cell .name small {
+    display: block;
+    font-family: var(--f-body); font-weight: 400;
+    font-size: 11px; letter-spacing: 0;
+    text-transform: none;
+    color: var(--fg-3);
+    margin-top: 2px;
+  }
+  .color-cell .hex {
+    font-family: var(--f-mono); font-size: 12px;
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .palette-block {
+    border: 1px solid var(--line-1);
+    margin-bottom: 24px;
+  }
+  .palette-block-head {
+    background: var(--bg-3);
+    border-bottom: 1px solid var(--line-2);
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px;
+  }
+  .palette-block-head h3 {
+    font-family: var(--f-display); font-weight: 700;
+    font-size: 14px; letter-spacing: 0.14em;
+    text-transform: uppercase; margin: 0;
+  }
+  .palette-block-head .sub {
+    font-family: var(--f-mono); font-size: 11px;
+    color: var(--fg-3); letter-spacing: 0.04em;
+  }
+
+  /* Podium chips */
+  .podium-strip {
+    display: flex; gap: 12px; align-items: stretch;
+  }
+  .podium-tile {
+    flex: 1;
+    background: var(--bg-2);
+    border: 1px solid var(--line-1);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 4px;
+    border-top: 3px solid var(--podium);
+  }
+  .podium-tile .num {
+    font-family: var(--f-display); font-weight: 800;
+    font-size: 36px; line-height: 1;
+    color: var(--podium);
+  }
+  .podium-tile .lbl {
+    font-family: var(--f-display); font-weight: 600;
+    font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--fg-3);
+  }
+  .podium-tile .hex {
+    font-family: var(--f-mono); font-size: 11px;
+    color: var(--fg-2);
+  }
+</style>
+</head>
+<body>
+
+<header class="ds-nav">
+  <a class="ds-logo" href="index.html"><span class="dot"></span>F1GURES<small>DESIGN SYSTEM</small></a>
+  <nav class="ds-nav-items">
+    <a class="ds-nav-item" href="index.html">Overview</a>
+    <a class="ds-nav-item" href="foundations.html">Foundations</a>
+    <a class="ds-nav-item" href="colors.html">Color</a>
+    <a class="ds-nav-item" href="teams.html">Teams</a>
+    <a class="ds-nav-item" href="components.html">Components</a>
+    <a class="ds-nav-item" href="patterns.html">Patterns</a>
+    <a class="ds-nav-item" href="audit.html">Audit</a>
+  </nav>
+  <div class="ds-nav-spacer"></div>
+  <div class="ds-theme" role="group" aria-label="Theme">
+    <button data-theme="light">Light</button><button data-theme="dark">Dark</button>
+  </div>
+</header>
+
+<main class="ds-page">
+
+  <div class="ds-head">
+    <span class="eyebrow">02 / COLOR</span>
+    <h1>Two themes,<br>one palette.</h1>
+    <p>Every token below is documented in both light and dark on the same row. The dark mode is the canonical surface — light mode is a remap of the same 21-token system. Use only the tokens; never hardcode hex.</p>
+  </div>
+
+  <!-- ============================================================
+       SURFACES (bg-0 .. bg-3)
+       ============================================================ -->
+  <section class="ds-section" id="surfaces">
+    <div class="ds-section-head"><h2>01 · Surfaces</h2><span class="rule"></span><span class="count">5 tokens × 2 themes</span></div>
+    <p class="ds-prose">Five surface tokens, deepest to lightest, repeated for both themes. The naming is the same in light mode — <code>bg-1</code> stays "page background" — but the values flip.</p>
+
+    <div class="palette-block">
+      <div class="color-row head">
+        <div>Token / role</div>
+        <div>Dark</div>
+        <div>Light</div>
+      </div>
+
+      <div class="color-row">
+        <div class="color-cell">
+          <span class="name">--bg-0<small>Deepest — code blocks, page edges</small></span>
+        </div>
+        <div class="color-cell chip-dark">
+          <span class="swatch" style="background:#050505"></span>
+          <span class="hex">#050505</span>
+        </div>
+        <div class="color-cell chip-light">
+          <span class="swatch" style="background:#eeeef2"></span>
+          <span class="hex">#EEEEF2</span>
+        </div>
+      </div>
+
+      <div class="color-row">
+        <div class="color-cell">
+          <span class="name">--bg-1<small>Page background</small></span>
+        </div>
+        <div class="color-cell chip-dark">
+          <span class="swatch" style="background:#0a0a0a"></span>
+          <span class="hex">#0A0A0A</span>
+        </div>
+        <div class="color-cell chip-light">
+          <span class="swatch" style="background:#f5f5f8"></span>
+          <span class="hex">#F5F5F8</span>
+        </div>
+      </div>
+
+      <div class="color-row">
+        <div class="color-cell">
+          <span class="name">--bg-2<small>Cards, panels, tables</small></span>
+        </div>
+        <div class="color-cell chip-dark">
+          <span class="swatch" style="background:#1c1d22"></span>
+          <span class="hex">#1C1D22</span>
+        </div>
+        <div class="color-cell chip-light">
+          <span class="swatch" style="background:#ffffff"></span>
+          <span class="hex">#FFFFFF</span>
+        </div>
+      </div>
+
+      <div class="color-row">
+        <div class="color-cell">
+          <span class="name">--bg-3<small>Table headers, pills, inputs</small></span>
+        </div>
+        <div class="color-cell chip-dark">
+          <span class="swatch" style="background:#252629"></span>
+          <span class="hex">#252629</span>
+        </div>
+        <div class="color-cell chip-light">
+          <span class="swatch" style="background:#ededf1"></span>
+          <span class="hex">#EDEDF1</span>
+        </div>
+      </div>
+
+      <div class="color-row">
+        <div class="color-cell">
+          <span class="name">--bg-hover<small>Interactive hover fill</small></span>
+        </div>
+        <div class="color-cell chip-dark">
+          <span class="swatch" style="background:#2d2f36"></span>
+          <span class="hex">#2D2F36</span>
+        </div>
+        <div class="color-cell chip-light">
+          <span class="swatch" style="background:#e6e6ea"></span>
+          <span class="hex">#E6E6EA</span>
+        </div>
+      </div>
+
+      <div class="color-row">
+        <div class="color-cell">
+          <span class="name">--bg-elevated<small>Lifted card (.race-card hover, .is-next)</small></span>
+        </div>
+        <div class="color-cell chip-dark">
+          <span class="swatch" style="background:#22232a"></span>
+          <span class="hex">#22232A</span>
+        </div>
+        <div class="color-cell chip-light">
+          <span class="swatch" style="background:#ffffff"></span>
+          <span class="hex">#FFFFFF</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       LINES (line-1 .. line-3)
+       ============================================================ -->
+  <section class="ds-section" id="lines">
+    <div class="ds-section-head"><h2>02 · Lines</h2><span class="rule"></span><span class="count">3 tokens × 2 themes</span></div>
+
+    <div class="palette-block">
+      <div class="color-row head"><div>Token / role</div><div>Dark</div><div>Light</div></div>
+
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--line-1<small>Quiet — panel borders, row dividers</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#2c2e36"></span><span class="hex">#2C2E36</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#e0e1e6"></span><span class="hex">#E0E1E6</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--line-2<small>Default — controls, pills, callouts</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#383a44"></span><span class="hex">#383A44</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#cccdd4"></span><span class="hex">#CCCDD4</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--line-3<small>Active — hover &amp; focus borders</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#484c56"></span><span class="hex">#484C56</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#b2b3bc"></span><span class="hex">#B2B3BC</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FOREGROUND (fg-1 .. fg-4)
+       ============================================================ -->
+  <section class="ds-section" id="foreground">
+    <div class="ds-section-head"><h2>03 · Foreground</h2><span class="rule"></span><span class="count">4 tokens × 2 themes</span></div>
+    <p class="ds-prose">Four foreground steps drive every text hierarchy. <strong>Never use anything outside this scale</strong> — fg-3 is the floor for body copy in both themes; fg-4 is for tertiary metadata only.</p>
+
+    <div class="palette-block">
+      <div class="color-row head"><div>Token / role</div><div>Dark</div><div>Light</div></div>
+
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--fg-1<small>Primary — body, titles, numbers</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#f5f5f5"></span><span class="hex">#F5F5F5</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#0d0e12"></span><span class="hex">#0D0E12</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--fg-2<small>Secondary — descriptions, prose</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#b8b9bd"></span><span class="hex">#B8B9BD</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#3d3e48"></span><span class="hex">#3D3E48</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--fg-3<small>Tertiary — eyebrows, labels, captions</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#9a9ba1"></span><span class="hex">#9A9BA1</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#6a6b75"></span><span class="hex">#6A6B75</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--fg-4<small>Quaternary — row chevron, hint glyphs</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#636469"></span><span class="hex">#636469</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#9a9ba6"></span><span class="hex">#9A9BA6</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ACCENT (the F1 red)
+       ============================================================ -->
+  <section class="ds-section" id="accent">
+    <div class="ds-section-head"><h2>04 · Accent</h2><span class="rule"></span><span class="count">3 tokens</span></div>
+    <p class="ds-prose">A single red, identical across both themes. It is a <strong>signal colour</strong> — active nav rail, next race, leader values, live chip, error states. Two derived tokens give it body.</p>
+
+    <div class="ds-cols-3">
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="background:#0a0a0a; min-height: 140px; padding: 20px;">
+          <div style="width: 100%; height: 80px; background: #E8002D;"></div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--accent</span></div>
+          <div class="meta-row"><span class="meta-lbl">Hex</span><span class="meta-val">#E8002D</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Nav active, leader, accent rule</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="background:#0a0a0a; min-height: 140px; padding: 20px;">
+          <div style="width: 100%; height: 80px; background: #b8002a;"></div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--accent-dim</span></div>
+          <div class="meta-row"><span class="meta-lbl">Hex</span><span class="meta-val">#B8002A</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Pressed state, secondary fill</span></div>
+        </div>
+      </div>
+      <div class="ds-specimen">
+        <div class="ds-specimen-stage" style="background:#0a0a0a; min-height: 140px; padding: 20px;">
+          <div style="width: 100%; height: 80px; background: rgba(232,0,45,0.18);"></div>
+        </div>
+        <div class="ds-specimen-meta">
+          <div class="meta-row"><span class="meta-lbl">Token</span><span class="meta-val">--accent-glow</span></div>
+          <div class="meta-row"><span class="meta-lbl">Dark</span><span class="meta-val">rgba(232,0,45,0.18)</span></div>
+          <div class="meta-row"><span class="meta-lbl">Light</span><span class="meta-val">rgba(232,0,45,0.10)</span></div>
+          <div class="meta-row"><span class="meta-lbl">Use</span><span class="meta-val">Glow on accent dot, ::before halos</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SEMANTIC
+       ============================================================ -->
+  <section class="ds-section" id="semantic">
+    <div class="ds-section-head"><h2>05 · Semantic</h2><span class="rule"></span><span class="count">5 tokens × 2 themes</span></div>
+    <p class="ds-prose">Status colour, not decoration. <strong>Live</strong> is reserved for the in-progress race only — it is intentionally a brighter red than the accent so the pill stands out beside it.</p>
+
+    <div class="palette-block">
+      <div class="color-row head"><div>Token / role</div><div>Dark</div><div>Light</div></div>
+
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--pos<small>Position up, lap improved, finished P-points</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#2ecc71"></span><span class="hex">#2ECC71</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#15803d"></span><span class="hex">#15803D</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--neg<small>Position down, DNF pill, error state</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#ff4444"></span><span class="hex">#FF4444</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#dc2626"></span><span class="hex">#DC2626</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--warn<small>DSQ, tyre degradation high, caution</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#ffb020"></span><span class="hex">#FFB020</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#b45309"></span><span class="hex">#B45309</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--neutral<small>Position unchanged</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#75767b"></span><span class="hex">#75767B</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#75767b"></span><span class="hex">#75767B</span></div>
+      </div>
+      <div class="color-row">
+        <div class="color-cell"><span class="name">--live<small>Live race pill — brighter than accent</small></span></div>
+        <div class="color-cell chip-dark"><span class="swatch" style="background:#ff1e1e"></span><span class="hex">#FF1E1E</span></div>
+        <div class="color-cell chip-light"><span class="swatch" style="background:#ff1e1e"></span><span class="hex">#FF1E1E</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PODIUM
+       ============================================================ -->
+  <section class="ds-section" id="podium">
+    <div class="ds-section-head"><h2>06 · Podium</h2><span class="rule"></span><span class="count">3 tokens</span></div>
+    <p class="ds-prose">Position colours for P1–P3. Identical across themes (the metals don't change). Applied only to the <code>.pos</code> cell — never as panel fill, never as text on body copy.</p>
+
+    <div class="podium-strip">
+      <div class="podium-tile" style="--podium: #FFD700;">
+        <div class="num">1</div>
+        <div class="lbl">Gold · .pos-1</div>
+        <div class="hex">#FFD700</div>
+      </div>
+      <div class="podium-tile" style="--podium: #C0C0C0;">
+        <div class="num">2</div>
+        <div class="lbl">Silver · .pos-2</div>
+        <div class="hex">#C0C0C0</div>
+      </div>
+      <div class="podium-tile" style="--podium: #CD7F32;">
+        <div class="num">3</div>
+        <div class="lbl">Bronze · .pos-3</div>
+        <div class="hex">#CD7F32</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       USAGE / DOS & DONTS
+       ============================================================ -->
+  <section class="ds-section" id="usage">
+    <div class="ds-section-head"><h2>07 · Application rules</h2><span class="rule"></span></div>
+
+    <div class="ds-cols-2">
+      <div class="kbd-frame"><span class="kbd-c1"></span><span class="kbd-c2"></span>
+        <span class="ds-tag do">DO</span>
+        <h3 style="margin: 10px 0 4px; font-size:18px;">Use --accent for one thing at a time</h3>
+        <p class="ds-prose" style="margin:0; font-size:13px;">On any given screen, accent red marks the single most important active state — next race, leader's points, current nav tab. If it appears twice, the user has nothing to orient to.</p>
+      </div>
+      <div class="kbd-frame"><span class="kbd-c1"></span><span class="kbd-c2"></span>
+        <span class="ds-tag dont">DON'T</span>
+        <h3 style="margin: 10px 0 4px; font-size:18px;">Don't hardcode hex anywhere</h3>
+        <p class="ds-prose" style="margin:0; font-size:13px;">Every value above is a CSS variable. Hardcoding breaks light-mode parity. Exception: <code>#fff</code> on pills with a coloured background (sprint, live), where contrast must hold against either theme.</p>
+      </div>
+      <div class="kbd-frame"><span class="kbd-c1"></span><span class="kbd-c2"></span>
+        <span class="ds-tag do">DO</span>
+        <h3 style="margin: 10px 0 4px; font-size:18px;">Layer surfaces by purpose</h3>
+        <p class="ds-prose" style="margin:0; font-size:13px;">bg-1 = page, bg-2 = panels/cards, bg-3 = inside-the-panel chrome (table headers, pills, inputs). Don't skip levels — bg-2 on bg-1 is the canonical card; bg-3 on bg-1 reads as broken.</p>
+      </div>
+      <div class="kbd-frame"><span class="kbd-c1"></span><span class="kbd-c2"></span>
+        <span class="ds-tag dont">DON'T</span>
+        <h3 style="margin: 10px 0 4px; font-size:18px;">Don't tint surfaces with team colour</h3>
+        <p class="ds-prose" style="margin:0; font-size:13px;">Team colour is a strip / dot / chip — never a panel background. The <code>.silhouette-photo</code> driver gradient is the only exception (18 % team tint over bg-3).</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="ds-footer">
+    <div class="left"><span class="dot"></span>F1GURES · COLOR</div>
+    <div class="right"><a href="teams.html">Teams →</a></div>
+  </footer>
+
+</main>
+
+<script src="ds.js"></script>
+</body>
+</html>
