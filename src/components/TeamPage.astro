@@ -6,6 +6,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Flag from './Flag.astro';
+import LineageStrip from './LineageStrip.astro';
 
 interface Props {
   currentYear: number | null;
@@ -47,6 +48,22 @@ interface Props {
       tagline: string;
       drivers: Array<{ driverRef: string; name: string }>;
     } | null;
+    lineage?: {
+      chainId: string;
+      selfIndex: number;
+      nodes: Array<{
+        ref: string;
+        name: string;
+        displayNameOverride?: string;
+        color: string;
+        from: number;
+        to: number | null;
+        seasons: number;
+        wins: number;
+        championships: number;
+        isSelf: boolean;
+      }>;
+    };
   };
 }
 
@@ -283,6 +300,10 @@ const currentDriverPhotos = currentDrivers.map(d => {
         ))}
       </div>
     </>
+  )}
+
+  {team.lineage && team.lineage.nodes.length >= 2 && (
+    <LineageStrip lineage={team.lineage} />
   )}
 
   {team.perSeason.length > 0 && (
