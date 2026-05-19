@@ -31,3 +31,48 @@ describe('eraStats', () => {
     expect(eraStats(doc, 2023, 2023)).toEqual({ seasons: 1, wins: 9, championships: 1 });
   });
 });
+
+import { validateLineages } from './lineages.mjs';
+
+describe('validateLineages', () => {
+  const teamsIndex = [
+    { constructorRef: 'jordan' },
+    { constructorRef: 'aston_martin' },
+  ];
+
+  it('passes for a valid chain', () => {
+    const chains = [{
+      id: 'jordan-aston',
+      nodes: [
+        { ref: 'jordan',       from: 1991, to: 2005 },
+        { ref: 'aston_martin', from: 2021, to: null },
+      ],
+    }];
+    expect(() => validateLineages(chains, teamsIndex)).not.toThrow();
+  });
+
+  it('throws on unknown ref with chain id and ref in message', () => {
+    const chains = [{
+      id: 'broken-chain',
+      nodes: [
+        { ref: 'jordan',       from: 1991, to: 2005 },
+        { ref: 'totally_fake', from: 2006, to: 2010 },
+      ],
+    }];
+    expect(() => validateLineages(chains, teamsIndex))
+      .toThrow(/broken-chain.*totally_fake/);
+  });
+
+  it('throws on chain shorter than 2 nodes', () => {
+    const chains = [{ id: 'solo', nodes: [{ ref: 'jordan', from: 1991, to: 2005 }] }];
+    expect(() => validateLineages(chains, teamsIndex)).toThrow(/solo.*at least 2/);
+  });
+
+  it('throws on missing chain id', () => {
+    const chains = [{ nodes: [
+      { ref: 'jordan', from: 1991, to: 2005 },
+      { ref: 'aston_martin', from: 2021, to: null },
+    ] }];
+    expect(() => validateLineages(chains, teamsIndex)).toThrow(/missing id/);
+  });
+});

@@ -16,3 +16,18 @@ export function eraStats(teamDoc, from, to) {
     championships: rows.filter(s => s.position === 1).length,
   };
 }
+
+export function validateLineages(chains, teamsIndex) {
+  const refSet = new Set(teamsIndex.map(t => t.constructorRef));
+  for (const chain of chains) {
+    if (!chain.id) throw new Error('lineage chain missing id');
+    if (!chain.nodes || chain.nodes.length < 2) {
+      throw new Error(`lineage chain "${chain.id}" must have at least 2 nodes`);
+    }
+    for (const node of chain.nodes) {
+      if (!refSet.has(node.ref)) {
+        throw new Error(`lineage chain "${chain.id}" references unknown ref "${node.ref}"`);
+      }
+    }
+  }
+}
