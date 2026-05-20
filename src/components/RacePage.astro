@@ -155,7 +155,8 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
   .race-hero-name { margin: 0 0 8px 0; font-size: 48px; line-height: 1.05; }
   .race-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
   .race-hero-stats .sep { color: var(--fg-4); }
-  .race-hero-circuit-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+  /* Underline affordance comes from the canonical inline-link block in app.css;
+     keep the local hover colour bump (ambient -> fg-1) for extra feedback. */
   .race-hero-circuit-link:hover { color: var(--fg-1); }
   .race-hero-podium { display: flex; gap: 12px; }
   .podium-step {
@@ -167,9 +168,9 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
   .podium-3 { border-left-color: var(--fg-3); }
   .podium-pos { font-family: var(--f-display); font-weight: 800; font-size: 20px; }
   .podium-name { font-weight: 600; font-size: 14px; }
-  .podium-name a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
   .podium-team { font-size: 12px; color: var(--fg-3); }
-  .podium-team a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+  /* `.podium-name a` / `.podium-team a` link affordance: canonical
+     inline-link block in app.css. */
 
   @media (max-width: 720px) {
     .race-hero-name { font-size: 28px; }
@@ -297,20 +298,12 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
     font-weight: 600;
     font-size: 14px;
   }
-  .race-upcoming-podium .podium-step .podium-name a {
-    color: inherit;
-    text-decoration: none;
-    border-bottom: 1px dotted var(--line-2);
-  }
   .race-upcoming-podium .podium-step .podium-team {
     font-size: 12px;
     color: var(--fg-3);
   }
-  .race-upcoming-podium .podium-step .podium-team a {
-    color: inherit;
-    text-decoration: none;
-    border-bottom: 1px dotted var(--line-2);
-  }
+  /* `.podium-name a` / `.podium-team a` link affordance: canonical
+     inline-link block in app.css. */
   .race-upcoming-podium .podium-step.podium-1 { border-left-color: var(--accent); }
   .race-upcoming-podium .podium-step.podium-2 { border-left-color: var(--fg-2); }
   .race-upcoming-podium .podium-step.podium-3 { border-left-color: var(--fg-3); }
