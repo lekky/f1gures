@@ -74,7 +74,9 @@ const breadcrumb = [
             <div class="panel blog-card">
               {post.data.heroImage ? (
                 <div class="blog-card-img">
-                  <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} loading="lazy" />
+                  <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
+                    <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} loading="lazy" />
+                  </a>
                   <div class="blog-card-over">
                     <div class="blog-card-meta">
                       <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
