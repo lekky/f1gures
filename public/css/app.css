@@ -715,13 +715,10 @@ button { font-family: inherit; }
   object-fit: contain; object-position: bottom center;
 }
 
-/* Race header - circuit name links to the circuit detail page. Subtle dotted
-   underline and ↗ arrow hint at clickability without breaking the eyebrow's
-   monospaced look. */
-.inline-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
-.inline-link:hover { color: var(--fg-1); border-bottom-color: var(--accent); }
-.inline-link:hover .inline-link-arrow { color: var(--accent); }
-.inline-link-arrow { margin-left: 4px; opacity: 0.6; font-size: 0.9em; }
+/* `.inline-link` styling lives in the CONTENT LINK AFFORDANCE section
+   further down. Global `a { color: inherit; }` from site.css carries the
+   color contract; underline + hover treatment is shared with the rest of
+   the inline-link surface list. */
 
 /* Circuit track map - render both variants and let CSS pick by theme. */
 .circuit-track {
@@ -860,16 +857,11 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .race-keylinks li { display: inline-flex; gap: 6px; }
 .race-keylinks .t-mono { opacity: 0.6; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; }
 
-.inline-link { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: rgba(255,255,255,0.25); text-underline-offset: 3px; }
-.inline-link:hover { text-decoration-color: currentColor; text-decoration-thickness: 2px; }
-html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
-
 /* ============================================================
    DATA TABLE (shared)
-   Used by DriverPage, RacePage, RecordsTable. The inline-link
-   affordance section below targets `.data-table a` via :where()
-   and overrides the dotted border-bottom with the consistent
-   underline pattern.
+   Used by DriverPage, RacePage, RecordsTable. Links inside data
+   tables pick up the canonical inline-link affordance from the
+   CONTENT LINK AFFORDANCE section below.
    ============================================================ */
 .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .data-table th, .data-table td { padding: 8px 12px; border-bottom: 1px solid var(--line-1); text-align: left; }
@@ -888,7 +880,6 @@ html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
 .data-table .right { text-align: right; }
 .data-table .is-champ-cell,
 .data-table .is-win-cell { color: var(--accent); font-weight: 700; }
-.data-table a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-2); }
 
 @media (max-width: 720px) {
   .data-table th, .data-table td { padding: 6px 8px; }
@@ -1046,11 +1037,18 @@ html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
 }
 
 /* --- Pattern 2: inline text links — underline only, no icon ---
-   Note: we don't force `color: inherit` here. Some inline links carry
-   their own colour (e.g. driver-hero-team a is brand-coloured), and
-   overriding it would erase team-colour styling. text-decoration-color
-   uses currentColor so the underline auto-tints to match. */
-:where(
+   Single source of truth for inline-link affordance. Color is left to
+   the cascade (global `a { color: inherit; }` in site.css), so links
+   that carry their own brand colour (e.g. driver-hero-team a) keep it.
+   text-decoration-color uses currentColor so the underline auto-tints
+   to match the link's resolved colour in either theme.
+
+   Specificity uses `:is(...)` so the rule wins reliably without needing
+   `!important`. The legacy dotted variants on `.inline-link` and
+   `.data-table a` were removed in audit PR 2; if a future rule sets
+   `text-decoration: none` on any selector in this list, fix the rule,
+   don't reintroduce `!important`. */
+:is(
   .data-table a,
   .race-hero-circuit-link,
   .podium-name a,
@@ -1066,15 +1064,14 @@ html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
   .inline-link,
   .f1-link
 ) {
-  border-bottom: 0 !important;
-  text-decoration: underline !important;
-  text-decoration-thickness: 1px !important;
-  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent) !important;
-  text-underline-offset: 3px !important;
-  transition: text-decoration-color 120ms ease, text-decoration-thickness 120ms ease !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--mo) ease, text-decoration-thickness var(--mo) ease;
 }
 
-:where(
+:is(
   .data-table a,
   .race-hero-circuit-link,
   .podium-name a,
@@ -1090,15 +1087,15 @@ html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
   .inline-link,
   .f1-link
 ):hover,
-:where(
+:is(
   .data-table a,
   .race-hero-circuit-link,
   .driver-hero-team a,
   .inline-link,
   .f1-link
 ):focus-visible {
-  text-decoration-color: currentColor !important;
-  text-decoration-thickness: 2px !important;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
 }
 
 .team-drivers-list {

@@ -369,7 +369,13 @@ See `audit.html` for full migration plan. **Don't add new instances of:**
 
 - A 3rd table class
 - `border-radius: 8px` (or any radius other than 0 / 50%)
-- `.inline-link` with a dotted border-bottom
+- Dotted `border-bottom` on link surfaces. Inline links across data
+  surfaces (`.data-table a`, `.podium-name a`, `.record-row a`,
+  `.inline-link`, etc.) share a single canonical underline rule in
+  `app.css` (CONTENT LINK AFFORDANCE section). Don't re-introduce a
+  local `.foo a { text-decoration: none; border-bottom: 1px dotted }`
+  pattern in component-scoped styles — it will fight the canonical
+  rule on specificity grounds and revive the `!important` arms race.
 - Hardcoded motion durations — use the `--mo-fast` / `--mo` / `--mo-slow`
   tokens. Inline `.12s`/`.15s`/`300ms` values still exist in older rules;
   migrate them when you touch surrounding code, don't add new ones.
