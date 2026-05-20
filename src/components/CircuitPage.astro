@@ -312,7 +312,7 @@ const recordCards: CircuitRecordCard[] = [
     <>
       <div class="section-head"><h2>Historical Winners</h2><div class="section-rule"></div></div>
       <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="data-table">
+        <table class="tbl tbl-static">
           <thead>
             <tr>
               <th class="right">Year</th>
@@ -389,10 +389,6 @@ const recordCards: CircuitRecordCard[] = [
   /* `.record-row a` link affordance: canonical inline-link block in app.css. */
   .record-count { font-weight: 700; color: var(--accent); }
 
-  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .data-table th, .data-table td { padding: 8px 12px; border-bottom: 1px solid var(--line-1); text-align: left; }
-  .data-table th { font-family: var(--f-display); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); background: var(--bg-2); }
-  .data-table tr:last-child td { border-bottom: 0; }
-  .data-table .right { text-align: right; }
-  /* `.data-table a` link affordance: canonical inline-link block in app.css. */
+  /* Historical-winners table uses .tbl.tbl-static - global styling in
+     app.css, link affordance from the canonical inline-link block. */
 </style>

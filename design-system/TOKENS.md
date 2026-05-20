@@ -147,7 +147,7 @@ inline pixel values in places; follow-up PRs are migrating consumers.
 |---------|----|------------------------------------------------|
 | `--sp-0` | 4  | Sub-element gaps, micro chips                 |
 | `--sp-1` | 6  | Compact rows, inline metadata                 |
-| `--sp-2` | 8  | Compact table cell padding (`.data-table`)    |
+| `--sp-2` | 8  | Compact table cell padding (`.tbl.tbl-static` on mobile) |
 | `--sp-3` | 12 | Default panel body, grid gap, `.driver-card`  |
 | `--sp-4` | 14 | Card body, medium cell padding (`.tbl`, `.race-card`) |
 | `--sp-5` | 16 | Section container padding (`.callout`)        |
@@ -268,12 +268,21 @@ Four numeric cells divided by 1 px lines. 44 px condensed numbers.
 
 ### Tables
 
-**Audit warning — two systems coexist. New code: use `.tbl`.**
+One base, one static modifier — `.data-table` was migrated to
+`.tbl.tbl-static` in audit PR 4.
 
-- `.tbl` — sortable, interactive. Use for live data screens.
-- `.data-table` — read-only, prerendered detail pages. **Will be migrated**
-  to `.tbl.tbl-static`. Don't introduce new `.data-table` usages.
-- Row chevron is auto-injected by `.tbl tbody tr.clickable td:last-child::after`.
+- `.tbl` — interactive table. Use for live data screens (standings,
+  records sub-pages). Hover background, zebra tint, row chevron all on.
+  `tr.clickable` rows get the auto-injected `›` chevron via
+  `.tbl tbody tr.clickable td:last-child::after`. Sticky header is
+  `--bg-3`; min-width of 720 px forces horizontal scroll on narrow
+  viewports for sortable tables.
+- `.tbl.tbl-static` — read-only modifier for prerendered detail pages
+  (driver career table, race results, circuit historical winners,
+  team season-by-season). Suppresses hover, the chevron, and the
+  720 px min-width; mobile cell padding tightens to 8x10 px. Cell-color
+  modifiers `.is-champ-cell` / `.is-win-cell` work in both contexts —
+  they're scoped under `.tbl`.
 
 ### Cards
 
@@ -367,10 +376,11 @@ When authoring new CSS:
 
 See `audit.html` for full migration plan. **Don't add new instances of:**
 
-- A 3rd table class
+- A 3rd table class. `.data-table` was retired in audit PR 4 — use
+  `.tbl` (interactive) or `.tbl.tbl-static` (read-only).
 - `border-radius: 8px` (or any radius other than 0 / 50%)
 - Dotted `border-bottom` on link surfaces. Inline links across data
-  surfaces (`.data-table a`, `.podium-name a`, `.record-row a`,
+  surfaces (`.tbl.tbl-static a`, `.podium-name a`, `.record-row a`,
   `.inline-link`, etc.) share a single canonical underline rule in
   `app.css` (CONTENT LINK AFFORDANCE section). Don't re-introduce a
   local `.foo a { text-decoration: none; border-bottom: 1px dotted }`
