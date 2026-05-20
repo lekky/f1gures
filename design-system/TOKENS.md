@@ -130,7 +130,7 @@ Every token below has a paired light-mode value in `html.light { ... }`.
 2. **2–4 px top rule** on team cards / record sections (`.records-section-rule`).
 3. **8–12 px round dot** in search palette, chart legends (`.f1k-team-dot`).
 4. **2 px left strip on chips** (`.driver-chip`).
-5. **Full bar fill** in record-card lead row (`.rec-bar-lead .rec-bar-fill`).
+5. **Full bar fill** in record-card lead row (`.card-bar-lead .card-bar-fill`).
 6. **Solid pill background** — rare, team-specific only.
 
 **Never** as panel background. The only exception is the
@@ -288,7 +288,7 @@ Four numeric cells divided by 1 px lines. 44 px condensed numbers.
   radius** — flagged for migration to 0.
 - `.blog-card` — editorial. 16:9 image + accent left rail. Title is
   sentence-case (the only card that is).
-- `.rec-card` — record hero card on the records hub. **This is the
+- `.card-accent` — record hero card on the records hub. **This is the
   pattern to follow** for any new "leaderboard" surface. Requires
   `--card-accent` CSS var.
 
@@ -331,7 +331,7 @@ even before bars load. Take the leader's team color as the section accent.
 Hero (breadcrumb → title → flag + country → meta pills → blurb) +
 track-map placeholder right. Then bar-set panel for track characteristics +
 twin callouts (lap record, next race) + records cards scoped to the circuit
-(recommend the rec-card pattern, not plain tables — see Patterns docs).
+(recommend the card-accent pattern, not plain tables — see Patterns docs).
 
 ### Calendar grid
 

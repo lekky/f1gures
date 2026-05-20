@@ -27,7 +27,7 @@ The canonical design reference for f1gures lives at `design-system/`.
 - Don't introduce new card / table variants. Five card classes and two
   table classes already exist — see `design-system/audit.html` for the
   drift to avoid and the migration order.
-- The records hero card pattern (`.rec-card` + `.rec-bars`) is the
+- The records hero card pattern (`.card-accent` + `.card-bars`) is the
   "colourful and dynamic" pattern to copy for any new leaderboard
   surface (circuit all-time records, home page top-3, etc.).
 - Team colour goes on a strip (3 px left), rule (2–4 px top), dot

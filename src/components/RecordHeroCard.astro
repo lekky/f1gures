@@ -81,69 +81,69 @@ const holderDriverImg = record.subjectType !== 'team' ? driverImg(holder?.driver
 const holderTeamLogo  = record.subjectType === 'team' ? teamLogo(holder?.constructorRef) : null;
 ---
 {holder && (
-  <a class="rec-card" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
-    <header class="rec-card-head">
-      <span class="rec-card-eyebrow">{record.title}</span>
-      <span class="rec-card-arrow" aria-hidden="true">↗</span>
+  <a class="card-accent" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
+    <header class="card-accent-head">
+      <span class="card-accent-eyebrow">{record.title}</span>
+      <span class="card-accent-arrow" aria-hidden="true">↗</span>
     </header>
 
-    <div class="rec-card-value">
-      <span class="rec-card-num">{big.num}</span>
-      {big.unit && <span class="rec-card-unit">{big.unit}</span>}
+    <div class="card-accent-value">
+      <span class="card-accent-num">{big.num}</span>
+      {big.unit && <span class="card-accent-unit">{big.unit}</span>}
     </div>
 
-    <div class="rec-card-holder">
-      <div class={`rec-card-avatar${holderDriverImg || holderTeamLogo ? ' rec-card-avatar-image' : ''}`}>
+    <div class="card-accent-holder">
+      <div class={`card-accent-avatar${holderDriverImg || holderTeamLogo ? ' card-accent-avatar-image' : ''}`}>
         {record.subjectType === 'team' ? (
           holderTeamLogo ? (
             <img src={holderTeamLogo} alt="" loading="lazy" />
           ) : (
             <>
-              <span class="rec-card-avatar-chip" style={`background: ${accent}`}></span>
-              <span class="rec-card-avatar-tag">LOGO</span>
+              <span class="card-accent-avatar-chip" style={`background: ${accent}`}></span>
+              <span class="card-accent-avatar-tag">LOGO</span>
             </>
           )
         ) : (
           holderDriverImg ? (
             <img src={holderDriverImg} alt="" loading="lazy" />
           ) : (
-            <span class="rec-card-avatar-tag">DRIVER</span>
+            <span class="card-accent-avatar-tag">DRIVER</span>
           )
         )}
       </div>
-      <div class="rec-card-holder-text">
-        <div class="rec-card-holder-name">
-          {holder.country && <Flag cc={holder.country} flag={holder.flag} name={holder.name} class="rec-card-flag" />}
+      <div class="card-accent-holder-text">
+        <div class="card-accent-holder-name">
+          {holder.country && <Flag cc={holder.country} flag={holder.flag} name={holder.name} class="card-accent-flag" />}
           <span>{holder.name}</span>
         </div>
-        {holder.context && <div class="rec-card-holder-ctx">{holder.context}</div>}
+        {holder.context && <div class="card-accent-holder-ctx">{holder.context}</div>}
       </div>
     </div>
 
-    <ol class="rec-bars">
+    <ol class="card-bars">
       {entries.map((e, i) => {
         const v = splitValue(e.valueLabel);
         const width = (e.value / maxValue) * 100;
         const isLead = i === 0;
         const rowColor = e.teamColor || 'var(--fg-3)';
         return (
-          <li class={`rec-bar${isLead ? ' rec-bar-lead' : ''}`}>
-            <span class="rec-bar-rank">{e.rank}</span>
-            <span class="rec-bar-cc">
-              {e.country ? <Flag cc={e.country} flag={e.flag} name={e.name} class="rec-bar-flag" /> : null}
+          <li class={`card-bar${isLead ? ' card-bar-lead' : ''}`}>
+            <span class="card-bar-rank">{e.rank}</span>
+            <span class="card-bar-cc">
+              {e.country ? <Flag cc={e.country} flag={e.flag} name={e.name} class="card-bar-flag" /> : null}
             </span>
-            <div class="rec-bar-track">
-              <span class="rec-bar-fill" style={`width:${width}%; background:${rowColor};`}></span>
-              <span class="rec-bar-name">
+            <div class="card-bar-track">
+              <span class="card-bar-fill" style={`width:${width}%; background:${rowColor};`}></span>
+              <span class="card-bar-name">
                 {e.shortName || e.name}
               </span>
             </div>
-            <span class="rec-bar-value">
-              <span class="rec-bar-num">{v.num}</span>
-              {rowUnit && <span class="rec-bar-unit"> {rowUnit}</span>}
+            <span class="card-bar-value">
+              <span class="card-bar-num">{v.num}</span>
+              {rowUnit && <span class="card-bar-unit"> {rowUnit}</span>}
             </span>
             {record.subjectType === 'driver-at-circuit' && e.circuitName && (
-              <span class="rec-bar-sub">{e.circuitName}</span>
+              <span class="card-bar-sub">{e.circuitName}</span>
             )}
           </li>
         );
