@@ -2051,6 +2051,8 @@ if (postArchiveTeamYears > 0) {
     const latestTeamRef = doc.perSeason?.[0]?.constructorRef || null;
     entry.teamRef = latestTeamRef;
     entry.teamColor = latestTeamRef ? (teamColorByRef.get(latestTeamRef) || null) : null;
+    entry.currentSeasonYear = doc.perSeason?.[0]?.year ?? null;
+    entry.currentSeasonPoints = doc.perSeason?.[0]?.points ?? 0;
 
     for (const r of perRace) {
       if (!r.constructorRef) continue;

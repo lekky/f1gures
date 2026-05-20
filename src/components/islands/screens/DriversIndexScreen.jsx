@@ -163,7 +163,11 @@ export default function DriversIndexScreen({ drivers }) {
   const currentYear = new Date().getFullYear();
   const currentDrivers = drivers
     .filter(d => d.lastYear >= currentYear)
-    .sort((a, b) => b.championships - a.championships || b.wins - a.wins);
+    .sort((a, b) =>
+      (b.currentSeasonPoints ?? 0) - (a.currentSeasonPoints ?? 0)
+      || b.championships - a.championships
+      || b.wins - a.wins
+    );
 
   const filtered = filterItems(drivers, { search });
   const sorted = (() => {
