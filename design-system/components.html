@@ -483,7 +483,7 @@
     <section class="ds-section" id="tables">
       <div class="ds-section-head"><h2>14 · Tables</h2><span class="rule"></span></div>
 
-      <p class="ds-prose">F1gures ships <strong>two table classes</strong>: <code>.tbl</code> for live data screens with sortable columns + hover affordances; <code>.data-table</code> for prerendered detail pages (race results, historical winners). They have different paddings, different header styles, different row hovers. See <a href="audit.html#tables">Audit · tables</a> for the proposed unification.</p>
+      <p class="ds-prose">F1gures ships <strong>one table base</strong>: <code>.tbl</code> for live data screens with sortable columns + hover affordances, and a <code>.tbl-static</code> modifier for prerendered detail pages (race results, historical winners) that turns off hover, the row chevron, and the 720&nbsp;px min-width. The legacy <code>.data-table</code> class was retired in <a href="audit.html#tables">audit PR 4</a>.</p>
 
       <h3>.tbl — sortable, interactive</h3>
       <div class="panel panel-tight" style="overflow:hidden;">
@@ -538,13 +538,13 @@
         </table>
       </div>
 
-      <h3>.data-table — prerendered, read-only</h3>
+      <h3>.tbl.tbl-static — prerendered, read-only</h3>
       <div class="panel panel-tight">
         <div style="padding: 12px 14px;">
-          <table class="data-table">
+          <table class="tbl tbl-static">
             <thead><tr><th>Year</th><th>Race</th><th>Winner</th><th>Team</th><th class="right">Fastest Lap</th></tr></thead>
             <tbody>
-              <tr><td>2025</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">George Russell</a></td><td><a href="#" class="inline-link">Mercedes</a></td><td class="right">—</td></tr>
+              <tr><td>2025</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">George Russell</a></td><td><a href="#" class="inline-link">Mercedes</a></td><td class="right">-</td></tr>
               <tr><td>2024</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">Max Verstappen</a></td><td><a href="#" class="inline-link">Red Bull</a></td><td class="right">1:14.856</td></tr>
               <tr><td>2023</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">Max Verstappen</a></td><td><a href="#" class="inline-link">Red Bull</a></td><td class="right">1:14.481</td></tr>
               <tr><td>2019</td><td><a href="#" class="inline-link">Canadian Grand Prix</a></td><td><a href="#" class="inline-link">Lewis Hamilton</a></td><td><a href="#" class="inline-link">Mercedes</a></td><td class="right">1:13.078</td></tr>

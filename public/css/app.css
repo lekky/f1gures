@@ -858,31 +858,32 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .race-keylinks .t-mono { opacity: 0.6; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; }
 
 /* ============================================================
-   DATA TABLE (shared)
-   Used by DriverPage, RacePage, RecordsTable. Links inside data
-   tables pick up the canonical inline-link affordance from the
-   CONTENT LINK AFFORDANCE section below.
+   STATIC TABLE MODIFIER
+   .tbl.tbl-static is the read-only variant of .tbl - used by
+   DriverPage, RacePage (RaceResultsBody), CircuitPage, TeamPage
+   for prerendered detail-page tables. Turns off hover, zebra
+   tinting, the row chevron, and the .tbl min-width that forces
+   horizontal scroll on mobile. The cell-color modifiers
+   (.is-champ-cell / .is-win-cell) are scoped under .tbl so they
+   work in both interactive (.tbl) and static (.tbl.tbl-static)
+   contexts.
+   Migrated from .data-table in audit PR 4.
    ============================================================ */
-.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.data-table th, .data-table td { padding: 8px 12px; border-bottom: 1px solid var(--line-1); text-align: left; }
-.data-table th {
-  font-family: var(--f-display);
-  font-weight: 600;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg-3);
-  background: var(--bg-2);
-  position: sticky;
-  top: 0;
-}
-.data-table tr:last-child td { border-bottom: 0; }
-.data-table .right { text-align: right; }
-.data-table .is-champ-cell,
-.data-table .is-win-cell { color: var(--accent); font-weight: 700; }
+.tbl.tbl-static { min-width: 0; }
+.tbl.tbl-static tbody tr { cursor: default; }
+.tbl.tbl-static tbody tr:hover { background: transparent; }
+.tbl.tbl-static tbody tr.clickable td:last-child::after { content: none; }
 
+.tbl .is-champ-cell,
+.tbl .is-win-cell { color: var(--accent); font-weight: 700; }
+
+/* Mobile: soften the .tbl default 12 px cell padding for static tables;
+   detail pages carry dense per-season / per-race data and the global
+   .tbl spacing eats too much real estate on phones. Halfway between the
+   old .data-table 6x8 and the .tbl 12. */
 @media (max-width: 720px) {
-  .data-table th, .data-table td { padding: 6px 8px; }
+  .tbl.tbl-static th,
+  .tbl.tbl-static td { padding: 8px 10px; }
 }
 
 /* ============================================================
@@ -1049,7 +1050,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
    `text-decoration: none` on any selector in this list, fix the rule,
    don't reintroduce `!important`. */
 :is(
-  .data-table a,
+  .tbl.tbl-static a,
   .race-hero-circuit-link,
   .podium-name a,
   .podium-team a,
@@ -1072,7 +1073,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
 }
 
 :is(
-  .data-table a,
+  .tbl.tbl-static a,
   .race-hero-circuit-link,
   .podium-name a,
   .podium-team a,
@@ -1088,7 +1089,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .f1-link
 ):hover,
 :is(
-  .data-table a,
+  .tbl.tbl-static a,
   .race-hero-circuit-link,
   .driver-hero-team a,
   .inline-link,
