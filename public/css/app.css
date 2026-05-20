@@ -39,6 +39,29 @@
 
   /* Layout */
   --nav-h: 56px;
+
+  /* Spacing - 4-unit scale.
+     Tokenised in PR 1 (design-system/audit.html · #spacing).
+     Existing rules still use inline pixel values; new code SHOULD use these
+     and follow-up PRs will migrate consumers. */
+  --sp-0: 4px;
+  --sp-1: 6px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 14px;
+  --sp-5: 16px;
+  --sp-6: 20px;
+  --sp-7: 24px;
+  --sp-8: 32px;
+  --sp-10: 56px;
+
+  /* Motion - single easing (`ease`), three durations.
+     Tokenised in PR 1 (design-system/audit.html · #motion).
+     Existing transitions inline .08s / .12s / .15s / 120ms / 150ms / 300ms;
+     migrate gradually to these. */
+  --mo-fast: 80ms;
+  --mo: 120ms;
+  --mo-slow: 300ms;
 }
 
 /* ── Light mode ───────────────────────────────────────────── */
@@ -928,6 +951,25 @@ html.light .inline-link { text-decoration-color: rgba(0,0,0,0.25); }
 .f1-card-link:hover::after {
   opacity: 1;
 }
+
+/* --- Affordance exclusivity (design-system/audit.html · #affordance) ----
+   A given element should render EITHER a card ::after arrow (Pattern 1)
+   OR a row ::after chevron (Pattern 2 below) OR its own dedicated arrow
+   element (.rec-card-arrow on records hero cards) - never two.
+
+   Rules of thumb:
+   - Don't combine .race-card-link / .blog-card / .listing-card with
+     .f1-card-link (they each already provide the ::after arrow).
+   - Don't apply .f1-card-link to a .rec-card - the records card uses
+     its own .rec-card-arrow child element.
+   - .f1-row-link and .tbl tbody tr.clickable already share the row
+     ::after chevron via a single selector list; don't add a third
+     row-affordance class.
+
+   The rule below is a defensive guard: if .rec-card accidentally
+   picks up .f1-card-link, the generic ::after is suppressed so only
+   the .rec-card-arrow renders. */
+.rec-card.f1-card-link::after { content: none; }
 
 /* Older blog-article-nav-link layouts text-align right; keep arrow
    clear of the title text by leaving a small gutter. */

@@ -140,8 +140,8 @@ Every token below has a paired light-mode value in `html.light { ... }`.
 
 ## 3. Spacing
 
-Existing values cluster on a 4-unit scale. **Recommended tokens** (not yet
-in `app.css` — see Audit · spacing):
+4-unit scale. Tokens defined in `public/css/app.css`. Existing rules still
+inline pixel values in places; follow-up PRs are migrating consumers.
 
 | Token   | px | Use                                            |
 |---------|----|------------------------------------------------|
@@ -187,7 +187,8 @@ in `app.css` — see Audit · spacing):
 
 ## 5. Motion
 
-**Recommended tokens** (not yet in `app.css` — see Audit · motion):
+Tokens defined in `public/css/app.css`. Existing transitions still inline
+durations in places; follow-up PRs are migrating consumers.
 
 | Token       | Duration | Use                                          |
 |-------------|----------|----------------------------------------------|
@@ -369,8 +370,10 @@ See `audit.html` for full migration plan. **Don't add new instances of:**
 - A 3rd table class
 - `border-radius: 8px` (or any radius other than 0 / 50%)
 - `.inline-link` with a dotted border-bottom
-- Hardcoded motion durations — proxy via the recommended `--mo-*` tokens
-  even if they're not in `app.css` yet (you'll be ready when they land)
+- Hardcoded motion durations — use the `--mo-fast` / `--mo` / `--mo-slow`
+  tokens. Inline `.12s`/`.15s`/`300ms` values still exist in older rules;
+  migrate them when you touch surrounding code, don't add new ones.
+- Hardcoded spacing values — use the `--sp-N` tokens when adding new CSS.
 - Hardcoded hex anywhere
 
 ---
