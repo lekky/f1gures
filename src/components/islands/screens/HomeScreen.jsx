@@ -519,64 +519,71 @@ export default function HomeScreen({ data }) {
           {driversBlurb}
         </p>
       )}
-      <div style={{ background: 'var(--bg-2)', border: '1px solid var(--line-1)' }}>
-        {top3Drivers.map((row, i) => {
+      <div className="records-grid">
+        {top3Drivers.map(row => {
           const team = D.teamById(row.driver.team);
           const recent = recentRounds.map(r => driverPointsForRound(D, row.driver.id, r.round));
+          const maxPts = Math.max(...top3Drivers.map(r => r.points), 1);
           return (
             <a key={row.driver.id}
-               className="f1-row-link"
+               className="card-accent"
                href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}
-               style={{
-                 display: 'grid',
-                 gridTemplateColumns: mob ? '36px 52px minmax(0, 1fr) auto' : '52px 60px minmax(0, 1fr) minmax(0, 1.1fr) auto auto',
-                 alignItems: 'center',
-                 gap: mob ? 12 : 18,
-                 padding: mob ? '12px 14px' : '14px 18px',
-                 borderTop: i === 0 ? 'none' : '1px solid var(--line-1)',
-                 borderLeft: `3px solid ${team.color}`,
-                 textDecoration: 'none',
-                 color: 'inherit',
-                 background: 'var(--bg-2)',
-               }}>
-              <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, color: 'var(--fg-3)', letterSpacing: '0.02em' }}>
-                {String(row.position).padStart(2, '0')}
+               style={{ '--card-accent': team.color }}>
+              <header className="card-accent-head">
+                <span className="card-accent-eyebrow">P{row.position} · {team.name}</span>
+                <span className="card-accent-arrow" aria-hidden="true">↗</span>
+              </header>
+
+              <div className="card-accent-value">
+                <span className="card-accent-num">{row.points}</span>
+                <span className="card-accent-unit">pts</span>
               </div>
-              <div style={{ width: mob ? 52 : 60, lineHeight: 0 }}>
-                <DriverSilhouette data={D} driver={row.driver} height={mob ? 52 : 60} />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--f-display)', fontSize: 11, color: 'var(--fg-3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  {row.driver.first}
+
+              <div className="card-accent-holder">
+                <div className="card-accent-avatar card-accent-avatar-image" style={{ lineHeight: 0 }}>
+                  <DriverSilhouette data={D} driver={row.driver} height={48} />
                 </div>
-                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {row.driver.last}
-                </div>
-              </div>
-              {!mob && (
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 3, height: 14, background: team.color, flexShrink: 0 }} />
-                    <span style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {team.name}
-                    </span>
+                <div className="card-accent-holder-text">
+                  <div className="card-accent-holder-name">
+                    <Flag cc={row.driver.country} flag={row.driver.flag} className="card-accent-flag" />
+                    <span>{row.driver.first} {row.driver.last}</span>
                   </div>
-                  <div style={{ fontFamily: 'var(--f-mono)', fontSize: 11, color: 'var(--fg-3)', marginTop: 3, letterSpacing: '0.06em' }}>
-                    <Flag cc={row.driver.country} flag={row.driver.flag} /> · #{row.driver.num}
+                  <div className="card-accent-holder-ctx">
+                    #{row.driver.num} · {row.wins} {row.wins === 1 ? 'WIN' : 'WINS'} · {row.podiums} {row.podiums === 1 ? 'PODIUM' : 'PODIUMS'}
                   </div>
                 </div>
-              )}
+              </div>
+
+              <ol className="card-bars">
+                {top3Drivers.map((peer, i) => {
+                  const peerTeam = D.teamById(peer.driver.team);
+                  const width = (peer.points / maxPts) * 100;
+                  const isLead = peer.driver.id === row.driver.id;
+                  return (
+                    <li key={peer.driver.id} className={`card-bar${isLead ? ' card-bar-lead' : ''}`}>
+                      <span className="card-bar-rank">{i + 1}</span>
+                      <span className="card-bar-cc">
+                        <Flag cc={peer.driver.country} flag={peer.driver.flag} className="card-bar-flag" />
+                      </span>
+                      <div className="card-bar-track">
+                        <span className="card-bar-fill" style={{ width: `${width}%`, background: peerTeam.color }}></span>
+                        <span className="card-bar-name">{peer.driver.last}</span>
+                      </div>
+                      <span className="card-bar-value">
+                        <span className="card-bar-num">{peer.points}</span>
+                        <span className="card-bar-unit"> pts</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+
               {!mob && recent.length > 0 && (
-                <MiniChart values={recent} color={team.color} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 4 }}>
+                  <span className="t-mono" style={{ fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Last {recent.length} rounds</span>
+                  <MiniChart values={recent} color={team.color} width={120} height={26} />
+                </div>
               )}
-              <div style={{ textAlign: 'right', minWidth: 60 }}>
-                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, lineHeight: 1 }}>
-                  {row.points}
-                </div>
-                <div style={{ fontFamily: 'var(--f-mono)', fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.1em', marginTop: 3 }}>
-                  PTS{row.wins ? ` · ${row.wins}W` : ''}
-                </div>
-              </div>
             </a>
           );
         })}
@@ -592,53 +599,65 @@ export default function HomeScreen({ data }) {
           {teamsBlurb}
         </p>
       )}
-      <div style={{ background: 'var(--bg-2)', border: '1px solid var(--line-1)' }}>
-        {top3Teams.map((row, i) => {
+      <div className="records-grid">
+        {top3Teams.map(row => {
           const team = row.team;
           const recent = recentRounds.map(r => teamPointsForRound(D, team.id, r.round));
+          const maxPts = Math.max(...top3Teams.map(r => r.points), 1);
           return (
             <a key={team.id}
-               className="f1-row-link"
+               className="card-accent"
                href={urlFor({ name: 'team', id: team.id, ref: team.id })}
-               style={{
-                 display: 'grid',
-                 gridTemplateColumns: mob ? '32px 52px 1fr auto' : '40px 60px minmax(0, 1.5fr) minmax(0, 1fr) auto auto',
-                 alignItems: 'center',
-                 gap: mob ? 12 : 18,
-                 padding: mob ? '12px 14px' : '14px 18px',
-                 borderTop: i === 0 ? 'none' : '1px solid var(--line-1)',
-                 borderLeft: `3px solid ${team.color}`,
-                 textDecoration: 'none',
-                 color: 'inherit',
-                 background: 'var(--bg-2)',
-               }}>
-              <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, color: 'var(--fg-3)', letterSpacing: '0.02em' }}>
-                {String(row.position).padStart(2, '0')}
+               style={{ '--card-accent': team.color }}>
+              <header className="card-accent-head">
+                <span className="card-accent-eyebrow">P{row.position} · CONSTRUCTORS</span>
+                <span className="card-accent-arrow" aria-hidden="true">↗</span>
+              </header>
+
+              <div className="card-accent-value">
+                <span className="card-accent-num">{row.points}</span>
+                <span className="card-accent-unit">pts</span>
               </div>
-              <TeamLogo team={team} size={mob ? 52 : 60} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {team.name}
+
+              <div className="card-accent-holder">
+                <div className="card-accent-avatar card-accent-avatar-image" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <TeamLogo team={team} size={44} />
                 </div>
-                <div style={{ fontFamily: 'var(--f-mono)', fontSize: 11, color: 'var(--fg-3)', marginTop: 3, letterSpacing: '0.06em' }}>
-                  {row.wins} WINS · {row.podiums} PODIUMS
+                <div className="card-accent-holder-text">
+                  <div className="card-accent-holder-name"><span>{team.name}</span></div>
+                  <div className="card-accent-holder-ctx">
+                    {row.wins} {row.wins === 1 ? 'WIN' : 'WINS'} · {row.podiums} {row.podiums === 1 ? 'PODIUM' : 'PODIUMS'}
+                  </div>
                 </div>
               </div>
+
+              <ol className="card-bars">
+                {top3Teams.map((peer, i) => {
+                  const width = (peer.points / maxPts) * 100;
+                  const isLead = peer.team.id === team.id;
+                  return (
+                    <li key={peer.team.id} className={`card-bar${isLead ? ' card-bar-lead' : ''}`}>
+                      <span className="card-bar-rank">{i + 1}</span>
+                      <span className="card-bar-cc"></span>
+                      <div className="card-bar-track">
+                        <span className="card-bar-fill" style={{ width: `${width}%`, background: peer.team.color }}></span>
+                        <span className="card-bar-name">{peer.team.name}</span>
+                      </div>
+                      <span className="card-bar-value">
+                        <span className="card-bar-num">{peer.points}</span>
+                        <span className="card-bar-unit"> pts</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+
               {!mob && recent.length > 0 && (
-                <div style={{ minWidth: 0 }}>
-                  <div className="t-eyebrow" style={{ fontSize: 10, color: 'var(--fg-3)', marginBottom: 4 }}>Last {recent.length} Races</div>
-                  <MiniChart values={recent} color={team.color} width={120} height={28} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 4 }}>
+                  <span className="t-mono" style={{ fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Last {recent.length} rounds</span>
+                  <MiniChart values={recent} color={team.color} width={120} height={26} />
                 </div>
               )}
-              {!mob && <div />}
-              <div style={{ textAlign: 'right', minWidth: 60 }}>
-                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, lineHeight: 1 }}>
-                  {row.points}
-                </div>
-                <div style={{ fontFamily: 'var(--f-mono)', fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.1em', marginTop: 3 }}>
-                  PTS
-                </div>
-              </div>
             </a>
           );
         })}

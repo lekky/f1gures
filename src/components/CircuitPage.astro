@@ -142,6 +142,25 @@ const stats: StatRow[] = profile ? ([
 ].filter(Boolean) as StatRow[]) : [];
 
 const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '-' ? profile.lapRecord : null;
+
+// Resolve driver headshots for card-accent holders. Falls back to a
+// striped chip when no .webp exists (most historic drivers).
+function driverImg(ref: string | null | undefined): string | null {
+  if (!ref) return null;
+  const rel = `images/drivers/${ref}.webp`;
+  return existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null;
+}
+
+interface CircuitRecordCard {
+  id: 'most-wins' | 'most-poles';
+  title: string;
+  unit: string;
+  top: Array<{ driverRef: string; count: number; name: string }>;
+}
+const recordCards: CircuitRecordCard[] = [
+  circuit.mostWins.length  ? { id: 'most-wins',  title: 'Most Wins',  unit: 'win', top: circuit.mostWins  } : null,
+  circuit.mostPoles.length ? { id: 'most-poles', title: 'Most Poles', unit: 'pol', top: circuit.mostPoles } : null,
+].filter(Boolean) as CircuitRecordCard[];
 ---
 
 <div class="page">
@@ -230,32 +249,61 @@ const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '
     </div>
   )}
 
-  {(circuit.mostWins.length > 0 || circuit.mostPoles.length > 0) && (
+  {recordCards.length > 0 && (
     <>
       <div class="section-head"><h2>All-Time Records</h2><div class="section-rule"></div></div>
-      <div class="grid records-grid">
-        {circuit.mostWins.length > 0 && (
-          <div class="panel" style="padding: 14px 16px;">
-            <div class="t-eyebrow" style="margin-bottom: 10px">Most Wins</div>
-            {circuit.mostWins.map(w => (
-              <div class="record-row">
-                <a href={`/drivers/${w.driverRef}/`}>{w.name}</a>
-                <span class="t-mono record-count">{w.count}</span>
+      <div class="records-grid">
+        {recordCards.map(card => {
+          const leader = card.top[0];
+          const leaderImg = driverImg(leader.driverRef);
+          const maxValue = Math.max(...card.top.map(e => e.count), 1);
+          return (
+            <a class="card-accent" href={`/drivers/${leader.driverRef}/`}>
+              <header class="card-accent-head">
+                <span class="card-accent-eyebrow">{card.title} · {circuit.name.replace(/\s+Circuit$/i, '').replace(/\s+Grand Prix Circuit$/i, '')}</span>
+                <span class="card-accent-arrow" aria-hidden="true">↗</span>
+              </header>
+
+              <div class="card-accent-value">
+                <span class="card-accent-num">{leader.count}</span>
+                <span class="card-accent-unit">{leader.count === 1 ? card.unit : card.unit + 's'}</span>
               </div>
-            ))}
-          </div>
-        )}
-        {circuit.mostPoles.length > 0 && (
-          <div class="panel" style="padding: 14px 16px;">
-            <div class="t-eyebrow" style="margin-bottom: 10px">Most Poles</div>
-            {circuit.mostPoles.map(w => (
-              <div class="record-row">
-                <a href={`/drivers/${w.driverRef}/`}>{w.name}</a>
-                <span class="t-mono record-count">{w.count}</span>
+
+              <div class="card-accent-holder">
+                <div class={`card-accent-avatar${leaderImg ? ' card-accent-avatar-image' : ''}`}>
+                  {leaderImg
+                    ? <img src={leaderImg} alt="" loading="lazy" />
+                    : <span class="card-accent-avatar-tag">DRIVER</span>}
+                </div>
+                <div class="card-accent-holder-text">
+                  <div class="card-accent-holder-name"><span>{leader.name}</span></div>
+                  <div class="card-accent-holder-ctx">All-time leader at this circuit</div>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              <ol class="card-bars">
+                {card.top.map((e, i) => {
+                  const width = (e.count / maxValue) * 100;
+                  const isLead = i === 0;
+                  return (
+                    <li class={`card-bar${isLead ? ' card-bar-lead' : ''}`}>
+                      <span class="card-bar-rank">{i + 1}</span>
+                      <span class="card-bar-cc"></span>
+                      <div class="card-bar-track">
+                        <span class="card-bar-fill" style={`width:${width}%;`}></span>
+                        <span class="card-bar-name">{e.name}</span>
+                      </div>
+                      <span class="card-bar-value">
+                        <span class="card-bar-num">{e.count}</span>
+                        <span class="card-bar-unit"> {card.unit}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </a>
+          );
+        })}
       </div>
     </>
   )}

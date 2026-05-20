@@ -946,21 +946,21 @@ html.light .circuit-track .circuit-track-light { display: block; }
 /* --- Affordance exclusivity (design-system/audit.html · #affordance) ----
    A given element should render EITHER a card ::after arrow (Pattern 1)
    OR a row ::after chevron (Pattern 2 below) OR its own dedicated arrow
-   element (.rec-card-arrow on records hero cards) - never two.
+   element (.card-accent-arrow on records hero cards) - never two.
 
    Rules of thumb:
    - Don't combine .race-card-link / .blog-card / .listing-card with
      .f1-card-link (they each already provide the ::after arrow).
-   - Don't apply .f1-card-link to a .rec-card - the records card uses
-     its own .rec-card-arrow child element.
+   - Don't apply .f1-card-link to a .card-accent - the records card uses
+     its own .card-accent-arrow child element.
    - .f1-row-link and .tbl tbody tr.clickable already share the row
      ::after chevron via a single selector list; don't add a third
      row-affordance class.
 
-   The rule below is a defensive guard: if .rec-card accidentally
+   The rule below is a defensive guard: if .card-accent accidentally
    picks up .f1-card-link, the generic ::after is suppressed so only
-   the .rec-card-arrow renders. */
-.rec-card.f1-card-link::after { content: none; }
+   the .card-accent-arrow renders. */
+.card-accent.f1-card-link::after { content: none; }
 
 /* Older blog-article-nav-link layouts text-align right; keep arrow
    clear of the title text by leaving a small gutter. */
@@ -1875,7 +1875,12 @@ html.light .circuit-track .circuit-track-light { display: block; }
   width: 100%;
 }
 
-/* -------- record cards (top-5 with bar chart) -------- */
+/* -------- card-accent (records hero, circuit + home leaderboard surfaces) --------
+   Generic "colourful and dynamic" leaderboard card. Anatomy: accent top
+   rule (set via --card-accent), eyebrow, big 44 px value, holder block,
+   optional top-5 bar chart below. Originally shipped as .rec-card on the
+   records hub; generalised so circuit all-time records and home top-3
+   can reuse the pattern. */
 .records-grid {
   display: grid; gap: 14px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1883,7 +1888,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
 @media (max-width: 1024px) { .records-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px)  { .records-grid { grid-template-columns: 1fr; } }
 
-.rec-card {
+.card-accent {
   --card-accent: var(--accent);
   display: flex;
   flex-direction: column;
@@ -1896,18 +1901,18 @@ html.light .circuit-track .circuit-track-light { display: block; }
   color: inherit;
   transition: transform 0.12s ease, border-color 0.12s ease;
 }
-.rec-card:hover {
+.card-accent:hover {
   transform: translateY(-1px);
   border-color: var(--card-accent);
   border-top-color: var(--card-accent);
 }
-.rec-card-head {
+.card-accent-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
-.rec-card-eyebrow {
+.card-accent-eyebrow {
   font-family: var(--f-mono);
   font-size: 10px;
   letter-spacing: 0.1em;
@@ -1918,7 +1923,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.rec-card-arrow {
+.card-accent-arrow {
   font-family: var(--f-mono);
   font-size: 11px;
   color: var(--fg-2);
@@ -1929,11 +1934,11 @@ html.light .circuit-track .circuit-track-light { display: block; }
   justify-content: center;
   flex: 0 0 auto;
 }
-.rec-card:hover .rec-card-arrow {
+.card-accent:hover .card-accent-arrow {
   border-color: var(--card-accent);
   color: var(--card-accent);
 }
-.rec-card-value {
+.card-accent-value {
   font-family: var(--f-display);
   font-weight: 800;
   color: var(--card-accent);
@@ -1943,25 +1948,25 @@ html.light .circuit-track .circuit-track-light { display: block; }
   gap: 8px;
   margin-top: 2px;
 }
-.rec-card-num {
+.card-accent-num {
   font-size: 44px;
   letter-spacing: -0.02em;
 }
-.rec-card-unit {
+.card-accent-unit {
   font-family: var(--f-display);
   font-weight: 600;
   font-size: 18px;
   color: var(--fg-2);
   text-transform: lowercase;
 }
-.rec-card-holder {
+.card-accent-holder {
   display: flex;
   align-items: center;
   gap: 10px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line-1);
 }
-.rec-card-avatar {
+.card-accent-avatar {
   width: 48px; height: 48px;
   position: relative;
   flex: 0 0 auto;
@@ -1977,18 +1982,18 @@ html.light .circuit-track .circuit-track-light { display: block; }
   justify-content: center;
   overflow: hidden;
 }
-.rec-card-avatar-image { background: var(--bg-3); }
-.rec-card-avatar img {
+.card-accent-avatar-image { background: var(--bg-3); }
+.card-accent-avatar img {
   width: 100%; height: 100%;
   object-fit: cover;
   object-position: center top;
   display: block;
 }
-.rec-card-avatar-chip {
+.card-accent-avatar-chip {
   position: absolute;
   inset: 8px;
 }
-.rec-card-avatar-tag {
+.card-accent-avatar-tag {
   position: relative;
   font-family: var(--f-mono);
   font-size: 8px;
@@ -1999,20 +2004,20 @@ html.light .circuit-track .circuit-track-light { display: block; }
   border: 1px solid var(--line-1);
   z-index: 1;
 }
-.rec-card-flag {
+.card-accent-flag {
   width: 16px; height: 12px;
   object-fit: cover;
   display: inline-block;
   vertical-align: middle;
   border: 1px solid rgba(0,0,0,0.18);
 }
-.rec-card-holder-text {
+.card-accent-holder-text {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.rec-card-holder-name {
+.card-accent-holder-name {
   font-family: var(--f-display);
   font-weight: 700;
   font-size: 14px;
@@ -2023,20 +2028,20 @@ html.light .circuit-track .circuit-track-light { display: block; }
   gap: 6px;
   color: var(--fg-1);
 }
-.rec-card-holder-ctx {
+.card-accent-holder-ctx {
   font-family: var(--f-mono);
   font-size: 11px;
   color: var(--fg-3);
 }
 
-.rec-bars {
+.card-bars {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   gap: 4px;
 }
-.rec-bar {
+.card-bar {
   display: grid;
   grid-template-columns: 14px 20px 1fr auto;
   align-items: center;
@@ -2045,16 +2050,16 @@ html.light .circuit-track .circuit-track-light { display: block; }
   font-size: 11px;
   min-height: 22px;
 }
-.rec-bar-lead {
+.card-bar-lead {
   font-size: 12px;
   min-height: 26px;
 }
-.rec-bar-rank {
+.card-bar-rank {
   color: var(--fg-3);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
-.rec-bar-cc {
+.card-bar-cc {
   color: var(--fg-3);
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -2063,27 +2068,27 @@ html.light .circuit-track .circuit-track-light { display: block; }
   align-items: center;
   justify-content: center;
 }
-.rec-bar-flag {
+.card-bar-flag {
   width: 16px; height: 12px;
   object-fit: cover;
   display: block;
   border: 1px solid rgba(0,0,0,0.18);
 }
-.rec-bar-track {
+.card-bar-track {
   position: relative;
   height: 22px;
   background: var(--bg-3);
   overflow: hidden;
   min-width: 0;
 }
-.rec-bar-lead .rec-bar-track { height: 26px; }
-.rec-bar-fill {
+.card-bar-lead .card-bar-track { height: 26px; }
+.card-bar-fill {
   position: absolute;
   top: 0; left: 0; bottom: 0;
   opacity: 0.45;
 }
-.rec-bar-lead .rec-bar-fill { opacity: 1; }
-.rec-bar-name {
+.card-bar-lead .card-bar-fill { opacity: 1; }
+.card-bar-name {
   position: relative;
   z-index: 1;
   display: block;
@@ -2096,21 +2101,21 @@ html.light .circuit-track .circuit-track-light { display: block; }
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
-.rec-bar-lead .rec-bar-name {
+.card-bar-lead .card-bar-name {
   color: #fff;
   line-height: 26px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
-.rec-bar-value {
+.card-bar-value {
   font-variant-numeric: tabular-nums;
   color: var(--fg-1);
   font-weight: 600;
   white-space: nowrap;
 }
-.rec-bar-lead .rec-bar-value { color: var(--card-accent); }
-.rec-bar-unit { color: var(--fg-3); font-weight: 500; }
-.rec-bar-sub {
+.card-bar-lead .card-bar-value { color: var(--card-accent); }
+.card-bar-unit { color: var(--fg-3); font-weight: 500; }
+.card-bar-sub {
   grid-column: 3 / 4;
   font-size: 10px;
   color: var(--fg-3);
@@ -2125,10 +2130,10 @@ html.light .circuit-track .circuit-track-light { display: block; }
 
 /* Light mode: bar fills sit on a slightly different track and the lead row's
    white text would be invisible on light bars - swap to dark text instead. */
-html.light .rec-bar-track { background: var(--bg-3); }
-html.light .rec-bar-lead .rec-bar-name { color: #fff; }
-html.light .rec-bar-fill { opacity: 0.35; }
-html.light .rec-bar-lead .rec-bar-fill { opacity: 1; }
+html.light .card-bar-track { background: var(--bg-3); }
+html.light .card-bar-lead .card-bar-name { color: #fff; }
+html.light .card-bar-fill { opacity: 0.35; }
+html.light .card-bar-lead .card-bar-fill { opacity: 1; }
 html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
 
 /* Sub-page era toggle */
