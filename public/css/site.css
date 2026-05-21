@@ -28,7 +28,8 @@ a { color: inherit; }
   .nav-desktop  { display: none; }
   .botnav-mobile { display: flex; }
   .topbar-mobile { display: flex; }
-  .page { padding: 16px 14px 24px; }
+  /* Bottom padding clears the now-fixed botnav (height + safe-area) plus breathing room. */
+  .page { padding: 16px 14px calc(24px + var(--botnav-h) + env(safe-area-inset-bottom)); }
   .page-title { font-size: 28px !important; }
 }
 
