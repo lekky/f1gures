@@ -1913,6 +1913,25 @@ html.light .circuit-track .circuit-track-light { display: block; }
   justify-content: space-between;
   gap: 8px;
 }
+.card-accent-rank {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--fg-2);
+  flex: 0 0 auto;
+}
+.summary-card-link {
+  transition: border-color var(--mo, 120ms) ease;
+}
+.summary-card-link:hover {
+  border-color: var(--line-3);
+}
+.summary-card-link:hover .card-accent-arrow {
+  border-color: var(--line-3);
+  color: var(--fg-1);
+}
 .card-accent-eyebrow {
   font-family: var(--f-mono);
   font-size: 10px;
