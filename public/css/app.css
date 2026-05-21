@@ -39,6 +39,7 @@
 
   /* Layout */
   --nav-h: 56px;
+  --botnav-h: 56px;
 
   /* Spacing - 4-unit scale.
      Tokenised in PR 1 (design-system/audit.html · #spacing).
@@ -239,8 +240,9 @@ button { font-family: inherit; }
 #bmc-wbtn img { height: 20px !important; width: 20px !important; }
 #bmc-wbtn::after { content: 'Support'; }
 @media (max-width: 720px) {
-  /* On mobile keep it a touch smaller and out of the way of the bottom nav. */
-  #bmc-wbtn { height: 36px !important; padding: 0 12px !important; bottom: 80px !important; }
+  /* On mobile keep it a touch smaller and out of the way of the bottom nav.
+     Lift above nav height + safe-area inset + breathing room. */
+  #bmc-wbtn { height: 36px !important; padding: 0 12px !important; bottom: calc(var(--botnav-h) + env(safe-area-inset-bottom) + 24px) !important; }
   #bmc-wbtn img { height: 18px !important; width: 18px !important; }
   #bmc-wbtn::after { font-size: 11px; }
 }
@@ -274,17 +276,23 @@ button { font-family: inherit; }
   height: 1px; background: var(--line-1); margin: 4px 0;
 }
 
-/* Mobile bottom nav */
+/* Mobile bottom nav.
+   `position: fixed` (not sticky): sticky bottom: 0 misbehaves on iOS Safari
+   in combination with the dynamic URL bar — the nav drops to its natural
+   document position. Fixed + safe-area-inset keeps it pinned and clear of
+   the home indicator. Requires viewport-fit=cover in the viewport meta. */
 .botnav {
-  position: sticky; bottom: 0; z-index: 50;
-  background: rgba(8,8,10,0.95); backdrop-filter: blur(12px);
-  border-top: 1px solid var(--line-1);
-  display: flex; padding: 6px 4px 8px;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  background: rgba(8,8,10,0.92); backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line-2);
+  display: flex;
+  padding: var(--sp-1) var(--sp-0) calc(var(--sp-2) + env(safe-area-inset-bottom));
 }
 .botnav-item {
   flex: 1; background: transparent; border: 0;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 6px 4px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-0);
+  padding: var(--sp-1) var(--sp-0); cursor: pointer;
   font-family: var(--f-display); font-weight: 600;
   font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--fg-3);
