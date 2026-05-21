@@ -128,6 +128,7 @@ function EmptyHome({ mob }) {
   // reality.
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
+      <h1 className="sr-only">Formula 1 Live Standings, Calendar & Stats</h1>
       <div className="panel" style={{ position: 'relative', overflow: 'hidden', minHeight: 220 }}>
         <div className="kbd-corner kbd-tl"></div>
         <div className="kbd-corner kbd-tr"></div>
@@ -480,6 +481,7 @@ export default function HomeScreen({ data }) {
 
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
+      <h1 className="sr-only">F1 {D.seasonYear || ''} Live Standings, Calendar & Stats</h1>
       {isHistoric || !next
         ? <SeasonAtGlance data={D} cal={cal} standings={standings} mob={mob} />
         : <NextRacePanel data={D} cal={cal} next={next} mob={mob} />}
