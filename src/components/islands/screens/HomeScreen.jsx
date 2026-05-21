@@ -3,7 +3,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import {
-  SectionHead, SprintBadge, Countdown, DriverSilhouette, TeamLogo, useIsMobile, urlFor, navigate, fmtDateLong,
+  SectionHead, SprintBadge, Countdown, TeamLogo, useIsMobile, urlFor, navigate, fmtDateLong,
   circuitTz, zoneShort, Flag,
   MiniChart, lastNCompletedRounds, driverPointsForRound, teamPointsForRound,
 } from '../../../lib/shared.jsx';
@@ -149,29 +149,35 @@ function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
   const D = data;
   const accent = driver ? D.teamById(driver.team).color : (team ? team.color : 'var(--accent)');
   return (
-    <a className="panel f1-card-link" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block' }} href={href}>
+    <a className="panel summary-card-link" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block', position: 'relative' }} href={href}>
       <div className="panel-body">
-        <div className="t-eyebrow" style={{ color: 'var(--fg-3)', marginBottom: 8 }}>{kicker}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+          <div className="t-eyebrow" style={{ color: 'var(--fg-3)' }}>{kicker}</div>
+          <span className="card-accent-arrow" aria-hidden="true">↗</span>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           {driver && (
             <>
-              <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 30, lineHeight: 1, color: 'var(--fg-3)' }}>{driver.num}</div>
-              <div>
+              <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 28, lineHeight: 1, color: 'var(--fg-3)' }}>{driver.num}</div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, textTransform: 'uppercase' }}>{driver.first} {driver.last}</div>
-                <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 2 }}><Flag cc={driver.country} flag={driver.flag} /> {D.teamById(driver.team).name}</div>
+                <div className="t-mono" style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg-3)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Flag cc={driver.country} flag={driver.flag} />
+                  <span>{D.teamById(driver.team).name}</span>
+                </div>
               </div>
             </>
           )}
           {team && (
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, textTransform: 'uppercase' }}>{team.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 2 }}>{D.seasonYear || '2026'} Constructors</div>
+              <div className="t-mono" style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg-3)', marginTop: 4 }}>{D.seasonYear || '2026'} Constructors</div>
             </div>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', borderTop: '1px solid var(--line-1)', paddingTop: 10 }}>
-          <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 26, color: 'var(--fg-1)' }}>{big}</div>
-          <div style={{ fontSize: 11, color: 'var(--fg-3)', textAlign: 'right' }}>{sub}</div>
+          <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 28, color: 'var(--fg-1)' }}>{big}</div>
+          <div className="t-mono" style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg-3)', textAlign: 'right' }}>{sub}</div>
         </div>
       </div>
     </a>
@@ -523,14 +529,15 @@ export default function HomeScreen({ data }) {
         {top3Drivers.map(row => {
           const team = D.teamById(row.driver.team);
           const recent = recentRounds.map(r => driverPointsForRound(D, row.driver.id, r.round));
-          const maxPts = Math.max(...top3Drivers.map(r => r.points), 1);
+          const driverImg = row.driver.jolpicaId ? `/images/drivers/${row.driver.jolpicaId}.webp` : null;
           return (
             <a key={row.driver.id}
                className="card-accent"
                href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}
                style={{ '--card-accent': team.color }}>
               <header className="card-accent-head">
-                <span className="card-accent-eyebrow">P{row.position} · {team.name}</span>
+                <span className="card-accent-rank">{row.position}</span>
+                <span className="card-accent-eyebrow">Drivers</span>
                 <span className="card-accent-arrow" aria-hidden="true">↗</span>
               </header>
 
@@ -540,8 +547,10 @@ export default function HomeScreen({ data }) {
               </div>
 
               <div className="card-accent-holder">
-                <div className="card-accent-avatar card-accent-avatar-image" style={{ lineHeight: 0 }}>
-                  <DriverSilhouette data={D} driver={row.driver} height={48} />
+                <div className="card-accent-avatar card-accent-avatar-image">
+                  {driverImg && (
+                    <img src={driverImg} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  )}
                 </div>
                 <div className="card-accent-holder-text">
                   <div className="card-accent-holder-name">
@@ -553,30 +562,6 @@ export default function HomeScreen({ data }) {
                   </div>
                 </div>
               </div>
-
-              <ol className="card-bars">
-                {top3Drivers.map((peer, i) => {
-                  const peerTeam = D.teamById(peer.driver.team);
-                  const width = (peer.points / maxPts) * 100;
-                  const isLead = peer.driver.id === row.driver.id;
-                  return (
-                    <li key={peer.driver.id} className={`card-bar${isLead ? ' card-bar-lead' : ''}`}>
-                      <span className="card-bar-rank">{i + 1}</span>
-                      <span className="card-bar-cc">
-                        <Flag cc={peer.driver.country} flag={peer.driver.flag} className="card-bar-flag" />
-                      </span>
-                      <div className="card-bar-track">
-                        <span className="card-bar-fill" style={{ width: `${width}%`, background: peerTeam.color }}></span>
-                        <span className="card-bar-name">{peer.driver.last}</span>
-                      </div>
-                      <span className="card-bar-value">
-                        <span className="card-bar-num">{peer.points}</span>
-                        <span className="card-bar-unit"> pts</span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
 
               {!mob && recent.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 4 }}>
@@ -603,14 +588,14 @@ export default function HomeScreen({ data }) {
         {top3Teams.map(row => {
           const team = row.team;
           const recent = recentRounds.map(r => teamPointsForRound(D, team.id, r.round));
-          const maxPts = Math.max(...top3Teams.map(r => r.points), 1);
           return (
             <a key={team.id}
                className="card-accent"
                href={urlFor({ name: 'team', id: team.id, ref: team.id })}
                style={{ '--card-accent': team.color }}>
               <header className="card-accent-head">
-                <span className="card-accent-eyebrow">P{row.position} · CONSTRUCTORS</span>
+                <span className="card-accent-rank">{row.position}</span>
+                <span className="card-accent-eyebrow">Constructors</span>
                 <span className="card-accent-arrow" aria-hidden="true">↗</span>
               </header>
 
@@ -630,27 +615,6 @@ export default function HomeScreen({ data }) {
                   </div>
                 </div>
               </div>
-
-              <ol className="card-bars">
-                {top3Teams.map((peer, i) => {
-                  const width = (peer.points / maxPts) * 100;
-                  const isLead = peer.team.id === team.id;
-                  return (
-                    <li key={peer.team.id} className={`card-bar${isLead ? ' card-bar-lead' : ''}`}>
-                      <span className="card-bar-rank">{i + 1}</span>
-                      <span className="card-bar-cc"></span>
-                      <div className="card-bar-track">
-                        <span className="card-bar-fill" style={{ width: `${width}%`, background: peer.team.color }}></span>
-                        <span className="card-bar-name">{peer.team.name}</span>
-                      </div>
-                      <span className="card-bar-value">
-                        <span className="card-bar-num">{peer.points}</span>
-                        <span className="card-bar-unit"> pts</span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
 
               {!mob && recent.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 4 }}>
