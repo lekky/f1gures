@@ -38,6 +38,14 @@ const ogImage = existsSync(resolve(process.cwd(), 'public', ogImagePath.slice(1)
   ? ogImagePath
   : '/images/og-default.png';
 
+const headshotPath = `/images/drivers/${driver.driverRef}.webp`;
+const hasHeadshot = existsSync(resolve(process.cwd(), 'public', headshotPath.slice(1)));
+
+const latestSeason = (driver.perSeason || [])[0] || null;
+const lastTeam = latestSeason?.constructorName
+  ? { ref: latestSeason.constructorRef, name: latestSeason.constructorName }
+  : null;
+
 const personLd: any = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -55,6 +63,26 @@ const personLd: any = {
     name: 'Formula 1 Racing Driver',
   },
 };
+
+if (driver.url) {
+  personLd.sameAs = [driver.url.replace(/^http:\/\//, 'https://')];
+}
+if (hasHeadshot) {
+  personLd.image = `https://f1gures.app${headshotPath}`;
+}
+if (lastTeam) {
+  personLd.affiliation = {
+    '@type': 'SportsTeam',
+    name: lastTeam.name,
+    sport: 'Formula 1',
+    ...(lastTeam.ref ? { url: `https://f1gures.app/teams/${lastTeam.ref}/` } : {}),
+  };
+}
+if (championshipYears.length > 0) {
+  personLd.award = championshipYears.map(
+    y => `FIA Formula One World Drivers' Championship (${y})`
+  );
+}
 
 const jsonLd: any[] = [personLd];
 

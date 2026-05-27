@@ -52,12 +52,20 @@ const ORIGIN = 'https://f1gures.app';
 const canonical = ORIGIN + canonicalPath;
 const ogImageUrl = ogImage.startsWith('http') ? ogImage : ORIGIN + ogImage;
 
-// Combine breadcrumb + jsonLd into a single graph if both supplied
+// Combine breadcrumb + jsonLd into a single flat graph. If the page already
+// passed a `{ '@graph': [...] }` wrapper, spread its entries so we don't
+// end up with @graph nested inside @graph (technically valid but rejected
+// by some validators and harder for Google to parse).
 const graph: unknown[] = [];
-if (jsonLd) graph.push(jsonLd);
+if (jsonLd) {
+  if (typeof jsonLd === 'object' && jsonLd !== null && Array.isArray((jsonLd as any)['@graph'])) {
+    for (const item of (jsonLd as any)['@graph']) graph.push(item);
+  } else {
+    graph.push(jsonLd);
+  }
+}
 if (breadcrumb && breadcrumb.length > 0) {
   graph.push({
-    '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: breadcrumb.map((b, i) => ({
       '@type': 'ListItem',
