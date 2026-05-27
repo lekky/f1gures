@@ -52,19 +52,35 @@ const sportsEvent: any = {
   '@type': 'SportsEvent',
   name: `${race.name} ${race.year}`,
   startDate: race.date,
+  endDate: race.date,
   sport: 'Formula 1',
   url: `https://f1gures.app${canonicalPath}`,
   superEvent: {
     '@type': 'SportsEventSeries',
     name: 'FIA Formula One World Championship',
   },
+  organizer: {
+    '@type': 'SportsOrganization',
+    name: 'Fédération Internationale de l\'Automobile',
+    alternateName: 'FIA',
+    url: 'https://www.fia.com/',
+  },
 };
+
+if ((race as any).url) {
+  sportsEvent.sameAs = [(race as any).url.replace(/^http:\/\//, 'https://')];
+}
 
 if (race.circuit) {
   sportsEvent.location = {
     '@type': 'Place',
     name: race.circuit.name,
-    address: race.circuit.location ? `${race.circuit.location}, ${race.circuit.countryName}` : race.circuit.countryName,
+    address: {
+      '@type': 'PostalAddress',
+      ...(race.circuit.location ? { addressLocality: race.circuit.location } : {}),
+      ...(race.circuit.countryName ? { addressCountry: race.circuit.countryName } : {}),
+    },
+    ...(race.circuit.circuitRef ? { url: `https://f1gures.app/circuits/${race.circuit.circuitRef}/` } : {}),
   };
 }
 

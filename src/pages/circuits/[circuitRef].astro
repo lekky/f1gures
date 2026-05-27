@@ -26,18 +26,27 @@ const ogImage = existsSync(resolve(process.cwd(), 'public', ogImagePath.slice(1)
   ? ogImagePath
   : '/images/og-default.png';
 
-const jsonLd = {
+const jsonLd: any = {
   '@context': 'https://schema.org',
   '@type': 'Place',
   name: circuit.name,
-  address: circuit.location ? `${circuit.location}, ${circuit.countryName}` : circuit.countryName,
+  address: {
+    '@type': 'PostalAddress',
+    ...(circuit.location ? { addressLocality: circuit.location } : {}),
+    ...(circuit.countryName ? { addressCountry: circuit.countryName } : {}),
+  },
   geo: (circuit.lat != null && circuit.lng != null) ? {
     '@type': 'GeoCoordinates',
     latitude: circuit.lat,
     longitude: circuit.lng,
+    ...(circuit.alt != null ? { elevation: circuit.alt } : {}),
   } : undefined,
   url: `https://f1gures.app${canonicalPath}`,
 };
+
+if (circuit.url) {
+  jsonLd.sameAs = [circuit.url.replace(/^http:\/\//, 'https://')];
+}
 
 const breadcrumb = [
   { name: 'Home', path: '/' },

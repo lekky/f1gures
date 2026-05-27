@@ -139,6 +139,22 @@ const jsonLd: any = {
 if (team.career.firstYear) {
   jsonLd.foundingDate = String(team.career.firstYear);
 }
+if (team.nationality) {
+  jsonLd.nationality = team.nationality;
+}
+if (team.url) {
+  jsonLd.sameAs = [team.url.replace(/^http:\/\//, 'https://')];
+}
+if (team.career.championships > 0) {
+  jsonLd.award = `${team.career.championships} FIA Formula One World Constructors' Championship${team.career.championships === 1 ? '' : 's'}`;
+}
+if (Array.isArray(team.topDrivers) && team.topDrivers.length > 0) {
+  jsonLd.athlete = team.topDrivers.slice(0, 5).map((d: any) => ({
+    '@type': 'Person',
+    name: d.name,
+    ...(d.driverRef ? { url: `https://f1gures.app/drivers/${d.driverRef}/` } : {}),
+  }));
+}
 
 const breadcrumb = [
   { name: 'Home', path: '/' },
