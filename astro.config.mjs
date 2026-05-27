@@ -4,6 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import mdx from '@astrojs/mdx';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { buildLastmodMap } from './scripts/sitemap-lastmod.mjs';
 
 const ORIGIN = 'https://f1gures.app';
 
@@ -14,6 +15,12 @@ const teamsIndexPath = resolve('./public/data/archive/_teams-index.json');
 const teamPages = existsSync(teamsIndexPath)
   ? JSON.parse(readFileSync(teamsIndexPath, 'utf8')).map(t => `${ORIGIN}/teams/${t.constructorRef}/`)
   : [];
+
+// URL → lastmod date for every prerendered page. The serialize hook reads
+// this so Google sees a real freshness signal per URL (drivers/teams pick
+// up the date of their most recent race; races use their race date; blog
+// posts use updatedAt/publishedAt; listing pages track the latest race).
+const lastmodMap = buildLastmodMap();
 
 // https://astro.build/config
 export default defineConfig({
@@ -27,7 +34,13 @@ export default defineConfig({
   integrations: [
     react(),
     mdx(),
-    sitemap({ customPages: teamPages }),
+    sitemap({
+      customPages: teamPages,
+      serialize(item) {
+        const lastmod = lastmodMap.get(item.url);
+        return lastmod ? { ...item, lastmod } : item;
+      },
+    }),
   ],
   vite: {
     build: {
