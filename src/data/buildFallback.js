@@ -344,22 +344,72 @@ export function buildFromYearJson(json, staticCircuits = {}) {
 
     completedRounds.forEach(r => {
       const res = results[r];
+      const ensure = (code) => {
+        if (driverPts[code] === undefined) {
+          driverPts[code] = 0; driverWins[code] = 0; driverPodiums[code] = 0;
+          driverFastest[code] = 0; driverPoles[code] = 0; driverDnfs[code] = 0;
+        }
+      };
+
+      // Prefer canonical per-driver points from the bundle's detail map -
+      // it's the authoritative value (correct sprint scoring, no
+      // fastest-lap +1 from 2025 onward, etc.). Fall back to the
+      // 25-18-15-12-10-8-6-4-2-1 + FL approximation only for older
+      // bundles that don't ship `detail[code].points`.
+      const detail = res.detail || null;
+      const hasCanonicalRacePts = detail && (res.order || []).some(c => detail[c] && typeof detail[c].points === 'number');
       (res.order || []).forEach((code, i) => {
-        if (driverPts[code] === undefined) { driverPts[code] = 0; driverWins[code] = 0; driverPodiums[code] = 0; driverFastest[code] = 0; driverPoles[code] = 0; driverDnfs[code] = 0; }
-        if (i < 10) driverPts[code] += POINTS[i];
+        ensure(code);
+        if (hasCanonicalRacePts) {
+          driverPts[code] += (detail[code] && typeof detail[code].points === 'number') ? detail[code].points : 0;
+        } else {
+          if (i < 10) driverPts[code] += POINTS[i];
+        }
         if (i === 0) driverWins[code] += 1;
         if (i < 3) driverPodiums[code] += 1;
       });
-      if (res.fastest && (res.order || []).indexOf(res.fastest) < 10) driverPts[res.fastest] = (driverPts[res.fastest] || 0) + 1;
-      if (res.fastest) driverFastest[res.fastest] = (driverFastest[res.fastest] || 0) + 1;
-      if (res.pole) driverPoles[res.pole] = (driverPoles[res.pole] || 0) + 1;
-      if (res.sprintWinner) {
+      // Legacy FL +1 bonus only when we're already using the legacy
+      // approximation - canonical points already include it (or don't,
+      // per current FIA rules).
+      if (!hasCanonicalRacePts && res.fastest && (res.order || []).indexOf(res.fastest) < 10) {
+        driverPts[res.fastest] = (driverPts[res.fastest] || 0) + 1;
+      }
+      if (res.fastest) { ensure(res.fastest); driverFastest[res.fastest] += 1; }
+      if (res.pole) { ensure(res.pole); driverPoles[res.pole] += 1; }
+
+      // Sprint: prefer the per-driver `sprintResults.detail[code].points`
+      // from the bundle. The previous fallback inferred sprint placings
+      // from the main race finishing order, which is just wrong - sprint
+      // order and race order are different sessions.
+      const sprint = res.sprintResults || null;
+      if (sprint && sprint.detail) {
+        Object.entries(sprint.detail).forEach(([code, info]) => {
+          if (info && typeof info.points === 'number') {
+            ensure(code);
+            driverPts[code] += info.points;
+          }
+        });
+      } else if (sprint && Array.isArray(sprint.order)) {
+        const SPRINT_POINTS = [8,7,6,5,4,3,2,1];
+        sprint.order.slice(0, 8).forEach((code, i) => {
+          ensure(code);
+          driverPts[code] += SPRINT_POINTS[i];
+        });
+      } else if (res.sprintWinner) {
+        // Last-resort approximation kept for bundles that only carry the
+        // sprint winner (very old / hand-curated). Known to be wrong for
+        // anyone other than the winner; preserved to avoid regressing
+        // historic data with no sprint detail at all.
         const sprintPoints = { [res.sprintWinner]: 8 };
         const others = (res.order || []).filter(c => c !== res.sprintWinner).slice(0, 7);
         others.forEach((c, i) => sprintPoints[c] = 7 - i);
-        Object.entries(sprintPoints).forEach(([c, p]) => driverPts[c] = (driverPts[c] || 0) + p);
+        Object.entries(sprintPoints).forEach(([c, p]) => {
+          ensure(c);
+          driverPts[c] += p;
+        });
       }
-      (res.dnfs || []).forEach(c => driverDnfs[c] = (driverDnfs[c] || 0) + 1);
+
+      (res.dnfs || []).forEach(c => { ensure(c); driverDnfs[c] += 1; });
       snapshots[r] = { ...driverPts };
     });
 
