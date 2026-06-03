@@ -413,18 +413,49 @@ export function buildFromYearJson(json, staticCircuits = {}) {
       snapshots[r] = { ...driverPts };
     });
 
-    const ranked = drivers.filter(d => d.team).map(d => ({
-      driver: d,
-      points: driverPts[d.id] || 0,
-      wins: driverWins[d.id] || 0,
-      podiums: driverPodiums[d.id] || 0,
-      fastestLaps: driverFastest[d.id] || 0,
-      poles: driverPoles[d.id] || 0,
-      dnfs: driverDnfs[d.id] || 0,
-    })).sort((a,b) => b.points - a.points || b.wins - a.wins);
+    // Post-drop championship snapshot. For seasons that used "best N of
+    // M results" rules (every year from 1950-1990 except a handful),
+    // summing per-race points overcounts the championship. The CSV
+    // importer ships `results[r].driverStandings[ref] = { points,
+    // position, wins }` taken from Ergast's driver_standings table,
+    // which is the FIA's official post-drop number snapshotted after
+    // each race. Prefer that for the final season totals; fall back to
+    // the per-race sum when the snapshot isn't shipped (hand-curated
+    // bundles, Jolpica current-season bundles - both already use modern
+    // all-rounds-count scoring, so the sum IS the FIA total).
+    const lastRoundSnap = lastRound != null && results[lastRound] && results[lastRound].driverStandings
+      ? results[lastRound].driverStandings
+      : null;
+    const ranked = drivers.filter(d => d.team).map(d => {
+      const snap = lastRoundSnap && lastRoundSnap[d.id];
+      return {
+        driver: d,
+        // Snapshot wins are championship wins (= same number); prefer
+        // them when present so the leader-by-points-then-by-wins
+        // tiebreak agrees with the FIA's recorded total.
+        points: snap ? snap.points : (driverPts[d.id] || 0),
+        wins: snap ? snap.wins : (driverWins[d.id] || 0),
+        podiums: driverPodiums[d.id] || 0,
+        fastestLaps: driverFastest[d.id] || 0,
+        poles: driverPoles[d.id] || 0,
+        dnfs: driverDnfs[d.id] || 0,
+      };
+    }).sort((a,b) => b.points - a.points || b.wins - a.wins);
 
-    const prevPts = prevRound ? snapshots[prevRound] : null;
-    const prevRanked = prevPts ? drivers.map(d => ({ id: d.id, points: prevPts[d.id] || 0 })).sort((a,b)=> b.points - a.points) : null;
+    // Position-change indicator: compare each driver's current rank to
+    // their rank after the previous round. Prefer the championship
+    // snapshot (which already encodes era-specific drop rules) over the
+    // per-race cumulative sum.
+    const prevSnap = prevRound != null && results[prevRound] && results[prevRound].driverStandings
+      ? results[prevRound].driverStandings
+      : null;
+    const prevPts = prevRound != null ? snapshots[prevRound] : null;
+    const prevPointsFor = (id) => prevSnap && prevSnap[id]
+      ? prevSnap[id].points
+      : (prevPts ? (prevPts[id] || 0) : 0);
+    const prevRanked = (prevSnap || prevPts)
+      ? drivers.map(d => ({ id: d.id, points: prevPointsFor(d.id) })).sort((a,b) => b.points - a.points)
+      : null;
     const prevRankMap = {};
     if (prevRanked) prevRanked.forEach((r, i) => prevRankMap[r.id] = i + 1);
     ranked.forEach((row, i) => {
@@ -433,6 +464,12 @@ export function buildFromYearJson(json, staticCircuits = {}) {
       row.change = prevP ? prevP - row.position : 0;
     });
 
+    // Constructor totals - same story as drivers. Prefer the FIA's
+    // post-drop snapshot when shipped; fall back to summing per-driver
+    // points (which is correct for modern seasons).
+    const lastRoundCSnap = lastRound != null && results[lastRound] && results[lastRound].constructorStandings
+      ? results[lastRound].constructorStandings
+      : null;
     const teamPts = {}, teamWins = {}, teamPodiums = {};
     teams.forEach(t => { teamPts[t.id] = 0; teamWins[t.id] = 0; teamPodiums[t.id] = 0; });
     ranked.forEach(r => {
@@ -440,29 +477,44 @@ export function buildFromYearJson(json, staticCircuits = {}) {
       teamWins[r.driver.team] = (teamWins[r.driver.team] || 0) + r.wins;
       teamPodiums[r.driver.team] = (teamPodiums[r.driver.team] || 0) + r.podiums;
     });
-    const teamRanked = teams.map(t => ({
-      team: t,
-      points: teamPts[t.id] || 0,
-      wins: teamWins[t.id] || 0,
-      podiums: teamPodiums[t.id] || 0,
-      drivers: drivers.filter(d => d.team === t.id),
-    })).sort((a,b)=> b.points - a.points || b.wins - a.wins);
+    const teamRanked = teams.map(t => {
+      const snap = lastRoundCSnap && lastRoundCSnap[t.id];
+      return {
+        team: t,
+        points: snap ? snap.points : (teamPts[t.id] || 0),
+        wins: snap ? snap.wins : (teamWins[t.id] || 0),
+        podiums: teamPodiums[t.id] || 0,
+        drivers: drivers.filter(d => d.team === t.id),
+      };
+    }).sort((a,b)=> b.points - a.points || b.wins - a.wins);
     teamRanked.forEach((t,i) => t.position = i+1);
 
+    // Per-round championship progression. Use the FIA snapshot per
+    // round if shipped (drop-rule-correct); fall back to the cumulative
+    // per-race sum otherwise.
+    const driverPointsAtRound = (id, r) => {
+      const snap = results[r] && results[r].driverStandings;
+      if (snap && snap[id]) return snap[id].points;
+      return (snapshots[r] && snapshots[r][id]) || 0;
+    };
+    const teamPointsAtRound = (tid, r) => {
+      const snap = results[r] && results[r].constructorStandings;
+      if (snap && snap[tid]) return snap[tid].points;
+      const raceSnap = snapshots[r] || {};
+      return drivers.filter(d => d.team === tid).reduce((sum, d) => sum + (raceSnap[d.id] || 0), 0);
+    };
     const progression = {};
     drivers.forEach(d => progression[d.id] = []);
     completedRounds.forEach(r => {
       drivers.forEach(d => {
-        progression[d.id].push({ round: r, points: (snapshots[r] && snapshots[r][d.id]) || 0 });
+        progression[d.id].push({ round: r, points: driverPointsAtRound(d.id, r) });
       });
     });
     const teamProgression = {};
     teams.forEach(t => teamProgression[t.id] = []);
     completedRounds.forEach(r => {
-      const snap = snapshots[r] || {};
       teams.forEach(t => {
-        const pts = drivers.filter(d => d.team === t.id).reduce((sum, d) => sum + (snap[d.id] || 0), 0);
-        teamProgression[t.id].push({ round: r, points: pts });
+        teamProgression[t.id].push({ round: r, points: teamPointsAtRound(t.id, r) });
       });
     });
 

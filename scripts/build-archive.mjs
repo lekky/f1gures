@@ -202,6 +202,7 @@ const races = readCsv('races');
 const results = readCsv('results');
 const constructors = readCsv('constructors');
 const driverStandings = readCsv('driver_standings');
+const constructorStandings = readCsv('constructor_standings');
 const status = readCsv('status');
 
 const racesById = new Map(races.map(r => [r.raceId, r]));
@@ -426,6 +427,23 @@ for (const r of results) {
   resultsByRace.get(r.raceId).push(r);
 }
 
+// Group championship-snapshot rows by raceId. Ergast/FIA's
+// driver_standings + constructor_standings tables store the post-drop
+// championship totals (with era-specific "best N results" rules already
+// applied) snapshotted after every race. Summing per-race points from
+// results.csv overcounts for drop-rule seasons (1950-1990); reading
+// these snapshots gives exact FIA totals.
+const driverStandingsByRace = new Map();
+for (const s of driverStandings) {
+  if (!driverStandingsByRace.has(s.raceId)) driverStandingsByRace.set(s.raceId, []);
+  driverStandingsByRace.get(s.raceId).push(s);
+}
+const constructorStandingsByRace = new Map();
+for (const s of constructorStandings) {
+  if (!constructorStandingsByRace.has(s.raceId)) constructorStandingsByRace.set(s.raceId, []);
+  constructorStandingsByRace.get(s.raceId).push(s);
+}
+
 const allYears = [...racesByYear.keys()].sort((a, b) => a - b);
 let seasonsWritten = 0, seasonsSkipped = 0;
 
@@ -566,7 +584,60 @@ for (const year of allYears) {
       .map(r => driverIdToRef.get(r.driverId))
       .filter(Boolean);
 
-    resultsObj[round] = { pole, fastest, order, grid, dnfs };
+    // Per-driver detail map. Mirrors the shape hand-curated bundles ship
+    // (position, grid, points, laps, status, time, fastestLap*) so the
+    // shared computeStandings can read `detail[code].points` directly —
+    // critical for historic seasons whose points system was NOT modern
+    // 25-18-15-12-10-8-6-4-2-1 + FL +1. Without this the legacy
+    // approximation in buildFallback inflates pre-2010 totals badly and
+    // gives the fastest-lap point in eras it was never awarded.
+    const detail = {};
+    for (const r of raceResults) {
+      const ref = driverIdToRef.get(r.driverId);
+      if (!ref) continue;
+      const pts = Number(r.points);
+      detail[ref] = {
+        position: r.positionText || null,
+        grid: toInt(r.grid),
+        points: Number.isFinite(pts) ? pts : 0,
+        laps: toInt(r.laps),
+        status: statusById.get(r.statusId) || null,
+        time: r.time && r.time !== '\\N' ? r.time : null,
+        fastestLap: r.fastestLapTime && r.fastestLapTime !== '\\N' ? r.fastestLapTime : null,
+        fastestLapNumber: r.fastestLap && r.fastestLap !== '\\N' ? toInt(r.fastestLap) : null,
+      };
+    }
+
+    // Post-drop championship snapshot after THIS race. Lets the listing
+    // standings render the official FIA total even for "best N of M"
+    // years (1950-1990) where summing per-race points overcounts.
+    const driverSnap = {};
+    for (const s of (driverStandingsByRace.get(race.raceId) || [])) {
+      const ref = driverIdToRef.get(s.driverId);
+      if (!ref) continue;
+      const pts = Number(s.points);
+      driverSnap[ref] = {
+        points: Number.isFinite(pts) ? pts : 0,
+        position: toInt(s.position),
+        wins: toInt(s.wins),
+      };
+    }
+    const constructorSnap = {};
+    for (const s of (constructorStandingsByRace.get(race.raceId) || [])) {
+      const c = constructorsById.get(s.constructorId);
+      if (!c) continue;
+      const pts = Number(s.points);
+      constructorSnap[c.constructorRef] = {
+        points: Number.isFinite(pts) ? pts : 0,
+        position: toInt(s.position),
+        wins: toInt(s.wins),
+      };
+    }
+
+    const round_entry = { pole, fastest, order, grid, dnfs, detail };
+    if (Object.keys(driverSnap).length) round_entry.driverStandings = driverSnap;
+    if (Object.keys(constructorSnap).length) round_entry.constructorStandings = constructorSnap;
+    resultsObj[round] = round_entry;
   }
 
   const seasonDoc = {
@@ -1613,7 +1684,6 @@ function taglineFor(position, winRate, wins) {
   return 'Best Result';
 }
 
-const constructorStandings = readCsv('constructor_standings');
 const standingsByConstructor = new Map();
 for (const s of constructorStandings) {
   if (!standingsByConstructor.has(s.constructorId)) standingsByConstructor.set(s.constructorId, []);
