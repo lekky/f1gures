@@ -105,7 +105,7 @@ export default function DriverStandingsScreen({ data }) {
                 <th className="sortable" onClick={() => toggleSort('driver')}>Driver<SortInd k="driver" /></th>
                 <th className="sortable" onClick={() => toggleSort('team')}>Team<SortInd k="team" /></th>
                 {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
-                <th className="right sortable" onClick={() => toggleSort('points')}>Pts<SortInd k="points" /></th>
+                <th className="right sortable" onClick={() => toggleSort('points')}>Pts<a className="th-guide-link" href="/guide/points-system/" onClick={(e) => e.stopPropagation()} aria-label="How F1 points work">?</a><SortInd k="points" /></th>
                 <th className="right sortable" onClick={() => toggleSort('wins')}>W<SortInd k="wins" /></th>
                 <th className="right sortable" onClick={() => toggleSort('podiums')}>Pod<SortInd k="podiums" /></th>
                 <th className="right sortable" onClick={() => toggleSort('fastest')}>FL<SortInd k="fastest" /></th>

@@ -2307,3 +2307,13 @@ html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
 .more-sheet-ic { font-size: 16px; color: var(--fg-3); }
 /* Desktop never shows the sheet/trigger (botnav itself is mobile-only). */
 @media (min-width: 721px) { .more-sheet, .more-backdrop { display: none; } }
+
+/* Small "?" info link in table headers (e.g. standings Pts -> points guide) */
+.th-guide-link {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; margin-left: 4px;
+  border: 1px solid var(--line-2); border-radius: 50%;
+  color: var(--fg-3); font-size: 9px; line-height: 1; font-weight: 700;
+  text-decoration: none; vertical-align: middle; cursor: pointer;
+}
+.th-guide-link:hover { color: var(--accent); border-color: var(--accent); }

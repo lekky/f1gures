@@ -38,7 +38,7 @@ export default function ConstructorStandingsScreen({ data }) {
                 <th>Team</th>
                 <th>Drivers</th>
                 {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
-                <th className="right">Points</th>
+                <th className="right">Points<a className="th-guide-link" href="/guide/points-system/" onClick={(e) => e.stopPropagation()} aria-label="How F1 points work">?</a></th>
                 <th className="right">Wins</th>
                 <th className="right">Podiums</th>
               </tr>
