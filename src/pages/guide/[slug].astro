@@ -1,0 +1,96 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { publishedGuidesSorted, resolveRelated, prevNext, isPublishedGuide } from '../../lib/guide';
+
+export async function getStaticPaths() {
+  const pages = (await getCollection('guide')).filter(isPublishedGuide);
+  return pages.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+
+interface Props { page: CollectionEntry<'guide'>; }
+const { page } = Astro.props;
+const { Content } = await page.render();
+
+const all = await getCollection('guide');
+const sorted = publishedGuidesSorted(all);
+const related = resolveRelated(page, all);
+const { prev, next } = prevNext(sorted, page.slug);
+
+const canonicalPath = `/guide/${page.slug}/`;
+const ORIGIN = 'https://f1gures.app';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Guide', path: '/guide/' },
+  { name: page.data.title, path: canonicalPath },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: page.data.title,
+  description: page.data.summary,
+  ...(page.data.updatedAt ? { dateModified: page.data.updatedAt.toISOString() } : {}),
+  author: { '@type': 'Organization', name: 'f1gures', url: ORIGIN + '/' },
+  publisher: {
+    '@type': 'Organization',
+    name: 'f1gures',
+    url: ORIGIN + '/',
+    logo: { '@type': 'ImageObject', url: ORIGIN + '/images/og-default.png' },
+  },
+  mainEntityOfPage: { '@type': 'WebPage', '@id': ORIGIN + canonicalPath },
+};
+---
+<BaseLayout
+  title={`${page.data.title} - F1 Beginner's Guide | f1gures`}
+  description={page.data.summary}
+  canonicalPath={canonicalPath}
+  ogType="article"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <article class="page guide-article">
+    <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/guide/">← Guide</a>
+
+    <div class="guide-article-head">
+      <div class="t-eyebrow">F1 Beginner's Guide</div>
+      <h1 class="page-title">{page.data.title}</h1>
+      <p class="guide-article-lede">{page.data.summary}</p>
+    </div>
+
+    <div class="guide-article-body">
+      <Content />
+    </div>
+
+    {related.length > 0 && (
+      <section class="guide-related">
+        <div class="section-head"><h2>Related</h2></div>
+        <div class="guide-grid">
+          {related.map((r) => (
+            <a class="panel guide-card" href={`/guide/${r.slug}/`}>
+              <span class="guide-card-title">{r.data.title}</span>
+              <span class="guide-card-sum">{r.data.summary}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {(prev || next) && (
+      <nav class="guide-pager" aria-label="Guide navigation">
+        {prev ? (
+          <a class="panel guide-pager-link" href={`/guide/${prev.slug}/`}>
+            <span class="t-eyebrow">Previous</span>
+            <span class="guide-pager-title">{prev.data.title}</span>
+          </a>
+        ) : <span></span>}
+        {next ? (
+          <a class="panel guide-pager-link guide-pager-next" href={`/guide/${next.slug}/`}>
+            <span class="t-eyebrow">Next</span>
+            <span class="guide-pager-title">{next.data.title}</span>
+          </a>
+        ) : <span></span>}
+      </nav>
+    )}
+  </article>
+</BaseLayout>
