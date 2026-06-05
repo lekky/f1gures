@@ -628,6 +628,9 @@ export default function HomeScreen({ data }) {
           );
         })}
       </div>
+      <a className="guide-cta" href="/guide/">
+        New to F1? Start with the beginner's guide <span className="arrow">→</span>
+      </a>
     </div>
   );
 }
