@@ -250,7 +250,7 @@ function NextRacePanel({ data, cal, next, mob }) {
             <span className="t-eyebrow" style={{ color: 'var(--accent)' }}>Next Race</span>
             <span style={{ flex: 1, height: 1, background: 'var(--line-1)' }}></span>
             <span className="t-eyebrow">Round {String(next.round).padStart(2, '0')}/{cal.length}</span>
-            {next.sprint && <SprintBadge />}
+            {next.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
           </div>
           <div className="t-display" style={{ fontSize: mob ? 38 : 56, marginBottom: 6 }}>
             {next.name.replace(' Grand Prix', '')}<span style={{ color: 'var(--accent)' }}>.</span>

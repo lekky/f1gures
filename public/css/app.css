@@ -483,6 +483,9 @@ button { font-family: inherit; }
   color: #fff; background: linear-gradient(90deg, var(--accent) 0%, #FF4500 100%);
   border-color: transparent;
 }
+/* Sprint badge as a link: lift above race-card stretch-link overlays so it stays clickable */
+.pill-sprint-link { position: relative; z-index: 2; text-decoration: none; cursor: pointer; }
+.pill-sprint-link:hover { filter: brightness(1.1); }
 .pill-live {
   color: #fff; background: var(--live); border-color: transparent;
   display: inline-flex; align-items: center; gap: 6px;
