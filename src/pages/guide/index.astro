@@ -1,0 +1,81 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { publishedGuidesSorted } from '../../lib/guide';
+
+const pages = publishedGuidesSorted(await getCollection('guide'));
+const alpha = [...pages].sort((a, b) => a.data.title.localeCompare(b.data.title));
+
+const title = 'F1 for Beginners - A Guide to Following the Race | f1gures';
+const description = 'New to Formula 1? Learn the race weekend, points, tyres, DRS, safety cars and strategy so you can follow every race like a regular.';
+const canonicalPath = '/guide/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Guide', path: '/guide/' },
+];
+
+const ORIGIN = 'https://f1gures.app';
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'F1 Beginner’s Guide',
+  url: ORIGIN + canonicalPath,
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: pages.length,
+    itemListElement: pages.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `${ORIGIN}/guide/${p.slug}/`,
+      name: p.data.title,
+    })),
+  },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page guide-hub">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">f1gures</div>
+        <h1 class="page-title">F1 for Beginners</h1>
+        <p class="page-sub">Everything you need to follow a Grand Prix and understand the commentary - the weekend format, points, tyres, strategy and the rules.</p>
+      </div>
+    </div>
+
+    <section class="guide-starthere">
+      <div class="section-head"><h2>Start here</h2></div>
+      <ol class="guide-reading-list">
+        {pages.map((p, i) => (
+          <li class="guide-reading-item">
+            <a class="panel guide-reading-link" href={`/guide/${p.slug}/`}>
+              <span class="guide-reading-num t-mono">{String(i + 1).padStart(2, '0')}</span>
+              <span class="guide-reading-text">
+                <span class="guide-reading-title">{p.data.title}</span>
+                <span class="guide-reading-sum">{p.data.summary}</span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="guide-browse">
+      <div class="section-head"><h2>Browse by topic</h2></div>
+      <div class="guide-grid">
+        {alpha.map((p) => (
+          <a class="panel guide-card" href={`/guide/${p.slug}/`}>
+            <span class="guide-card-title">{p.data.title}</span>
+            <span class="guide-card-sum">{p.data.summary}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  </div>
+</BaseLayout>
