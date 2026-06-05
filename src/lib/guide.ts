@@ -16,10 +16,10 @@ export function sortGuides<T extends GuideLike>(pages: T[]): T[] {
 }
 
 export function resolveRelated<T extends GuideLike>(page: T, all: T[]): T[] {
-  const bySlug = new Map(all.filter((p) => !p.data.draft).map((p) => [p.slug, p]));
+  const bySlug = new Map(all.filter(isPublishedGuide).map((p) => [p.slug, p]));
   return (page.data.related ?? [])
     .map((slug) => bySlug.get(slug))
-    .filter((p): p is T => Boolean(p) && p!.slug !== page.slug);
+    .filter((p): p is T => p != null && p.slug !== page.slug);
 }
 
 export function prevNext<T extends GuideLike>(sorted: T[], slug: string): { prev: T | null; next: T | null } {

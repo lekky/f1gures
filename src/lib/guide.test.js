@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isPublishedGuide, sortGuides, resolveRelated, prevNext } from './guide.ts';
+import { isPublishedGuide, sortGuides, resolveRelated, prevNext, publishedGuidesSorted } from './guide.ts';
 
 const mk = (slug, order, related = [], draft = false) => ({
   slug,
@@ -17,10 +17,8 @@ describe('isPublishedGuide', () => {
   it('keeps non-draft pages', () => {
     expect(isPublishedGuide(mk('drs', 7))).toBe(true);
   });
-  it('drops draft pages in production', () => {
-    // import.meta.env.PROD is false under vitest, so drafts are kept in dev/test.
-    // We assert the draft flag is the only thing that can hide a page.
-    expect(mk('secret', 99, [], true).data.draft).toBe(true);
+  it('keeps draft pages in non-production env (PROD is false under vitest)', () => {
+    expect(isPublishedGuide(mk('secret', 99, [], true))).toBe(true);
   });
 });
 
@@ -41,12 +39,25 @@ describe('resolveRelated', () => {
     const rel = resolveRelated(PAGES[0], PAGES); // drs -> ['overtaking','nope']
     expect(rel.map((p) => p.slug)).toEqual(['overtaking']); // 'nope' dropped
   });
-  it('drops draft targets', () => {
+  it('keeps draft targets in non-production env (PROD is false under vitest)', () => {
     const page = mk('x', 2, ['secret']);
-    expect(resolveRelated(page, PAGES)).toEqual([]);
+    expect(resolveRelated(page, PAGES).map((p) => p.slug)).toEqual(['secret']);
   });
   it('returns [] when related is missing', () => {
     expect(resolveRelated(mk('y', 3), PAGES)).toEqual([]);
+  });
+  it('drops the page itself if listed in related', () => {
+    const page = mk('drs', 7, ['drs', 'overtaking']);
+    const rel = resolveRelated(page, PAGES);
+    expect(rel.map((p) => p.slug)).toEqual(['overtaking']);
+  });
+});
+
+describe('publishedGuidesSorted', () => {
+  it('filters drafts (in PROD) by composing isPublishedGuide, then sorts by order', () => {
+    // In vitest PROD is false, so drafts are kept; assert sort order across all pages.
+    const sorted = publishedGuidesSorted(PAGES);
+    expect(sorted.map((p) => p.slug)).toEqual(['tyres', 'overtaking', 'drs', 'secret']);
   });
 });
 
