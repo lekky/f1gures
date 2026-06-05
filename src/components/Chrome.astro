@@ -148,7 +148,12 @@ const botActive =
       // Use a dedicated class for the open state so we don't clobber the
       // build-time `active` route highlight on More-section pages.
       trigger.classList.toggle('sheet-open', open);
-      if (open) { sheet.hidden = false; backdrop.hidden = false; }
+      if (open) {
+        sheet.hidden = false; backdrop.hidden = false;
+        // Move focus into the sheet so screen readers announce it on open.
+        var firstLink = sheet.querySelector('a');
+        if (firstLink) firstLink.focus();
+      }
       requestAnimationFrame(function () {
         sheet.classList.toggle('open', open);
         backdrop.classList.toggle('open', open);
