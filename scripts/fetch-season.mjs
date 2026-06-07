@@ -235,8 +235,12 @@ async function main() {
   const standingsList0 = standingsData.MRData.StandingsTable.StandingsLists[0];
   const lastCompletedRound = standingsList0 ? parseInt(standingsList0.round, 10) : 0;
   const todayISO = new Date().toISOString().slice(0, 10);
+  // Use <= so a race held *today* is eligible the moment its results land.
+  // r.round <= lastCompletedRound is the real gate (Jolpica only advances the
+  // standings round once results exist), and empty rounds are dropped below,
+  // so this can't pull a not-yet-run race - it only fixes the race-day lag.
   const completedRounds = calendarRaw
-    .filter(r => r.date < todayISO && r.round <= lastCompletedRound)
+    .filter(r => r.date <= todayISO && r.round <= lastCompletedRound)
     .map(r => r.round);
 
   // Patch statuses now that we know lastCompletedRound
