@@ -114,14 +114,14 @@ const botActive =
   <!-- Mobile "More" bottom sheet -->
   <div class="more-backdrop" data-more-backdrop hidden></div>
   <div id="more-sheet" class="more-sheet" data-more-sheet role="dialog" aria-modal="false" aria-label="More sections" hidden>
-    <div class="more-sheet-handle" aria-hidden="true"></div>
+    <div class="more-sheet-title" aria-hidden="true">More</div>
     <nav class="more-sheet-links">
-      <a class="more-sheet-link" href="/guide/"><span class="more-sheet-ic">?</span>Guide</a>
-      <a class="more-sheet-link" href="/circuits/"><span class="more-sheet-ic">○</span>Circuits</a>
-      <a class="more-sheet-link" href="/drivers/"><span class="more-sheet-ic">◇</span>Drivers</a>
-      <a class="more-sheet-link" href="/teams/"><span class="more-sheet-ic">▤</span>Teams</a>
-      <a class="more-sheet-link" href="/records/"><span class="more-sheet-ic">★</span>Records</a>
-      <a class="more-sheet-link" href="/blog/"><span class="more-sheet-ic">◈</span>Blog</a>
+      <a class="more-sheet-link" href="/guide/">Guide</a>
+      <a class="more-sheet-link" href="/circuits/">Circuits</a>
+      <a class="more-sheet-link" href="/drivers/">Drivers</a>
+      <a class="more-sheet-link" href="/teams/">Teams</a>
+      <a class="more-sheet-link" href="/records/">Records</a>
+      <a class="more-sheet-link" href="/blog/">Blog</a>
     </nav>
   </div>
   <SearchPalette client:load />
@@ -161,7 +161,7 @@ const botActive =
       if (!open) {
         setTimeout(function () {
           if (!sheet.classList.contains('open')) { sheet.hidden = true; backdrop.hidden = true; }
-        }, 220);
+        }, 320);
       }
     }
     trigger.addEventListener('click', function () {

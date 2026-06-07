@@ -49,13 +49,13 @@ const jsonLd = {
       </div>
     </div>
 
-    <section class="guide-starthere">
+    <section class="guide-section">
       <div class="section-head"><h2>Start here</h2></div>
       <ol class="guide-reading-list">
         {pages.map((p, i) => (
           <li class="guide-reading-item">
             <a class="panel guide-reading-link" href={`/guide/${p.slug}/`}>
-              <span class="guide-reading-num t-mono">{String(i + 1).padStart(2, '0')}</span>
+              <span class="guide-reading-num">{String(i + 1).padStart(2, '0')}</span>
               <span class="guide-reading-text">
                 <span class="guide-reading-title">{p.data.title}</span>
                 <span class="guide-reading-sum">{p.data.summary}</span>
@@ -66,11 +66,11 @@ const jsonLd = {
       </ol>
     </section>
 
-    <section class="guide-browse">
+    <section class="guide-section">
       <div class="section-head"><h2>Browse by topic</h2></div>
-      <div class="guide-grid">
+      <div class="records-grid">
         {alpha.map((p) => (
-          <a class="panel guide-card" href={`/guide/${p.slug}/`}>
+          <a class="panel f1-card-link guide-card" href={`/guide/${p.slug}/`}>
             <span class="guide-card-title">{p.data.title}</span>
             <span class="guide-card-sum">{p.data.summary}</span>
           </a>

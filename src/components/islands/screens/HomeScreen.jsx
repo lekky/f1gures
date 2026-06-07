@@ -628,7 +628,7 @@ export default function HomeScreen({ data }) {
           );
         })}
       </div>
-      <a className="guide-cta" href="/guide/">
+      <a className="btn btn-secondary" style={{ marginTop: 28, alignSelf: 'flex-start' }} href="/guide/">
         New to F1? Start with the beginner's guide <span className="arrow">→</span>
       </a>
     </div>

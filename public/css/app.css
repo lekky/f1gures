@@ -2240,41 +2240,42 @@ html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
 }
 
 /* ============================================================
-   GUIDE
+   GUIDE  (editorial long-form; prose body + pager reuse the
+   canonical blog system — see .blog-article-body / .blog-article-nav)
    ============================================================ */
-.guide-starthere, .guide-browse, .guide-related { margin-top: 28px; }
-.guide-reading-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.guide-section { margin-top: var(--sp-8); }
+
+/* Reading-order list — panel rows: mono index + label + summary.
+   Numbers stay mono/quiet (fg-4); accent is reserved for one cue per screen. */
+.guide-reading-list { list-style: none; padding: 0; margin: var(--sp-3) 0 0; display: grid; gap: var(--sp-2); }
 .guide-reading-link {
-  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
-  text-decoration: none; color: inherit;
+  display: flex; align-items: baseline; gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5); text-decoration: none; color: inherit;
+  transition: border-color var(--mo) ease;
 }
-.guide-reading-link:hover { border-color: var(--accent); }
-.guide-reading-num { font-size: 18px; color: var(--accent); font-weight: 700; min-width: 28px; }
-.guide-reading-text { display: flex; flex-direction: column; gap: 2px; }
+.guide-reading-link:hover { border-color: var(--line-3); }
+.guide-reading-num { font-family: var(--f-mono); font-size: 13px; color: var(--fg-4); flex: 0 0 auto; min-width: 22px; }
+.guide-reading-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .guide-reading-title { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: 15px; }
-.guide-reading-sum { color: var(--fg-3); font-size: 13px; }
+.guide-reading-sum { color: var(--fg-3); font-size: 13px; line-height: 1.45; }
 
-.guide-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
-.guide-card { display: flex; flex-direction: column; gap: 6px; padding: 16px; text-decoration: none; color: inherit; }
-.guide-card:hover { border-color: var(--accent); }
+/* Topic + related cards — layout reuses .records-grid; surface is .panel.f1-card-link */
+.guide-card { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-5); padding-right: var(--sp-7); text-decoration: none; color: inherit; transition: border-color var(--mo) ease; }
+.guide-card:hover { border-color: var(--line-3); }
 .guide-card-title { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: 14px; }
-.guide-card-sum { color: var(--fg-3); font-size: 12.5px; line-height: 1.45; }
-@media (max-width: 720px) { .guide-grid { grid-template-columns: 1fr; } }
+.guide-card-sum { color: var(--fg-3); font-size: 13px; line-height: 1.45; }
 
-.guide-article-head { margin-bottom: 18px; }
-.guide-article-lede { color: var(--fg-2); font-size: 16px; line-height: 1.55; margin-top: 8px; }
-.guide-article-body { max-width: 70ch; font-size: 15px; line-height: 1.7; color: var(--fg-2); }
-.guide-article-body h2 { font-family: var(--f-display); text-transform: uppercase; letter-spacing: 0.02em; font-size: 19px; margin: 28px 0 10px; color: var(--fg-1); }
-.guide-article-body p { margin: 0 0 14px; }
-.guide-article-body ul, .guide-article-body ol { margin: 0 0 14px; padding-left: 22px; }
-.guide-article-body li { margin: 4px 0; }
-.guide-article-body a { color: var(--accent); }
+/* Article reading column — matches the blog reading width (720px) */
+.guide-article { max-width: 720px; }
 
-.guide-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 28px; }
-.guide-pager-link { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; text-decoration: none; color: inherit; }
-.guide-pager-link:hover { border-color: var(--accent); }
-.guide-pager-next { text-align: right; }
-.guide-pager-title { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; font-size: 14px; }
+/* Article lede above the prose body */
+.guide-lede { color: var(--fg-2); font-size: 17px; line-height: 1.55; margin: var(--sp-2) 0 var(--sp-7); max-width: 65ch; }
+
+/* Small "?" help glyph next to a column label (links to a guide page).
+   Quiet hint-glyph tone (fg-4), accent on hover. No chrome — the
+   border-only system has no bordered-badge primitive. */
+.th-guide-link { color: var(--fg-4); font-size: 11px; font-weight: 700; margin-left: 4px; text-decoration: none; cursor: pointer; vertical-align: super; }
+.th-guide-link:hover, .th-guide-link:focus-visible { color: var(--accent); }
 
 /* ============================================================
    MOBILE "MORE" SHEET
@@ -2282,49 +2283,31 @@ html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
 .more-backdrop {
   position: fixed; inset: 0; z-index: 65;
   background: rgba(0,0,0,0.5);
-  opacity: 0; transition: opacity 0.2s ease;
+  opacity: 0; transition: opacity var(--mo) ease;
 }
 .more-backdrop.open { opacity: 1; }
 .more-sheet {
   position: fixed; left: 0; right: 0; z-index: 70;
   bottom: calc(var(--botnav-h) + env(safe-area-inset-bottom));
   background: var(--bg-2); border-top: 1px solid var(--line-2);
-  border-radius: 14px 14px 0 0;
-  padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
-  transform: translateY(110%); transition: transform 0.22s ease;
+  padding: var(--sp-3) var(--sp-3) calc(var(--sp-3) + env(safe-area-inset-bottom));
+  transform: translateY(110%); transition: transform var(--mo-slow) ease;
 }
 .more-sheet.open { transform: translateY(0); }
-.more-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); margin: 8px auto 12px; }
-.more-sheet-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.more-sheet-title {
+  font-family: var(--f-display); font-weight: 600; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3);
+  padding: var(--sp-1) var(--sp-1) var(--sp-2);
+}
+.more-sheet-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
 .more-sheet-link {
-  display: flex; align-items: center; gap: 10px; padding: 14px 14px;
+  display: flex; align-items: center; padding: var(--sp-4);
   text-decoration: none; color: var(--fg-1);
-  border: 1px solid var(--line-2); border-radius: 8px;
+  border: 1px solid var(--line-1);
   font-family: var(--f-display); font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.08em; font-size: 12px;
+  transition: border-color var(--mo) ease;
 }
-.more-sheet-link:active { border-color: var(--accent); }
-.more-sheet-ic { font-size: 16px; color: var(--fg-3); }
+.more-sheet-link:hover, .more-sheet-link:active { border-color: var(--line-3); }
 /* Desktop never shows the sheet/trigger (botnav itself is mobile-only). */
 @media (min-width: 721px) { .more-sheet, .more-backdrop { display: none; } }
-
-/* Small "?" info link in table headers (e.g. standings Pts -> points guide) */
-.th-guide-link {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 14px; height: 14px; margin-left: 4px;
-  border: 1px solid var(--line-2); border-radius: 50%;
-  color: var(--fg-3); font-size: 9px; line-height: 1; font-weight: 700;
-  text-decoration: none; vertical-align: middle; cursor: pointer;
-}
-.th-guide-link:hover { color: var(--accent); border-color: var(--accent); }
-
-/* Homepage "New to F1?" call-to-action linking the beginner guide */
-.guide-cta {
-  display: inline-flex; align-items: center; gap: 6px;
-  margin-top: 28px;
-  font-family: var(--f-display); font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.06em; font-size: 12px;
-  color: var(--accent); text-decoration: none;
-  border: 1px solid var(--line-2); border-radius: 999px; padding: 8px 16px;
-}
-.guide-cta:hover { border-color: var(--accent); }
