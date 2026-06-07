@@ -1,17 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { publishedGuidesSorted } from '../../lib/guide';
+import { publishedGuidesSorted, guideColor } from '../../lib/guide';
 
 const pages = publishedGuidesSorted(await getCollection('guide'));
-
-// Per-step accent colours: a vibrant spectrum across the reading order,
-// set inline as --card-accent (same data-colour pattern as the records hub's
-// --section-accent). Mid-tone hues chosen to read on both dark and light cards.
-const PATH_COLORS = [
-  '#E8002D', '#F2660A', '#E59400', '#C9A100', '#1FB257',
-  '#11B8A4', '#2E8FE6', '#3F5BD6', '#9333EA', '#E0277E',
-];
 
 const title = 'F1 for Beginners - A Guide to Following the Race | f1gures';
 const description = 'New to Formula 1? Learn the race weekend, points, tyres, DRS, safety cars and strategy so you can follow every race like a regular.';
@@ -65,7 +57,7 @@ const jsonLd = {
       <ol class="guide-path">
         {pages.map((p, i) => (
           <li class="guide-step-item">
-            <a class="guide-step" href={`/guide/${p.slug}/`} style={`--card-accent: ${PATH_COLORS[i % PATH_COLORS.length]}`}>
+            <a class="guide-step" href={`/guide/${p.slug}/`} style={`--card-accent: ${guideColor(p.data.order)}`}>
               <span class="guide-step-num">{String(i + 1).padStart(2, '0')}</span>
               <span class="guide-step-text">
                 <span class="guide-step-title">{p.data.title}</span>

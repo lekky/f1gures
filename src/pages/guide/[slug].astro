@@ -1,7 +1,7 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { publishedGuidesSorted, resolveRelated, prevNext, isPublishedGuide } from '../../lib/guide';
+import { publishedGuidesSorted, resolveRelated, prevNext, isPublishedGuide, guideColor } from '../../lib/guide';
 
 export async function getStaticPaths() {
   const pages = (await getCollection('guide')).filter(isPublishedGuide);
@@ -67,9 +67,10 @@ const jsonLd = {
         <div class="section-head"><h2>Related</h2></div>
         <div class="records-grid">
           {related.map((r) => (
-            <a class="panel f1-card-link guide-card" href={`/guide/${r.slug}/`}>
+            <a class="guide-card" href={`/guide/${r.slug}/`} style={`--card-accent: ${guideColor(r.data.order)}`}>
               <span class="guide-card-title">{r.data.title}</span>
               <span class="guide-card-sum">{r.data.summary}</span>
+              <span class="guide-card-go" aria-hidden="true">»</span>
             </a>
           ))}
         </div>
