@@ -451,7 +451,53 @@ function Band({ tone = 'plain', mob, children }) {
   );
 }
 
-function FormGuide() { return null; } // TEMP stub - replaced in a later task
+function formGuideRounds(D, n = 6) {
+  const cal = D.calendar || [];
+  const done = cal.filter(r => D.results[r.round]);
+  return done.slice(-n).reverse().map(r => {
+    const res = D.results[r.round];
+    const winner = res && res.order && res.order.length ? D.driverById(res.order[0]) : null;
+    const team = winner ? D.teamById(winner.team) : null;
+    return {
+      round: r.round,
+      name: (r.name || '').replace(' Grand Prix', ''),
+      country: r.country,
+      flag: r.flag,
+      sprint: !!r.sprint,
+      winner: winner ? winner.last : '-',
+      color: team ? team.color : 'var(--accent)',
+    };
+  });
+}
+
+function FormGuide({ data, mob }) {
+  const rounds = formGuideRounds(data, 6);
+  if (!rounds.length) return null;
+  // Duplicate the list so the marquee can loop seamlessly (-50% translate).
+  const loop = [...rounds, ...rounds];
+  return (
+    <section className="home-band fg-band">
+      <div className="ticker">
+        <div className="tklabel">▸ Form Guide</div>
+        <div className="tkmask">
+          <div className="tktrack">
+            {loop.map((it, i) => (
+              <span className="tkitem" key={i} aria-hidden={i >= rounds.length ? 'true' : undefined}>
+                <span className="tk-rd">R{String(it.round).padStart(2, '0')}</span>
+                <span className="tk-fl"><Flag cc={it.country} flag={it.flag} /></span>
+                <span className="tk-gp">{it.name}</span>
+                {it.sprint && <span className="tk-spr">SPR</span>}
+                <span className="tk-strip" style={{ background: it.color }}></span>
+                <span className="tk-wl">Win</span>
+                <span className="tk-wn">{it.winner}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function HomeScreen({ data }) {
   const D = data;
