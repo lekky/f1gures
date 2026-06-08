@@ -502,7 +502,7 @@ export default function HomeScreen({ data }) {
       </Band>
 
       <Band tone="tint" mob={mob}>
-        <SectionHead title="Season Summary" />
+        <SectionHead variant="band" title="Season Summary" />
         <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(3, 1fr)' }}>
           <SummaryWidget data={D} kicker="Drivers' Leader"
             driver={leader.driver}
@@ -537,7 +537,7 @@ export default function HomeScreen({ data }) {
       <FormGuide data={D} mob={mob} />
 
       <Band tone="plain" mob={mob}>
-        <SectionHead title="Top 3 · Drivers" right={
+        <SectionHead variant="band" title="Top 3 · Drivers" right={
           <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-d' })}>
             View Full Standings <span className="arrow">→</span>
           </a>
@@ -598,7 +598,7 @@ export default function HomeScreen({ data }) {
       </Band>
 
       <Band tone="tint" mob={mob}>
-        <SectionHead title="Top 3 · Constructors" right={
+        <SectionHead variant="band" title="Top 3 · Constructors" right={
           <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-c' })}>
             View Full Standings <span className="arrow">→</span>
           </a>

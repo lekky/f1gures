@@ -210,9 +210,11 @@ export function Panel({ title, action, children, tight, style }) {
   );
 }
 
-export function SectionHead({ title, right }) {
+export function SectionHead({ title, right, variant }) {
+  const cls = variant === 'band' ? 'section-head section-head-band' : 'section-head';
   return (
-    <div className="section-head">
+    <div className={cls}>
+      {variant === 'band' && <span className="section-head-mark" aria-hidden="true"></span>}
       <h2>{title}</h2>
       <div className="section-rule"></div>
       {right}
