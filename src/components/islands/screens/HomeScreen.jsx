@@ -440,6 +440,19 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
   );
 }
 
+function Band({ tone = 'plain', mob, children }) {
+  // tone: 'plain' (page bg) | 'tint' (recessed bg)
+  return (
+    <section className={`home-band home-band-${tone}`}>
+      <div className={`home-band-inner ${mob ? 'home-band-inner-mob' : ''}`}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function FormGuide() { return null; } // TEMP stub - replaced in a later task
+
 export default function HomeScreen({ data }) {
   const D = data;
   const mob = useIsMobile();
@@ -480,54 +493,61 @@ export default function HomeScreen({ data }) {
   const lastWinnerTeam = lastWinner ? D.teamById(lastWinner.team) : null;
 
   return (
-    <div className={`page ${mob ? 'page-mob' : ''}`}>
+    <div className={mob ? 'home-mob' : ''}>
       <h1 className="sr-only">F1 {D.seasonYear || ''} Live Standings, Calendar & Stats</h1>
-      {isHistoric || !next
-        ? <SeasonAtGlance data={D} cal={cal} standings={standings} mob={mob} />
-        : <NextRacePanel data={D} cal={cal} next={next} mob={mob} />}
+      <Band tone="plain" mob={mob}>
+        {isHistoric || !next
+          ? <SeasonAtGlance data={D} cal={cal} standings={standings} mob={mob} />
+          : <NextRacePanel data={D} cal={cal} next={next} mob={mob} />}
+      </Band>
 
-      <SectionHead title="Season Summary" />
-      <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(3, 1fr)' }}>
-        <SummaryWidget data={D} kicker="Drivers' Leader"
-          driver={leader.driver}
-          big={`${leader.points} pts`}
-          sub={`+${leader.points - p2.points} over ${p2.driver.last}`}
-          href={urlFor({ name: 'driver', id: leader.driver.id, ref: leader.driver.jolpicaId })}
-        />
-        <SummaryWidget data={D} kicker="Constructors' Leader"
-          team={teamLeader.team}
-          big={`${teamLeader.points} pts`}
-          sub={`${teamLeader.wins} wins · ${teamLeader.podiums} podiums`}
-          href={urlFor({ name: 'standings-c' })}
-        />
-        {lastRace && lastWinner ? (
-          <SummaryWidget data={D} kicker="Last Race"
-            driver={lastWinner}
-            big={`P1`}
-            sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
-            href={urlFor({ name: 'race', year: D.seasonYear, round: lastRace.round })}
-            mob={mob}
+      <Band tone="tint" mob={mob}>
+        <SectionHead title="Season Summary" />
+        <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(3, 1fr)' }}>
+          <SummaryWidget data={D} kicker="Drivers' Leader"
+            driver={leader.driver}
+            big={`${leader.points} pts`}
+            sub={`+${leader.points - p2.points} over ${p2.driver.last}`}
+            href={urlFor({ name: 'driver', id: leader.driver.id, ref: leader.driver.jolpicaId })}
           />
-        ) : (
-          <SummaryWidget data={D} kicker="Last Race"
-            big="-"
-            sub="No results yet"
-            mob={mob}
+          <SummaryWidget data={D} kicker="Constructors' Leader"
+            team={teamLeader.team}
+            big={`${teamLeader.points} pts`}
+            sub={`${teamLeader.wins} wins · ${teamLeader.podiums} podiums`}
+            href={urlFor({ name: 'standings-c' })}
           />
+          {lastRace && lastWinner ? (
+            <SummaryWidget data={D} kicker="Last Race"
+              driver={lastWinner}
+              big={`P1`}
+              sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
+              href={urlFor({ name: 'race', year: D.seasonYear, round: lastRace.round })}
+              mob={mob}
+            />
+          ) : (
+            <SummaryWidget data={D} kicker="Last Race"
+              big="-"
+              sub="No results yet"
+              mob={mob}
+            />
+          )}
+        </div>
+      </Band>
+
+      <FormGuide data={D} mob={mob} />
+
+      <Band tone="plain" mob={mob}>
+        <SectionHead title="Top 3 · Drivers" right={
+          <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-d' })}>
+            View Full Standings <span className="arrow">→</span>
+          </a>
+        } />
+        {driversBlurb && (
+          <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--fg-2)', maxWidth: 780, marginBottom: 14 }}>
+            {driversBlurb}
+          </p>
         )}
-      </div>
-
-      <SectionHead title="Top 3 · Drivers" right={
-        <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-d' })}>
-          View Full Standings <span className="arrow">→</span>
-        </a>
-      } />
-      {driversBlurb && (
-        <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--fg-2)', maxWidth: 780, marginBottom: 14 }}>
-          {driversBlurb}
-        </p>
-      )}
-      <div className="records-grid">
+        <div className="records-grid">
         {top3Drivers.map(row => {
           const team = D.teamById(row.driver.team);
           const recent = recentRounds.map(r => driverPointsForRound(D, row.driver.id, r.round));
@@ -574,19 +594,21 @@ export default function HomeScreen({ data }) {
             </a>
           );
         })}
-      </div>
+        </div>
+      </Band>
 
-      <SectionHead title="Top 3 · Constructors" right={
-        <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-c' })}>
-          View Full Standings <span className="arrow">→</span>
-        </a>
-      } />
-      {teamsBlurb && (
-        <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--fg-2)', maxWidth: 780, marginBottom: 14 }}>
-          {teamsBlurb}
-        </p>
-      )}
-      <div className="records-grid">
+      <Band tone="tint" mob={mob}>
+        <SectionHead title="Top 3 · Constructors" right={
+          <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-c' })}>
+            View Full Standings <span className="arrow">→</span>
+          </a>
+        } />
+        {teamsBlurb && (
+          <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--fg-2)', maxWidth: 780, marginBottom: 14 }}>
+            {teamsBlurb}
+          </p>
+        )}
+        <div className="records-grid">
         {top3Teams.map(row => {
           const team = row.team;
           const recent = recentRounds.map(r => teamPointsForRound(D, team.id, r.round));
@@ -627,7 +649,8 @@ export default function HomeScreen({ data }) {
             </a>
           );
         })}
-      </div>
+        </div>
+      </Band>
     </div>
   );
 }

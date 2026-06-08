@@ -8,6 +8,11 @@
   --bg-3: #252629;
   --bg-hover: #2d2f36;
   --bg-elevated: #22232a;
+  /* Form Guide / ink band - constant dark in BOTH themes (no html.light override) */
+  --band-ink: #0c0c0d;
+  --band-ink-line: #232327;
+  --band-ink-fg: #cfcfd4;
+  --band-ink-fg-dim: #7c7c82;
 
   /* Borders */
   --line-1: #2c2e36;
@@ -312,6 +317,20 @@ button { font-family: inherit; }
 .page-title { font-family: var(--f-display); font-weight: 800; font-size: 36px; letter-spacing: 0; line-height: 1.02; text-transform: uppercase; }
 .page-mob .page-title { font-size: 28px; }
 .page-sub { color: var(--fg-3); font-size: 13px; margin-top: 4px; }
+
+/* ============================================================
+   HOME BANDS - full-bleed alternating sections (homepage only)
+   ============================================================ */
+.home-band { width: 100%; border-bottom: 1px solid var(--line-1); }
+.home-band-plain { background: var(--bg-1); }
+.home-band-tint  { background: var(--bg-0); }
+.home-band-inner { max-width: 1280px; margin: 0 auto; padding: 40px 20px; }
+.home-band-inner-mob { padding: 20px 14px; }
+/* Last band clears the mobile bottom nav. */
+.home-mob .home-band:last-child .home-band-inner-mob { padding-bottom: 28px; }
+@media (max-width: 720px) {
+  .home-band-inner { padding: 20px 14px; }
+}
 
 .section-head {
   display: flex; align-items: center; gap: 10px; margin: 24px 0 12px;
