@@ -10,7 +10,7 @@ import { buildFromYearJson } from './buildFallback.js';
 // from main race finishing order rather than the actual sprint result).
 //
 // The numbers below are the real 2026 World Championship standings after
-// 5 rounds, taken from the official F1 standings table. If these drift,
+// 6 rounds, taken from the official F1 standings table. If these drift,
 // the bundle has been refreshed and the expectations need updating - but
 // the home page Top 3 and the standings page MUST always agree, so any
 // change here should be matched by re-checking both screens.
@@ -26,20 +26,20 @@ describe('buildFromYearJson computeStandings (2026 bundle)', () => {
   const byTeam = Object.fromEntries(teams.map(r => [r.team.id, r]));
 
   it('uses canonical race points from results[r].detail.<code>.points', () => {
-    // ANT was P1 in 4 of 5 rounds. Without the canonical-points fix the
+    // ANT was P1 in 5 of 6 rounds. Without the canonical-points fix the
     // old code paid an extra +1 FL bonus on rounds where ANT had the
     // fastest lap, inflating the total.
-    expect(byCode.ANT.points).toBe(131);
-    expect(byCode.ANT.wins).toBe(4);
+    expect(byCode.ANT.points).toBe(156);
+    expect(byCode.ANT.wins).toBe(5);
   });
 
   it('uses canonical sprint points from sprintResults.detail.<code>.points', () => {
-    // RUS scored 0 race points at R5 (P11) but won the R5 sprint (8 pts).
-    // The old code would have given him a phantom 7 pts because he was
-    // also not in the main race top 8 - the only reliable signal is
-    // sprintResults.
+    // RUS's total includes sprint points that live only in
+    // sprintResults.detail.<code>.points. The old code derived sprint
+    // points from the main-race finishing order instead, so it miscounted
+    // anyone whose sprint result diverged from their race result.
     expect(byCode.RUS.points).toBe(88);
-    expect(byCode.HAM.points).toBe(72);
+    expect(byCode.HAM.points).toBe(90);
     expect(byCode.LEC.points).toBe(75);
   });
 
@@ -48,14 +48,14 @@ describe('buildFromYearJson computeStandings (2026 bundle)', () => {
     // /standings-constructors/ page both read computeStandings, so
     // these have to add up correctly.
     expect(byTeam.mercedes.points).toBe(byCode.ANT.points + byCode.RUS.points);
-    expect(byTeam.mercedes.points).toBe(219);
+    expect(byTeam.mercedes.points).toBe(244);
     expect(byTeam.ferrari.points).toBe(byCode.LEC.points + byCode.HAM.points);
-    expect(byTeam.ferrari.points).toBe(147);
+    expect(byTeam.ferrari.points).toBe(165);
   });
 
   it('ranks drivers in the order the official standings show', () => {
     const top5 = drivers.slice(0, 5).map(r => r.driver.id);
-    expect(top5).toEqual(['ANT', 'RUS', 'LEC', 'HAM', 'NOR']);
+    expect(top5).toEqual(['ANT', 'HAM', 'RUS', 'LEC', 'PIA']);
   });
 
   it('ranks constructors in the order the official standings show', () => {
