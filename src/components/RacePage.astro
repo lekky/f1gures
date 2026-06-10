@@ -76,6 +76,9 @@ import Flag from './Flag.astro';
 
 const { race } = Astro.props;
 const podium = race.results.filter(r => r.position != null && r.position <= 3);
+// Upcoming holding pages carry sprint as a boolean flag; completed sprint
+// weekends carry the sprint *results* array - both mean "sprint weekend".
+const isSprintWeekend = race.sprint === true || (Array.isArray(race.sprint) && race.sprint.length > 0);
 ---
 
 <div class="page">
@@ -96,8 +99,8 @@ const podium = race.results.filter(r => r.position != null && r.position <= 3);
           )}
           {race.circuit && race.date && <span class="sep">·</span>}
           {race.date && <span class="t-mono">{race.date}</span>}
-          {race.sprint === true && <span class="sep">·</span>}
-          {race.sprint === true && <span class="pill pill-sprint">⚡ Sprint</span>}
+          {isSprintWeekend && <span class="sep">·</span>}
+          {isSprintWeekend && <span class="pill pill-sprint">⚡ Sprint</span>}
         </div>
       </div>
       {race.results.length > 0 && podium.length > 0 && (
