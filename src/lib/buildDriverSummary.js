@@ -15,8 +15,10 @@ export function buildDriverSummary(driver, currentYear) {
       ? `since ${driver.career.firstYear}`
       : `between ${driver.career.firstYear} and ${driver.career.lastYear}`;
 
+  // position for the in-progress season is the live standings rank, not a
+  // won title - only completed years count as championships.
   const championshipYears = (driver.perSeason || [])
-    .filter(s => s.position === 1)
+    .filter(s => s.position === 1 && (currentYear == null || s.year < currentYear))
     .map(s => s.year)
     .sort((a, b) => a - b);
 

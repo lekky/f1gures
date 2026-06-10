@@ -21,8 +21,12 @@ const yearsPart = driver.career.firstYear === driver.career.lastYear
   : `${driver.career.firstYear}–${driver.career.lastYear}`;
 
 const completed = driver.career.races > 0;
+// perSeason.position for the in-progress year is the *current standings*
+// position, not a final result - exclude it so leading the championship in
+// June doesn't emit a World Championship award for a title nobody has won.
+const THIS_YEAR = new Date().getFullYear();
 const championshipYears = (driver.perSeason || [])
-  .filter(s => s.position === 1)
+  .filter(s => s.position === 1 && s.year < THIS_YEAR)
   .map(s => s.year)
   .sort((a, b) => a - b);
 const teamsRaced = Array.from(new Set((driver.perSeason || [])

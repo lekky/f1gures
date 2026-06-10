@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TeamPage from '../../components/TeamPage.astro';
 import { getTeamsIndex, getTeam } from '../../data/archive.js';
+import { computeStandings as computeSeasonStandings, roundPointsMap } from '../../lib/seasonStats.mjs';
 
 // Highest-numbered season bundle in public/data/ is the active championship
 // year. Used by TeamPage to flag a team as currently competing.
@@ -22,11 +23,11 @@ function getCurrentYear(): number | null {
 const currentYear = getCurrentYear();
 
 // Build-time computation of recent form (last 5 rounds points per driver) and
-// current championship standings. Mirrors the algorithm in src/lib/shared.jsx
-// and src/data/buildFallback.js so the prerendered HTML matches the React
-// MiniChart and Driver Standings table. Bundle results are keyed by driver
-// code (e.g. "VER"); we map driverRef → code via bundle.drivers.
-const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+// current championship standings. Uses the shared scoring engine in
+// src/lib/seasonStats.mjs - the same one the standings islands use - so the
+// prerendered HTML matches the React MiniChart and Driver Standings table.
+// Bundle results are keyed by driver code (e.g. "VER"); we map
+// driverRef → code via bundle.drivers.
 type RecentFormMap = Record<string, number[]>;
 type StandingsMap = Record<string, { position: number; points: number; wins: number }>;
 type BundleStats = { recentForm: RecentFormMap; standings: StandingsMap };
@@ -37,66 +38,26 @@ function buildBundleStats(year: number | null): BundleStats {
   const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
   const drivers = bundle.drivers || [];
   const results = bundle.results || {};
-  const codeByRef = new Map<string, string>();
   const refByCode = new Map<string, string>();
   for (const d of drivers) {
-    if (d.jolpicaId && d.id) {
-      codeByRef.set(d.jolpicaId, d.id);
-      refByCode.set(d.id, d.jolpicaId);
-    }
-  }
-  const allRounds = Object.keys(results)
-    .map(Number)
-    .filter(n => Number.isFinite(n))
-    .sort((a, b) => a - b);
-  const recentRounds = allRounds.slice(-5);
-
-  // Recent form
-  const form: RecentFormMap = {};
-  for (const [ref, code] of codeByRef) {
-    form[ref] = recentRounds.map(r => {
-      const res = results[r] || results[String(r)];
-      if (!res) return 0;
-      const order: string[] = res.order || [];
-      const pos = order.indexOf(code);
-      if (pos === -1) return 0;
-      let pts = F1_POINTS[pos] || 0;
-      if (res.fastest === code && pos < 10) pts += 1;
-      if (res.sprintWinner === code) pts += 8;
-      return pts;
-    });
+    if (d.jolpicaId && d.id) refByCode.set(d.id, d.jolpicaId);
   }
 
-  // Full-season points + wins per driver code
-  const pts: Record<string, number> = {};
-  const wins: Record<string, number> = {};
-  for (const r of allRounds) {
-    const res = results[r] || results[String(r)];
-    if (!res) continue;
-    const order: string[] = res.order || [];
-    order.forEach((code, i) => {
-      pts[code] = pts[code] || 0;
-      wins[code] = wins[code] || 0;
-      if (i < 10) pts[code] += F1_POINTS[i];
-      if (i === 0) wins[code] += 1;
-    });
-    if (res.fastest && order.indexOf(res.fastest) < 10) {
-      pts[res.fastest] = (pts[res.fastest] || 0) + 1;
-    }
-    if (res.sprintWinner) {
-      const sw = res.sprintWinner;
-      pts[sw] = (pts[sw] || 0) + 8;
-      const others = order.filter((c: string) => c !== sw).slice(0, 7);
-      others.forEach((c: string, i: number) => { pts[c] = (pts[c] || 0) + (7 - i); });
-    }
-  }
-  const ranked = [...refByCode.entries()]
-    .map(([code, ref]) => ({ ref, code, points: pts[code] || 0, wins: wins[code] || 0 }))
-    .sort((a, b) => b.points - a.points || b.wins - a.wins);
+  const season = computeSeasonStandings(bundle);
   const standings: StandingsMap = {};
-  ranked.forEach((row, i) => {
-    standings[row.ref] = { position: i + 1, points: row.points, wins: row.wins };
-  });
+  for (const row of season.drivers) {
+    const ref = refByCode.get(row.driver.id);
+    if (!ref) continue;
+    standings[ref] = { position: row.position, points: row.points, wins: row.wins };
+  }
+
+  // Recent form: race+sprint points per driver over the last 5 rounds.
+  const recentRounds = season.completedRounds.slice(-5);
+  const roundMaps = recentRounds.map((r: number) => roundPointsMap(results[r] || results[String(r)]));
+  const form: RecentFormMap = {};
+  for (const [code, ref] of refByCode) {
+    form[ref] = roundMaps.map((m: Record<string, number>) => m[code] || 0);
+  }
 
   return { recentForm: form, standings };
 }

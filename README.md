@@ -33,7 +33,7 @@ bundled from the [Ergast CSV dump](http://ergast.com/mrd/) at `data/history/`.
 │   │   └── shared.jsx               Panel, DriverCell, Countdown, urlFor,
 │   │                                useIsMobile, fmtDate, fmtDateLong, etc.
 │   └── data/
-│       └── buildFallback.js         Speculative 2026 grid + helpers
+│       └── buildFallback.js         buildFromYearJson(bundle) data factory
 │
 ├── public/
 │   ├── css/{app,site}.css           Design system + responsive overrides
@@ -95,7 +95,7 @@ PR 2 wires real season-aware data via build-time imports of
 `data/history/`.
 
 **Static lookup data** (circuit length, corners, longest straight, DRS zones,
-tyre deg, lap record, blurb): bundled in `src/data/buildFallback.js`.
+tyre deg, lap record, blurb): bundled in `src/data/circuitProfiles.js`.
 These don't change between seasons.
 
 **Driver career stats**: `public/data/careers/<jolpicaId>.json`,
@@ -131,9 +131,10 @@ or want to put a CDN in front.
 
 ## How it works under the hood
 
-- **Listing pages**: pure Astro. The page component imports `buildFallback()`,
-  passes the data object to a React island as a prop, Astro pre-renders the
-  resulting markup at build time. The island hydrates only the interactive
+- **Listing pages**: pure Astro. The page component imports the current-season
+  data object (`src/data/currentSeason.js`, built from the prebuild-synced
+  bundle by `buildFromYearJson`), passes it to a React island as a prop, and
+  Astro pre-renders the resulting markup at build time. The island hydrates only the interactive
   parts (sortable headers, Recharts charts, head-to-head dropdowns).
 - **Detail pages** (driver/race/circuit/team): still the legacy stack - plain
   HTML in `public/`, Babel compiles JSX in the browser, `js/api.js` fetches
