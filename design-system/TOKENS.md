@@ -99,7 +99,7 @@ Every token below has a paired light-mode value in `html.light { ... }`.
 | `.pos-2` | #C0C0C0 | P2 silver          |
 | `.pos-3` | #CD7F32 | P3 bronze          |
 
-### Team colors (2026 grid, from `src/data/buildFallback.js`)
+### Team colors (2026 grid, from `public/data/2026.json` + `teamColor()` in `scripts/build-archive.mjs`)
 
 | Team             | id        | short | hex     |
 |------------------|-----------|-------|---------|
