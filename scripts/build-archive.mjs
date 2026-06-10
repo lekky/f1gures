@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
+import { computeStandings as computeBundleSeasonStandings, sprintPointsMap } from '../src/lib/seasonStats.mjs';
 
 // ─── Static lookups ───────────────────────────────────────────────────
 // Hand-curated mappings that the Ergast CSVs don't carry - keep small.
@@ -1306,8 +1307,8 @@ for (const { year, path } of seasonFiles) {
       const teamRefByDriverCode = (id) => {
         const d = driverByCode(id);
         if (!d) return null;
-        const raw = d.team;
-        return (raw && TEAM_ALIAS[raw]) || raw || null;
+        const t = season.teams?.find(t => t.id === d.team);
+        return t?.jolpicaId || (d.team && TEAM_ALIAS[d.team]) || d.team || null;
       };
       const refOf = (id) => driverByCode(id)?.jolpicaId || null;
       const nameOf = (id) => {
@@ -1441,7 +1442,11 @@ for (const { year, path } of seasonFiles) {
 
     const detail = result.detail || {};
     const order = result.order || [];
-    const codes = new Set([...order, ...Object.keys(detail)]);
+    // Sprint points are stored separately from race points in the bundle
+    // (sprintResults.detail) - carry them on the perRace row so season
+    // totals include them. Sprint-only participants get a row too.
+    const sprintPts = sprintPointsMap(result);
+    const codes = new Set([...order, ...Object.keys(detail), ...Object.keys(sprintPts)]);
 
     for (const code of codes) {
       const d = driverByCode.get(code);
@@ -1453,7 +1458,9 @@ for (const { year, path } of seasonFiles) {
 
       const det = detail[code] || {};
       const team = teamById.get(d.team);
-      const constructorRef = HAND_CONSTRUCTOR_ALIAS[d.team] || d.team || null;
+      // Bundles carry the Ergast ref as jolpicaId - prefer it; the alias
+      // map is only a fallback for bundles that predate the field.
+      const constructorRef = team?.jolpicaId || HAND_CONSTRUCTOR_ALIAS[d.team] || d.team || null;
       const constructorName = team ? team.name : null;
 
       const positionText = det.position != null ? String(det.position) : null;
@@ -1475,6 +1482,7 @@ for (const { year, path } of seasonFiles) {
         positionText,
         positionOrder: positionNum,
         points: toFloat(det.points) || 0,
+        sprintPoints: sprintPts[code] || 0,
         laps: det.laps != null ? toInt(det.laps) : null,
         fastestLapRank: result.fastest === code ? 1 : null,
         fastestLapTime: det.fastestLap || null,
@@ -1486,8 +1494,10 @@ for (const { year, path } of seasonFiles) {
   }
 }
 
-// Pre-compute championship standings per bundle year by summing race points.
-// Used below to fill position for post-Ergast perSeason rows instead of null.
+// Pre-compute championship standings per bundle year via the shared scoring
+// engine (sprint-aware, wins countback on points ties - the same standings
+// the islands render). Used below to fill position for post-Ergast perSeason
+// rows instead of null.
 const bundleStandings = new Map(); // year → Map<driverRef, champPosition>
 for (const { year, path } of seasonFiles) {
   const season = JSON.parse(readFileSync(path, 'utf8'));
@@ -1496,17 +1506,11 @@ for (const { year, path } of seasonFiles) {
   for (const d of season.drivers || []) {
     if (d.id && d.jolpicaId) driverByCode.set(d.id, d);
   }
-  const totals = new Map(); // driverRef → totalPoints
-  for (const rData of Object.values(season.results)) {
-    for (const [code, det] of Object.entries(rData.detail || {})) {
-      const d = driverByCode.get(code);
-      if (!d) continue;
-      const pts = parseFloat(det.points) || 0;
-      totals.set(d.jolpicaId, (totals.get(d.jolpicaId) || 0) + pts);
-    }
+  const posMap = new Map();
+  for (const row of computeBundleSeasonStandings(season).drivers) {
+    const d = driverByCode.get(row.driver.id);
+    if (d) posMap.set(d.jolpicaId, row.position);
   }
-  const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
-  const posMap = new Map(sorted.map(([ref], i) => [ref, i + 1]));
   bundleStandings.set(year, posMap);
 }
 
@@ -1571,14 +1575,14 @@ for (const [driverRef, doc] of driverDocCache) {
       // Year was in Ergast - preserve final-standing rank and points.
       return { ...existing, races: rows.length, bestFinish, wins: seasonWins };
     }
-    // Post-Ergast year - sum points from per-race detail; derive position
-    // from bundleStandings (computed above from race result points totals).
+    // Post-Ergast year - sum race + sprint points from per-race rows;
+    // derive position from bundleStandings (shared scoring engine).
     return {
       year,
       constructorRef: primaryRef,
       constructorName: primaryName,
       position: bundleStandings.get(year)?.get(driverRef) ?? null,
-      points: rows.reduce((s, r) => s + (r.points || 0), 0),
+      points: rows.reduce((s, r) => s + (r.points || 0) + (r.sprintPoints || 0), 0),
       wins: seasonWins,
       races: rows.length,
       bestFinish,
@@ -1905,11 +1909,12 @@ for (const { year, path } of seasonFiles) {
     const result = season.results[round] || season.results[String(round)];
     if (!result) continue;
     const detail = result.detail || {};
+    const sprintPts = sprintPointsMap(result);
 
-    for (const code of Object.keys(detail)) {
+    for (const code of new Set([...Object.keys(detail), ...Object.keys(sprintPts)])) {
       const d = driverByCode.get(code);
       if (!d || !d.team) continue;
-      const det = detail[code];
+      const det = detail[code] || {};
       const posStr = det.position != null ? String(det.position) : '';
       const pos = /^\d+$/.test(posStr) ? parseInt(posStr, 10) : null;
 
@@ -1926,7 +1931,7 @@ for (const { year, path } of seasonFiles) {
       }
       const ref = d.jolpicaId;
       agg.drivers.set(ref, { name: `${d.first} ${d.last}`, code: d.code || null, country: d.country || null, flag: d.flag || null });
-      agg.points += toFloat(det.points) || 0;
+      agg.points += (toFloat(det.points) || 0) + (sprintPts[code] || 0);
       agg.rounds.add(round);
       agg.driverRaceCounts.set(ref, (agg.driverRaceCounts.get(ref) || 0) + 1);
       if (pos === 1) {
@@ -1937,13 +1942,14 @@ for (const { year, path } of seasonFiles) {
     }
   }
 
-  // Year standings: highest points = P1
-  const sorted = [...byTeam.entries()].sort((a, b) => b[1].points - a[1].points);
+  // Year standings: highest points = P1, wins countback on ties (FIA rule)
+  const sorted = [...byTeam.entries()].sort((a, b) =>
+    b[1].points - a[1].points || b[1].wins - a[1].wins);
   const positions = new Map(sorted.map(([tId], i) => [tId, i + 1]));
 
   for (const [tId, agg] of byTeam) {
-    const constructorRef = HAND_CONSTRUCTOR_ALIAS[tId] || tId;
     const bundleTeam = teamByBundleId.get(tId);
+    const constructorRef = bundleTeam?.jolpicaId || HAND_CONSTRUCTOR_ALIAS[tId] || tId;
     const doc = loadTeamDoc(constructorRef, bundleTeam);
     if (!doc) continue;
     if (doc.perSeason.some(s => s.year === year)) continue;
@@ -2115,7 +2121,8 @@ if (postArchiveTeamYears > 0) {
     } catch { continue; }
 
     const perRace = doc.perRace || [];
-    entry.last5 = perRace.slice(-5).map(r => ({ points: r.points || 0, year: r.year, round: r.round }));
+    // last5 is weekend form - include sprint points where the row has them.
+    entry.last5 = perRace.slice(-5).map(r => ({ points: (r.points || 0) + (r.sprintPoints || 0), year: r.year, round: r.round }));
     entry.number = doc.number || null;
     entry.teamName = doc.perSeason?.[0]?.constructorName || null;
     const latestTeamRef = doc.perSeason?.[0]?.constructorRef || null;
@@ -2129,10 +2136,11 @@ if (postArchiveTeamYears > 0) {
       if (!teamRaceMap.has(r.constructorRef)) teamRaceMap.set(r.constructorRef, new Map());
       const k = `${r.year}-${r.round}`;
       const ex = teamRaceMap.get(r.constructorRef).get(k);
+      const weekendPts = (r.points || 0) + (r.sprintPoints || 0);
       if (!ex) {
-        teamRaceMap.get(r.constructorRef).set(k, { points: r.points || 0, year: r.year, round: r.round });
+        teamRaceMap.get(r.constructorRef).set(k, { points: weekendPts, year: r.year, round: r.round });
       } else {
-        ex.points += r.points || 0;
+        ex.points += weekendPts;
       }
     }
   }
@@ -2263,6 +2271,50 @@ if (postArchiveTeamYears > 0) {
   const teamColorByRef = new Map(teamDocs.map(t => [t.constructorRef, t.color || null]));
 
   const currentYear = new Date().getFullYear();
+
+  // Extend the CSV-sourced inputs with completed post-Ergast bundle years.
+  // Without this, title-margin and team-1-2 silently stop at the Ergast
+  // cutoff while every other record includes bundle years.
+  for (const { year, path } of seasonFiles) {
+    if (year >= currentYear) continue; // in-progress season - no final standings yet
+    const season = JSON.parse(readFileSync(path, 'utf8'));
+    if (!season.results || !Array.isArray(season.calendar)) continue;
+    const driverByCode = new Map();
+    for (const d of season.drivers || []) if (d.id && d.jolpicaId) driverByCode.set(d.id, d);
+    const teamByBundleId = new Map();
+    for (const t of season.teams || []) teamByBundleId.set(t.id, t);
+    const teamRefOf = (code) => {
+      const d = driverByCode.get(code);
+      const t = d ? teamByBundleId.get(d.team) : null;
+      return t?.jolpicaId || (d?.team ? (HAND_CONSTRUCTOR_ALIAS[d.team] || d.team) : null);
+    };
+
+    // yearStandings P1/P2 (title-margin input), sprint-aware via the engine
+    const ranked = computeBundleSeasonStandings(season).drivers;
+    const toEntry = (row, pos) => {
+      const d = driverByCode.get(row.driver.id);
+      if (!d) return null;
+      return { pos, driverRef: d.jolpicaId, name: `${d.first} ${d.last}`.trim(), surname: d.last, points: row.points };
+    };
+    const p1 = ranked[0] && toEntry(ranked[0], 1);
+    const p2 = ranked[1] && toEntry(ranked[1], 2);
+    if (p1 && p2 && !yearStandings[year]) yearStandings[year] = { p1, p2 };
+
+    const completedRaces = season.calendar.filter(r => season.results[r.round] || season.results[String(r.round)]);
+    const lastRace = completedRaces[completedRaces.length - 1];
+    if (lastRace?.date && !finalRoundDateByYear[year]) finalRoundDateByYear[year] = lastRace.date;
+
+    // P1/P2 rows for team-1-2
+    for (const race of completedRaces) {
+      const result = season.results[race.round] || season.results[String(race.round)];
+      const order = (result && result.order) || [];
+      for (let i = 0; i < 2 && i < order.length; i++) {
+        const cref = teamRefOf(order[i]);
+        if (!cref) continue;
+        allResults.push({ year, round: toInt(race.round), constructorRef: cref, position: i + 1 });
+      }
+    }
+  }
 
   const { index, byTopic } = buildRecords({
     driverDocs,

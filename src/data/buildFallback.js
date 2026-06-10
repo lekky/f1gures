@@ -2,6 +2,7 @@
 // Note: this is fan-made fictional data for design purposes.
 
 import { circuitProfiles } from './circuitProfiles.js';
+import { computeStandings as computeSeasonStandings } from '../lib/seasonStats.mjs';
 
 export function buildFallback() {
 
@@ -173,117 +174,10 @@ export function buildFallback() {
       { id: id || 'unknown', name: '-', short: '-', color: '#888888' };
   }
 
-  // Compute season standings from results
+  // Compute season standings from results - single shared implementation
+  // in src/lib/seasonStats.mjs.
   function computeStandings() {
-    const driverPts = {};
-    const driverWins = {};
-    const driverPodiums = {};
-    const driverFastest = {};
-    const driverPoles = {};
-    const driverDnfs = {};
-    const lastRoundPos = {}; // for change indicator: position after round N-1
-
-    drivers.forEach(d => {
-      driverPts[d.id] = 0;
-      driverWins[d.id] = 0;
-      driverPodiums[d.id] = 0;
-      driverFastest[d.id] = 0;
-      driverPoles[d.id] = 0;
-      driverDnfs[d.id] = 0;
-    });
-
-    const completedRounds = Object.keys(results).map(Number).sort((a,b)=>a-b);
-    const lastRound = completedRounds[completedRounds.length - 1];
-    const prevRound = completedRounds[completedRounds.length - 2];
-
-    // Snapshots after each round
-    const snapshots = {}; // round -> {code: cumPoints}
-
-    completedRounds.forEach(r => {
-      const res = results[r];
-      res.order.forEach((code, i) => {
-        if (i < 10) driverPts[code] += POINTS[i];
-        if (i === 0) driverWins[code] += 1;
-        if (i < 3) driverPodiums[code] += 1;
-      });
-      if (res.fastest && res.order.indexOf(res.fastest) < 10) driverPts[res.fastest] += 1;
-      driverFastest[res.fastest] = (driverFastest[res.fastest] || 0) + 1;
-      driverPoles[res.pole] = (driverPoles[res.pole] || 0) + 1;
-      // Sprint points (1-8 -> 8,7,6,5,4,3,2,1) - for simplicity approximate top 4 from race order
-      if (res.sprintWinner) {
-        const sp = [res.sprintWinner];
-        // Add sprint points to winner only for now, and a couple of others
-        const sprintPoints = { [res.sprintWinner]: 8 };
-        // Take next two from order excluding winner
-        const others = res.order.filter(c => c !== res.sprintWinner).slice(0,7);
-        others.forEach((c, i) => sprintPoints[c] = 7 - i);
-        Object.entries(sprintPoints).forEach(([c, p]) => driverPts[c] += p);
-      }
-      (res.dnfs || []).forEach(c => driverDnfs[c] += 1);
-      snapshots[r] = { ...driverPts };
-    });
-
-    // Compute current rankings
-    const ranked = drivers.map(d => ({
-      driver: d,
-      points: driverPts[d.id],
-      wins: driverWins[d.id],
-      podiums: driverPodiums[d.id],
-      fastestLaps: driverFastest[d.id],
-      poles: driverPoles[d.id],
-      dnfs: driverDnfs[d.id],
-    })).sort((a,b) => b.points - a.points || b.wins - a.wins);
-
-    // Compute prev round rankings for change indicator
-    const prevPts = prevRound ? snapshots[prevRound] : null;
-    const prevRanked = prevPts ? drivers.map(d => ({ id: d.id, points: prevPts[d.id] })).sort((a,b)=>b.points - a.points) : null;
-    const prevRankMap = {};
-    if (prevRanked) prevRanked.forEach((r, i) => prevRankMap[r.id] = i + 1);
-
-    ranked.forEach((row, i) => {
-      row.position = i + 1;
-      const prevP = prevRankMap[row.driver.id];
-      row.change = prevP ? prevP - row.position : 0;
-    });
-
-    // Constructor standings
-    const teamPts = {}; const teamWins = {}; const teamPodiums = {};
-    teams.forEach(t => { teamPts[t.id] = 0; teamWins[t.id] = 0; teamPodiums[t.id] = 0; });
-    ranked.forEach(r => {
-      teamPts[r.driver.team] += r.points;
-      teamWins[r.driver.team] += r.wins;
-      teamPodiums[r.driver.team] += r.podiums;
-    });
-    const teamRanked = teams.map(t => ({
-      team: t,
-      points: teamPts[t.id],
-      wins: teamWins[t.id],
-      podiums: teamPodiums[t.id],
-      drivers: drivers.filter(d => d.team === t.id),
-    })).sort((a,b)=> b.points - a.points || b.wins - a.wins);
-    teamRanked.forEach((t,i) => t.position = i+1);
-
-    // Per-round driver points progression
-    const progression = {};
-    drivers.forEach(d => progression[d.id] = []);
-    completedRounds.forEach(r => {
-      drivers.forEach(d => {
-        progression[d.id].push({ round: r, points: snapshots[r][d.id] });
-      });
-    });
-
-    // Per-round team progression
-    const teamProgression = {};
-    teams.forEach(t => teamProgression[t.id] = []);
-    completedRounds.forEach(r => {
-      const snap = snapshots[r];
-      teams.forEach(t => {
-        const pts = drivers.filter(d => d.team === t.id).reduce((sum, d) => sum + (snap[d.id] || 0), 0);
-        teamProgression[t.id].push({ round: r, points: pts });
-      });
-    });
-
-    return { drivers: ranked, teams: teamRanked, progression, teamProgression, completedRounds, lastRound };
+    return computeSeasonStandings({ drivers, teams, results });
   }
 
   return {
@@ -307,13 +201,8 @@ export function buildFallback() {
 }
 
 // Build a data object from a /data/<year>.json bundle (same shape as
-// scripts/fetch-season.mjs writes). Only the home page's historic view
-// (SeasonAtGlance) consumes this currently - other listing pages still
-// use buildFallback's 2026 data. PR 2 wires year-aware data more broadly.
-//
-// Helper closures (driverById/teamById/computeStandings) are duplicated
-// from buildFallback above rather than shared, to keep this change low-risk
-// to the (working) fallback path. Worth deduplicating in PR 2 / 3.
+// scripts/fetch-season.mjs writes). The year-aware listing islands and
+// currentSeason.js consume this.
 export function buildFromYearJson(json, staticCircuits = {}) {
   const teams = (json && json.teams) || [];
   const drivers = (json && json.drivers) || [];
@@ -331,194 +220,9 @@ export function buildFromYearJson(json, staticCircuits = {}) {
       { id: id || 'unknown', name: '-', short: '-', color: '#888888' };
   }
 
+  // Single shared implementation - see src/lib/seasonStats.mjs.
   function computeStandings() {
-    const driverPts = {}, driverWins = {}, driverPodiums = {}, driverFastest = {}, driverPoles = {}, driverDnfs = {};
-    drivers.forEach(d => {
-      driverPts[d.id] = 0; driverWins[d.id] = 0; driverPodiums[d.id] = 0;
-      driverFastest[d.id] = 0; driverPoles[d.id] = 0; driverDnfs[d.id] = 0;
-    });
-    const completedRounds = Object.keys(results).map(Number).sort((a,b)=>a-b);
-    const lastRound = completedRounds[completedRounds.length - 1];
-    const prevRound = completedRounds[completedRounds.length - 2];
-    const snapshots = {};
-
-    completedRounds.forEach(r => {
-      const res = results[r];
-      const ensure = (code) => {
-        if (driverPts[code] === undefined) {
-          driverPts[code] = 0; driverWins[code] = 0; driverPodiums[code] = 0;
-          driverFastest[code] = 0; driverPoles[code] = 0; driverDnfs[code] = 0;
-        }
-      };
-
-      // Prefer canonical per-driver points from the bundle's detail map -
-      // it's the authoritative value (correct sprint scoring, no
-      // fastest-lap +1 from 2025 onward, etc.). Fall back to the
-      // 25-18-15-12-10-8-6-4-2-1 + FL approximation only for older
-      // bundles that don't ship `detail[code].points`.
-      const detail = res.detail || null;
-      const hasCanonicalRacePts = detail && (res.order || []).some(c => detail[c] && typeof detail[c].points === 'number');
-      (res.order || []).forEach((code, i) => {
-        ensure(code);
-        if (hasCanonicalRacePts) {
-          driverPts[code] += (detail[code] && typeof detail[code].points === 'number') ? detail[code].points : 0;
-        } else {
-          if (i < 10) driverPts[code] += POINTS[i];
-        }
-        if (i === 0) driverWins[code] += 1;
-        if (i < 3) driverPodiums[code] += 1;
-      });
-      // Legacy FL +1 bonus only when we're already using the legacy
-      // approximation - canonical points already include it (or don't,
-      // per current FIA rules).
-      if (!hasCanonicalRacePts && res.fastest && (res.order || []).indexOf(res.fastest) < 10) {
-        driverPts[res.fastest] = (driverPts[res.fastest] || 0) + 1;
-      }
-      if (res.fastest) { ensure(res.fastest); driverFastest[res.fastest] += 1; }
-      if (res.pole) { ensure(res.pole); driverPoles[res.pole] += 1; }
-
-      // Sprint: prefer the per-driver `sprintResults.detail[code].points`
-      // from the bundle. The previous fallback inferred sprint placings
-      // from the main race finishing order, which is just wrong - sprint
-      // order and race order are different sessions.
-      const sprint = res.sprintResults || null;
-      if (sprint && sprint.detail) {
-        Object.entries(sprint.detail).forEach(([code, info]) => {
-          if (info && typeof info.points === 'number') {
-            ensure(code);
-            driverPts[code] += info.points;
-          }
-        });
-      } else if (sprint && Array.isArray(sprint.order)) {
-        const SPRINT_POINTS = [8,7,6,5,4,3,2,1];
-        sprint.order.slice(0, 8).forEach((code, i) => {
-          ensure(code);
-          driverPts[code] += SPRINT_POINTS[i];
-        });
-      } else if (res.sprintWinner) {
-        // Last-resort approximation kept for bundles that only carry the
-        // sprint winner (very old / hand-curated). Known to be wrong for
-        // anyone other than the winner; preserved to avoid regressing
-        // historic data with no sprint detail at all.
-        const sprintPoints = { [res.sprintWinner]: 8 };
-        const others = (res.order || []).filter(c => c !== res.sprintWinner).slice(0, 7);
-        others.forEach((c, i) => sprintPoints[c] = 7 - i);
-        Object.entries(sprintPoints).forEach(([c, p]) => {
-          ensure(c);
-          driverPts[c] += p;
-        });
-      }
-
-      (res.dnfs || []).forEach(c => { ensure(c); driverDnfs[c] += 1; });
-      snapshots[r] = { ...driverPts };
-    });
-
-    // Post-drop championship snapshot. For seasons that used "best N of
-    // M results" rules (every year from 1950-1990 except a handful),
-    // summing per-race points overcounts the championship. The CSV
-    // importer ships `results[r].driverStandings[ref] = { points,
-    // position, wins }` taken from Ergast's driver_standings table,
-    // which is the FIA's official post-drop number snapshotted after
-    // each race. Prefer that for the final season totals; fall back to
-    // the per-race sum when the snapshot isn't shipped (hand-curated
-    // bundles, Jolpica current-season bundles - both already use modern
-    // all-rounds-count scoring, so the sum IS the FIA total).
-    const lastRoundSnap = lastRound != null && results[lastRound] && results[lastRound].driverStandings
-      ? results[lastRound].driverStandings
-      : null;
-    const ranked = drivers.filter(d => d.team).map(d => {
-      const snap = lastRoundSnap && lastRoundSnap[d.id];
-      return {
-        driver: d,
-        // Snapshot wins are championship wins (= same number); prefer
-        // them when present so the leader-by-points-then-by-wins
-        // tiebreak agrees with the FIA's recorded total.
-        points: snap ? snap.points : (driverPts[d.id] || 0),
-        wins: snap ? snap.wins : (driverWins[d.id] || 0),
-        podiums: driverPodiums[d.id] || 0,
-        fastestLaps: driverFastest[d.id] || 0,
-        poles: driverPoles[d.id] || 0,
-        dnfs: driverDnfs[d.id] || 0,
-      };
-    }).sort((a,b) => b.points - a.points || b.wins - a.wins);
-
-    // Position-change indicator: compare each driver's current rank to
-    // their rank after the previous round. Prefer the championship
-    // snapshot (which already encodes era-specific drop rules) over the
-    // per-race cumulative sum.
-    const prevSnap = prevRound != null && results[prevRound] && results[prevRound].driverStandings
-      ? results[prevRound].driverStandings
-      : null;
-    const prevPts = prevRound != null ? snapshots[prevRound] : null;
-    const prevPointsFor = (id) => prevSnap && prevSnap[id]
-      ? prevSnap[id].points
-      : (prevPts ? (prevPts[id] || 0) : 0);
-    const prevRanked = (prevSnap || prevPts)
-      ? drivers.map(d => ({ id: d.id, points: prevPointsFor(d.id) })).sort((a,b) => b.points - a.points)
-      : null;
-    const prevRankMap = {};
-    if (prevRanked) prevRanked.forEach((r, i) => prevRankMap[r.id] = i + 1);
-    ranked.forEach((row, i) => {
-      row.position = i + 1;
-      const prevP = prevRankMap[row.driver.id];
-      row.change = prevP ? prevP - row.position : 0;
-    });
-
-    // Constructor totals - same story as drivers. Prefer the FIA's
-    // post-drop snapshot when shipped; fall back to summing per-driver
-    // points (which is correct for modern seasons).
-    const lastRoundCSnap = lastRound != null && results[lastRound] && results[lastRound].constructorStandings
-      ? results[lastRound].constructorStandings
-      : null;
-    const teamPts = {}, teamWins = {}, teamPodiums = {};
-    teams.forEach(t => { teamPts[t.id] = 0; teamWins[t.id] = 0; teamPodiums[t.id] = 0; });
-    ranked.forEach(r => {
-      teamPts[r.driver.team] = (teamPts[r.driver.team] || 0) + r.points;
-      teamWins[r.driver.team] = (teamWins[r.driver.team] || 0) + r.wins;
-      teamPodiums[r.driver.team] = (teamPodiums[r.driver.team] || 0) + r.podiums;
-    });
-    const teamRanked = teams.map(t => {
-      const snap = lastRoundCSnap && lastRoundCSnap[t.id];
-      return {
-        team: t,
-        points: snap ? snap.points : (teamPts[t.id] || 0),
-        wins: snap ? snap.wins : (teamWins[t.id] || 0),
-        podiums: teamPodiums[t.id] || 0,
-        drivers: drivers.filter(d => d.team === t.id),
-      };
-    }).sort((a,b)=> b.points - a.points || b.wins - a.wins);
-    teamRanked.forEach((t,i) => t.position = i+1);
-
-    // Per-round championship progression. Use the FIA snapshot per
-    // round if shipped (drop-rule-correct); fall back to the cumulative
-    // per-race sum otherwise.
-    const driverPointsAtRound = (id, r) => {
-      const snap = results[r] && results[r].driverStandings;
-      if (snap && snap[id]) return snap[id].points;
-      return (snapshots[r] && snapshots[r][id]) || 0;
-    };
-    const teamPointsAtRound = (tid, r) => {
-      const snap = results[r] && results[r].constructorStandings;
-      if (snap && snap[tid]) return snap[tid].points;
-      const raceSnap = snapshots[r] || {};
-      return drivers.filter(d => d.team === tid).reduce((sum, d) => sum + (raceSnap[d.id] || 0), 0);
-    };
-    const progression = {};
-    drivers.forEach(d => progression[d.id] = []);
-    completedRounds.forEach(r => {
-      drivers.forEach(d => {
-        progression[d.id].push({ round: r, points: driverPointsAtRound(d.id, r) });
-      });
-    });
-    const teamProgression = {};
-    teams.forEach(t => teamProgression[t.id] = []);
-    completedRounds.forEach(r => {
-      teams.forEach(t => {
-        teamProgression[t.id].push({ round: r, points: teamPointsAtRound(t.id, r) });
-      });
-    });
-
-    return { drivers: ranked, teams: teamRanked, progression, teamProgression, completedRounds, lastRound };
+    return computeSeasonStandings({ drivers, teams, results });
   }
 
   return {

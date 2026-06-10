@@ -4,6 +4,7 @@
 // island composes (Panel, DriverCell, Countdown, etc.) plus URL/date helpers.
 
 import { useEffect, useState } from 'react';
+import { roundPointsMap } from './seasonStats.mjs';
 
 // ─── URL helpers ──────────────────────────────────────────────
 // Listing pages use clean Astro paths. Detail pages (driver/race/circuit/team)
@@ -297,24 +298,15 @@ export function lastNCompletedRounds(D, n) {
 export function driverPointsForRound(D, driverId, round) {
   const result = D.results[round];
   if (!result) return 0;
-  const pos = result.order.findIndex(id => id === driverId);
-  if (pos === -1) return 0;
-  let pts = F1_POINTS[pos] || 0;
-  if (result.fastest === driverId && pos < 10) pts += 1;
-  if (result.sprintWinner === driverId) pts += 8;
-  return pts;
+  return roundPointsMap(result)[driverId] || 0;
 }
 
 export function teamPointsForRound(D, teamId, round) {
   const result = D.results[round];
   if (!result) return 0;
-  return result.order.reduce((sum, did, i) => {
+  return Object.entries(roundPointsMap(result)).reduce((sum, [did, pts]) => {
     const drv = D.driverById(did);
-    if (!drv || drv.team !== teamId) return sum;
-    let pts = F1_POINTS[i] || 0;
-    if (result.fastest === did && i < 10) pts += 1;
-    if (result.sprintWinner === did) pts += 8;
-    return sum + pts;
+    return drv && drv.team === teamId ? sum + pts : sum;
   }, 0);
 }
 

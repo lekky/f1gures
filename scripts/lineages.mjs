@@ -100,14 +100,16 @@ export const lineages = [
   },
 ];
 
-export function eraStats(teamDoc, from, to) {
+export function eraStats(teamDoc, from, to, currentYear = new Date().getFullYear()) {
   if (!teamDoc?.perSeason) return { seasons: 0, wins: 0, championships: 0 };
   const upper = to ?? Infinity;
   const rows = teamDoc.perSeason.filter(s => s.year >= from && s.year <= upper);
   return {
     seasons: rows.length,
     wins: rows.reduce((sum, s) => sum + (s.wins || 0), 0),
-    championships: rows.filter(s => s.position === 1).length,
+    // position for the in-progress season is the live standings rank, not a
+    // won title - leading the WCC in June must not add a championship pill.
+    championships: rows.filter(s => s.position === 1 && s.year < currentYear).length,
   };
 }
 
