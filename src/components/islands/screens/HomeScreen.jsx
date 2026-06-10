@@ -331,7 +331,7 @@ function NextRacePanel({ data, cal, next, mob }) {
                     />
                   </div>
                   {isExpanded && forecast && (
-                    <SessionWeatherExpand forecast={forecast} isClimate={isClimate} useFahrenheit={useF} />
+                    <SessionWeatherExpand forecast={forecast} isClimate={isClimate} useFahrenheit={useF} timeZone={activeZone} />
                   )}
                 </div>
               );
