@@ -1279,7 +1279,14 @@ for (const { year, path } of seasonFiles) {
   const season = JSON.parse(readFileSync(path, 'utf8'));
   if (!Array.isArray(season.calendar)) continue;
   for (const race of season.calendar) {
-    const refRaw = race.circuit || race.circuitId;
+    // Only merge rounds that have actually been run - inserting future
+    // calendar entries gave circuit pages empty winner rows and pushed
+    // sitemap lastmod dates into the future (raceCount/lastYear too).
+    const result = season.results &&
+      (season.results[race.round] ?? season.results[String(race.round)]);
+    if (!result) continue;
+
+    const refRaw = race.circuitId || race.circuit;
     if (!refRaw) continue;
     const cref = HAND_CIRCUIT_ALIAS[refRaw] || refRaw;
     const circuitJsonPath = join(OUT, 'circuits', `${cref}.json`);
@@ -1289,10 +1296,9 @@ for (const { year, path } of seasonFiles) {
     // Skip if this race is already present (idempotent re-runs)
     if (doc.races.some(r => r.year === year && r.round === race.round)) continue;
 
-    const result = season.results && season.results[race.round];
     let winnerRef = null, poleRef = null, fastestRef = null;
     let winnerName = null, poleName = null, winnerTeam = null, winnerTeamRef = null;
-    if (result) {
+    {
       const winnerId = result.order?.[0];
       const poleId = result.pole;
       const fastestId = result.fastest;
@@ -1457,10 +1463,13 @@ for (const { year, path } of seasonFiles) {
       if (doc.perRace.some(r => r.year === year && r.round === round)) continue;
 
       const det = detail[code] || {};
-      const team = teamById.get(d.team);
-      // Bundles carry the Ergast ref as jolpicaId - prefer it; the alias
-      // map is only a fallback for bundles that predate the field.
-      const constructorRef = team?.jolpicaId || HAND_CONSTRUCTOR_ALIAS[d.team] || d.team || null;
+      // Per-race team when the bundle ships it (mid-season swaps), else the
+      // driver's season-level team. Bundles carry the Ergast ref as
+      // jolpicaId - prefer it; the alias map is only a fallback for bundles
+      // that predate the field.
+      const teamId = det.team || d.team;
+      const team = teamById.get(teamId);
+      const constructorRef = team?.jolpicaId || HAND_CONSTRUCTOR_ALIAS[teamId] || teamId || null;
       const constructorName = team ? team.name : null;
 
       const positionText = det.position != null ? String(det.position) : null;
@@ -1913,12 +1922,14 @@ for (const { year, path } of seasonFiles) {
 
     for (const code of new Set([...Object.keys(detail), ...Object.keys(sprintPts)])) {
       const d = driverByCode.get(code);
-      if (!d || !d.team) continue;
       const det = detail[code] || {};
+      // Per-race team when shipped (mid-season swaps), else season-level.
+      const teamId = det.team || d?.team;
+      if (!d || !teamId) continue;
       const posStr = det.position != null ? String(det.position) : '';
       const pos = /^\d+$/.test(posStr) ? parseInt(posStr, 10) : null;
 
-      let agg = byTeam.get(d.team);
+      let agg = byTeam.get(teamId);
       if (!agg) {
         agg = {
           drivers: new Map(),
@@ -1927,7 +1938,7 @@ for (const { year, path } of seasonFiles) {
           driverRaceCounts: new Map(),
           driverWinCounts: new Map(),
         };
-        byTeam.set(d.team, agg);
+        byTeam.set(teamId, agg);
       }
       const ref = d.jolpicaId;
       agg.drivers.set(ref, { name: `${d.first} ${d.last}`, code: d.code || null, country: d.country || null, flag: d.flag || null });
