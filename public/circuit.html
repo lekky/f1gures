@@ -9,17 +9,29 @@
   <style>body{font:14px/1.5 system-ui,sans-serif;margin:40px;color:#444}</style>
   <script>
     (function () {
-      // Legacy URL pattern: /circuit.html?id=monaco - id matches our new
-      // circuitRef directly. Validate against the circuits index, then
-      // redirect to /circuits/<ref>/.
+      // Legacy URL pattern: /circuit.html?id=monaco - id is usually our
+      // circuitRef, but the old SPA also linked the season bundles' short
+      // ids (albert, lasvegas, ...). Map those to Ergast refs first - keep
+      // this in sync with CIRCUIT_ID_ALIAS in src/lib/shared.jsx. Validate
+      // against the circuits index, then redirect to /circuits/<ref>/.
+      var ALIAS = {
+        albert: 'albert_park',
+        marina: 'marina_bay',
+        lasvegas: 'vegas',
+        yas: 'yas_marina',
+        montreal: 'villeneuve',
+        cota: 'americas',
+        spielberg: 'red_bull_ring',
+      };
       var id = new URLSearchParams(location.search).get('id');
       if (!id) { location.replace('/circuits/'); return; }
+      var ref = ALIAS[id] || id;
       fetch('/data/archive/_circuits-index.json', { cache: 'force-cache' })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (idx) {
           if (!idx) { location.replace('/circuits/'); return; }
-          var hit = idx.find(function (c) { return c.circuitRef === id; });
-          if (hit) location.replace('/circuits/' + encodeURIComponent(id) + '/');
+          var hit = idx.find(function (c) { return c.circuitRef === ref; });
+          if (hit) location.replace('/circuits/' + encodeURIComponent(ref) + '/');
           else location.replace('/circuits/');
         })
         .catch(function () { location.replace('/circuits/'); });

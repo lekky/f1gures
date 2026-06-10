@@ -150,13 +150,16 @@ export function zoneShort(zone, dt) {
 }
 
 // ─── Date helpers ─────────────────────────────────────────────
+// Format in UTC: the input is a calendar date, not an instant. Without an
+// explicit timeZone, toLocaleDateString renders in the viewer's zone and
+// UTC+10..+14 visitors (and the build machine vs client) see the next day.
 export function fmtDate(iso, opts = {}) {
   const d = new Date(iso + 'T14:00:00Z');
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', ...opts });
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC', ...opts });
 }
 export function fmtDateLong(iso) {
   const d = new Date(iso + 'T14:00:00Z');
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 // ─── Flag rendering ───────────────────────────────────────────
