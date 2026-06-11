@@ -148,45 +148,6 @@ function EmptyHome({ mob }) {
   );
 }
 
-function SummaryWidget({ data, kicker, driver, team, big, sub, href }) {
-  const D = data;
-  const accent = driver ? D.teamById(driver.team).color : (team ? team.color : 'var(--accent)');
-  return (
-    <a className="panel summary-card-link" style={{ borderLeft: `3px solid ${accent}`, cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'block', position: 'relative' }} href={href}>
-      <div className="panel-body">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-          <div className="t-eyebrow" style={{ color: 'var(--fg-3)' }}>{kicker}</div>
-          <span className="card-accent-arrow" aria-hidden="true">↗</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          {driver && (
-            <>
-              <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 28, lineHeight: 1, color: 'var(--fg-3)' }}>{driver.num}</div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, textTransform: 'uppercase' }}>{driver.first} {driver.last}</div>
-                <div className="t-mono" style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg-3)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Flag cc={driver.country} flag={driver.flag} />
-                  <span>{D.teamById(driver.team).name}</span>
-                </div>
-              </div>
-            </>
-          )}
-          {team && (
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, textTransform: 'uppercase' }}>{team.name}</div>
-              <div className="t-mono" style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg-3)', marginTop: 4 }}>{D.seasonYear || '2026'} Constructors</div>
-            </div>
-          )}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', borderTop: '1px solid var(--line-1)', paddingTop: 10 }}>
-          <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 28, color: 'var(--fg-1)' }}>{big}</div>
-          <div className="t-mono" style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg-3)', textAlign: 'right' }}>{sub}</div>
-        </div>
-      </div>
-    </a>
-  );
-}
-
 function NextRacePanel({ data, cal, next, mob }) {
   const D = data;
 
@@ -560,6 +521,96 @@ function FormGuide({ data, mob }) {
   );
 }
 
+// Momentum line chart of the top-5 drivers' championship progression + a
+// leader card. Hand-rolled SVG (no Recharts) to keep it off the homepage
+// bundle. Data comes straight from computeStandings(): progression is the
+// cumulative-points-per-round series, completedRounds the x-axis.
+function TitleRace({ data, standings, mob }) {
+  const D = data;
+  const drivers = standings.drivers || [];
+  const rounds = standings.completedRounds || [];
+  if (drivers.length < 2 || rounds.length < 2) return null;
+
+  const top = drivers.slice(0, 5);
+  const leader = drivers[0];
+  const p2 = drivers[1];
+  const leaderTeam = D.teamById(leader.driver.team);
+  const gap = leader.points - p2.points;
+
+  const W = 720, H = 250, PADL = 8, PADR = 8, PADT = 14, PADB = 24;
+  const finalPts = top.map(r => {
+    const prog = standings.progression[r.driver.id];
+    return prog && prog.length ? prog[prog.length - 1].points : r.points;
+  });
+  const maxPts = (Math.max(...finalPts) * 1.08) || 1;
+  const x = i => PADL + (i / (rounds.length - 1)) * (W - PADL - PADR);
+  const y = p => PADT + (1 - p / maxPts) * (H - PADT - PADB);
+
+  const lines = top.map(row => {
+    const col = D.teamById(row.driver.team).color;
+    const pts = standings.progression[row.driver.id] || [];
+    const dstr = pts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(pt.points).toFixed(1)}`).join(' ');
+    const last = pts.length ? pts[pts.length - 1] : { points: 0 };
+    return { id: row.driver.id, col, dstr, lx: x(pts.length - 1), ly: y(last.points) };
+  });
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => PADT + f * (H - PADT - PADB));
+
+  return (
+    <Band tone="plain" mob={mob}>
+      <SectionHead variant="band" title="The Title Race" right={
+        <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-d' })}>
+          Full Standings <span className="arrow">→</span>
+        </a>
+      } />
+      <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : '1fr 320px', gap: 16, alignItems: 'stretch' }}>
+        <div className="panel" style={{ padding: 20 }}>
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: mob ? 220 : 280, overflow: 'visible' }} role="img" aria-label="Championship points progression, top five drivers">
+            {gridLines.map((yy, i) => (
+              <line key={i} x1={PADL} y1={yy} x2={W - PADR} y2={yy} style={{ stroke: 'var(--line-1)' }} strokeWidth="1" />
+            ))}
+            {rounds.map((r, i) => (
+              <text key={r} x={x(i)} y={H - 6} textAnchor="middle" style={{ fill: 'var(--fg-3)', fontFamily: 'var(--f-mono)', fontSize: 10 }}>R{String(r).padStart(2, '0')}</text>
+            ))}
+            {lines.map(l => (
+              <path key={l.id} d={l.dstr} fill="none" stroke={l.col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            ))}
+            {lines.map(l => (
+              <circle key={l.id} cx={l.lx} cy={l.ly} r="3.5" fill={l.col} />
+            ))}
+          </svg>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 10, paddingTop: 14, borderTop: '1px solid var(--line-1)' }}>
+            {top.map(row => (
+              <span key={row.driver.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                <span style={{ width: 14, height: 3, background: D.teamById(row.driver.team).color }}></span>
+                <span className="t-mono" style={{ fontSize: 12 }}><b>{row.driver.code}</b> {row.points}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <a className="panel" href={urlFor({ name: 'driver', id: leader.driver.id, ref: leader.driver.jolpicaId })}
+           style={{ borderTop: `3px solid ${leaderTeam.color}`, padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
+          <div className="t-eyebrow">Championship Leader</div>
+          <div className="t-display" style={{ fontSize: 30, marginTop: 6 }}>{leader.driver.first} {leader.driver.last}</div>
+          <div className="t-mono" style={{ color: 'var(--fg-3)', fontSize: 12 }}>#{leader.driver.num} · {leaderTeam.name}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 14 }}>
+            <span className="t-display" style={{ fontSize: 64, color: leaderTeam.color, lineHeight: 0.8 }}>{leader.points}</span>
+            <span className="t-eyebrow">pts</span>
+          </div>
+          <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--bg-1)', border: '1px solid var(--line-1)' }}>
+            {gap > 0
+              ? <span className="t-mono" style={{ fontSize: 13 }}>+<b>{gap}</b> over {p2.driver.last}</span>
+              : <span className="t-mono" style={{ fontSize: 13 }}>Level on points · ahead on countback</span>}
+          </div>
+          <div className="t-mono" style={{ color: 'var(--fg-3)', fontSize: 12, marginTop: 10 }}>
+            {leader.wins} wins · {leader.podiums} podiums · {leader.poles} poles
+          </div>
+        </a>
+      </div>
+    </Band>
+  );
+}
+
 export default function HomeScreen({ data }) {
   const D = data;
   const mob = useIsMobile();
@@ -583,7 +634,6 @@ export default function HomeScreen({ data }) {
     cal.find(r => r.status === 'next') ||
     null;
   const isHistoric = !next && cal.some(r => D.results[r.round]);
-  const prev = [...cal].reverse().find(r => D.results[r.round]);
 
   const top3Drivers = standings.drivers.slice(0, 3);
   const top3Teams = standings.teams.slice(0, 3);
@@ -591,13 +641,6 @@ export default function HomeScreen({ data }) {
   const completedCount = D.calendar.filter(r => D.results[r.round]).length;
   const driversBlurb = driversSummary(D, top3Drivers, completedCount);
   const teamsBlurb = teamsSummary(D, top3Teams, completedCount);
-  const leader = standings.drivers[0];
-  const p2 = standings.drivers[1];
-  const teamLeader = standings.teams[0];
-  const lastRace = prev;
-  const lastResult = lastRace ? D.results[lastRace.round] : null;
-  const lastWinner = lastResult ? D.driverById(lastResult.order[0]) : null;
-  const lastWinnerTeam = lastWinner ? D.teamById(lastWinner.team) : null;
 
   return (
     <div className={mob ? 'home-mob' : ''}>
@@ -609,40 +652,9 @@ export default function HomeScreen({ data }) {
           : <NextRacePanel data={D} cal={cal} next={next} mob={mob} />}
       </Band>
 
-      <Band tone="tint" mob={mob}>
-        <SectionHead variant="band" title="Season Summary" />
-        <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : 'repeat(3, 1fr)' }}>
-          <SummaryWidget data={D} kicker="Drivers' Leader"
-            driver={leader.driver}
-            big={`${leader.points} pts`}
-            sub={`+${leader.points - p2.points} over ${p2.driver.last}`}
-            href={urlFor({ name: 'driver', id: leader.driver.id, ref: leader.driver.jolpicaId })}
-          />
-          <SummaryWidget data={D} kicker="Constructors' Leader"
-            team={teamLeader.team}
-            big={`${teamLeader.points} pts`}
-            sub={`${teamLeader.wins} wins · ${teamLeader.podiums} podiums`}
-            href={urlFor({ name: 'standings-c' })}
-          />
-          {lastRace && lastWinner ? (
-            <SummaryWidget data={D} kicker="Last Race"
-              driver={lastWinner}
-              big={`P1`}
-              sub={`${lastRace.name.replace(' Grand Prix', '')} · ${lastWinnerTeam.name}`}
-              href={urlFor({ name: 'race', year: D.seasonYear, round: lastRace.round })}
-              mob={mob}
-            />
-          ) : (
-            <SummaryWidget data={D} kicker="Last Race"
-              big="-"
-              sub="No results yet"
-              mob={mob}
-            />
-          )}
-        </div>
-      </Band>
-
       <FormGuide data={D} mob={mob} />
+
+      <TitleRace data={D} standings={standings} mob={mob} />
 
       <Band tone="plain" mob={mob}>
         <SectionHead variant="band" title="Top 3 · Drivers" right={
