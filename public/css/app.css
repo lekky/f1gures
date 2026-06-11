@@ -68,6 +68,11 @@
   --mo-fast: 80ms;
   --mo: 120ms;
   --mo-slow: 300ms;
+
+  /* Card elevation — subtle floating drop shadow (dark default below,
+     lighter grey in html.light). */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 20px rgba(0, 0, 0, 0.34);
+  --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.5), 0 14px 36px rgba(0, 0, 0, 0.42);
 }
 
 /* ── Light mode ───────────────────────────────────────────── */
@@ -91,6 +96,8 @@ html.light {
   --pos: #15803d;
   --neg: #dc2626;
   --warn: #b45309;
+  --shadow-card: 0 1px 2px rgba(12, 16, 24, 0.06), 0 4px 16px rgba(12, 16, 24, 0.08);
+  --shadow-card-hover: 0 2px 6px rgba(12, 16, 24, 0.10), 0 12px 30px rgba(12, 16, 24, 0.12);
 }
 html.light .f1-app {
   background: var(--bg-1);
@@ -366,6 +373,26 @@ button { font-family: inherit; }
   .ticker .tkmask { overflow-x: auto; }
 }
 
+/* Season progress banner — same ink as the form-guide ticker. */
+.season-progress { background: var(--band-ink); border-top: 1px solid #000; border-bottom: 1px solid var(--band-ink-line); }
+.sp-inner { max-width: 1280px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.sp-pct { font-family: var(--f-display); font-weight: 800; font-size: 52px; line-height: 0.8; color: var(--accent); flex-shrink: 0; }
+.sp-meta { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+.sp-meta .sp-title { font-family: var(--f-display); font-weight: 800; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--band-ink-fg); }
+.sp-meta .sp-sub { font-family: var(--f-mono); font-size: 12px; color: var(--band-ink-fg-dim); }
+.sp-ticks { flex: 1; min-width: 240px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+/* One tick per round: red = done, white = next, faint = upcoming. */
+.sp-tick { width: 26px; height: 28px; background: rgba(255, 255, 255, 0.1); flex-shrink: 0; }
+.sp-tick.done { background: var(--accent); }
+.sp-tick.next { background: #fff; animation: sp-pulse 1.5s ease-in-out infinite; }
+@keyframes sp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .sp-tick.next { animation: none; } }
+@media (max-width: 720px) {
+  .sp-inner { padding: 14px; gap: 14px; }
+  .sp-pct { font-size: 40px; }
+  .sp-tick { width: 20px; height: 22px; }
+}
+
 .section-head {
   display: flex; align-items: center; gap: 10px; margin: 24px 0 12px;
 }
@@ -389,6 +416,7 @@ button { font-family: inherit; }
 .panel {
   background: var(--bg-2);
   border: 1px solid var(--line-1);
+  box-shadow: var(--shadow-card);
 }
 .panel-head {
   padding: 12px 14px;
@@ -584,6 +612,7 @@ button { font-family: inherit; }
   display: flex; gap: 0; align-items: stretch;
   border: 1px solid var(--line-2);
   background: var(--bg-2);
+  box-shadow: var(--shadow-card);
 }
 .countdown-cell {
   flex: 1; padding: 14px 8px;
@@ -689,8 +718,9 @@ button { font-family: inherit; }
 .race-card {
   position: relative; padding: 16px; cursor: pointer;
   background: var(--bg-2); border: 1px solid var(--line-1);
+  box-shadow: var(--shadow-card);
   display: flex; flex-direction: column; gap: 12px;
-  transition: border-color .12s, background .12s;
+  transition: border-color .12s, background .12s, box-shadow .12s;
   min-height: 200px;
 }
 .race-card:hover { border-color: var(--line-3); background: var(--bg-elevated); }
@@ -747,6 +777,7 @@ button { font-family: inherit; }
 .driver-card {
   background: var(--bg-2);
   border: 1px solid var(--line-1);
+  box-shadow: var(--shadow-card);
   padding: 14px;
   display: flex; gap: 12px; align-items: center;
   border-left: 3px solid var(--team-color);
@@ -1269,14 +1300,16 @@ html.light .circuit-track .circuit-track-light { display: block; }
 
 .blog-card {
   position: relative;
-  transition: border-color 120ms, transform 120ms;
+  transition: border-color 120ms, transform 120ms, box-shadow 120ms;
   border-left: 3px solid var(--accent);
+  box-shadow: var(--shadow-card);
   height: 100%;
   box-sizing: border-box;
   overflow: hidden;
 }
 .blog-card:hover {
   transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
 }
 .blog-card-img {
   position: relative;
@@ -1974,11 +2007,13 @@ html.light .circuit-track .circuit-track-light { display: block; }
   border-top: 2px solid var(--card-accent);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.12s ease, border-color 0.12s ease;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .card-accent:hover {
   transform: translateY(-1px);
   border-color: var(--card-accent);
+  box-shadow: var(--shadow-card-hover);
   border-top-color: var(--card-accent);
 }
 .card-accent-head {
@@ -2598,6 +2633,7 @@ html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
   max-width: 100%;
   border: 1px solid var(--line-1);
   background: var(--bg-2);  /* opaque so the speedlines don't show through */
+  box-shadow: var(--shadow-card);
 }
 .hero-circuit-stats .hs {
   padding: 7px 14px;

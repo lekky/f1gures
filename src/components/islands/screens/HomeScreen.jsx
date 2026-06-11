@@ -521,6 +521,36 @@ function FormGuide({ data, mob }) {
   );
 }
 
+// Season progress banner: a dark full-bleed strip (matching the form-guide
+// ink) with the completion %, a one-line summary, and one slanted tick per
+// round — red for completed, white for the next race, faint for upcoming.
+function SeasonProgress({ data, cal, next }) {
+  const total = cal.length;
+  if (!total) return null;
+  const completed = cal.filter(r => data.results[r.round]).length;
+  const pct = Math.round((completed / total) * 100);
+  const remaining = total - completed;
+  const nextRound = next ? next.round : null;
+  return (
+    <section className="home-band season-progress" aria-label={`${data.seasonYear || ''} season progress`}>
+      <div className="sp-inner">
+        <div className="sp-pct">{pct}%</div>
+        <div className="sp-meta">
+          <div className="sp-title">{data.seasonYear} Season</div>
+          <div className="sp-sub">{completed} of {total} rounds complete · {remaining} to go</div>
+        </div>
+        <div className="sp-ticks" aria-hidden="true">
+          {cal.map(r => {
+            const done = !!data.results[r.round];
+            const isNext = nextRound != null && r.round === nextRound;
+            return <span key={r.round} className={`sp-tick${done ? ' done' : isNext ? ' next' : ''}`}></span>;
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Momentum line chart of the top-5 drivers' championship progression + a
 // leader card. Hand-rolled SVG (no Recharts) to keep it off the homepage
 // bundle. Data comes straight from computeStandings(): progression is the
@@ -650,11 +680,16 @@ export default function HomeScreen({ data }) {
         {isHistoric || !next
           ? <SeasonAtGlance data={D} cal={cal} standings={standings} mob={mob} />
           : <NextRacePanel data={D} cal={cal} next={next} mob={mob} />}
+        <a className="btn btn-secondary" style={{ marginTop: 18 }} href="/guide/">
+          New to F1? Start with the beginner's guide <span className="arrow">→</span>
+        </a>
       </Band>
 
-      <FormGuide data={D} mob={mob} />
+      <SeasonProgress data={D} cal={cal} next={next} />
 
       <TitleRace data={D} standings={standings} mob={mob} />
+
+      <FormGuide data={D} mob={mob} />
 
       <Band tone="plain" mob={mob}>
         <SectionHead variant="band" title="Top 3 · Drivers" right={
@@ -770,9 +805,6 @@ export default function HomeScreen({ data }) {
           );
         })}
         </div>
-        <a className="btn btn-secondary" style={{ marginTop: 28, alignSelf: 'flex-start' }} href="/guide/">
-          New to F1? Start with the beginner's guide <span className="arrow">→</span>
-        </a>
       </Band>
     </div>
   );
