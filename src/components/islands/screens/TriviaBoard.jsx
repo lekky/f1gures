@@ -48,29 +48,43 @@ const PAUSE_POLL_MS = 200;
 export default function TriviaBoard() {
   const [display, setDisplay] = useState(FACTS.length ? FACTS[0].text : '');
   const [reduced, setReduced] = useState(false);
+  // Mobile shows two wrapped lines and scrolls vertically; desktop shows one
+  // line and scrolls horizontally. Both keep the cursor (and the latest words)
+  // in view as the fact types past the viewport.
+  const [twoLine, setTwoLine] = useState(false);
   const pausedRef = useRef(false);
   const lineRef = useRef(null);   // viewport (clips overflow)
   const innerRef = useRef(null);  // scrolled content (text + cursor)
 
-  // Keep the cursor in view by scrolling the inner line left so its right edge
-  // stays at the viewport edge. Runs after every character. No-op when the
-  // fact fits, or under reduced motion (the line wraps instead).
+  // Keep the cursor in view by scrolling the inner line so its trailing edge
+  // stays at the viewport edge. Runs after every character. No-op under reduced
+  // motion (the line wraps freely instead).
   useLayoutEffect(() => {
     if (reduced) return;
     const vp = lineRef.current;
     const inner = innerRef.current;
     if (!vp || !inner) return;
+    const position = () => {
+      if (twoLine) {
+        // diff <= 0: fact fits the two-line viewport, so centre it vertically.
+        // diff > 0: it overflows, so scroll up to keep the cursor (bottom) in view.
+        const diff = inner.scrollHeight - vp.clientHeight;
+        inner.style.transform = `translateY(${diff <= 0 ? -diff / 2 : -diff}px)`;
+      } else {
+        const offset = Math.max(0, inner.scrollWidth - vp.clientWidth);
+        inner.style.transform = `translateX(${-offset}px)`;
+      }
+    };
     if (display.length <= 1) {
-      // New fact starting: snap back to the start without animating the rewind.
+      // New fact starting: snap into place without animating the reset.
       inner.style.transition = 'none';
-      inner.style.transform = 'translateX(0)';
+      position();
       void inner.offsetWidth;
       inner.style.transition = '';
       return;
     }
-    const offset = Math.max(0, inner.scrollWidth - vp.clientWidth);
-    inner.style.transform = `translateX(${-offset}px)`;
-  }, [display, reduced]);
+    position();
+  }, [display, reduced, twoLine]);
 
   useEffect(() => {
     const mm = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia : null;
@@ -78,6 +92,7 @@ export default function TriviaBoard() {
     const isMobile = !!(mm && mm('(max-width: 720px)').matches);
     const timing = isMobile ? TIMING.mobile : TIMING.desktop;
     setReduced(isReduced);
+    setTwoLine(!isReduced);
 
     if (FACTS.length < 2) return;
 
@@ -132,7 +147,7 @@ export default function TriviaBoard() {
 
   return (
     <div
-      className={`trivia${reduced ? ' trivia--reduce' : ''}`}
+      className={`trivia${reduced ? ' trivia--reduce' : ''}${twoLine ? ' trivia--2line' : ''}`}
       aria-label="Did you know? Formula 1 trivia"
       onMouseEnter={() => { pausedRef.current = true; }}
       onMouseLeave={() => { pausedRef.current = false; }}

@@ -96,15 +96,15 @@ html.light .f1-app {
   background: var(--bg-1);
 }
 html.light .nav {
-  background: rgba(240, 238, 233, 0.92);
+  background: rgba(232, 234, 238, 0.92);
   border-bottom-color: var(--line-1);
 }
 html.light .botnav {
-  background: rgba(240, 238, 233, 0.96);
+  background: rgba(232, 234, 238, 0.96);
   border-top-color: var(--line-1);
 }
 html.light .topbar-mobile {
-  background: rgba(240, 238, 233, 0.96);
+  background: rgba(232, 234, 238, 0.96);
   border-bottom-color: var(--line-1);
 }
 
@@ -211,6 +211,7 @@ button { font-family: inherit; }
   display: flex; align-items: center; gap: 8px;
 }
 .nav-logo .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent-glow); }
+.nav-logo .logo-1 { color: var(--accent); }
 .nav-items { display: flex; gap: 2px; height: 100%; align-items: center; }
 .nav-item {
   font-family: var(--f-display); font-weight: 600;
@@ -2533,8 +2534,17 @@ html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
 
 @media (max-width: 720px) {
   .trivia-lab { padding: 0 12px; font-size: 11px; letter-spacing: 0.12em; }
-  .trivia-scr { padding: 0 12px; min-height: 44px; font-size: 12px; }
+  .trivia-scr { padding: 0 12px; font-size: 12px; }
 }
+
+/* Up to two wrapped lines everywhere. The viewport is a fixed two lines tall;
+   JS positions the inner block within it — vertically centred while the fact
+   fits on one line, then filling and scrolling vertically (to follow the
+   cursor) once it wraps, so long facts still reveal fully. */
+.trivia--2line .trivia-scr { align-items: center; padding-top: 9px; padding-bottom: 9px; min-height: 0; }
+.trivia--2line .trivia-pre { line-height: 1.35; }
+.trivia--2line .trivia-line { height: 2.7em; line-height: 1.35; }
+.trivia--2line .trivia-line-inner { white-space: normal; line-height: 1.35; }
 
 /* A touch narrower than the hero panel on desktop, centred above it. */
 @media (min-width: 721px) {
@@ -2551,3 +2561,69 @@ html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
   .trivia-dot, .trivia-cur { animation: none; }
   .trivia-line-inner { transition: none; }
 }
+
+/* ── Next-race hero flourishes ───────────────────────────────
+   Giant faint round number + diagonal speedlines behind the card.
+   Both tokenised so they track the theme; clipped by the panel's
+   overflow:hidden. Content sits above via z-index:1. */
+.hero-ghost {
+  position: absolute;
+  top: -0.18em;
+  right: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(150px, 26vw, 320px);
+  line-height: 0.7;
+  letter-spacing: -0.03em;
+  color: var(--fg-1);
+  opacity: 0.04;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+.hero-speedlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  background: repeating-linear-gradient(100deg, transparent 0 38px, var(--accent-glow) 38px 40px);
+}
+
+/* Compact circuit stat strip (Length / Laps / Corners). */
+.hero-circuit-stats {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid var(--line-1);
+  background: var(--bg-2);  /* opaque so the speedlines don't show through */
+}
+.hero-circuit-stats .hs {
+  padding: 7px 14px;
+  border-right: 1px solid var(--line-1);
+}
+.hero-circuit-stats .hs:last-child { border-right: 0; }
+.hero-circuit-stats .hs-l {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.hero-circuit-stats .hs-v {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--fg-1);
+}
+.hero-circuit-stats .hs-u {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-3);
+}
+.lap-record-link:hover .lap-record-name { color: var(--accent); }
+.lap-record-link img { transition: transform var(--mo, 120ms) ease; }
+.lap-record-link:hover img { transform: scale(1.08); }
