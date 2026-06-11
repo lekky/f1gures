@@ -10,6 +10,7 @@ import {
 import { useTempUnit } from '../../../lib/weather.js';
 import SessionWeatherCell from './SessionWeatherCell.jsx';
 import SessionWeatherExpand from './SessionWeatherExpand.jsx';
+import TriviaBoard from './TriviaBoard.jsx';
 
 function driversSummary(D, drivers, completedCount) {
   if (!drivers.length || !completedCount) return null;
@@ -482,6 +483,7 @@ export default function HomeScreen({ data }) {
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
       <h1 className="sr-only">F1 {D.seasonYear || ''} Live Standings, Calendar & Stats</h1>
+      <TriviaBoard />
       {isHistoric || !next
         ? <SeasonAtGlance data={D} cal={cal} standings={standings} mob={mob} />
         : <NextRacePanel data={D} cal={cal} next={next} mob={mob} />}
