@@ -26,15 +26,16 @@ const route = {
   drivers:     isRoute('/drivers') || isRoute('/driver.html'),
   teams:       isRoute('/teams') || isRoute('/team.html'),
   blog:        isRoute('/blog'),
+  guide:       isRoute('/guide'),
 };
+const inMore =
+  route.circuits || route.drivers || route.teams || route.blog || route.guide ||
+  isRoute('/records');
 const botActive =
   route.home       ? 'home' :
   route.standings  ? 'standings' :
   route.calendar   ? 'calendar' :
-  route.blog       ? 'blog' :
-  route.circuits   ? 'circuits' :
-  route.drivers    ? 'drivers' :
-  route.teams      ? 'teams' : null;
+  inMore           ? 'more' : null;
 ---
 <div class="f1-app">
   <!-- Desktop top nav -->
@@ -52,6 +53,7 @@ const botActive =
       <a class:list={['nav-item', { active: route.drivers }]} href="/drivers/">Drivers</a>
       <a class:list={['nav-item', { active: route.teams }]} href="/teams/">Teams</a>
       <a class:list={['nav-item', { active: route.blog }]} href="/blog/">Blog</a>
+      <a class:list={['nav-item', { active: route.guide }]} href="/guide/">Guide</a>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-controls">
@@ -97,10 +99,31 @@ const botActive =
     <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/">
       <span class="botnav-icon">▦</span><span>Calendar</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'blog' }]} href="/blog/">
-      <span class="botnav-icon">◈</span><span>Blog</span>
-    </a>
+    <button
+      type="button"
+      class:list={['botnav-item', { active: botActive === 'more' }]}
+      data-more-trigger
+      aria-expanded="false"
+      aria-controls="more-sheet"
+      aria-label="More sections"
+    >
+      <span class="botnav-icon">⋯</span><span>More</span>
+    </button>
   </nav>
+
+  <!-- Mobile "More" bottom sheet -->
+  <div class="more-backdrop" data-more-backdrop hidden></div>
+  <div id="more-sheet" class="more-sheet" data-more-sheet role="dialog" aria-modal="false" aria-label="More sections" hidden>
+    <div class="more-sheet-title" aria-hidden="true">More</div>
+    <nav class="more-sheet-links">
+      <a class="more-sheet-link" href="/guide/">Guide</a>
+      <a class="more-sheet-link" href="/circuits/">Circuits</a>
+      <a class="more-sheet-link" href="/drivers/">Drivers</a>
+      <a class="more-sheet-link" href="/teams/">Teams</a>
+      <a class="more-sheet-link" href="/records/">Records</a>
+      <a class="more-sheet-link" href="/blog/">Blog</a>
+    </nav>
+  </div>
   <SearchPalette client:load />
 </div>
 
@@ -112,5 +135,43 @@ const botActive =
         el.setAttribute('aria-label', 'Search (⌘K)');
       });
     }
+  })();
+</script>
+<script is:inline>
+  (function () {
+    var trigger = document.querySelector('[data-more-trigger]');
+    var sheet = document.querySelector('[data-more-sheet]');
+    var backdrop = document.querySelector('[data-more-backdrop]');
+    if (!trigger || !sheet || !backdrop) return;
+    function setOpen(open) {
+      trigger.setAttribute('aria-expanded', String(open));
+      // Use a dedicated class for the open state so we don't clobber the
+      // build-time `active` route highlight on More-section pages.
+      trigger.classList.toggle('sheet-open', open);
+      if (open) {
+        sheet.hidden = false; backdrop.hidden = false;
+        // Move focus into the sheet so screen readers announce it on open.
+        var firstLink = sheet.querySelector('a');
+        if (firstLink) firstLink.focus();
+      }
+      requestAnimationFrame(function () {
+        sheet.classList.toggle('open', open);
+        backdrop.classList.toggle('open', open);
+      });
+      if (!open) {
+        setTimeout(function () {
+          if (!sheet.classList.contains('open')) { sheet.hidden = true; backdrop.hidden = true; }
+        }, 320);
+      }
+    }
+    trigger.addEventListener('click', function () {
+      setOpen(trigger.getAttribute('aria-expanded') !== 'true');
+    });
+    backdrop.addEventListener('click', function () { setOpen(false); trigger.focus(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && trigger.getAttribute('aria-expanded') === 'true') {
+        setOpen(false); trigger.focus();
+      }
+    });
   })();
 </script>

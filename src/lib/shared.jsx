@@ -236,8 +236,16 @@ export function StatusPill({ status }) {
   return <span className={`pill pill-${status.toLowerCase()}`}>{status}</span>;
 }
 
-export function SprintBadge() {
-  return <span className="pill pill-sprint">Sprint</span>;
+export function SprintBadge({ href } = {}) {
+  if (!href) return <span className="pill pill-sprint">Sprint</span>;
+  return (
+    <a
+      className="pill pill-sprint pill-sprint-link"
+      href={href}
+      onClick={(e) => e.stopPropagation()}
+      aria-label="Sprint weekend - what that means"
+    >Sprint</a>
+  );
 }
 
 export function DriverCell({ data, driver, showCode = true }) {

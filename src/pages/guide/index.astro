@@ -1,0 +1,73 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { publishedGuidesSorted, guideColor } from '../../lib/guide';
+
+const pages = publishedGuidesSorted(await getCollection('guide'));
+
+const title = 'F1 for Beginners - A Guide to Following the Race | f1gures';
+const description = 'New to Formula 1? Learn the race weekend, points, tyres, DRS, safety cars and strategy so you can follow every race like a regular.';
+const canonicalPath = '/guide/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Guide', path: '/guide/' },
+];
+
+const ORIGIN = 'https://f1gures.app';
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'F1 Beginner’s Guide',
+  url: ORIGIN + canonicalPath,
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: pages.length,
+    itemListElement: pages.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `${ORIGIN}/guide/${p.slug}/`,
+      name: p.data.title,
+    })),
+  },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page guide-hub">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">f1gures</div>
+        <h1 class="page-title">F1 for Beginners</h1>
+        <p class="page-sub">Everything you need to follow a Grand Prix and understand the commentary: the weekend format, points, tyres, strategy and the rules.</p>
+      </div>
+    </div>
+
+    <section class="guide-section">
+      <div class="section-head">
+        <h2>Start here</h2>
+        <span class="section-rule"></span>
+        <span class="guide-path-note">{pages.length} short reads, in order</span>
+      </div>
+      <ol class="guide-path">
+        {pages.map((p, i) => (
+          <li class="guide-step-item">
+            <a class="guide-step" href={`/guide/${p.slug}/`} style={`--card-accent: ${guideColor(p.data.order)}`}>
+              <span class="guide-step-num">{String(i + 1).padStart(2, '0')}</span>
+              <span class="guide-step-text">
+                <span class="guide-step-title">{p.data.title}</span>
+                <span class="guide-step-sum">{p.data.summary}</span>
+              </span>
+              <span class="guide-step-go" aria-hidden="true">»</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  </div>
+</BaseLayout>

@@ -10,6 +10,7 @@ import {
 import { useTempUnit } from '../../../lib/weather.js';
 import SessionWeatherCell from './SessionWeatherCell.jsx';
 import SessionWeatherExpand from './SessionWeatherExpand.jsx';
+import TriviaBoard from './TriviaBoard.jsx';
 
 function driversSummary(D, drivers, completedCount) {
   if (!drivers.length || !completedCount) return null;
@@ -250,7 +251,7 @@ function NextRacePanel({ data, cal, next, mob }) {
             <span className="t-eyebrow" style={{ color: 'var(--accent)' }}>Next Race</span>
             <span style={{ flex: 1, height: 1, background: 'var(--line-1)' }}></span>
             <span className="t-eyebrow">Round {String(next.round).padStart(2, '0')}/{cal.length}</span>
-            {next.sprint && <SprintBadge />}
+            {next.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
           </div>
           <div className="t-display" style={{ fontSize: mob ? 38 : 56, marginBottom: 6 }}>
             {next.name.replace(' Grand Prix', '')}<span style={{ color: 'var(--accent)' }}>.</span>
@@ -542,6 +543,7 @@ export default function HomeScreen({ data }) {
     <div className={mob ? 'home-mob' : ''}>
       <h1 className="sr-only">F1 {D.seasonYear || ''} Live Standings, Calendar & Stats</h1>
       <Band tone="plain" mob={mob}>
+        <TriviaBoard />
         {isHistoric || !next
           ? <SeasonAtGlance data={D} cal={cal} standings={standings} mob={mob} />
           : <NextRacePanel data={D} cal={cal} next={next} mob={mob} />}
@@ -696,6 +698,9 @@ export default function HomeScreen({ data }) {
           );
         })}
         </div>
+        <a className="btn btn-secondary" style={{ marginTop: 28, alignSelf: 'flex-start' }} href="/guide/">
+          New to F1? Start with the beginner's guide <span className="arrow">→</span>
+        </a>
       </Band>
     </div>
   );

@@ -73,7 +73,7 @@ function NextRaceHero({ F, race, mob }) {
         <span className="t-eyebrow" style={{ color: 'var(--accent)' }}>Next Race</span>
         <span style={{ flex: 1, minWidth: 16, height: 1, background: 'var(--line-1)' }}></span>
         <span className="t-eyebrow">Round {String(race.round).padStart(2, '0')}/{F.calendar.length}</span>
-        {race.sprint && <SprintBadge />}
+        {race.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
       </div>
 
       <div style={{
@@ -160,7 +160,7 @@ function UpcomingCard({ F, race }) {
       <div className="race-card-head">
         <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          {race.sprint && <SprintBadge />}
+          {race.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
           <span className={`pill pill-${race.status}`}>{race.status}</span>
         </div>
       </div>
@@ -231,7 +231,7 @@ function CompletedRow({ F, race, mob }) {
         }}>
           {race.name.replace(' Grand Prix', '')}
         </span>
-        {race.sprint && <SprintBadge />}
+        {race.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
         {mob && (
           <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)', width: '100%', display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span>{fmtDate(race.date)}</span>
@@ -303,7 +303,7 @@ function ChronologicalGrid({ F, mob }) {
             <div className="race-card-head">
               <div className="race-round">RD {String(race.round).padStart(2, '0')}</div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                {race.sprint && <SprintBadge />}
+                {race.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
                 <span className={`pill pill-${race.status}`}>{race.status}</span>
               </div>
             </div>
