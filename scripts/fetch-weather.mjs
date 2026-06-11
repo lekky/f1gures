@@ -126,7 +126,12 @@ async function main() {
   }
 
   try {
-    const json = await fetchForecast(ll.lat, ll.lng, todayIso(), next.date);
+    // End the range one day after the race so late-UTC session windows
+    // (Vegas ~04:00-06:00Z next day, Abu Dhabi evening +7h spans) aren't
+    // truncated at midnight on race day.
+    const endDate = new Date(new Date(next.date + 'T00:00:00Z').getTime() + 86400000)
+      .toISOString().slice(0, 10);
+    const json = await fetchForecast(ll.lat, ll.lng, todayIso(), endDate);
     const hourly = hourlyFromJson(json);
     out.status = 'ok';
     out.circuitRef = next.circuit;

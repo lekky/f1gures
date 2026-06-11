@@ -99,9 +99,10 @@ if (latestSeason?.year && teamRef) {
   }
 }
 
-// Show current-season position/points for drivers active in 2025 or later;
+// Show current-season position/points for drivers who raced this season or
+// last (early-season builds run before everyone has a current-year row);
 // show seasons count for retired drivers.
-const isActive = (driver.career.lastYear ?? 0) >= 2025;
+const isActive = (driver.career.lastYear ?? 0) >= new Date().getFullYear() - 1;
 const showSeasonStat = isActive && latestSeason != null;
 
 // /races/<y>/<r>/ pages exist for Ergast (1950-2024) + 2025 full bundle +

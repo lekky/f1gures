@@ -2,7 +2,7 @@
 // Includes the type toggle, points-progression chart, head-to-head card.
 // Recharts is imported from npm (not window.Recharts UMD).
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Panel, urlFor, Flag } from '../../../lib/shared.jsx';
 
@@ -27,12 +27,16 @@ export function StandingsTypeToggle({ active }) {
 
 export function PointsChart({ data, series, drivers, height = 320 }) {
   const D = data;
+  if (!drivers.length || !series[drivers[0].id]) return null;
   const cal = D.calendar;
   const rounds = series[drivers[0].id].map(p => p.round);
+  // Key rows/lines by driver id, not code - codes collide for shared
+  // surnames (1962: Graham Hill + Phil Hill are both "HIL") and the second
+  // write would clobber the first. `name` keeps the code as the label.
   const chartData = rounds.map((r, i) => {
     const calEntry = cal.find(c => c.round === r);
     const row = { round: `R${r}`, name: calEntry ? calEntry.name.replace(' Grand Prix', '').slice(0, 6) : `R${r}` };
-    drivers.forEach(d => { row[d.code] = series[d.id][i].points; });
+    drivers.forEach(d => { row[d.id] = series[d.id][i].points; });
     return row;
   });
   return (
@@ -45,7 +49,7 @@ export function PointsChart({ data, series, drivers, height = 320 }) {
           <Tooltip contentStyle={{ background: '#15161a', border: '1px solid #2a2c32' }} />
           <Legend />
           {drivers.map(d => (
-            <Line key={d.id} type="monotone" dataKey={d.code}
+            <Line key={d.id} type="monotone" dataKey={d.id} name={d.code}
                   stroke={D.teamById(d.team).color} strokeWidth={2}
                   dot={{ r: 3, strokeWidth: 0, fill: D.teamById(d.team).color }}
                   activeDot={{ r: 5 }} />
@@ -57,10 +61,13 @@ export function PointsChart({ data, series, drivers, height = 320 }) {
 }
 
 export function TeamProgressionChart({ progression, teams, height = 360 }) {
+  if (!teams.length || !progression[teams[0].team.id]) return null;
   const rounds = progression[teams[0].team.id].map(p => p.round);
+  // Key by team id - `short` collides historically (1961: Cooper-Climax and
+  // Cooper-Maserati are both "COO"). `name` keeps short as the label.
   const chartData = rounds.map((r, i) => {
     const row = { round: `R${r}` };
-    teams.forEach(t => { row[t.team.short] = progression[t.team.id][i].points; });
+    teams.forEach(t => { row[t.team.id] = progression[t.team.id][i].points; });
     return row;
   });
   return (
@@ -73,7 +80,7 @@ export function TeamProgressionChart({ progression, teams, height = 360 }) {
           <Tooltip contentStyle={{ background: '#15161a', border: '1px solid #2a2c32' }} />
           <Legend />
           {teams.map(t => (
-            <Line key={t.team.id} type="monotone" dataKey={t.team.short}
+            <Line key={t.team.id} type="monotone" dataKey={t.team.id} name={t.team.short}
                   stroke={t.team.color} strokeWidth={2}
                   dot={{ r: 3, strokeWidth: 0, fill: t.team.color }}
                   activeDot={{ r: 5 }} />
@@ -104,6 +111,14 @@ export function HeadToHead({ data, standings, mob }) {
   const defaultB = (standings.drivers[1] && standings.drivers[1].driver.id) || (DD.drivers[1] && DD.drivers[1].id) || defaultA;
   const [a, setA] = useState(defaultA);
   const [b, setB] = useState(defaultB);
+  // When the year picker swaps the season data in, the previously selected
+  // driver ids usually don't exist in the new season - reset to the new
+  // season's top two so the card doesn't render "Unknown" placeholders.
+  useEffect(() => {
+    setA(defaultA);
+    setB(defaultB);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [DD.seasonYear]);
   const driverA = DD.driverById(a);
   const driverB = DD.driverById(b);
   const rowA = standings.drivers.find(r => r.driver.id === a) || { points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0 };
@@ -112,8 +127,13 @@ export function HeadToHead({ data, standings, mob }) {
   const teamB = DD.teamById(driverB.team) || { color: '#888888', short: '-' };
   const avgFinish = (id) => {
     const rounds = Object.keys(DD.results).map(Number);
-    if (!rounds.length) return '-';
-    const positions = rounds.map(r => DD.results[r].order.indexOf(id) + 1);
+    // Only average races the driver actually appears in - indexOf returns -1
+    // for absences, which would otherwise count as position 0 (best possible)
+    // and make part-time drivers look superhuman.
+    const positions = rounds
+      .map(r => (DD.results[r].order || []).indexOf(id) + 1)
+      .filter(p => p > 0);
+    if (!positions.length) return '-';
     return (positions.reduce((s, p) => s + p, 0) / positions.length).toFixed(1);
   };
   const stats = [

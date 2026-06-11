@@ -184,7 +184,9 @@ function UpcomingCard({ F, race }) {
 function CompletedRow({ F, race, mob }) {
   const result = F.results[race.round];
   const winner = result ? F.driverById(result.order[0]) : null;
-  const fastest = result ? F.driverById(result.fastest) : null;
+  // Pre-2004 bundles ship fastest: null (Ergast has no FL rank before then);
+  // driverById(null) returns a truthy placeholder, so guard the id itself.
+  const fastest = result && result.fastest ? F.driverById(result.fastest) : null;
   const raceHref = urlFor({ name: 'race', year: F.seasonYear, round: race.round });
   const winnerHref = winner ? urlFor({ name: 'driver', id: winner.id, ref: winner.jolpicaId }) : null;
   const fastestHref = fastest ? urlFor({ name: 'driver', id: fastest.id, ref: fastest.jolpicaId }) : null;
@@ -293,7 +295,7 @@ function ChronologicalGrid({ F, mob }) {
         const circuit = F.circuits[race.circuit] || { name: race.circuit };
         const result = F.results[race.round];
         const winner = result ? F.driverById(result.order[0]) : null;
-        const fastest = result ? F.driverById(result.fastest) : null;
+        const fastest = result && result.fastest ? F.driverById(result.fastest) : null;
         const raceHref = urlFor({ name: 'race', year: F.seasonYear, round: race.round });
         return (
           <div key={race.round} className={`race-card race-card-link is-${race.status}`}>

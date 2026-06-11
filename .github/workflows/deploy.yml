@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+  # Manual redeploy of current main. Needed when a refresh run commits a new
+  # bundle but its FTP deploy fails transiently: later refreshes are no-ops
+  # (changed=false skips build+deploy), so the change never reaches the live
+  # server without a way to re-trigger a deploy on demand.
+  workflow_dispatch:
 
 concurrency:
   group: deploy

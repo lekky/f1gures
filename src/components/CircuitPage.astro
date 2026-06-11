@@ -38,7 +38,7 @@ interface Props {
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { circuitProfiles } from '../data/circuitProfiles.js';
-import { buildFallback } from '../data/buildFallback.js';
+import currentSeason from '../data/currentSeason.js';
 import { fmtDateLong } from '../lib/shared.jsx';
 import Flag from './Flag.astro';
 
@@ -106,9 +106,13 @@ const PROFILE_FOR_REF: Record<string, string> = {
 };
 const profileKey = PROFILE_FOR_REF[circuit.circuitRef] || circuit.circuitRef;
 const profile = (circuitProfiles as any)[profileKey] || null;
-// Next-race lookup uses the 2026 speculative calendar from buildFallback -
-// that's where the "what's coming up" fallback grid lives semantically.
-const nextRace = (buildFallback().calendar as any[]).find(r => r.circuit === profileKey) || null;
+// Next-race lookup against the real current-season bundle (synced by
+// prebuild): this circuit's calendar entry, but only while the race hasn't
+// been run - once results exist it's history, not "Next Race".
+const nextRace = ((currentSeason.calendar || []) as any[]).find(r =>
+  (r.circuitId === circuit.circuitRef || r.circuit === profileKey) &&
+  !(currentSeason.results || {})[r.round]
+) || null;
 
 // Weather pill icons - match the legacy mapping.
 const WEATHER_ICON: Record<string, string> = {

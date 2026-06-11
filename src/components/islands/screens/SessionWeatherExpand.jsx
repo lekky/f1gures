@@ -1,9 +1,17 @@
 import WeatherIcon from './WeatherIcon.jsx';
 import { formatTemp, wmoToDescription, summarizeHourly } from '../../../lib/weather.js';
 
-function HourCell({ entry, useFahrenheit }) {
-  const t = new Date(entry.tISO);
-  const hh = String(t.getUTCHours()).padStart(2, '0');
+function HourCell({ entry, useFahrenheit, timeZone }) {
+  // tISO is UTC; label the hour in the same zone the session rows show
+  // (track or user, per the panel toggle) so the strip lines up with the
+  // printed session start time.
+  let hh;
+  try {
+    hh = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone: timeZone || 'UTC' })
+      .format(new Date(entry.tISO));
+  } catch {
+    hh = String(new Date(entry.tISO).getUTCHours()).padStart(2, '0');
+  }
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
@@ -19,7 +27,7 @@ function HourCell({ entry, useFahrenheit }) {
   );
 }
 
-export default function SessionWeatherExpand({ forecast, isClimate, useFahrenheit }) {
+export default function SessionWeatherExpand({ forecast, isClimate, useFahrenheit, timeZone }) {
   if (!forecast) return null;
   const stopAll = (e) => e.stopPropagation();
   if (isClimate) {
@@ -54,7 +62,7 @@ export default function SessionWeatherExpand({ forecast, isClimate, useFahrenhei
          }}>
       <div style={{ display: 'flex', overflowX: 'auto', gap: 4, marginBottom: 8, maxWidth: '100%' }}>
         {(forecast.hourly || []).map((h, i) => (
-          <HourCell key={i} entry={h} useFahrenheit={useFahrenheit} />
+          <HourCell key={i} entry={h} useFahrenheit={useFahrenheit} timeZone={timeZone} />
         ))}
       </div>
       {summary && (

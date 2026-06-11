@@ -49,6 +49,11 @@ async function loadIndexes() {
       }),
     };
     return _indexes;
+  }).catch(err => {
+    // Don't cache a failed load forever - clearing the promise lets the
+    // next palette open retry instead of spinning on "Loading index…".
+    _indexesPromise = null;
+    throw err;
   });
   return _indexesPromise;
 }
@@ -131,7 +136,7 @@ export default function SearchPalette() {
   // Fetch indexes lazily on first open; lock scroll; focus management
   useEffect(() => {
     if (open && !indexes) {
-      loadIndexes().then(setIndexes);
+      loadIndexes().then(setIndexes).catch(() => {});
     }
     if (open) {
       const raf = requestAnimationFrame(() => inputRef.current?.focus());

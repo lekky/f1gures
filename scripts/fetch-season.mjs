@@ -158,6 +158,10 @@ function reshapeRaceResults(raceTable) {
       position: r.positionText, grid: parseInt(r.grid, 10) || null,
       points: parseFloat(r.points) || 0, laps: parseInt(r.laps, 10) || null,
       status: r.status, time: r.Time?.time || null,
+      // Per-race constructor: drivers can swap teams mid-season (Lawson/
+      // Tsunoda 2025), so the season-constant drivers[].team isn't enough
+      // to attribute race results to the right constructor.
+      team: r.Constructor ? (TEAM_ID_MAP[r.Constructor.constructorId] || r.Constructor.constructorId) : null,
       fastestLap: r.FastestLap?.Time?.time || null,
       fastestLapNumber: r.FastestLap ? parseInt(r.FastestLap.lap, 10) : null,
     };
@@ -169,7 +173,8 @@ function reshapeRaceResults(raceTable) {
     fastest: fastestLap ? driverCode(fastestLap.Driver) : null,
     order: sorted.map(r => driverCode(r.Driver)),
     grid: sorted.slice().sort((a, b) => parseInt(a.grid,10) - parseInt(b.grid,10)).map(r => driverCode(r.Driver)),
-    dnfs: sorted.filter(r => r.positionText === 'R' || r.positionText === 'D').map(r => driverCode(r.Driver)),
+    // R retired, D disqualified, E excluded, W withdrawn, N not classified
+    dnfs: sorted.filter(r => ['R', 'D', 'E', 'W', 'N'].includes(r.positionText)).map(r => driverCode(r.Driver)),
     detail,
   };
 }
@@ -196,6 +201,7 @@ function reshapeSprint(raceTable) {
     detail[driverCode(r.Driver)] = {
       position: r.positionText, grid: parseInt(r.grid,10) || null,
       points: parseFloat(r.points) || 0, time: r.Time?.time || null, status: r.status,
+      team: r.Constructor ? (TEAM_ID_MAP[r.Constructor.constructorId] || r.Constructor.constructorId) : null,
     };
   });
   return { winner: driverCode(sorted[0].Driver), order: sorted.map(r => driverCode(r.Driver)), detail };
@@ -235,8 +241,12 @@ async function main() {
   const standingsList0 = standingsData.MRData.StandingsTable.StandingsLists[0];
   const lastCompletedRound = standingsList0 ? parseInt(standingsList0.round, 10) : 0;
   const todayISO = new Date().toISOString().slice(0, 10);
+  // Use <= so a race held *today* is eligible the moment its results land.
+  // r.round <= lastCompletedRound is the real gate (Jolpica only advances the
+  // standings round once results exist), and empty rounds are dropped below,
+  // so this can't pull a not-yet-run race - it only fixes the race-day lag.
   const completedRounds = calendarRaw
-    .filter(r => r.date < todayISO && r.round <= lastCompletedRound)
+    .filter(r => r.date <= todayISO && r.round <= lastCompletedRound)
     .map(r => r.round);
 
   // Patch statuses now that we know lastCompletedRound

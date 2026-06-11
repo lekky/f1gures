@@ -4,6 +4,7 @@
 // island composes (Panel, DriverCell, Countdown, etc.) plus URL/date helpers.
 
 import { useEffect, useState } from 'react';
+import { roundPointsMap } from './seasonStats.mjs';
 
 // ─── URL helpers ──────────────────────────────────────────────
 // Listing pages use clean Astro paths. Detail pages (driver/race/circuit/team)
@@ -150,13 +151,16 @@ export function zoneShort(zone, dt) {
 }
 
 // ─── Date helpers ─────────────────────────────────────────────
+// Format in UTC: the input is a calendar date, not an instant. Without an
+// explicit timeZone, toLocaleDateString renders in the viewer's zone and
+// UTC+10..+14 visitors (and the build machine vs client) see the next day.
 export function fmtDate(iso, opts = {}) {
   const d = new Date(iso + 'T14:00:00Z');
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', ...opts });
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC', ...opts });
 }
 export function fmtDateLong(iso) {
   const d = new Date(iso + 'T14:00:00Z');
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 // ─── Flag rendering ───────────────────────────────────────────
@@ -210,9 +214,11 @@ export function Panel({ title, action, children, tight, style }) {
   );
 }
 
-export function SectionHead({ title, right }) {
+export function SectionHead({ title, right, variant }) {
+  const cls = variant === 'band' ? 'section-head section-head-band' : 'section-head';
   return (
-    <div className="section-head">
+    <div className={cls}>
+      {variant === 'band' && <span className="section-head-mark" aria-hidden="true"></span>}
       <h2>{title}</h2>
       <div className="section-rule"></div>
       {right}
@@ -300,24 +306,15 @@ export function lastNCompletedRounds(D, n) {
 export function driverPointsForRound(D, driverId, round) {
   const result = D.results[round];
   if (!result) return 0;
-  const pos = result.order.findIndex(id => id === driverId);
-  if (pos === -1) return 0;
-  let pts = F1_POINTS[pos] || 0;
-  if (result.fastest === driverId && pos < 10) pts += 1;
-  if (result.sprintWinner === driverId) pts += 8;
-  return pts;
+  return roundPointsMap(result)[driverId] || 0;
 }
 
 export function teamPointsForRound(D, teamId, round) {
   const result = D.results[round];
   if (!result) return 0;
-  return result.order.reduce((sum, did, i) => {
+  return Object.entries(roundPointsMap(result)).reduce((sum, [did, pts]) => {
     const drv = D.driverById(did);
-    if (!drv || drv.team !== teamId) return sum;
-    let pts = F1_POINTS[i] || 0;
-    if (result.fastest === did && i < 10) pts += 1;
-    if (result.sprintWinner === did) pts += 8;
-    return sum + pts;
+    return drv && drv.team === teamId ? sum + pts : sum;
   }, 0);
 }
 

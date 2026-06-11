@@ -9,17 +9,21 @@
   <style>body{font:14px/1.5 system-ui,sans-serif;margin:40px;color:#444}</style>
   <script>
     (function () {
-      // Legacy URL pattern: /team.html?id=ferrari - id matches our new
-      // constructorRef directly. Validate against the teams index, then
-      // redirect to /teams/<ref>/.
+      // Legacy URL pattern: /team.html?id=ferrari - id is usually our
+      // constructorRef, but the old SPA also linked the season bundles'
+      // short ids (redbull, aston). Map those to Ergast refs first - keep
+      // this in sync with TEAM_ID_ALIAS in src/lib/shared.jsx. Validate
+      // against the teams index, then redirect to /teams/<ref>/.
+      var ALIAS = { redbull: 'red_bull', aston: 'aston_martin' };
       var id = new URLSearchParams(location.search).get('id');
       if (!id) { location.replace('/standings-constructors/'); return; }
+      var ref = ALIAS[id] || id;
       fetch('/data/archive/_teams-index.json', { cache: 'force-cache' })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (idx) {
           if (!idx) { location.replace('/standings-constructors/'); return; }
-          var hit = idx.find(function (t) { return t.constructorRef === id; });
-          if (hit) location.replace('/teams/' + encodeURIComponent(id) + '/');
+          var hit = idx.find(function (t) { return t.constructorRef === ref; });
+          if (hit) location.replace('/teams/' + encodeURIComponent(ref) + '/');
           else location.replace('/standings-constructors/');
         })
         .catch(function () { location.replace('/standings-constructors/'); });
