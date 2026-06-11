@@ -8,6 +8,7 @@ import {
   MiniChart, lastNCompletedRounds, driverPointsForRound, teamPointsForRound,
 } from '../../../lib/shared.jsx';
 import { useTempUnit } from '../../../lib/weather.js';
+import { circuitProfiles } from '../../../data/circuitProfiles.js';
 import SessionWeatherCell from './SessionWeatherCell.jsx';
 import SessionWeatherExpand from './SessionWeatherExpand.jsx';
 import TriviaBoard from './TriviaBoard.jsx';
@@ -238,14 +239,33 @@ function NextRacePanel({ data, cal, next, mob }) {
   }, [sessions]);
   const target = (nextSession && nextSession.dt) || raceDt;
 
+  // Curated circuit stats (real length/laps/corners; the bundle's own fields
+  // are zeros). next.circuit is the short id that keys circuitProfiles.
+  const profile = circuitProfiles[next.circuit] || null;
+  const circuitStats = profile ? [
+    profile.length  ? { l: 'Length',  v: profile.length.toFixed(3), u: ' km' } : null,
+    profile.laps    ? { l: 'Laps',    v: profile.laps,    u: '' } : null,
+    profile.corners ? { l: 'Corners', v: profile.corners, u: '' } : null,
+  ].filter(Boolean) : [];
+  const lapRec = profile && profile.lapRecord && profile.lapRecord.time && profile.lapRecord.time !== '-'
+    ? profile.lapRecord
+    : null;
+  // Driver headshot + link for the lap-record holder. Images are keyed by
+  // driverRef (e.g. max_verstappen.webp); the driver page is prerendered at
+  // /drivers/<driverRef>/. Missing headshots hide via onError.
+  const lapRecImg = lapRec && lapRec.driverRef ? `/images/drivers/${lapRec.driverRef}.webp` : null;
+  const lapRecHref = lapRec && lapRec.driverRef ? `/drivers/${lapRec.driverRef}/` : null;
+
   return (
     <div className="panel f1-card-link" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
          onClick={() => navigate({ name: 'race', year: D.seasonYear, round: next.round })}>
+      <div className="hero-ghost" aria-hidden="true">{String(next.round).padStart(2, '0')}</div>
+      <div className="hero-speedlines" aria-hidden="true"></div>
       <div className="kbd-corner kbd-tl"></div>
       <div className="kbd-corner kbd-tr"></div>
       <div className="kbd-corner kbd-bl"></div>
       <div className="kbd-corner kbd-br"></div>
-      <div style={{ padding: mob ? 16 : 24, display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: mob ? 20 : 32 }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: mob ? 16 : 24, display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: mob ? 20 : 32 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <span className="t-eyebrow" style={{ color: 'var(--accent)' }}>Next Race</span>
@@ -253,7 +273,7 @@ function NextRacePanel({ data, cal, next, mob }) {
             <span className="t-eyebrow">Round {String(next.round).padStart(2, '0')}/{cal.length}</span>
             {next.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
           </div>
-          <div className="t-display" style={{ fontSize: mob ? 38 : 56, marginBottom: 6 }}>
+          <div className="t-display" style={{ fontSize: mob ? 44 : 76, marginBottom: 6 }}>
             {next.name.replace(' Grand Prix', '')}<span style={{ color: 'var(--accent)' }}>.</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg-2)', marginBottom: 16 }}>
@@ -262,6 +282,16 @@ function NextRacePanel({ data, cal, next, mob }) {
             <span style={{ color: 'var(--fg-4)' }}>·</span>
             <span className="t-mono" style={{ fontSize: 13 }}>{fmtDateLong(next.date)}</span>
           </div>
+          {circuitStats.length > 0 && (
+            <div className="hero-circuit-stats" style={{ marginBottom: 16 }}>
+              {circuitStats.map(s => (
+                <div className="hs" key={s.l}>
+                  <div className="hs-l">{s.l}</div>
+                  <div className="hs-v">{s.v}<span className="hs-u">{s.u}</span></div>
+                </div>
+              ))}
+            </div>
+          )}
           {nextSession && nextSession.dt && (
             <div className="t-mono" style={{
               fontSize: 11,
@@ -305,7 +335,7 @@ function NextRacePanel({ data, cal, next, mob }) {
               </div>
             </div>
           </div>
-          <div style={{ border: '1px solid var(--line-1)', minWidth: 0 }} className="next-race-sessions">
+          <div style={{ border: '1px solid var(--line-1)', background: 'var(--bg-2)', minWidth: 0 }} className="next-race-sessions">
             {sessions.map((s, i) => {
               const { forecast, isClimate } = sessionWeather(D, next, s.id);
               const isExpanded = expandedSessionId === s.id;
@@ -348,6 +378,36 @@ function NextRacePanel({ data, cal, next, mob }) {
             {' · '}
             You: {userZone} ({zoneShort(userZone, raceDt)})
           </div>
+          {lapRec && (
+            <div style={{
+              marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line-1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
+            }}>
+              <span className="t-eyebrow">Lap Record</span>
+              <a
+                className="lap-record-link"
+                href={lapRecHref}
+                onClick={(e) => e.stopPropagation()}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }}
+              >
+                {lapRecImg && (
+                  <img
+                    src={lapRecImg}
+                    alt=""
+                    width={24}
+                    height={24}
+                    loading="lazy"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center', background: 'var(--bg-3)', flexShrink: 0 }}
+                  />
+                )}
+                <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-2)' }}>
+                  <span className="lap-record-name" style={{ color: 'var(--fg-1)', fontWeight: 600 }}>{lapRec.driver}</span> · {lapRec.time}
+                  {lapRec.year ? <span style={{ color: 'var(--fg-3)' }}> ({lapRec.year})</span> : null}
+                </span>
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
