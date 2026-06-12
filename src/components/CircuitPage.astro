@@ -43,6 +43,7 @@ import { circuitProfiles } from '../data/circuitProfiles.js';
 import currentSeason from '../data/currentSeason.js';
 import { fmtDateLong } from '../lib/shared.jsx';
 import { hasDriverFace } from '../lib/driverFaceExists.js';
+import { teamLogoPath } from '../lib/teamLogo.js';
 import Flag from './Flag.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 
@@ -160,6 +161,12 @@ const thisSeasonRace = seasonYearNum ? racesByRecent.find(r => r.year === season
 const featuredRace = thisSeasonRace || racesByRecent[0] || null;
 const roundLabel = thisSeasonRace ? thisSeasonRace.round : null;
 const featuredUrl = featuredRace ? raceUrl(featuredRace.year, featuredRace.round) : null;
+// CTA label makes the season explicit: the live-season weekend vs the most
+// recent past one (the year alone signals current vs. historic).
+const featuredYear = featuredRace ? featuredRace.year : null;
+const ctaLabel = featuredYear
+  ? (thisSeasonRace ? `View ${featuredYear} Race Weekend` : `Latest Weekend · ${featuredYear}`)
+  : 'View Race Weekend';
 
 // Weather pill icons - match the legacy mapping.
 const WEATHER_ICON: Record<string, string> = {
@@ -212,28 +219,9 @@ function driverImg(ref: string | null | undefined): string | null {
   const rel = `images/drivers/${ref}.webp`;
   return existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null;
 }
+const lapRecordImg = lapRecord ? driverImg(lapRecord.driverRef) : null;
 
-// Team-logo lookup for the historical-winners team cells. Logo files are keyed
-// by the bundle short id (redbull.jpg, aston.jpg), so map the Ergast/bundle
-// constructorRef → logo basename. Only the ~13 current teams ship a logo.
-const LOGO_FOR_REF: Record<string, string> = {
-  alpine: 'alpine', aston: 'aston', aston_martin: 'aston', audi: 'audi',
-  cadillac: 'cadillac', ferrari: 'ferrari', haas: 'haas', mclaren: 'mclaren',
-  mercedes: 'mercedes', rb: 'rb', redbull: 'redbull', red_bull: 'redbull',
-  williams: 'williams',
-};
-const logoCache = new Map<string, string | null>();
-function teamLogoPath(ref: string | null): string | null {
-  if (!ref) return null;
-  if (!logoCache.has(ref)) {
-    const base = LOGO_FOR_REF[ref];
-    const rel = base ? `images/teams/${base}.jpg` : null;
-    logoCache.set(ref, rel && existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null);
-  }
-  return logoCache.get(ref)!;
-}
-
-// Initials chip for winners without a curated headshot.
+// Initials chip for winners/pole-sitters without a curated headshot.
 function initials(name: string | null): string {
   if (!name) return '–';
   return name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -253,6 +241,8 @@ const recordCards: CircuitRecordCard[] = [
 
 <div class="page circuit-detail">
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/circuits/">← Circuits</a>
+
+  <TriviaBoard client:visible />
 
   <div class={`panel circuit-hero ${hasMap ? 'has-map' : ''}`}>
     <div class="circuit-hero-info">
@@ -279,7 +269,7 @@ const recordCards: CircuitRecordCard[] = [
         <p class="circuit-hero-blurb">{profile.blurb}</p>
       )}
       {featuredUrl && (
-        <a class="btn btn-primary circuit-hero-cta" href={featuredUrl}>View Race Weekend →</a>
+        <a class="btn btn-primary circuit-hero-cta" href={featuredUrl}>{ctaLabel} →</a>
       )}
     </div>
 
@@ -309,8 +299,6 @@ const recordCards: CircuitRecordCard[] = [
       </div>
     )}
   </div>
-
-  <TriviaBoard client:visible />
 
   {(stats.length > 0 || lapRecord || nextRace) && (
     <div class="circuit-mid-grid">
@@ -348,12 +336,19 @@ const recordCards: CircuitRecordCard[] = [
               <div class="panel circuit-lap-card">
                 <span class="t-eyebrow circuit-lap-eyebrow">Outright Lap Record</span>
                 <div class="circuit-lap-time">{lapRecord.time}</div>
-                <div class="circuit-lap-driver">
-                  {lapRecord.driverRef
-                    ? <a href={`/drivers/${lapRecord.driverRef}/`} class="inline-link">{lapRecord.driver}</a>
-                    : lapRecord.driver}
+                <div class="circuit-lap-holder">
+                  {lapRecordImg
+                    ? <img class="circuit-lap-face" src={lapRecordImg} alt={lapRecord.driver} width="44" height="44" loading="lazy" />
+                    : <span class="circuit-lap-face circuit-lap-face-fallback" aria-hidden="true">{initials(lapRecord.driver)}</span>}
+                  <div class="circuit-lap-holder-text">
+                    <div class="circuit-lap-driver">
+                      {lapRecord.driverRef
+                        ? <a href={`/drivers/${lapRecord.driverRef}/`} class="inline-link">{lapRecord.driver}</a>
+                        : lapRecord.driver}
+                    </div>
+                    <div class="circuit-lap-sub">Set in {lapRecord.year}</div>
+                  </div>
                 </div>
-                <div class="circuit-lap-sub">Set in {lapRecord.year}</div>
                 <span class="circuit-lap-clock" aria-hidden="true">◷</span>
               </div>
               {profile && (
@@ -460,6 +455,7 @@ const recordCards: CircuitRecordCard[] = [
             {circuit.races.map(r => {
               const raceHref = raceUrl(r.year, r.round);
               const winnerFace = r.winnerRef && hasDriverFace(r.winnerRef) ? `/images/drivers/${r.winnerRef}.webp` : null;
+              const poleFace = r.poleRef && hasDriverFace(r.poleRef) ? `/images/drivers/${r.poleRef}.webp` : null;
               const logo = teamLogoPath(r.winnerTeamRef);
               return (
                 <tr>
@@ -482,9 +478,18 @@ const recordCards: CircuitRecordCard[] = [
                         : (r.winnerTeam || '-')}
                     </span>
                   </td>
-                  <td>{r.poleRef && r.poleName ? (
-                    <a href={`/drivers/${r.poleRef}/`} class="inline-link">{r.poleName}</a>
-                  ) : (r.poleName || '-')}</td>
+                  <td>
+                    {r.poleName ? (
+                      <span class="race-cell">
+                        {poleFace
+                          ? <img class="cw-face" src={poleFace} alt="" width="26" height="26" loading="lazy" />
+                          : <span class="cw-face cw-face-fallback" aria-hidden="true">{initials(r.poleName)}</span>}
+                        {r.poleRef
+                          ? <a href={`/drivers/${r.poleRef}/`} class="inline-link cw-name">{r.poleName}</a>
+                          : <span class="cw-name">{r.poleName}</span>}
+                      </span>
+                    ) : '-'}
+                  </td>
                   <td class="right t-mono">{r.fastestLapTime || '-'}</td>
                 </tr>
               );
@@ -519,12 +524,12 @@ const recordCards: CircuitRecordCard[] = [
   @media (max-width: 820px) {
     .circuit-hero.has-map { grid-template-columns: 1fr; }
   }
-  .circuit-hero-info { padding: 26px 28px; min-width: 0; }
+  .circuit-hero-info { padding: 22px 26px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
 
   .circuit-hero-eyebrow { color: var(--accent); margin-bottom: 8px; }
-  .circuit-hero-name { margin: 0 0 14px 0; font-size: 46px; line-height: 1.02; text-transform: uppercase; letter-spacing: -0.01em; }
+  .circuit-hero-name { margin: 0 0 12px 0; font-size: 38px; line-height: 1.02; text-transform: uppercase; letter-spacing: -0.01em; }
   @media (max-width: 720px) {
-    .circuit-hero-name { font-size: 30px; }
+    .circuit-hero-name { font-size: 28px; }
   }
 
   .circuit-hero-loc { display: flex; align-items: center; gap: 10px; color: var(--fg-2); margin-bottom: 14px; font-size: 13px; }
@@ -545,10 +550,10 @@ const recordCards: CircuitRecordCard[] = [
       var(--bg-2);
     border-left: 1px solid var(--line-1);
     display: flex; flex-direction: column;
-    min-height: 300px; padding: 16px;
+    min-height: 210px; padding: 14px 16px;
   }
   @media (max-width: 820px) {
-    .circuit-hero-map { border-left: 0; border-top: 1px solid var(--line-1); min-height: 240px; }
+    .circuit-hero-map { border-left: 0; border-top: 1px solid var(--line-1); min-height: 220px; }
   }
   .circuit-map-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; z-index: 1; }
   .circuit-map-meta { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); }
@@ -582,7 +587,15 @@ const recordCards: CircuitRecordCard[] = [
     font-family: var(--f-display); font-weight: 800; font-size: 48px; line-height: 1;
     color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
   }
-  .circuit-lap-driver { font-family: var(--f-display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 12px; }
+  .circuit-lap-holder { display: flex; align-items: center; gap: 12px; margin-top: 14px; position: relative; z-index: 1; }
+  .circuit-lap-face { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--bg-3); flex-shrink: 0; border: 2px solid var(--accent); }
+  .circuit-lap-face-fallback {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--f-display); font-weight: 800; font-size: 14px; color: var(--fg-3);
+    border-color: var(--line-2);
+  }
+  .circuit-lap-holder-text { min-width: 0; }
+  .circuit-lap-driver { font-family: var(--f-display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.02em; }
   .circuit-lap-sub { font-family: var(--f-mono); font-size: 12px; color: var(--fg-3); margin-top: 4px; }
   .circuit-lap-clock {
     position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
