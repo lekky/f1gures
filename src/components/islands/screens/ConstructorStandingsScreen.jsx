@@ -8,12 +8,17 @@ import {
   TeamLogo,
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, TeamProgressionChart } from './StandingsCommon.jsx';
+import TriviaBoard from './TriviaBoard.jsx';
+import { ChampSection, teamsSummary } from './ChampPodium.jsx';
 
 export default function ConstructorStandingsScreen({ data }) {
   const DD = data;
   const mob = useIsMobile();
   const standings = useMemo(() => DD.computeStandings(), [DD]);
   const recentRounds = useMemo(() => lastNCompletedRounds(DD, 5), [DD]);
+  const leaderPoints = standings.teams.reduce((m, r) => Math.max(m, r.points), 0);
+  const completedCount = DD.calendar.filter(r => DD.results[r.round]).length;
+  const top3 = standings.teams.slice(0, 3);
   return (
     <div className={`page ${mob ? 'page-mob' : ''}`}>
       <div className="page-head">
@@ -28,6 +33,18 @@ export default function ConstructorStandingsScreen({ data }) {
       </div>
 
       {mob && <StandingsTypeToggle active="c" />}
+
+      <TriviaBoard />
+
+      {top3.length >= 1 && (
+        <div className="std-podium">
+          <ChampSection mode="teams" title="Championship Leaders"
+            rows={top3} D={DD} recentRounds={recentRounds}
+            blurb={teamsSummary(DD, top3, completedCount)}
+            after={String(completedCount).padStart(2, '0')} mob={mob} />
+          <SectionHead variant="band" title="Full Table" />
+        </div>
+      )}
 
       <Panel tight>
         <div className="tbl-wrap">
@@ -50,14 +67,22 @@ export default function ConstructorStandingsScreen({ data }) {
                   <tr key={row.team.id} className="clickable"
                       onClick={() => { window.location.href = teamHref; }}>
                     <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
-                    <td>
-                      <a href={teamHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <td className="std-name-td">
+                      <span className="std-bar" aria-hidden="true"
+                        style={{ width: `${leaderPoints > 0 ? (row.points / leaderPoints) * 100 : 0}%`, '--tc': row.team.color }} />
+                      <div className="std-name-inner">
+                        <a href={teamHref} className="std-name-id" onClick={e => e.stopPropagation()}>
                           <span style={{ width: 4, height: 24, background: row.team.color, flexShrink: 0 }}></span>
                           <TeamLogo team={row.team} size={32} />
                           <span style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 16, textTransform: 'uppercase' }}>{row.team.name}</span>
-                        </div>
-                      </a>
+                        </a>
+                        {(() => {
+                          const gap = leaderPoints - row.points;
+                          return gap <= 0
+                            ? <span className="std-gap is-leader">Leader</span>
+                            : <span className="std-gap">-{gap}</span>;
+                        })()}
+                      </div>
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
