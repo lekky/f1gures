@@ -709,7 +709,7 @@ function ChampSection({ mode, title, fullHref, rows, D, recentRounds, blurb, aft
       meta: <span>{codes || t.short}</span>,
       ghost: t.short,
       media: <TeamLogo team={t} fill />,
-      rowMedia: null,
+      rowMedia: <TeamLogo team={t} fill />,
       stats: [{ v: row.wins, l: 'Wins' }, { v: row.podiums, l: 'Podiums' }],
       sub: `${row.wins} wins · ${row.podiums} podiums`,
       recent: recentRounds.map(r => teamPointsForRound(D, t.id, r.round)),
