@@ -8,6 +8,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Flag from './Flag.astro';
 import LineageStrip from './LineageStrip.astro';
+import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 
 interface Props {
   currentYear: number | null;
@@ -186,6 +187,8 @@ function hasFace(ref: string): boolean {
       </div>
     </div>
   </div>
+
+  <TriviaBoard client:visible />
 
   {isCurrent && currentDriverPhotos.length > 0 && (
     <>

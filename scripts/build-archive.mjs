@@ -14,58 +14,13 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
 import { computeStandings as computeBundleSeasonStandings, sprintPointsMap } from '../src/lib/seasonStats.mjs';
+import { NATIONALITY, natInfo } from '../src/lib/nationality.js';
 
 // ─── Static lookups ───────────────────────────────────────────────────
 // Hand-curated mappings that the Ergast CSVs don't carry - keep small.
 
-// Nationality → { country (ISO 3166-1 alpha-2), flag (emoji) }. Covers every
-// nationality that's appeared in F1 since 1950. Unknown values fall back to
-// a white flag.
-const NATIONALITY = {
-  'American': { country: 'US', flag: '🇺🇸' },
-  'American-Italian': { country: 'US', flag: '🇺🇸' },
-  'Argentine': { country: 'AR', flag: '🇦🇷' },
-  'Argentine-Italian': { country: 'AR', flag: '🇦🇷' },
-  'Argentinian': { country: 'AR', flag: '🇦🇷' },
-  'Australian': { country: 'AU', flag: '🇦🇺' },
-  'Austrian': { country: 'AT', flag: '🇦🇹' },
-  'Belgian': { country: 'BE', flag: '🇧🇪' },
-  'Brazilian': { country: 'BR', flag: '🇧🇷' },
-  'British': { country: 'GB', flag: '🇬🇧' },
-  'Canadian': { country: 'CA', flag: '🇨🇦' },
-  'Chilean': { country: 'CL', flag: '🇨🇱' },
-  'Chinese': { country: 'CN', flag: '🇨🇳' },
-  'Colombian': { country: 'CO', flag: '🇨🇴' },
-  'Czech': { country: 'CZ', flag: '🇨🇿' },
-  'Danish': { country: 'DK', flag: '🇩🇰' },
-  'Dutch': { country: 'NL', flag: '🇳🇱' },
-  'East German': { country: 'DE', flag: '🇩🇪' },
-  'Finnish': { country: 'FI', flag: '🇫🇮' },
-  'French': { country: 'FR', flag: '🇫🇷' },
-  'German': { country: 'DE', flag: '🇩🇪' },
-  'Hungarian': { country: 'HU', flag: '🇭🇺' },
-  'Indian': { country: 'IN', flag: '🇮🇳' },
-  'Indonesian': { country: 'ID', flag: '🇮🇩' },
-  'Irish': { country: 'IE', flag: '🇮🇪' },
-  'Italian': { country: 'IT', flag: '🇮🇹' },
-  'Japanese': { country: 'JP', flag: '🇯🇵' },
-  'Liechtensteiner': { country: 'LI', flag: '🇱🇮' },
-  'Malaysian': { country: 'MY', flag: '🇲🇾' },
-  'Mexican': { country: 'MX', flag: '🇲🇽' },
-  'Monegasque': { country: 'MC', flag: '🇲🇨' },
-  'New Zealander': { country: 'NZ', flag: '🇳🇿' },
-  'Polish': { country: 'PL', flag: '🇵🇱' },
-  'Portuguese': { country: 'PT', flag: '🇵🇹' },
-  'Rhodesian': { country: 'ZW', flag: '🇿🇼' },
-  'Russian': { country: 'RU', flag: '🇷🇺' },
-  'South African': { country: 'ZA', flag: '🇿🇦' },
-  'Spanish': { country: 'ES', flag: '🇪🇸' },
-  'Swedish': { country: 'SE', flag: '🇸🇪' },
-  'Swiss': { country: 'CH', flag: '🇨🇭' },
-  'Thai': { country: 'TH', flag: '🇹🇭' },
-  'Uruguayan': { country: 'UY', flag: '🇺🇾' },
-  'Venezuelan': { country: 'VE', flag: '🇻🇪' },
-};
+// Nationality → flag map + natInfo() live in src/lib/nationality.js (imported
+// above) so the race pages can reuse the same demonym lookup.
 
 // Constructor → team color (hex). Active modern teams use their canonical
 // livery; historic teams default to grey. Display only - doesn't block render.
@@ -97,12 +52,6 @@ function deriveCode(driver) {
   if (driver.code && driver.code !== '\\N' && driver.code.trim()) return driver.code.trim();
   const surname = (driver.surname || driver.driverRef || '').replace(/[^A-Za-z]/g, '');
   return surname.slice(0, 3).toUpperCase() || (driver.driverRef || '???').slice(0, 3).toUpperCase();
-}
-
-function natInfo(nationality) {
-  if (!nationality) return { country: '', flag: '🏳' };
-  const trimmed = nationality.trim();
-  return NATIONALITY[trimmed] || { country: '', flag: '🏳' };
 }
 
 // Country (name) → { code (ISO), flag }. Used to render circuit-country

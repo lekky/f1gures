@@ -7,6 +7,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { natInfo } from '../lib/nationality.js';
 
 // process.cwd() is the project root during astro build/dev. Don't use
 // import.meta.url + __dirname here - Vite bundles this module into dist/
@@ -44,8 +45,35 @@ export function getRacesIndex() {
   if (!_racesIdx) _racesIdx = readJson(join(ARCHIVE, '_races-index.json'));
   return _racesIdx;
 }
+// driverRef → nationality demonym, built once from the drivers index. Used to
+// stamp country/flag onto race-result rows (the archive race JSONs carry only
+// driverRef, not nationality).
+let _natByRef = null;
+function natByRef() {
+  if (!_natByRef) {
+    _natByRef = new Map();
+    for (const d of getDriversIndex()) _natByRef.set(d.driverRef, d.nationality);
+  }
+  return _natByRef;
+}
+
 export function getRace(year, round) {
-  return readJson(join(ARCHIVE, 'races', String(year), `${round}.json`));
+  const race = readJson(join(ARCHIVE, 'races', String(year), `${round}.json`));
+  // Enrich each driver-bearing row with country/flag for the race-page tables,
+  // mirroring the nationality flag the standings driver cell shows.
+  const nm = natByRef();
+  const stamp = (row) => {
+    if (row && row.driverRef && row.country == null && row.flag == null) {
+      const info = natInfo(nm.get(row.driverRef));
+      row.country = info.country;
+      row.flag = info.flag;
+    }
+    return row;
+  };
+  (race.results || []).forEach(stamp);
+  (race.qualifying || []).forEach(stamp);
+  if (Array.isArray(race.sprint)) race.sprint.forEach(stamp);
+  return race;
 }
 
 let _circuitsIdx = null;

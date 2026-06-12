@@ -1,0 +1,117 @@
+---
+// Race podium rendered with the championship-leader card pattern (.champ*):
+// a featured winner card (headshot/flag, team colour, race time, points, fastest
+// lap) flanked by stacked P2/P3 cards. Reuses the global .champ classes from
+// app.css so it matches the standings-page podium.
+
+import Flag from './Flag.astro';
+import { hasDriverFace } from '../lib/driverFaceExists.js';
+
+interface Row {
+  position: number | null;
+  driverRef: string | null;
+  driverName: string | null;
+  code: string | null;
+  constructorRef: string | null;
+  constructorName: string | null;
+  constructorColor: string | null;
+  grid: number | null;
+  points: number;
+  time: string | null;
+  status: string | null;
+  fastestLapRank?: number | null;
+  country?: string | null;
+  flag?: string | null;
+}
+
+interface Props {
+  rows: Row[];
+}
+
+const { rows } = Astro.props;
+// One card per podium position. Shared-drive era races (1950s) list several
+// drivers at the same position; keep the first listed for each of P1-P3.
+const byPos = new Map<number, Row>();
+for (const r of rows) {
+  const p = r.position;
+  if (p != null && p >= 1 && p <= 3 && !byPos.has(p)) byPos.set(p, r);
+}
+const podium = [...byPos.values()].sort((a, b) => (a.position || 0) - (b.position || 0));
+
+function nameParts(full: string | null): { first: string; last: string } {
+  const parts = (full || '').trim().split(/\s+/);
+  if (parts.length <= 1) return { first: '', last: full || '-' };
+  return { last: parts.pop()!, first: parts.join(' ') };
+}
+
+const leader = podium.find(r => r.position === 1) || null;
+const rest = podium.filter(r => r.position !== 1);
+const tc = (r: Row) => r.constructorColor || 'var(--accent)';
+---
+
+{podium.length > 0 && (
+  <div class="champ race-podium">
+    {leader && (() => {
+      const nm = nameParts(leader.driverName);
+      return (
+        <a class="champ-leader" href={leader.driverRef ? `/drivers/${leader.driverRef}/` : '#'} style={`--tc: ${tc(leader)}`}>
+          <div class="champ-leader-photo">
+            <span class="champ-medal" aria-hidden="true">1</span>
+            {leader.driverRef && hasDriverFace(leader.driverRef)
+              ? <img class="champ-photo-img" src={`/images/drivers/${leader.driverRef}.webp`} alt="" loading="lazy" />
+              : null}
+            <span class="champ-photo-ghost" aria-hidden="true">1</span>
+          </div>
+          <div class="champ-leader-body">
+            <div class="champ-leader-head">
+              <span class="champ-pill">Race Winner</span>
+              {leader.time && <span class="champ-after">{leader.time}</span>}
+            </div>
+            <h3 class="champ-name">
+              {nm.first && <span class="champ-name-first">{nm.first}</span>}
+              <span class="champ-name-last">{nm.last}</span>
+            </h3>
+            <div class="champ-meta">
+              <Flag cc={leader.country} flag={leader.flag} name={leader.driverName} />
+              <span>{leader.constructorName || '-'}</span>
+            </div>
+            <div class="champ-figures">
+              <div class="champ-pts"><span class="champ-pts-v">{leader.points}</span><span class="champ-pts-u">pts</span></div>
+              <div class="champ-stat"><span class="champ-stat-v">{leader.grid != null ? `P${leader.grid}` : '-'}</span><span class="champ-stat-l">Grid</span></div>
+              {leader.fastestLapRank === 1 && (
+                <div class="champ-stat"><span class="champ-stat-v">⚡</span><span class="champ-stat-l">Fastest Lap</span></div>
+              )}
+            </div>
+          </div>
+        </a>
+      );
+    })()}
+    <div class="champ-rest">
+      {rest.map(r => {
+        const nm = nameParts(r.driverName);
+        return (
+          <a class="champ-row" href={r.driverRef ? `/drivers/${r.driverRef}/` : '#'} style={`--tc: ${tc(r)}`}>
+            <div class="champ-row-side">
+              <span class="champ-row-badge">{r.position}</span>
+              {r.driverRef && hasDriverFace(r.driverRef)
+                ? <img class="champ-row-img" src={`/images/drivers/${r.driverRef}.webp`} alt="" loading="lazy" />
+                : <span class="champ-row-ghost" aria-hidden="true">{r.code || r.position}</span>}
+            </div>
+            <div class="champ-row-body">
+              <div class="champ-row-name">{nm.last}</div>
+              <div class="champ-row-meta">
+                <Flag cc={r.country} flag={r.flag} name={r.driverName} />
+                <span>{r.constructorName || '-'}</span>
+              </div>
+              <div class="champ-row-figs">
+                <span class="champ-row-pts">{r.points}</span>
+                <span class="champ-row-pts-u">pts</span>
+              </div>
+              <div class="champ-row-sub">{r.time || r.status || ''}{r.grid != null ? ` · Grid P${r.grid}` : ''}</div>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+)}

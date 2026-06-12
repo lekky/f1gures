@@ -1,0 +1,131 @@
+---
+// Standings-styled results table for a race or sprint session. Each row mirrors
+// the driver-standings look: a team-coloured proportional bar behind the driver
+// cell (length = how close to the winner on time), driver headshot + nationality
+// flag, team-colour strip, status glyph, and a gap chip ("WIN" / "+22.4s").
+//
+// Renders all rows for SEO but collapses to the top `maxRows` behind a
+// "Show all N" button (wired by the inline script in RaceResultsBody).
+
+import Flag from './Flag.astro';
+import StatusIcon from './StatusIcon.astro';
+import { raceGapSeconds } from '../lib/raceTimings.js';
+import { hasDriverFace } from '../lib/driverFaceExists.js';
+
+interface Row {
+  position: number | null;
+  positionText: string | null;
+  driverRef: string | null;
+  driverName: string | null;
+  code: string | null;
+  constructorRef: string | null;
+  constructorName: string | null;
+  constructorColor: string | null;
+  grid: number | null;
+  points: number;
+  laps?: number | null;
+  time: string | null;
+  status: string | null;
+  fastestLapTime?: string | null;
+  fastestLapRank?: number | null;
+  country?: string | null;
+  flag?: string | null;
+}
+
+interface Props {
+  rows: Row[];
+  kind: 'race' | 'sprint';
+  id: string;
+  maxRows?: number;
+}
+
+const { rows, kind, id, maxRows = 10 } = Astro.props;
+const isRace = kind === 'race';
+
+// Gap-to-winner bar: leader = full bar, field tapers by time behind. Anything
+// without a parseable gap (lapped / DNF / very old data) gets no bar.
+const gaps = rows.map(r => raceGapSeconds(r.time));
+const maxGap = Math.max(0, ...gaps.filter((g): g is number => g != null && g > 0));
+function barPct(gap: number | null): number {
+  if (gap == null) return 0;
+  if (gap === 0) return 100;
+  if (maxGap <= 0) return 100;
+  return Math.max(14, 100 - (gap / maxGap) * 86);
+}
+
+const posClass = (n: number | null) => (n != null && n >= 1 && n <= 3 ? `pos pos-${n}` : 'pos');
+const isWinner = (r: Row) => r.position === 1;
+const overflow = rows.length > maxRows;
+function rowCls(i: number): string {
+  return i >= maxRows ? 'rr-extra' : '';
+}
+---
+
+<div class="panel tbl-collapsible" id={id} data-collapsed={overflow ? 'true' : 'false'}>
+  <table class="tbl tbl-static rr-tbl">
+    <thead>
+      <tr>
+        <th class="center">Pos</th>
+        <th>Driver</th>
+        <th>Team</th>
+        <th class="right">Grid</th>
+        <th class="right">Pts</th>
+        {isRace && <th>FL</th>}
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r, i) => (
+        <tr class={rowCls(i)} style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
+          <td class="center"><div class={posClass(r.position)}>{r.positionText || (r.position != null ? String(r.position) : '-')}</div></td>
+          <td class="std-name-td">
+            <span class="std-bar" aria-hidden="true" style={`width:${barPct(gaps[i])}%; --tc:${r.constructorColor || 'var(--fg-3)'}`}></span>
+            <div class="std-name-inner rr-name-inner">
+              {r.driverRef ? (
+                <a class="std-name-id" href={`/drivers/${r.driverRef}/`}>
+                  {hasDriverFace(r.driverRef)
+                    ? <img class="rr-face" src={`/images/drivers/${r.driverRef}.webp`} alt="" width="26" height="26" loading="lazy" />
+                    : <span class="rr-flag"><Flag cc={r.country} flag={r.flag} name={r.driverName} /></span>}
+                  <span class="rr-name">{r.driverName}</span>
+                  {r.code && <span class="rr-code t-mono">{r.code}</span>}
+                </a>
+              ) : (
+                <span class="std-name-id">
+                  <span class="rr-flag"><Flag cc={r.country} flag={r.flag} name={r.driverName} /></span>
+                  <span class="rr-name">{r.driverName || '-'}</span>
+                </span>
+              )}
+              {isWinner(r)
+                ? <span class="std-gap is-leader">Win</span>
+                : (r.time ? <span class="std-gap">{r.time}</span> : null)}
+            </div>
+          </td>
+          <td>
+            {r.constructorRef
+              ? <a href={`/teams/${r.constructorRef}/`} class="rr-team">{r.constructorName}</a>
+              : <span class="rr-team">{r.constructorName || '-'}</span>}
+          </td>
+          <td class="right t-mono">{r.grid != null ? r.grid : '-'}</td>
+          <td class="right rr-pts">{r.points}</td>
+          {isRace && (
+            <td class="t-mono rr-fl">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
+          )}
+          <td>
+            <span class="status-cell">
+              <StatusIcon status={r.status} />
+              <span class="rr-status-lbl">{r.status || '-'}</span>
+            </span>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+{overflow && (
+  <button
+    class="btn btn-secondary btn-sm tbl-expand"
+    data-target={`#${id}`}
+    data-more={`Show all ${rows.length}`}
+    data-less={`Show top ${maxRows}`}
+  >Show all {rows.length}</button>
+)}
