@@ -349,12 +349,25 @@ const TEAM_LOGO_ALIAS = {
   red_bull: 'redbull',
   aston_martin: 'aston',
 };
-export function TeamLogo({ team, size = 40 }) {
+export function TeamLogo({ team, size = 40, fill = false }) {
   const [imgFailed, setImgFailed] = useState(false);
   const raw = team?.id || team?.constructorRef || null;
   const slug = raw ? (TEAM_LOGO_ALIAS[raw] || raw) : null;
   const src = slug ? `/images/teams/${slug}.jpg` : null;
   if (!src || imgFailed) return null;
+  // `fill` mode: cover its positioned parent edge-to-edge (e.g. a champ photo box).
+  if (fill) {
+    return (
+      <img
+        className="team-logo-fill"
+        src={src}
+        alt={`${team.name} logo`}
+        loading="lazy"
+        onError={() => setImgFailed(true)}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+      />
+    );
+  }
   return (
     <img
       src={src}

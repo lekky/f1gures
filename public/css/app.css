@@ -30,6 +30,11 @@
   --accent-dim: #b8002a;
   --accent-glow: rgba(232, 0, 45, 0.18);
 
+  /* Medal colours (constant across themes) */
+  --gold: #E0A82E;
+  --silver: #9BA1AA;
+  --bronze: #C8794A;
+
   /* Semantic */
   --pos: #2ecc71;
   --neg: #ff4444;
@@ -393,6 +398,115 @@ button { font-family: inherit; }
   .sp-tick { width: 20px; height: 22px; }
 }
 
+/* ── Top-3 championship — featured leader + stacked 2nd/3rd ───
+   --tc = team colour. Leader (wide) on the left, 2nd/3rd in a column on the
+   right; everything stacks on mobile. */
+.champ { display: grid; grid-template-columns: 1.7fr 1fr; gap: 16px; align-items: stretch; }
+.champ-rest { display: flex; flex-direction: column; gap: 16px; }
+.champ-leader, .champ-row {
+  position: relative; display: flex; overflow: hidden;
+  background: var(--bg-2); border: 1px solid var(--line-1);
+  border-left: 4px solid var(--tc, var(--accent)); box-shadow: var(--shadow-card);
+  text-decoration: none; color: inherit;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.champ-leader:hover, .champ-row:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+
+/* leader — photo is first in the DOM (so it can float on mobile); row-reverse
+   keeps body-left / photo-right on desktop. */
+.champ-leader { min-height: 300px; flex-direction: row-reverse; }
+.team-logo-fill { object-fit: cover; }
+.champ-leader-body { flex: 1 1 0; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; }
+.champ-leader-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.champ-pill { font-family: var(--f-display); font-weight: 800; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1205; background: var(--gold); padding: 4px 9px; }
+.champ-after { font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); letter-spacing: 0.04em; }
+.champ-name { margin: 0; font-family: var(--f-display); font-weight: 800; line-height: 0.92; text-transform: uppercase; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; }
+.champ-name-first { font-size: 26px; color: var(--fg-3); font-weight: 700; }
+.champ-name-last { font-size: 44px; color: var(--fg-1); letter-spacing: -0.01em; }
+.champ-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-family: var(--f-display); font-weight: 700; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+.champ-leader-blurb { margin: 14px 0 0; padding-left: 12px; border-left: 3px solid var(--tc, var(--accent)); font-size: 13.5px; line-height: 1.55; color: var(--fg-2); max-width: 460px; }
+.champ-figures { display: flex; align-items: flex-end; gap: 22px; margin-top: auto; padding-top: 18px; }
+.champ-pts { display: flex; align-items: baseline; gap: 6px; }
+.champ-pts-v { font-family: var(--f-display); font-weight: 800; font-size: 52px; line-height: 0.8; color: var(--tc, var(--accent)); }
+.champ-pts-u { font-family: var(--f-display); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
+.champ-stat { display: flex; flex-direction: column; gap: 3px; }
+.champ-stat-v { font-family: var(--f-display); font-weight: 800; font-size: 22px; line-height: 0.9; color: var(--fg-1); }
+.champ-stat-l { font-family: var(--f-display); font-weight: 700; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
+.champ-chart { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-1); }
+.champ-chart-lbl { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+.champ-leader-photo {
+  position: relative; flex: 0 0 42%; min-width: 0; overflow: hidden;
+  background:
+    repeating-linear-gradient(135deg, color-mix(in srgb, var(--tc, var(--accent)) 7%, transparent) 0 2px, transparent 2px 9px),
+    linear-gradient(160deg, color-mix(in srgb, var(--tc, var(--accent)) 16%, var(--bg-2)), var(--bg-2));
+}
+.champ-photo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.champ-logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.champ-medal {
+  position: absolute; top: 12px; left: 12px; z-index: 2;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-display); font-weight: 800; font-size: 13px; color: #1a1205;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+.champ-photo-ghost {
+  position: absolute; right: -6px; bottom: -30px; z-index: 0;
+  font-family: var(--f-display); font-weight: 800; font-size: 200px; line-height: 0.6;
+  color: var(--tc, var(--fg-1)); opacity: 0.1; letter-spacing: -0.04em; pointer-events: none;
+}
+
+/* 2nd / 3rd */
+.champ-row-side {
+  position: relative; flex: 0 0 104px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    repeating-linear-gradient(135deg, color-mix(in srgb, var(--tc, var(--accent)) 7%, transparent) 0 2px, transparent 2px 9px),
+    linear-gradient(160deg, color-mix(in srgb, var(--tc, var(--accent)) 16%, var(--bg-2)), var(--bg-2));
+}
+.champ-row-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.champ-row-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  width: 22px; height: 22px; border-radius: 50%; background: var(--bg-2); border: 1px solid var(--line-2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-display); font-weight: 800; font-size: 11px; color: var(--fg-2);
+}
+.champ-row-ghost { font-family: var(--f-display); font-weight: 800; font-size: 40px; line-height: 0.8; color: var(--tc, var(--fg-1)); opacity: 0.85; letter-spacing: -0.02em; }
+.champ-row-body { flex: 1 1 0; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; }
+.champ-row-name { font-family: var(--f-display); font-weight: 800; font-size: 20px; line-height: 0.95; text-transform: uppercase; }
+.champ-row-meta { display: flex; align-items: center; gap: 7px; font-family: var(--f-display); font-weight: 700; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+.champ-row-figs { display: flex; align-items: baseline; gap: 5px; margin-top: 6px; }
+.champ-row-pts { font-family: var(--f-display); font-weight: 800; font-size: 28px; line-height: 0.8; color: var(--tc, var(--accent)); }
+.champ-row-pts-u { font-family: var(--f-display); font-weight: 700; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
+.champ-row-sub { font-family: var(--f-mono); font-size: 10.5px; color: var(--fg-3); margin-top: 2px; }
+
+@media (max-width: 900px) {
+  .champ { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  /* Leader: a square photo floated top-right; the text wraps beside/below it
+     (so the face shows instead of a full-width hair crop). */
+  .champ-leader { display: block; min-height: 0; }
+  .champ-leader-photo { float: right; flex: none; width: 116px; height: 116px; margin: 14px 14px 0 14px; }
+  .champ-photo-img { object-position: center 18%; }
+  .team-logo-fill { object-fit: contain; }
+  .champ-photo-ghost { display: none; }
+  .champ-leader-body { padding: 16px; }
+  .champ-name-last { font-size: 32px; }
+  .champ-leader-blurb { max-width: none; }
+  .champ-figures { clear: right; flex-wrap: wrap; gap: 16px; margin-top: 14px; }
+  .champ-chart { clear: right; }
+
+  /* 2nd & 3rd: two compact vertical cards sharing one row. */
+  .champ-rest { flex-direction: row; gap: 12px; }
+  .champ-rest > .champ-row { flex: 1 1 0; min-width: 0; flex-direction: column; }
+  .champ-row-side { flex: none; width: 100%; height: 92px; }
+  .champ-row-badge { top: 6px; left: 6px; }
+  .champ-row-img { object-position: center 16%; }
+  .champ-row-body { padding: 12px; }
+  .champ-row-name { font-size: 17px; }
+  .champ-row-pts { font-size: 24px; }
+  .champ-row-sub { display: none; }
+}
 .section-head {
   display: flex; align-items: center; gap: 10px; margin: 24px 0 12px;
 }
