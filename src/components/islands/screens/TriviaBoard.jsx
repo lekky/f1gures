@@ -96,9 +96,14 @@ export default function TriviaBoard() {
 
     if (FACTS.length < 2) return;
 
-    // The random set is the rotation. Fact 0 is already on screen from SSR as a
-    // brief intro; oi starts at -1 so the first advance lands on set[0].
+    // The random set is the rotation. Fact 0 is only the SSR placeholder; we
+    // advance immediately (below) so the first fact the visitor reads is a
+    // random one. Guard against that first pick being fact 0 again, so each
+    // load opens on a fact different from the prerendered intro.
     const order = pickSet(FACTS.length);
+    if (order[0] === 0 && order.length > 1) {
+      [order[0], order[1]] = [order[1], order[0]];
+    }
     let oi = -1;
     let timer;
     let cancelled = false;
@@ -137,8 +142,9 @@ export default function TriviaBoard() {
       timer = setTimeout(step, timing.type);
     };
 
-    // Fact 0 is already on screen from the initial render; hold, then advance.
-    later(advance, timing.hold);
+    // The SSR intro fact (fact 0) is already painted; start a random fact
+    // straight away rather than dwelling on it, so each load opens differently.
+    advance();
 
     return () => { cancelled = true; clearTimeout(timer); };
   }, []);
