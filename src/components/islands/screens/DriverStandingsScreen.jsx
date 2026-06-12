@@ -7,12 +7,17 @@ import {
   MiniChart, lastNCompletedRounds, driverPointsForRound,
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, PointsChart, HeadToHead } from './StandingsCommon.jsx';
+import TriviaBoard from './TriviaBoard.jsx';
+import { ChampSection, driversSummary } from './ChampPodium.jsx';
 
 export default function DriverStandingsScreen({ data }) {
   const DD = data;
   const mob = useIsMobile();
   const standings = useMemo(() => DD.computeStandings(), [DD]);
   const recentRounds = useMemo(() => lastNCompletedRounds(DD, 5), [DD]);
+  const leaderPoints = standings.drivers.reduce((m, r) => Math.max(m, r.points), 0);
+  const completedCount = DD.calendar.filter(r => DD.results[r.round]).length;
+  const top3 = standings.drivers.slice(0, 3);
   const [sortKey, setSortKey] = useState('position');
   const [sortDir, setSortDir] = useState('asc');
 
@@ -95,6 +100,18 @@ export default function DriverStandingsScreen({ data }) {
 
       {mob && <StandingsTypeToggle active="d" />}
 
+      <TriviaBoard />
+
+      {top3.length >= 1 && (
+        <div className="std-podium">
+          <ChampSection mode="drivers" title="Championship Leaders"
+            rows={top3} D={DD} recentRounds={recentRounds}
+            blurb={driversSummary(DD, top3, completedCount)}
+            after={String(completedCount).padStart(2, '0')} mob={mob} />
+          <SectionHead variant="band" title="Full Table" />
+        </div>
+      )}
+
       <Panel tight>
         <div className="tbl-wrap">
           <table className="tbl">
@@ -120,21 +137,29 @@ export default function DriverStandingsScreen({ data }) {
                   <tr key={row.driver.id} className="clickable" onClick={() => { window.location.href = driverHref; }}>
                     <td><div className={`pos pos-${row.position}`}>{row.position}</div></td>
                     <td><ChangeIndicator change={row.change} /></td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {row.driver.jolpicaId && (
-                          <img
-                            src={`/images/drivers/${row.driver.jolpicaId}.webp`}
-                            width={28}
-                            height={28}
-                            alt=""
-                            style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                            onError={e => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        )}
-                        <a href={driverHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                    <td className="std-name-td">
+                      <span className="std-bar" aria-hidden="true"
+                        style={{ width: `${leaderPoints > 0 ? (row.points / leaderPoints) * 100 : 0}%`, '--tc': team ? team.color : 'var(--fg-3)' }} />
+                      <div className="std-name-inner">
+                        <a href={driverHref} className="std-name-id" onClick={e => e.stopPropagation()}>
+                          {row.driver.jolpicaId && (
+                            <img
+                              src={`/images/drivers/${row.driver.jolpicaId}.webp`}
+                              width={28}
+                              height={28}
+                              alt=""
+                              style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                              onError={e => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          )}
                           <DriverCell data={DD} driver={row.driver} />
                         </a>
+                        {(() => {
+                          const gap = leaderPoints - row.points;
+                          return gap <= 0
+                            ? <span className="std-gap is-leader">Leader</span>
+                            : <span className="std-gap">-{gap}</span>;
+                        })()}
                       </div>
                     </td>
                     <td>
