@@ -174,7 +174,7 @@ const displayName = race.name.replace(/ Grand Prix$/i, '');
   /* ── Intro row: race summary card + key links ───────────────── */
   .race-intro { display: grid; grid-template-columns: 1fr 300px; gap: 16px; margin-bottom: 8px; align-items: start; }
   .race-summary-card { padding: 18px 20px; }
-  .race-summary-card p { margin: 0; color: var(--fg-2); font-size: 14px; line-height: 1.6; max-width: 70ch; }
+  .race-summary-card p { margin: 0; color: var(--fg-2); font-size: 14px; line-height: 1.6; max-width: none; text-wrap: pretty; }
   .race-keylinks-card { padding: 16px 18px; }
   .race-keylinks-title { display: block; color: var(--fg-4); margin-bottom: 12px; }
   .race-keylinks-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -197,6 +197,8 @@ const displayName = race.name.replace(/ Grand Prix$/i, '');
   .rr-name { font-weight: 600; color: var(--fg-1); white-space: nowrap; }
   .std-name-id:hover .rr-name { color: var(--accent); }
   .rr-code { font-size: 10px; color: var(--fg-3); flex-shrink: 0; }
+  .rr-team-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+  .rr-team-cell .team-logo-sm { width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: #fff; padding: 1px; flex-shrink: 0; }
   .rr-team { color: inherit; text-decoration: none; }
   .rr-team:hover { color: var(--accent); }
   .rr-pts { font-family: var(--f-display); font-weight: 800; font-size: 15px; color: var(--fg-1); font-variant-numeric: tabular-nums; }

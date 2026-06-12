@@ -6,6 +6,7 @@
 import Flag from './Flag.astro';
 import { bestQualiSeconds } from '../lib/raceTimings.js';
 import { hasDriverFace } from '../lib/driverFaceExists.js';
+import { teamLogoPath } from '../lib/teamLogo.js';
 
 interface Row {
   position: number | null;
@@ -95,9 +96,12 @@ function rowCls(i: number): string {
             </div>
           </td>
           <td>
-            {r.constructorRef
-              ? <a href={`/teams/${r.constructorRef}/`} class="rr-team">{r.constructorName}</a>
-              : <span class="rr-team">{r.constructorName || '-'}</span>}
+            <span class="rr-team-cell">
+              {teamLogoPath(r.constructorRef) && <img class="team-logo-sm" src={teamLogoPath(r.constructorRef)} alt="" width="20" height="20" loading="lazy" />}
+              {r.constructorRef
+                ? <a href={`/teams/${r.constructorRef}/`} class="rr-team">{r.constructorName}</a>
+                : <span class="rr-team">{r.constructorName || '-'}</span>}
+            </span>
           </td>
           <td class="right t-mono">{r.q1 || '-'}</td>
           <td class="right t-mono">{r.q2 || '-'}</td>
