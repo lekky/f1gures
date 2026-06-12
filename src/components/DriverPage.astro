@@ -599,7 +599,7 @@ function teamLogoPath(ref: string | null): string | null {
   .section-head-aside { margin-left: auto; color: var(--fg-4); }
   .profile-grid { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 8px; align-items: start; }
   .profile-bio { padding: 18px 20px; }
-  .profile-bio p { margin: 0 0 12px; color: var(--fg-2); max-width: 65ch; }
+  .profile-bio p { margin: 0 0 12px; color: var(--fg-2); max-width: none; text-wrap: pretty; }
   .profile-bio p:last-child { margin-bottom: 0; }
   .profile-facts { grid-template-columns: repeat(2, 1fr); }
   .profile-facts .stat { box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 6px 16px rgba(0,0,0,.08); }
