@@ -1,0 +1,78 @@
+---
+// Small inline-SVG status glyph for race-result tables. Ergast ships ~140
+// distinct status strings; we bucket them into a handful of visual kinds and
+// render one 14×14 icon per kind. Pure SVG, currentColor-driven so each kind
+// can be themed via the wrapping class.
+
+interface Props {
+  status: string | null;
+}
+const { status } = Astro.props;
+
+function statusKind(s: string | null): string {
+  if (!s) return 'unknown';
+  const t = s.toLowerCase();
+  if (t === 'finished' || /^\+\d+\s*lap/.test(t)) return 'finished';
+  if (t.includes('disqualif')) return 'dsq';
+  if (/^retired$|not classified|did not finish|^dnf$/.test(t)) return 'retired';
+  if (/(accident|collision|spun|crash|\bpunctur|\btyres?\b|\btires?\b|debris)/.test(t)) return 'accident';
+  if (/(did not start|withdrew|did not qualify|did not prequalif|injur|excluded|did not practice|practice)/.test(t)) return 'dns';
+  // Anything mechanical / car-failure related → wrench. This is the large
+  // bucket (engine, gearbox, hydraulics, electrical, suspension, brakes…).
+  if (/(engine|gear|transmission|hydraul|electr|suspension|brake|clutch|wheel|fuel|oil|overheat|water|exhaust|throttle|steering|driveshaft|differential|radiator|battery|power unit|mechanical|pneumatic|vibration|halfshaft|cv joint|distributor|alternator|magneto|ignition|turbo|supercharg|cooling|chassis|handling|spark|broke|broken|seat|wing|pressure|leak|pump|axle|bearing|damage|out of fuel|fire|loose|spin|stalled|drivetrain|gearshift|fuel system)/.test(t)) return 'mechanical';
+  return 'retired';
+}
+const kind = statusKind(status);
+---
+
+{kind === 'finished' && (
+  <svg class="status-ico is-finished" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true">
+    <line x1="2.6" y1="1.8" x2="2.6" y2="12.6" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
+    <rect x="3.2" y="2" width="9" height="6" fill="var(--bg-1)" stroke="var(--line-2)" stroke-width="0.6" />
+    <g fill="currentColor">
+      <rect x="3.2" y="2" width="3" height="3" />
+      <rect x="9.2" y="2" width="3" height="3" />
+      <rect x="6.2" y="5" width="3" height="3" />
+    </g>
+  </svg>
+)}
+{kind === 'accident' && (
+  <svg class="status-ico is-accident" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true">
+    <path d="M7 1.5 L13 12 H1 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+    <rect x="6.35" y="5" width="1.3" height="3.3" rx="0.5" fill="currentColor" />
+    <circle cx="7" cy="10" r="0.85" fill="currentColor" />
+  </svg>
+)}
+{kind === 'mechanical' && (
+  <svg class="status-ico is-mechanical" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true">
+    <path d="M9.5 2.2a3 3 0 0 0-3.9 3.6L2 9.4l2.6 2.6 3.6-3.6a3 3 0 0 0 3.6-3.9L9.9 6.2 7.8 4.1Z"
+      fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" />
+  </svg>
+)}
+{kind === 'dsq' && (
+  <svg class="status-ico is-dsq" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true">
+    <line x1="3" y1="1.5" x2="3" y2="12.5" stroke="currentColor" stroke-width="1.2" />
+    <rect x="3" y="2" width="8" height="6" fill="currentColor" />
+  </svg>
+)}
+{kind === 'dns' && (
+  <svg class="status-ico is-dns" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true">
+    <circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.2" />
+    <line x1="3.3" y1="3.3" x2="10.7" y2="10.7" stroke="currentColor" stroke-width="1.2" />
+  </svg>
+)}
+{(kind === 'retired' || kind === 'unknown') && (
+  <svg class="status-ico is-retired" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true">
+    <circle cx="7" cy="7" r="3.4" fill="currentColor" />
+  </svg>
+)}
+
+<style>
+  .status-ico { display: inline-block; vertical-align: -2px; flex-shrink: 0; }
+  .status-ico.is-finished { color: var(--fg-1); }
+  .status-ico.is-accident { color: var(--neg); }
+  .status-ico.is-mechanical { color: var(--warn); }
+  .status-ico.is-dsq { color: var(--neg); }
+  .status-ico.is-dns { color: var(--fg-4); }
+  .status-ico.is-retired { color: var(--neg); }
+</style>

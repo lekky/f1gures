@@ -1,7 +1,8 @@
 ---
 // Pure server-rendered constructor (team) detail page. Hero with
-// championships, career stats grid, season-by-season summary, top drivers
-// list. No React island, no client JS shipped.
+// championships, current drivers, car render, all-time record, recent
+// seasons + notable drivers, best season, lineage and full season history.
+// No React island, no client JS shipped.
 
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -31,7 +32,7 @@ interface Props {
     };
     perSeason: Array<{
       year: number;
-      drivers: Array<{ driverRef: string; name: string; code: string }>;
+      drivers: Array<{ driverRef: string; name: string; code: string; country?: string | null; flag?: string | null; position?: number | null }>;
       position: number | null;
       points: number | null;
       wins: number;
@@ -91,24 +92,6 @@ const hasCarImage = carImagePath ? existsSync(resolve(process.cwd(), 'public', c
 const logoImagePath = `images/teams/${team.constructorRef}.jpg`;
 const hasLogo = existsSync(resolve(process.cwd(), 'public', logoImagePath));
 
-// Mini bar-chart geometry (matches MiniChart in src/lib/shared.jsx).
-const CHART_W = 80;
-const CHART_H = 22;
-const CHART_GAP = 2;
-function chartBars(values: number[]) {
-  const max = Math.max(...values, 1);
-  const barW = (CHART_W - CHART_GAP * (values.length - 1)) / values.length;
-  return values.map((v, i) => {
-    const bh = max > 0 && v > 0 ? Math.max(2, (v / max) * CHART_H) : 2;
-    return {
-      x: i * (barW + CHART_GAP),
-      y: CHART_H - bh,
-      w: barW,
-      h: bh,
-      v,
-    };
-  });
-}
 const yearsLabel = team.career.firstYear === team.career.lastYear
   ? `${team.career.firstYear}`
   : `${team.career.firstYear}–${team.career.lastYear}`;
@@ -130,20 +113,60 @@ const currentDriverPhotos = currentDrivers.map(d => {
   const standing = (currentStandings && currentStandings[d.driverRef]) || null;
   return { ...d, headshotPath, hasHeadshot, recent, standing };
 });
+
+// Per-driver year span across the team's seasons - used in the Notable
+// Drivers list (e.g. "2013–2024"). Derived from perSeason driver entries.
+const driverYears = new Map<string, { from: number; to: number }>();
+for (const s of team.perSeason) {
+  for (const d of s.drivers) {
+    const cur = driverYears.get(d.driverRef);
+    if (!cur) driverYears.set(d.driverRef, { from: s.year, to: s.year });
+    else { cur.from = Math.min(cur.from, s.year); cur.to = Math.max(cur.to, s.year); }
+  }
+}
+function driverSpan(ref: string): string {
+  const y = driverYears.get(ref);
+  if (!y) return '';
+  if (currentYear && y.to === currentYear) return `${y.from}–now`;
+  return y.from === y.to ? `${y.from}` : `${y.from}–${y.to}`;
+}
+
+// Recent Seasons - newest 6, with a points-scaled finish bar.
+const recentSeasons = team.perSeason.slice(0, 6);
+const recentMaxPoints = Math.max(1, ...recentSeasons.map(s => s.points ?? 0));
+
+// Standings-style full season table: podium position cells + proportional
+// team-coloured points bars scaled to the team's best-ever season.
+const seasonMaxPoints = Math.max(1, ...team.perSeason.map(s => s.points ?? 0));
+const posClass = (n: number | null | undefined) => (n != null && n >= 1 && n <= 3 ? `pos pos-${n}` : 'pos');
+
+// Memoized headshot existence check - only ~32 modern drivers ship a WebP.
+const faceCache = new Map<string, boolean>();
+function hasFace(ref: string): boolean {
+  if (!faceCache.has(ref)) {
+    faceCache.set(ref, existsSync(resolve(process.cwd(), 'public', `images/drivers/${ref}.webp`)));
+  }
+  return faceCache.get(ref)!;
+}
 ---
 
 <div class="page">
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-constructors/">← Constructors</a>
 
-  <div class="panel team-hero" style={`border-left: 3px solid ${team.color};`}>
+  <div class="panel team-hero" style={`--team-color: ${team.color}; border-left: 3px solid ${team.color};`}>
+    <span class="team-hero-watermark" aria-hidden="true">{team.short}</span>
     <div class="team-hero-grid">
       <div class="team-hero-meta">
-        <div class="t-eyebrow team-hero-flag" style={`color: ${team.color};`}>
-          {team.nationality || '-'}
+        <div class="team-hero-overline">
+          <span class="team-hero-nat">{team.nationality || '-'}</span>
+          <span class="sep">·</span>
+          <span class="team-hero-since">Since {team.career.firstYear ?? '-'}</span>
         </div>
         <div class="team-hero-title-row">
-          {hasLogo && (
-            <img class="team-hero-logo" src={`/${logoImagePath}`} alt={`${team.name} logo`} width="72" height="72" loading="eager" />
+          {hasLogo ? (
+            <img class="team-hero-logo" src={`/${logoImagePath}`} alt={`${team.name} logo`} width="64" height="64" loading="eager" />
+          ) : (
+            <span class="team-hero-logo team-hero-logo-text" style={`color: ${team.color};`}>{team.short}</span>
           )}
           <h1 class="page-title team-hero-name">{team.name}</h1>
         </div>
@@ -157,7 +180,7 @@ const currentDriverPhotos = currentDrivers.map(d => {
       </div>
       <div class="team-hero-champ">
         <div class="t-eyebrow">Constructors' Titles</div>
-        <div class={`team-hero-wcc ${team.career.championships > 0 ? 'is-champ' : ''}`}>
+        <div class={`team-hero-wcc ${team.career.championships > 0 ? 'is-champ' : ''}`} style={team.career.championships > 0 ? `color: ${team.color};` : undefined}>
           {team.career.championships}
         </div>
       </div>
@@ -166,10 +189,10 @@ const currentDriverPhotos = currentDrivers.map(d => {
 
   {isCurrent && currentDriverPhotos.length > 0 && (
     <>
-      <div class="section-head">
-        <h2>Current Drivers</h2>
+      <div class="section-head section-head-band">
+        <span class="section-head-mark" aria-hidden="true"></span>
+        <h2>{currentYear} Drivers</h2>
         <div class="section-rule"></div>
-        <span class="t-eyebrow current-drivers-year" style={`color: ${team.color};`}>{currentYear} Season</span>
       </div>
       <div class={`current-drivers-grid count-${currentDriverPhotos.length}`}>
         {currentDriverPhotos.map(d => (
@@ -184,33 +207,17 @@ const currentDriverPhotos = currentDrivers.map(d => {
               </div>
             )}
             <div class="current-driver-meta">
-              <div class="t-eyebrow current-driver-code" style={`color: ${team.color};`}>{d.code || '-'}</div>
+              <div class="current-driver-code" style={`color: ${team.color};`}>{d.code || '-'}</div>
               <div class="current-driver-name">{d.name}</div>
-              {d.recent.length > 0 && (
-                <div class="current-driver-form">
-                  <span class="t-eyebrow current-driver-form-lbl">Last {d.recent.length}</span>
-                  <svg class="current-driver-chart" width={CHART_W} height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`} aria-hidden="true">
-                    {chartBars(d.recent).map(b => (
-                      <rect
-                        x={b.x}
-                        y={b.y}
-                        width={b.w}
-                        height={b.h}
-                        fill={b.v > 0 ? team.color : 'var(--line-1)'}
-                        opacity={b.v > 0 ? 1 : 0.5}
-                      />
-                    ))}
-                  </svg>
-                </div>
+              {d.standing && (
+                <div class="current-driver-line">{d.standing.points} pts · {d.standing.wins}W</div>
               )}
             </div>
             {d.standing && (
               <div class="current-driver-right">
-                <div class="t-eyebrow">{currentYear} Season</div>
                 <div class={`current-driver-pos ${d.standing.position === 1 ? 'is-champ' : ''}`} style={d.standing.position === 1 ? undefined : `color: ${team.color};`}>
                   P{d.standing.position}
                 </div>
-                <div class="current-driver-pts">{d.standing.points} pts{d.standing.wins ? ` · ${d.standing.wins}W` : ''}</div>
               </div>
             )}
           </a>
@@ -220,27 +227,17 @@ const currentDriverPhotos = currentDrivers.map(d => {
   )}
 
   {hasCarImage && (
-    <div class="car-showcase panel" style={`border-left: 3px solid ${team.color};`}>
-      <div class="t-eyebrow car-showcase-label" style={`color: ${team.color};`}>2026 Car</div>
-      <img src={`/${carImagePath}`} alt={`${team.name} 2026 car`} width="800" height="320" loading="eager" />
-    </div>
+    <>
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>{currentYear ?? 2026} Car</h2><div class="section-rule"></div></div>
+      <div class="car-showcase panel" style={`border-left: 3px solid ${team.color};`}>
+        <img src={`/${carImagePath}`} alt={`${team.name} ${currentYear ?? 2026} car`} width="800" height="320" loading="eager" />
+      </div>
+    </>
   )}
-
-  <div class="section-head"><h2>Career Stats</h2><div class="section-rule"></div></div>
-  <div class="grid team-career-grid">
-    <div class="stat"><div class="stat-lbl">Seasons</div><div class="stat-val">{fmtNum(team.career.seasons)}</div></div>
-    <div class="stat"><div class="stat-lbl">Races</div><div class="stat-val">{fmtNum(team.career.races)}</div></div>
-    <div class="stat"><div class="stat-lbl">Wins</div><div class="stat-val">{fmtNum(team.career.wins)}</div></div>
-    <div class="stat"><div class="stat-lbl">Podiums</div><div class="stat-val">{fmtNum(team.career.podiums)}</div></div>
-    <div class={`stat ${team.career.championships > 0 ? 'stat-accent' : ''}`}>
-      <div class="stat-lbl">WCC</div>
-      <div class="stat-val">{fmtNum(team.career.championships)}</div>
-    </div>
-  </div>
 
   {best && (
     <>
-      <div class="section-head"><h2>Best Season</h2><div class="section-rule"></div></div>
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Best Season</h2><div class="section-rule"></div></div>
       <div class="panel best-hero" style={`border-left: 3px solid ${team.color};`}>
         <div class="best-hero-left">
           <div class="t-eyebrow best-eyebrow" style={`color: ${team.color};`}>Best Season</div>
@@ -279,22 +276,89 @@ const currentDriverPhotos = currentDrivers.map(d => {
     </>
   )}
 
+  <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>All-Time Record</h2><div class="section-rule"></div></div>
+  <div class="grid team-record-grid">
+    <div class="stat"><div class="stat-lbl">Seasons</div><div class="stat-val">{fmtNum(team.career.seasons)}</div></div>
+    <div class="stat"><div class="stat-lbl">Races</div><div class="stat-val">{fmtNum(team.career.races)}</div></div>
+    <div class="stat"><div class="stat-lbl">Wins</div><div class="stat-val">{fmtNum(team.career.wins)}</div></div>
+    <div class="stat"><div class="stat-lbl">Podiums</div><div class="stat-val">{fmtNum(team.career.podiums)}</div></div>
+    <div class={`stat ${team.career.championships > 0 ? 'stat-accent' : ''}`}>
+      <div class="stat-lbl">Titles</div>
+      <div class="stat-val">{fmtNum(team.career.championships)}</div>
+    </div>
+  </div>
+
+  {recentSeasons.length > 0 && (
+    <>
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Recent Seasons</h2><div class="section-rule"></div></div>
+      <div class="panel" style="padding: 0; overflow-x: auto;">
+        <table class="tbl tbl-static">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th class="team-finish-col">Finish</th>
+              <th class="right">Pts</th>
+              <th class="right">Wins</th>
+              <th class="right">Races</th>
+              <th>Drivers</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentSeasons.map(s => (
+              <tr>
+                <td class="t-mono">{s.year}</td>
+                <td class="team-finish-col">
+                  <div class="finish-bar">
+                    <div class="finish-bar-track">
+                      <div
+                        class={`finish-bar-fill ${s.position === 1 ? 'is-champ' : ''}`}
+                        style={`width: ${Math.max(8, ((s.points ?? 0) / recentMaxPoints) * 100)}%; ${s.position === 1 ? '' : `background: ${team.color};`}`}
+                      ></div>
+                    </div>
+                    <span class={`finish-bar-lbl ${s.position === 1 ? 'is-champ' : ''}`}>{ord(s.position)}</span>
+                  </div>
+                </td>
+                <td class="right t-mono">{s.points != null ? s.points : '-'}</td>
+                <td class="right t-mono">{s.wins}</td>
+                <td class="right t-mono">{s.races}</td>
+                <td class="team-drivers-cell">
+                  {s.drivers.map(d => (
+                    <a class="tdrv" href={`/drivers/${d.driverRef}/`}>
+                      {(d.country || d.flag) && <span class="tdrv-flag"><Flag cc={d.country} flag={d.flag} name={d.name} /></span>}
+                      {hasFace(d.driverRef) && <img class="tdrv-face" src={`/images/drivers/${d.driverRef}.webp`} alt="" width="22" height="22" loading="lazy" />}
+                      <span class="tdrv-name">{d.name.split(' ').slice(-1)[0]}</span>
+                      {d.position != null && <span class={`tdrv-pos ${d.position >= 1 && d.position <= 3 ? `pos-${d.position}` : ''}`}>P{d.position}</span>}
+                    </a>
+                  ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+
   {team.topDrivers && team.topDrivers.length > 0 && (
     <>
-      <div class="section-head"><h2>Notable Drivers</h2><div class="section-rule"></div></div>
-      <div class="team-drivers-grid">
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Notable Drivers</h2><div class="section-rule"></div></div>
+      <div class="notable-drivers">
         {team.topDrivers.map((d) => (
-          <a class="team-driver-card" href={`/drivers/${d.driverRef}/`}>
-            <div class="team-driver-name-row">
-              {(d.country || d.flag) && (
-                <span class="team-driver-flag"><Flag cc={d.country} flag={d.flag} name={d.name} /></span>
-              )}
-              <span class="team-driver-name">{d.name}</span>
+          <a class="notable-driver-card" href={`/drivers/${d.driverRef}/`} style={`border-left: 3px solid ${team.color};`}>
+            <div class="notable-driver-name-row">
+              {hasFace(d.driverRef) ? (
+                <img class="notable-driver-face" src={`/images/drivers/${d.driverRef}.webp`} alt="" width="28" height="28" loading="lazy" />
+              ) : (d.country || d.flag) ? (
+                <span class="notable-driver-flag"><Flag cc={d.country} flag={d.flag} name={d.name} /></span>
+              ) : null}
+              <span class="notable-driver-name">{d.name}</span>
             </div>
-            <div class="team-driver-stats">
+            <div class="notable-driver-stats">
+              {driverSpan(d.driverRef) && <span class="t-mono">{driverSpan(d.driverRef)}</span>}
+              {driverSpan(d.driverRef) && <span class="sep">·</span>}
               <span class="t-mono">{d.races} races</span>
               <span class="sep">·</span>
-              <span class={`t-mono team-driver-wins ${d.wins > 0 ? 'has-wins' : ''}`}>{d.wins} wins</span>
+              <span class={`t-mono notable-driver-wins ${d.wins > 0 ? 'has-wins' : ''}`}>{d.wins} wins</span>
             </div>
           </a>
         ))}
@@ -308,13 +372,13 @@ const currentDriverPhotos = currentDrivers.map(d => {
 
   {team.perSeason.length > 0 && (
     <>
-      <div class="section-head"><h2>Season by Season</h2><div class="section-rule"></div></div>
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Season by Season</h2><div class="section-rule"></div></div>
       <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="tbl tbl-static">
+        <table class="tbl tbl-static hist-tbl">
           <thead>
             <tr>
               <th>Year</th>
-              <th class="right">Pos</th>
+              <th class="center">Pos</th>
               <th class="right">Points</th>
               <th class="right">Wins</th>
               <th class="right">Races</th>
@@ -325,13 +389,21 @@ const currentDriverPhotos = currentDrivers.map(d => {
             {team.perSeason.map(s => (
               <tr>
                 <td class="t-mono">{s.year}</td>
-                <td class={`right ${s.position === 1 ? 'is-champ-cell' : ''}`}>{ord(s.position)}</td>
-                <td class="right t-mono">{s.points != null ? s.points : '-'}</td>
+                <td class="center"><div class={posClass(s.position)}>{s.position ?? '-'}</div></td>
+                <td class="hist-pts-td">
+                  <span class="std-bar" aria-hidden="true" style={`width:${((s.points ?? 0) / seasonMaxPoints) * 100}%; --tc:${team.color}`}></span>
+                  <span class="hist-pts-val">{s.points != null ? s.points : '-'}</span>
+                </td>
                 <td class="right t-mono">{s.wins}</td>
                 <td class="right t-mono">{s.races}</td>
-                <td>
-                  {s.drivers.map((d, i) => (
-                    <>{i > 0 && ', '}<a href={`/drivers/${d.driverRef}/`}>{d.name}</a></>
+                <td class="team-drivers-cell">
+                  {s.drivers.map(d => (
+                    <a class="tdrv" href={`/drivers/${d.driverRef}/`}>
+                      {(d.country || d.flag) && <span class="tdrv-flag"><Flag cc={d.country} flag={d.flag} name={d.name} /></span>}
+                      {hasFace(d.driverRef) && <img class="tdrv-face" src={`/images/drivers/${d.driverRef}.webp`} alt="" width="22" height="22" loading="lazy" />}
+                      <span class="tdrv-name">{d.name.split(' ').slice(-1)[0]}</span>
+                      {d.position != null && <span class={`tdrv-pos ${d.position >= 1 && d.position <= 3 ? `pos-${d.position}` : ''}`}>P{d.position}</span>}
+                    </a>
                   ))}
                 </td>
               </tr>
@@ -344,100 +416,131 @@ const currentDriverPhotos = currentDrivers.map(d => {
 </div>
 
 <style>
-  .team-hero { padding: 20px; margin-bottom: 20px; }
-  .team-hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
-  .team-hero-flag { margin-bottom: 6px; }
+  /* ── Hero ───────────────────────────────────────────────────── */
+  .team-hero { position: relative; padding: 22px 24px; margin-bottom: 24px; overflow: hidden; }
+  .team-hero-watermark {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: 180px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--team-color);
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .team-hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
+  .team-hero-overline { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .team-hero-nat, .team-hero-since { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3); }
+  .team-hero-overline .sep { color: var(--fg-4); }
   .team-hero-title-row { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
-  .team-hero-logo { width: 72px; height: 72px; object-fit: contain; border-radius: 8px; background: #fff; padding: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.08); flex-shrink: 0; }
-  .team-hero-name { margin: 0; font-size: 56px; line-height: 1.05; }
+  .team-hero-logo { width: 64px; height: 64px; object-fit: contain; background: #fff; padding: 6px; flex-shrink: 0; }
+  .team-hero-logo-text { display: flex; align-items: center; justify-content: center; background: var(--bg-3); font-family: var(--f-display); font-weight: 800; font-size: 22px; letter-spacing: 0.04em; padding: 0; }
+  .team-hero-name { margin: 0; font-size: 56px; line-height: 1.0; }
   .team-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
   .team-hero-stats .sep { color: var(--fg-4); }
   .team-hero-champ { text-align: right; }
-  .team-hero-wcc { font-family: var(--f-display); font-weight: 800; font-size: 56px; line-height: 1; color: var(--fg-1); }
-  .team-hero-wcc.is-champ { color: var(--accent); }
-  .car-showcase { display: flex; flex-direction: column; align-items: center; padding: 20px; margin-top: 20px; margin-bottom: 20px; gap: 8px; }
-  .car-showcase-label { align-self: flex-start; }
+  .team-hero-wcc { font-family: var(--f-display); font-weight: 800; font-size: 64px; line-height: 1; color: var(--fg-1); }
+
+  /* Band section heads need breathing room above on these detail pages
+     (the global .section-head-band resets margin-top for the home bands). */
+  .page .section-head-band { margin-top: 30px; }
+
+  /* Diagonal line texture for the large hero-style cards. */
+  .car-showcase, .best-hero {
+    background:
+      repeating-linear-gradient(135deg, var(--bg-3) 0 1px, transparent 1px 12px),
+      var(--bg-2);
+  }
+
+  /* ── Car render ─────────────────────────────────────────────── */
+  .car-showcase { display: flex; flex-direction: column; align-items: center; padding: 20px; margin-top: 8px; margin-bottom: 24px; gap: 8px; }
   .car-showcase img { max-width: 100%; max-height: 220px; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 6px 24px rgba(0,0,0,.3)); }
 
-  .team-drivers-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 8px;
-    margin-bottom: 24px;
-  }
-  .team-driver-card {
-    display: flex; flex-direction: column; gap: 4px;
-    padding: 12px 14px;
-    border: 1px solid var(--line-1);
-    background: var(--bg-2);
-    text-decoration: none;
-    color: inherit;
-    transition: border-color .15s, background .15s, transform .15s;
-  }
-  .team-driver-card:hover { border-color: var(--line-3); background: var(--bg-3); }
-  .team-driver-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .team-driver-flag { flex-shrink: 0; display: inline-flex; }
-  .team-driver-flag :global(.flag-img) { width: 18px; height: 13.5px; border-radius: 1px; display: block; }
-  .team-driver-name {
-    font-family: var(--f-display); font-weight: 700;
-    font-size: 15px; line-height: 1.2;
-    color: var(--fg-1);
-    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .team-driver-stats { display: flex; gap: 6px; align-items: baseline; font-size: 12px; color: var(--fg-3); }
-  .team-driver-stats .sep { color: var(--fg-4); }
-  .team-driver-wins.has-wins { color: var(--accent); font-weight: 600; }
-  @media (max-width: 720px) {
-    .team-drivers-grid { grid-template-columns: 1fr; }
-  }
-
-  .team-career-grid { grid-template-columns: repeat(5, 1fr); }
-  @media (max-width: 720px) {
-    .team-hero-name { font-size: 32px; }
-    .team-hero-grid { grid-template-columns: 1fr; }
-    .team-hero-grid.has-car { grid-template-columns: 1fr; }
-    .team-hero-car { justify-content: flex-start; }
-    .team-hero-car img { max-height: 120px; }
-    .team-hero-champ { text-align: left; }
-    .team-career-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
+  /* ── All-time record ────────────────────────────────────────── */
+  .team-record-grid { grid-template-columns: repeat(5, 1fr); }
   .stat-accent { border-color: var(--accent); }
   .stat-accent .stat-lbl, .stat-accent .stat-val { color: var(--accent); }
 
-  /* Season-by-Season table uses .tbl.tbl-static - global styling in
-     app.css, .is-win-cell/.is-champ-cell cell colors are now scoped
-     under .tbl in app.css, link affordance from the canonical block. */
+  /* ── Standings-style history table ──────────────────────────── */
+  .hist-tbl td.center { text-align: center; }
+  .hist-tbl .pos { margin: 0 auto; }
+  .hist-pts-td { position: relative; text-align: right; }
+  .hist-pts-val { position: relative; z-index: 1; font-family: var(--f-display); font-weight: 800; font-size: 15px; color: var(--fg-1); font-variant-numeric: tabular-nums; }
 
-  /* Current Drivers section */
-  .current-drivers-year { margin-left: auto; font-weight: 600; }
-  .current-drivers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-  .current-drivers-grid.count-1 { grid-template-columns: minmax(0, 320px); }
-  .current-driver-card { display: flex; align-items: center; gap: 16px; padding: 14px 16px; text-decoration: none; color: inherit; transition: background .15s, border-color .15s; }
+  /* ── Recent seasons table ───────────────────────────────────── */
+  .team-finish-col { width: 200px; }
+  .finish-bar { display: flex; align-items: center; gap: 8px; }
+  .finish-bar-track { flex: 1; height: 8px; background: var(--bg-3); min-width: 60px; }
+  .finish-bar-fill { height: 100%; background: var(--fg-3); }
+  .finish-bar-fill.is-champ { background: var(--accent); }
+  .finish-bar-lbl { font-family: var(--f-display); font-weight: 700; font-size: 12px; color: var(--fg-3); min-width: 26px; }
+  .finish-bar-lbl.is-champ { color: var(--accent); }
+
+  /* Driver chips inside team tables: flag + (optional) face + surname + pos */
+  .team-drivers-cell { white-space: normal; }
+  .tdrv {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: 2px 0; padding-right: 15px; text-decoration: none; color: inherit;
+    vertical-align: middle;
+  }
+  .tdrv:not(:last-child) { margin-right: 14px; }
+  .tdrv:not(:last-child)::after {
+    content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 1px; height: 16px; background: var(--line-2);
+  }
+  .tdrv-flag { flex-shrink: 0; display: inline-flex; }
+  .tdrv-flag :global(.flag-img) { width: 18px; height: 13.5px; border-radius: 1px; display: block; }
+  .tdrv-face { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; background: var(--bg-3); flex-shrink: 0; }
+  .tdrv-name { font-weight: 600; color: var(--fg-1); }
+  .tdrv:hover .tdrv-name { color: var(--accent); }
+  .tdrv-pos { font-family: var(--f-display); font-weight: 800; font-size: 11px; letter-spacing: 0.02em; color: var(--fg-3); }
+  .tdrv-pos.pos-1 { color: #FFD700; }
+  .tdrv-pos.pos-2 { color: #C0C0C0; }
+  .tdrv-pos.pos-3 { color: #CD7F32; }
+
+  /* ── Notable drivers (own full-width section) ───────────────── */
+  .notable-drivers { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 8px; margin-bottom: 8px; }
+  .notable-driver-card {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 12px 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-1);
+    text-decoration: none; color: inherit;
+    transition: border-color var(--mo), background var(--mo);
+  }
+  .notable-driver-card:hover { border-color: var(--line-3); background: var(--bg-3); }
+  .notable-driver-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .notable-driver-flag { flex-shrink: 0; display: inline-flex; }
+  .notable-driver-flag :global(.flag-img) { width: 18px; height: 13.5px; border-radius: 1px; display: block; }
+  .notable-driver-face { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--bg-3); flex-shrink: 0; }
+  .notable-driver-name { font-family: var(--f-display); font-weight: 700; font-size: 15px; line-height: 1.2; color: var(--fg-1); }
+  .notable-driver-stats { display: flex; gap: 6px; align-items: baseline; font-size: 12px; color: var(--fg-3); flex-wrap: wrap; }
+  .notable-driver-stats .sep { color: var(--fg-4); }
+  .notable-driver-wins.has-wins { color: var(--accent); font-weight: 600; }
+
+  /* ── Current drivers ────────────────────────────────────────── */
+  .current-drivers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 8px; }
+  .current-drivers-grid.count-1 { grid-template-columns: minmax(0, 360px); }
+  .current-driver-card { display: flex; align-items: center; gap: 16px; padding: 14px 16px; text-decoration: none; color: inherit; transition: background var(--mo), border-color var(--mo); }
   .current-driver-card:hover { background: var(--bg-3); }
-  .current-driver-photo { width: 72px; height: 90px; object-fit: cover; border-radius: 4px; background: var(--bg-3); flex-shrink: 0; }
-  .current-driver-photo.silhouette { display: flex; align-items: center; justify-content: center; }
+  .current-driver-photo { width: 64px; height: 80px; object-fit: cover; background: var(--bg-3); flex-shrink: 0; }
+  .current-driver-photo.silhouette { display: flex; align-items: flex-end; justify-content: center; }
   .current-driver-photo.silhouette svg { width: 100%; height: 100%; opacity: 0.55; }
-  .current-driver-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .current-driver-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .current-driver-code { font-family: var(--f-mono); font-weight: 700; font-size: 12px; letter-spacing: 0.12em; }
-  .current-driver-name { font-family: var(--f-display); font-weight: 700; font-size: 20px; line-height: 1.15; color: var(--fg-1); }
-  .current-driver-form { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-  .current-driver-form-lbl { font-size: 9px; color: var(--fg-4); }
-  .current-driver-chart { display: block; }
+  .current-driver-name { font-family: var(--f-display); font-weight: 700; font-size: 19px; line-height: 1.15; color: var(--fg-1); }
+  .current-driver-line { font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); letter-spacing: 0.04em; }
   .current-driver-right { margin-left: auto; text-align: right; flex-shrink: 0; padding-left: 8px; }
-  .current-driver-pos { font-family: var(--f-display); font-weight: 800; font-size: 36px; line-height: 1; margin-top: 2px; }
+  .current-driver-pos { font-family: var(--f-display); font-weight: 800; font-size: 40px; line-height: 1; }
   .current-driver-pos.is-champ { color: var(--accent); }
-  .current-driver-pts { font-family: var(--f-display); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--fg-3); margin-top: 4px; }
-  @media (max-width: 720px) {
-    .current-driver-pos { font-size: 28px; }
-  }
-  @media (max-width: 720px) {
-    .current-drivers-grid { grid-template-columns: 1fr; }
-    .current-driver-name { font-size: 17px; }
-    .current-driver-photo { width: 60px; height: 76px; }
-  }
 
-  /* Best Season hero card */
+  /* ── Best Season hero ───────────────────────────────────────── */
   .best-hero { padding: 24px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 32px; align-items: center; }
   .best-hero-left { display: flex; flex-direction: column; }
   .best-hero-left .best-eyebrow { margin-bottom: 6px; }
@@ -446,14 +549,23 @@ const currentDriverPhotos = currentDrivers.map(d => {
   .best-hero-drivers { margin-top: 16px; }
   .best-hero-drivers-lbl { margin-bottom: 8px; }
   .best-hero-drivers-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .best-hero-chip { display: inline-block; padding: 3px 10px; border: 1px solid var(--line-2); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--fg-1); text-decoration: none; transition: background .15s, border-color .15s; }
+  .best-hero-chip { display: inline-block; padding: 3px 10px; border: 1px solid var(--line-2); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--fg-1); text-decoration: none; transition: background var(--mo), border-color var(--mo); }
   .best-hero-chip:hover { background: var(--bg-3); border-color: var(--line-3); }
   .best-hero-right { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line-1); border: 1px solid var(--line-1); }
   .best-hero-stat { background: var(--bg-2); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
   .best-hero-stat-lbl { font-family: var(--f-display); font-weight: 600; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-3); }
   .best-hero-stat-val { font-family: var(--f-display); font-weight: 800; font-size: 34px; line-height: 1; color: var(--fg-1); }
   .best-hero-stat-val.is-champ { color: var(--accent); }
+
+  /* ── Responsive ─────────────────────────────────────────────── */
   @media (max-width: 720px) {
+    .team-hero-name { font-size: 36px; }
+    .team-hero-grid { grid-template-columns: 1fr; }
+    .team-hero-champ { text-align: left; }
+    .team-hero-watermark { font-size: 120px; }
+    .team-record-grid { grid-template-columns: repeat(2, 1fr); }
+    .current-drivers-grid { grid-template-columns: 1fr; }
+    .current-driver-name { font-size: 17px; }
     .best-hero { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
     .best-hero-year { font-size: 72px; }
   }

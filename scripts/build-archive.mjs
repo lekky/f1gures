@@ -205,7 +205,9 @@ const constructors = readCsv('constructors');
 const driverStandings = readCsv('driver_standings');
 const constructorStandings = readCsv('constructor_standings');
 const status = readCsv('status');
+const circuits = readCsv('circuits');
 
+const circuitsById = new Map(circuits.map(c => [c.circuitId, c]));
 const racesById = new Map(races.map(r => [r.raceId, r]));
 const constructorsById = new Map(constructors.map(c => [c.constructorId, c]));
 const statusById = new Map(status.map(s => [s.statusId, s.status]));
@@ -237,6 +239,17 @@ for (const r of races) {
   if (!cur || cur.round < round) finalRaceIdByYear.set(year, { raceId: r.raceId, round });
 }
 
+// A driver's final championship standing position for a given (Ergast) year -
+// used to annotate each driver in the team perSeason driver lists.
+function driverFinalPosForYear(driverId, year) {
+  const final = finalRaceIdByYear.get(year);
+  if (!final) return null;
+  for (const s of (standingsByDriver.get(driverId) || [])) {
+    if (s.raceId === final.raceId) return toInt(s.position);
+  }
+  return null;
+}
+
 if (existsSync(OUT)) rmSync(OUT, { recursive: true, force: true });
 mkdirSync(join(OUT, 'drivers'), { recursive: true });
 
@@ -249,6 +262,8 @@ for (const d of drivers) {
       const race = racesById.get(r.raceId);
       const year = race ? toInt(race.year) : null;
       const constructor = constructorsById.get(r.constructorId);
+      const circuit = race ? circuitsById.get(race.circuitId) : null;
+      const cInfo = circuit ? countryInfo(circuit.country) : null;
       return {
         raceId: r.raceId,
         year,
@@ -256,6 +271,8 @@ for (const d of drivers) {
         raceName: race ? race.name : null,
         date: race ? race.date : null,
         circuitId: race ? race.circuitId : null,
+        country: cInfo && cInfo.code ? cInfo.code : null,
+        flag: cInfo && cInfo.flag && cInfo.flag !== '🏳' ? cInfo.flag : null,
         constructorId: r.constructorId,
         constructorRef: constructor ? constructor.constructorRef : null,
         constructorName: constructor ? constructor.name : null,
@@ -410,8 +427,6 @@ console.log(`[archive] wrote ${index.length} drivers + index + code-map → ${OU
 
 const SEASONS_OUT = join(ROOT, 'public', 'data');
 const driversById = new Map(drivers.map(d => [d.driverId, d]));
-const circuits = readCsv('circuits');
-const circuitsById = new Map(circuits.map(c => [c.circuitId, c]));
 
 // Group races by year for fast iteration
 const racesByYear = new Map();
@@ -1483,6 +1498,8 @@ for (const { year, path } of seasonFiles) {
         raceName: race.name,
         date: race.date,
         circuitId: race.circuitId || race.circuit || null,
+        country: race.country || null,
+        flag: race.flag || null,
         constructorId: null,
         constructorRef,
         constructorName,
@@ -1772,10 +1789,14 @@ for (const c of constructors) {
         .map(driverId => {
           const d = driversById.get(driverId);
           if (!d) return null;
+          const nat = natInfo(d.nationality);
           return {
             driverRef: d.driverRef,
             name: `${d.forename} ${d.surname}`,
             code: deriveCode(d),
+            country: nat.country || null,
+            flag: nat.flag || null,
+            position: driverFinalPosForYear(driverId, year),
           };
         })
         .filter(Boolean);
@@ -1967,7 +1988,11 @@ for (const { year, path } of seasonFiles) {
 
     doc.perSeason.push({
       year,
-      drivers: [...agg.drivers.entries()].map(([ref, info]) => ({ driverRef: ref, name: info.name, code: info.code })),
+      drivers: [...agg.drivers.entries()].map(([ref, info]) => ({
+        driverRef: ref, name: info.name, code: info.code,
+        country: info.country || null, flag: info.flag || null,
+        position: bundleStandings.get(year)?.get(ref) ?? null,
+      })),
       position: positions.get(tId) ?? null,
       points: agg.points,
       wins: agg.wins,
