@@ -1,7 +1,9 @@
 ---
-// Pure server-rendered circuit detail page. Restores the rich pre-Astro
-// layout: profile hero with pills + blurb, track-characteristics bars,
-// lap-record + next-race callouts, all-time records, historical winners.
+// Pure server-rendered circuit detail page. Redesigned to match the current
+// race/driver/team treatment: a bordered hero with an animated track-map
+// (red racing line + a dot lapping the circuit), the "Did You Know" trivia
+// board, band section heads, a boxed outright-lap-record card, and a
+// standings-styled historical-winners table with faces + team logos.
 
 interface Props {
   circuit: {
@@ -35,12 +37,14 @@ interface Props {
   };
 }
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { circuitProfiles } from '../data/circuitProfiles.js';
 import currentSeason from '../data/currentSeason.js';
 import { fmtDateLong } from '../lib/shared.jsx';
+import { hasDriverFace } from '../lib/driverFaceExists.js';
 import Flag from './Flag.astro';
+import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 
 // /races/<y>/<r>/ pages exist for Ergast (1950-2024) + 2025 full bundle +
 // 2026 completed AND upcoming rounds (via holding pages). build-archive.mjs
@@ -89,7 +93,36 @@ const SVG_FOR_REF: Record<string, string> = {
   zandvoort: 'zandvoort',
 };
 const svgName = SVG_FOR_REF[circuit.circuitRef];
-const hasMap = !!svgName && existsSync(resolve(process.cwd(), 'public', 'images', 'circuits', 'black-outline', `${svgName}.svg`));
+const svgPath = svgName
+  ? resolve(process.cwd(), 'public', 'images', 'circuits', 'black-outline', `${svgName}.svg`)
+  : null;
+const hasMap = !!svgPath && existsSync(svgPath);
+
+// Pull the main racing-line path out of the curated SVG so we can re-draw it
+// inline (themed red line + a dot lapping the circuit) rather than swapping a
+// flat black/white <img>. The first <path> in every track SVG is the outline;
+// the rest are start/finish-line ticks. Falls back to the flat <img> swap if
+// extraction fails for any reason.
+let trackD = '';
+let trackVB = '0 0 500 500';
+let trackStart: { x: number; y: number } | null = null;
+if (hasMap && svgPath) {
+  try {
+    const raw = readFileSync(svgPath, 'utf8');
+    const dMatch = raw.match(/<path[^>]*\sd="([^"]+)"/);
+    if (dMatch) trackD = dMatch[1];
+    const vb = raw.match(/viewBox="([^"]+)"/);
+    const w = raw.match(/\bwidth="(\d+)"/);
+    const h = raw.match(/\bheight="(\d+)"/);
+    if (vb) trackVB = vb[1];
+    else if (w && h) trackVB = `0 0 ${w[1]} ${h[1]}`;
+    const m = trackD.match(/^[Mm]\s*(-?[\d.]+)[ ,]+(-?[\d.]+)/);
+    if (m) trackStart = { x: parseFloat(m[1]), y: parseFloat(m[2]) };
+  } catch {
+    // leave trackD empty → flat-img fallback below
+  }
+}
+const hasTrackPath = hasMap && !!trackD;
 
 // Curated track characteristics + blurb live in src/data/circuitProfiles.js.
 // Profile keys are the short ids the 2026 fallback grid uses (bahrain,
@@ -114,6 +147,20 @@ const nextRace = ((currentSeason.calendar || []) as any[]).find(r =>
   !(currentSeason.results || {})[r.round]
 ) || null;
 
+// Two-letter monogram for the track-map corner (ISO country code, e.g. BH).
+const monogram = (circuit.country || circuit.circuitRef || '').slice(0, 2).toUpperCase();
+
+// "View race weekend" CTA + the hero "Round NN" eyebrow. Prefer this circuit's
+// round in the live season; otherwise feature the most recent race held here.
+const seasonYearNum = Number(currentSeason.seasonYear) || null;
+const racesByRecent = [...circuit.races].sort((a, b) =>
+  (b.year - a.year) || ((b.round ?? 0) - (a.round ?? 0))
+);
+const thisSeasonRace = seasonYearNum ? racesByRecent.find(r => r.year === seasonYearNum) : null;
+const featuredRace = thisSeasonRace || racesByRecent[0] || null;
+const roundLabel = thisSeasonRace ? thisSeasonRace.round : null;
+const featuredUrl = featuredRace ? raceUrl(featuredRace.year, featuredRace.round) : null;
+
 // Weather pill icons - match the legacy mapping.
 const WEATHER_ICON: Record<string, string> = {
   'Changeable':     '🌦',
@@ -130,20 +177,31 @@ const WEATHER_ICON: Record<string, string> = {
 };
 const RATING_FILL: Record<string, number> = { Low: 33, Medium: 66, High: 100 };
 
+// Proportional fill for the value bars - each metric scaled against a rough
+// real-world maximum so the bar lengths read meaningfully against each other
+// (a 7 km lap looks long, a 14-corner circuit looks short, etc).
+const BAR_MAX: Record<string, number> = {
+  Length: 7.1, Laps: 78, Corners: 27, 'Longest Straight': 2200, 'DRS Zones': 4,
+};
+function barPct(lbl: string, v: number): number {
+  const max = BAR_MAX[lbl] || v || 1;
+  return Math.max(10, Math.min(100, (v / max) * 100));
+}
+
 type StatRow =
-  | { lbl: string; val: string | number; type: 'val' }
+  | { lbl: string; val: string | number; fill: number; type: 'val' }
   | { lbl: string; val: 'Low' | 'Medium' | 'High'; type: 'rating' };
 
 const stats: StatRow[] = profile ? ([
-  profile.length      && { lbl: 'Length',           val: `${profile.length.toFixed(3)} km`,  type: 'val' as const },
-  profile.laps        && { lbl: 'Laps',             val: profile.laps,                       type: 'val' as const },
-  profile.corners     && { lbl: 'Corners',          val: profile.corners,                    type: 'val' as const },
-  profile.longestStraight && { lbl: 'Longest Straight', val: `${profile.longestStraight} m`, type: 'val' as const },
-  profile.drsZones    && { lbl: 'DRS Zones',        val: profile.drsZones,                   type: 'val' as const },
-  profile.type && profile.type !== '-' && { lbl: 'Track Type', val: profile.type,            type: 'val' as const },
+  profile.length          && { lbl: 'Length',           val: `${profile.length.toFixed(3)} km`, fill: barPct('Length', profile.length),                   type: 'val' as const },
+  profile.laps            && { lbl: 'Laps',             val: profile.laps,                       fill: barPct('Laps', profile.laps),                       type: 'val' as const },
+  profile.corners         && { lbl: 'Corners',          val: profile.corners,                    fill: barPct('Corners', profile.corners),                 type: 'val' as const },
+  profile.longestStraight && { lbl: 'Longest Straight', val: `${profile.longestStraight} m`,     fill: barPct('Longest Straight', profile.longestStraight),type: 'val' as const },
+  profile.drsZones        && { lbl: 'DRS Zones',        val: profile.drsZones,                   fill: barPct('DRS Zones', profile.drsZones),              type: 'val' as const },
   RATING_FILL[profile.tyreDeg]    && { lbl: 'Tyre Degradation', val: profile.tyreDeg,        type: 'rating' as const },
   RATING_FILL[profile.overtaking] && { lbl: 'Overtaking',       val: profile.overtaking,     type: 'rating' as const },
 ].filter(Boolean) as StatRow[]) : [];
+const firstRatingIdx = stats.findIndex(s => s.type === 'rating');
 
 const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '-' ? profile.lapRecord : null;
 
@@ -153,6 +211,32 @@ function driverImg(ref: string | null | undefined): string | null {
   if (!ref) return null;
   const rel = `images/drivers/${ref}.webp`;
   return existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null;
+}
+
+// Team-logo lookup for the historical-winners team cells. Logo files are keyed
+// by the bundle short id (redbull.jpg, aston.jpg), so map the Ergast/bundle
+// constructorRef → logo basename. Only the ~13 current teams ship a logo.
+const LOGO_FOR_REF: Record<string, string> = {
+  alpine: 'alpine', aston: 'aston', aston_martin: 'aston', audi: 'audi',
+  cadillac: 'cadillac', ferrari: 'ferrari', haas: 'haas', mclaren: 'mclaren',
+  mercedes: 'mercedes', rb: 'rb', redbull: 'redbull', red_bull: 'redbull',
+  williams: 'williams',
+};
+const logoCache = new Map<string, string | null>();
+function teamLogoPath(ref: string | null): string | null {
+  if (!ref) return null;
+  if (!logoCache.has(ref)) {
+    const base = LOGO_FOR_REF[ref];
+    const rel = base ? `images/teams/${base}.jpg` : null;
+    logoCache.set(ref, rel && existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null);
+  }
+  return logoCache.get(ref)!;
+}
+
+// Initials chip for winners without a curated headshot.
+function initials(name: string | null): string {
+  if (!name) return '–';
+  return name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 }
 
 interface CircuitRecordCard {
@@ -167,20 +251,23 @@ const recordCards: CircuitRecordCard[] = [
 ].filter(Boolean) as CircuitRecordCard[];
 ---
 
-<div class="page">
+<div class="page circuit-detail">
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/circuits/">← Circuits</a>
 
-  <div class={`circuit-hero-grid ${hasMap ? 'has-map' : ''}`}>
-    <div>
-      <div class="t-eyebrow" style="color: var(--accent); margin-bottom: 6px">Circuit Profile</div>
+  <div class={`panel circuit-hero ${hasMap ? 'has-map' : ''}`}>
+    <div class="circuit-hero-info">
+      <div class="t-eyebrow circuit-hero-eyebrow">
+        Circuit Profile{roundLabel != null ? ` · Round ${String(roundLabel).padStart(2, '0')}` : ''}
+      </div>
       <h1 class="page-title circuit-hero-name">{circuit.name}</h1>
       <div class="circuit-hero-loc">
         <Flag cc={circuit.country} flag={circuit.flag} name={circuit.countryName} class="circuit-hero-flag" />
         <span class="t-mono">{circuit.location.toUpperCase()}, {circuit.countryName.toUpperCase()}</span>
       </div>
       <div class="circuit-hero-pills">
-        {circuit.firstYear ? <span class="pill">First F1: {circuit.firstYear}</span> : null}
+        {circuit.firstYear ? <span class="pill">First F1 · {circuit.firstYear}</span> : null}
         {circuit.raceCount ? <span class="pill">{circuit.raceCount} races held</span> : null}
+        {profile && profile.type && profile.type !== '-' && <span class="pill">{profile.type}</span>}
         {profile && profile.weather && profile.weather !== '-' && (
           <span class="pill pill-weather">
             {WEATHER_ICON[profile.weather] && <span style="margin-right: 6px">{WEATHER_ICON[profile.weather]}</span>}
@@ -191,63 +278,106 @@ const recordCards: CircuitRecordCard[] = [
       {profile && profile.blurb && (
         <p class="circuit-hero-blurb">{profile.blurb}</p>
       )}
+      {featuredUrl && (
+        <a class="btn btn-primary circuit-hero-cta" href={featuredUrl}>View Race Weekend →</a>
+      )}
     </div>
 
     {hasMap && (
-      <div class="circuit-track" aria-hidden="true">
-        <img class="circuit-track-dark" src={`/images/circuits/white-outline/${svgName}.svg`} alt="" loading="lazy" />
-        <img class="circuit-track-light" src={`/images/circuits/black-outline/${svgName}.svg`} alt="" loading="lazy" />
+      <div class="circuit-hero-map">
+        <div class="circuit-map-head">
+          <span class="t-mono circuit-map-meta">
+            {[profile && profile.type !== '-' ? profile.type : null, profile && profile.corners ? `${profile.corners} corners` : null].filter(Boolean).join(' · ') || 'Track Map'}
+          </span>
+          <span class="circuit-map-mono" aria-hidden="true">{monogram}</span>
+        </div>
+        {hasTrackPath ? (
+          <svg class="ct-svg" viewBox={trackVB} preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${circuit.name} track map`}>
+            <path class="ct-glow" d={trackD} />
+            <path class="ct-line" d={trackD} />
+            {trackStart && <circle class="ct-start" cx={trackStart.x} cy={trackStart.y} r="9" />}
+            <circle class="ct-dot" r="8">
+              <animateMotion dur="11s" repeatCount="indefinite" rotate="auto" path={trackD} />
+            </circle>
+          </svg>
+        ) : (
+          <div class="circuit-track" aria-hidden="true">
+            <img class="circuit-track-dark" src={`/images/circuits/white-outline/${svgName}.svg`} alt="" loading="lazy" />
+            <img class="circuit-track-light" src={`/images/circuits/black-outline/${svgName}.svg`} alt="" loading="lazy" />
+          </div>
+        )}
       </div>
     )}
   </div>
 
-  {stats.length > 0 && (
-    <>
-      <div class="section-head"><h2>Track Characteristics</h2><div class="section-rule"></div></div>
-      <div class="panel" style="padding: 16px 18px">
-        <div class="barset">
-          {stats.map(s => (
-            <div class="bar-row">
-              <div class="bar-lbl">{s.lbl}</div>
-              {s.type === 'rating' ? (
-                <>
-                  <div class="bar-track"><div class="bar-fill" style={`width: ${RATING_FILL[s.val]}%; background: ${s.val === 'High' ? 'var(--neg)' : s.val === 'Medium' ? 'var(--warn)' : 'var(--pos)'}`}></div></div>
-                  <div class={`bar-rating ${s.val.toLowerCase()}`}>{s.val}</div>
-                </>
-              ) : (
-                <>
-                  <div class="bar-track"><div class="bar-fill" style="width: 70%"></div></div>
-                  <div class="bar-val t-mono">{s.val}</div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  )}
+  <TriviaBoard client:visible />
 
-  {(lapRecord || nextRace) && (
-    <div class="grid records-grid" style="margin-top: 16px">
-      {lapRecord && (
-        <div class="callout">
-          <div class="callout-icon">◷</div>
-          <div class="callout-body">
-            <div class="callout-lbl">Lap Record</div>
-            <div class="callout-driver">
-              {lapRecord.driverRef
-                ? <a href={`/drivers/${lapRecord.driverRef}/`} class="inline-link">{lapRecord.driver}</a>
-                : lapRecord.driver}
+  {(stats.length > 0 || lapRecord || nextRace) && (
+    <div class="circuit-mid-grid">
+      {stats.length > 0 && (
+        <div class="circuit-mid-col">
+          <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Track Characteristics</h2><div class="section-rule"></div></div>
+          <div class="panel circuit-bars-panel">
+            <div class="barset">
+              {stats.map((s, i) => (
+                <div class={`bar-row${i === firstRatingIdx ? ' bar-row-divide' : ''}`}>
+                  <div class="bar-lbl">{s.lbl}</div>
+                  {s.type === 'rating' ? (
+                    <>
+                      <div class="bar-track"><div class="bar-fill" style={`width: ${RATING_FILL[s.val]}%; background: ${s.val === 'High' ? 'var(--neg)' : s.val === 'Medium' ? 'var(--warn)' : 'var(--pos)'}`}></div></div>
+                      <div class={`bar-rating ${s.val.toLowerCase()}`}>{s.val}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div class="bar-track"><div class="bar-fill" style={`width: ${s.fill}%`}></div></div>
+                      <div class="bar-val t-mono">{s.val}</div>
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
-            <div class="callout-time">{lapRecord.time} · {lapRecord.year}</div>
           </div>
         </div>
       )}
-      {nextRace && (
-        <div class="stat">
-          <div class="stat-lbl">Next Race</div>
-          <div class="stat-val" style="font-size: 22px">{nextRace.name.replace(' Grand Prix', '')}</div>
-          <div class="stat-sub">{fmtDateLong(nextRace.date)} · Round {nextRace.round}</div>
+
+      {(lapRecord || nextRace) && (
+        <div class="circuit-mid-col">
+          {lapRecord && (
+            <>
+              <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Lap Record</h2><div class="section-rule"></div></div>
+              <div class="panel circuit-lap-card">
+                <span class="t-eyebrow circuit-lap-eyebrow">Outright Lap Record</span>
+                <div class="circuit-lap-time">{lapRecord.time}</div>
+                <div class="circuit-lap-driver">
+                  {lapRecord.driverRef
+                    ? <a href={`/drivers/${lapRecord.driverRef}/`} class="inline-link">{lapRecord.driver}</a>
+                    : lapRecord.driver}
+                </div>
+                <div class="circuit-lap-sub">Set in {lapRecord.year}</div>
+                <span class="circuit-lap-clock" aria-hidden="true">◷</span>
+              </div>
+              {profile && (
+                <div class="grid circuit-lap-meta">
+                  {profile.type && profile.type !== '-' && (
+                    <div class="stat"><div class="stat-lbl">Type</div><div class="stat-val circuit-lap-meta-val">{profile.type}</div></div>
+                  )}
+                  {profile.weather && profile.weather !== '-' && (
+                    <div class="stat"><div class="stat-lbl">Weather</div><div class="stat-val circuit-lap-meta-val">{profile.weather}</div></div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+          {nextRace && (
+            <>
+              <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Next Race</h2><div class="section-rule"></div></div>
+              <div class="stat stat-accent circuit-next-race">
+                <div class="stat-lbl">Next Race Here</div>
+                <div class="stat-val" style="font-size: 22px">{nextRace.name.replace(' Grand Prix', '')}</div>
+                <div class="stat-sub">{fmtDateLong(nextRace.date)} · Round {nextRace.round}</div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -255,7 +385,7 @@ const recordCards: CircuitRecordCard[] = [
 
   {recordCards.length > 0 && (
     <>
-      <div class="section-head"><h2>All-Time Records</h2><div class="section-rule"></div></div>
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>All-Time Records</h2><div class="section-rule"></div></div>
       <div class="records-grid">
         {recordCards.map(card => {
           const leader = card.top[0];
@@ -314,13 +444,12 @@ const recordCards: CircuitRecordCard[] = [
 
   {circuit.races.length > 0 && (
     <>
-      <div class="section-head"><h2>Historical Winners</h2><div class="section-rule"></div></div>
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Historical Winners</h2><div class="section-rule"></div></div>
       <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="tbl tbl-static">
+        <table class="tbl tbl-static circuit-winners-tbl">
           <thead>
             <tr>
               <th class="right">Year</th>
-              <th>Race</th>
               <th>Winner</th>
               <th>Team</th>
               <th>Pole</th>
@@ -330,16 +459,29 @@ const recordCards: CircuitRecordCard[] = [
           <tbody>
             {circuit.races.map(r => {
               const raceHref = raceUrl(r.year, r.round);
+              const winnerFace = r.winnerRef && hasDriverFace(r.winnerRef) ? `/images/drivers/${r.winnerRef}.webp` : null;
+              const logo = teamLogoPath(r.winnerTeamRef);
               return (
                 <tr>
-                  <td class="right t-mono"><a href={raceHref}>{r.year}</a></td>
-                  <td><a href={raceHref}>{r.name}</a></td>
-                  <td>{r.winnerRef && r.winnerName ? (
-                    <a href={`/drivers/${r.winnerRef}/`} class="inline-link">{r.winnerName}</a>
-                  ) : (r.winnerName || '-')}</td>
-                  <td>{r.winnerTeamRef
-                    ? <a href={`/teams/${r.winnerTeamRef}/`} class="inline-link">{r.winnerTeam || r.winnerTeamRef}</a>
-                    : (r.winnerTeam || '-')}</td>
+                  <td class="right t-mono"><a href={raceHref} class="inline-link">{r.year}</a></td>
+                  <td>
+                    <span class="race-cell">
+                      {winnerFace
+                        ? <img class="cw-face" src={winnerFace} alt="" width="26" height="26" loading="lazy" />
+                        : <span class="cw-face cw-face-fallback" aria-hidden="true">{initials(r.winnerName)}</span>}
+                      {r.winnerRef && r.winnerName
+                        ? <a href={`/drivers/${r.winnerRef}/`} class="inline-link cw-name">{r.winnerName}</a>
+                        : <span class="cw-name">{r.winnerName || '-'}</span>}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="race-cell">
+                      {logo && <img class="team-logo-sm" src={logo} alt="" width="20" height="20" loading="lazy" />}
+                      {r.winnerTeamRef
+                        ? <a href={`/teams/${r.winnerTeamRef}/`} class="inline-link">{r.winnerTeam || r.winnerTeamRef}</a>
+                        : (r.winnerTeam || '-')}
+                    </span>
+                  </td>
                   <td>{r.poleRef && r.poleName ? (
                     <a href={`/drivers/${r.poleRef}/`} class="inline-link">{r.poleName}</a>
                   ) : (r.poleName || '-')}</td>
@@ -354,16 +496,35 @@ const recordCards: CircuitRecordCard[] = [
   )}
 </div>
 
-<style>
-  .circuit-hero-grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; padding: 4px 0 8px; }
-  .circuit-hero-grid.has-map { grid-template-columns: 1.2fr 1fr; }
-  @media (max-width: 720px) {
-    .circuit-hero-grid.has-map { grid-template-columns: 1fr; }
-  }
+{hasTrackPath && (
+  <script is:inline>
+    // Respect reduced-motion: pause the SMIL dot-lap animation. The page ships
+    // no other client JS; this is a one-shot accessibility guard.
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('svg.ct-svg').forEach(function (s) {
+        if (s.pauseAnimations) s.pauseAnimations();
+      });
+    }
+  </script>
+)}
 
-  .circuit-hero-name { margin: 0 0 12px 0; font-size: 48px; line-height: 1.05; }
+<style>
+  /* ── Hero ───────────────────────────────────────────────────── */
+  .circuit-hero {
+    display: grid; grid-template-columns: 1fr; gap: 0;
+    padding: 0; margin-bottom: 20px; overflow: hidden;
+    border-left: 3px solid var(--accent);
+  }
+  .circuit-hero.has-map { grid-template-columns: 1.25fr 1fr; align-items: stretch; }
+  @media (max-width: 820px) {
+    .circuit-hero.has-map { grid-template-columns: 1fr; }
+  }
+  .circuit-hero-info { padding: 26px 28px; min-width: 0; }
+
+  .circuit-hero-eyebrow { color: var(--accent); margin-bottom: 8px; }
+  .circuit-hero-name { margin: 0 0 14px 0; font-size: 46px; line-height: 1.02; text-transform: uppercase; letter-spacing: -0.01em; }
   @media (max-width: 720px) {
-    .circuit-hero-name { font-size: 32px; }
+    .circuit-hero-name { font-size: 30px; }
   }
 
   .circuit-hero-loc { display: flex; align-items: center; gap: 10px; color: var(--fg-2); margin-bottom: 14px; font-size: 13px; }
@@ -372,27 +533,86 @@ const recordCards: CircuitRecordCard[] = [
   .circuit-hero-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
   .pill-weather { color: var(--accent); border-color: var(--accent); }
 
-  .circuit-hero-blurb { color: var(--fg-2); font-size: 14px; line-height: 1.6; text-wrap: pretty; margin: 0; }
+  .circuit-hero-blurb { color: var(--fg-2); font-size: 14px; line-height: 1.6; text-wrap: pretty; margin: 0 0 18px; max-width: 60ch; }
+  .circuit-hero-cta { text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
 
-  /* Track-map img inherits .circuit-track from app.css for the light/dark
-     swap. Constrain height in hero so it sits next to the title block. */
-  .circuit-hero-grid .circuit-track { height: 280px; }
-  @media (max-width: 720px) {
-    .circuit-hero-grid .circuit-track { height: 200px; max-width: 320px; margin: 0 auto; }
+  /* ── Animated track-map panel ───────────────────────────────── */
+  .circuit-hero-map {
+    position: relative;
+    background:
+      radial-gradient(120% 120% at 75% 18%, rgba(232,0,45,0.10), transparent 60%),
+      repeating-linear-gradient(135deg, var(--bg-3) 0 1px, transparent 1px 11px),
+      var(--bg-2);
+    border-left: 1px solid var(--line-1);
+    display: flex; flex-direction: column;
+    min-height: 300px; padding: 16px;
   }
+  @media (max-width: 820px) {
+    .circuit-hero-map { border-left: 0; border-top: 1px solid var(--line-1); min-height: 240px; }
+  }
+  .circuit-map-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; z-index: 1; }
+  .circuit-map-meta { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); }
+  .circuit-map-mono {
+    font-family: var(--f-display); font-weight: 800; font-size: 30px; line-height: 1;
+    color: var(--fg-3); opacity: 0.6;
+  }
+  .ct-svg { flex: 1; width: 100%; min-height: 0; display: block; }
 
-  .records-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .ct-glow { fill: none; stroke: var(--accent); stroke-width: 16; stroke-linejoin: round; stroke-linecap: round; opacity: 0.16; }
+  .ct-line { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
+  .ct-start { fill: var(--fg-1); opacity: 0.55; }
+  .ct-dot { fill: var(--accent); filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 12px rgba(232,0,45,0.6)); }
+
+  /* Flat-img fallback (circuits whose SVG path couldn't be parsed). */
+  .circuit-hero-map .circuit-track { flex: 1; min-height: 0; }
+
+  /* ── Mid grid: characteristics + lap record ─────────────────── */
+  .circuit-mid-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; margin-top: 6px; }
+  @media (max-width: 820px) {
+    .circuit-mid-grid { grid-template-columns: 1fr; }
+  }
+  .circuit-mid-col { min-width: 0; }
+  .circuit-bars-panel { padding: 18px 20px; }
+  .bar-row-divide { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line-1); }
+
+  /* ── Lap-record card ────────────────────────────────────────── */
+  .circuit-lap-card { position: relative; padding: 20px 22px; overflow: hidden; border-left: 3px solid var(--accent); }
+  .circuit-lap-eyebrow { color: var(--accent); display: block; margin-bottom: 10px; }
+  .circuit-lap-time {
+    font-family: var(--f-display); font-weight: 800; font-size: 48px; line-height: 1;
+    color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  }
+  .circuit-lap-driver { font-family: var(--f-display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 12px; }
+  .circuit-lap-sub { font-family: var(--f-mono); font-size: 12px; color: var(--fg-3); margin-top: 4px; }
+  .circuit-lap-clock {
+    position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+    font-size: 150px; line-height: 1; color: var(--fg-1); opacity: 0.05; pointer-events: none;
+  }
+  .circuit-lap-meta { grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .circuit-lap-meta-val { font-size: 18px; }
+  .circuit-next-race { margin-top: 0; }
+
+  /* ── Records + winners table ────────────────────────────────── */
+  .records-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   @media (max-width: 720px) {
     .records-grid { grid-template-columns: 1fr; }
   }
-  .record-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 0; border-bottom: 1px solid var(--line-1);
-  }
-  .record-row:last-child { border-bottom: 0; }
-  /* `.record-row a` link affordance: canonical inline-link block in app.css. */
-  .record-count { font-weight: 700; color: var(--accent); }
 
-  /* Historical-winners table uses .tbl.tbl-static - global styling in
-     app.css, link affordance from the canonical inline-link block. */
+  /* Band heads need breathing room above on this detail page (the global
+     .section-head-band resets margin-top for the home bands). */
+  .circuit-detail .section-head-band { margin-top: 30px; }
+  .circuit-mid-grid .section-head-band { margin-top: 0; }
+  .circuit-mid-col .section-head-band + .section-head-band,
+  .circuit-mid-col .circuit-lap-meta + .section-head-band { margin-top: 22px; }
+
+  /* Winner / team cells: face or initials chip + team logo alongside the name. */
+  .race-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+  .cw-name { font-weight: 600; }
+  .cw-face { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: var(--bg-3); flex-shrink: 0; }
+  .cw-face-fallback {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--f-mono); font-size: 10px; font-weight: 700; color: var(--fg-3);
+    background: var(--bg-3); border: 1px solid var(--line-1);
+  }
+  .team-logo-sm { width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: #fff; padding: 1px; flex-shrink: 0; }
 </style>
