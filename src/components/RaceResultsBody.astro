@@ -1,10 +1,9 @@
 ---
-// Server-rendered body for completed races. Receives the full race prop
-// (same shape as RacePage takes today). Renders results table + qualifying
-// + sprint + key-links + the post-results podium-aware sections.
+// Server-rendered body for completed races. Top: race-summary card + key-links
+// (side by side), then the championship-style podium, then standings-styled
+// Race / Qualifying / Sprint tables (each top-10 with a "Show all" expand).
 //
-// The shell (RacePage.astro) owns the hero (race name, circuit link, date),
-// breadcrumb, and prev/next nav.
+// The shell (RacePage.astro) owns the hero, the trivia board, and prev/next nav.
 
 interface Props {
   race: {
@@ -16,17 +15,21 @@ interface Props {
     circuit: any;
     results: Array<any>;
     qualifying: Array<any>;
-    sprint: Array<any> | null;
+    sprint: Array<any> | boolean | null;
   };
 }
 
 import { buildRaceSummary } from '../lib/buildRaceSummary.js';
+import RacePodium from './RacePodium.astro';
+import RaceResultsTable from './RaceResultsTable.astro';
+import RaceQualifyingTable from './RaceQualifyingTable.astro';
 
 const { race } = Astro.props;
 const raceSummary = buildRaceSummary(race);
 
 const winnerRow = race.results.find(r => r.position === 1) || null;
 const poleQualifying = race.qualifying?.[0] || null;
+const sprintRows = Array.isArray(race.sprint) ? race.sprint : [];
 
 interface KeyLink { label: string; href: string; text: string; }
 const keyLinks: KeyLink[] = [];
@@ -42,121 +45,68 @@ if (race.circuit?.circuitRef && race.circuit?.name) {
 if (winnerRow?.constructorRef && winnerRow?.constructorName) {
   keyLinks.push({ label: 'Winning team', href: `/teams/${winnerRow.constructorRef}/`, text: winnerRow.constructorName });
 }
+
+const winnerColor = winnerRow?.constructorColor || 'var(--accent)';
 ---
 
-{raceSummary && (
-  <p class="race-summary">{raceSummary}</p>
-)}
-
-{race.results.length > 0 && (
-  <>
-    <div class="section-head"><h2>Race Results</h2><div class="section-rule"></div></div>
-    <div class="panel" style="padding: 0; overflow-x: auto;">
-      <table class="tbl tbl-static">
-        <thead>
-          <tr>
-            <th class="right">Pos</th>
-            <th class="right">Grid</th>
-            <th>Driver</th>
-            <th>Team</th>
-            <th class="right">Laps</th>
-            <th>Time / Status</th>
-            <th class="right">Pts</th>
-            <th>FL</th>
-          </tr>
-        </thead>
-        <tbody>
-          {race.results.map(r => (
-            <tr style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
-              <td class={`right t-mono ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || (r.position != null ? String(r.position) : '-')}</td>
-              <td class="right t-mono">{r.grid != null ? r.grid : '-'}</td>
-              <td>{r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : (r.driverName || '-')} {r.code && <span class="t-mono code-tag">{r.code}</span>}</td>
-              <td>{r.constructorRef ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a> : (r.constructorName || '-')}</td>
-              <td class="right t-mono">{r.laps != null ? r.laps : '-'}</td>
-              <td class="t-mono">{r.time || r.status || '-'}</td>
-              <td class="right t-mono">{r.points}</td>
-              <td class="t-mono">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+{(raceSummary || keyLinks.length > 0) && (
+  <div class="race-intro">
+    {raceSummary && (
+      <div class="panel race-summary-card" style={`border-left: 3px solid ${winnerColor};`}>
+        <p>{raceSummary}</p>
+      </div>
+    )}
     {keyLinks.length > 0 && (
-      <div class="race-keylinks">
-        <span class="t-eyebrow">Key links:</span>
+      <div class="panel race-keylinks-card">
+        <span class="t-eyebrow race-keylinks-title">Key Links</span>
         <ul>
           {keyLinks.map((l) => (
             <li>
-              <span class="t-mono">{l.label}</span>{' '}
+              <span class="t-mono race-keylinks-lbl">{l.label}</span>
               <a href={l.href} class="inline-link">{l.text}</a>
             </li>
           ))}
         </ul>
       </div>
     )}
+  </div>
+)}
+
+{race.results.length > 0 && (
+  <RacePodium rows={race.results} />
+)}
+
+{race.results.length > 0 && (
+  <>
+    <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Race Results</h2><div class="section-rule"></div></div>
+    <RaceResultsTable rows={race.results} kind="race" id="rr-race" />
   </>
 )}
 
 {race.qualifying.length > 0 && (
   <>
-    <div class="section-head"><h2>Qualifying</h2><div class="section-rule"></div></div>
-    <div class="panel" style="padding: 0; overflow-x: auto;">
-      <table class="tbl tbl-static">
-        <thead>
-          <tr>
-            <th class="right">Pos</th>
-            <th>Driver</th>
-            <th>Team</th>
-            <th class="right">Q1</th>
-            <th class="right">Q2</th>
-            <th class="right">Q3</th>
-          </tr>
-        </thead>
-        <tbody>
-          {race.qualifying.map(q => (
-            <tr>
-              <td class={`right t-mono ${q.position === 1 ? 'is-win-cell' : ''}`}>{q.position}</td>
-              <td>{q.driverRef ? <a href={`/drivers/${q.driverRef}/`}>{q.driverName}</a> : q.driverName}</td>
-              <td>{q.constructorRef ? <a href={`/teams/${q.constructorRef}/`}>{q.constructorName}</a> : (q.constructorName || '-')}</td>
-              <td class="right t-mono">{q.q1 || '-'}</td>
-              <td class="right t-mono">{q.q2 || '-'}</td>
-              <td class="right t-mono">{q.q3 || '-'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Qualifying</h2><div class="section-rule"></div></div>
+    <RaceQualifyingTable rows={race.qualifying} id="rr-quali" />
   </>
 )}
 
-{race.sprint && race.sprint.length > 0 && (
+{sprintRows.length > 0 && (
   <>
-    <div class="section-head"><h2>Sprint</h2><div class="section-rule"></div></div>
-    <div class="panel" style="padding: 0; overflow-x: auto;">
-      <table class="tbl tbl-static">
-        <thead>
-          <tr>
-            <th class="right">Pos</th>
-            <th class="right">Grid</th>
-            <th>Driver</th>
-            <th>Team</th>
-            <th>Time / Status</th>
-            <th class="right">Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {race.sprint.map(s => (
-            <tr>
-              <td class={`right t-mono ${s.position === 1 ? 'is-win-cell' : ''}`}>{s.positionText || s.position}</td>
-              <td class="right t-mono">{s.grid != null ? s.grid : '-'}</td>
-              <td>{s.driverRef ? <a href={`/drivers/${s.driverRef}/`}>{s.driverName}</a> : s.driverName}</td>
-              <td>{s.constructorRef ? <a href={`/teams/${s.constructorRef}/`}>{s.constructorName || s.constructorRef}</a> : '-'}</td>
-              <td class="t-mono">{s.time || s.status || '-'}</td>
-              <td class="right t-mono">{s.points}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Sprint</h2><div class="section-rule"></div></div>
+    <RaceResultsTable rows={sprintRows} kind="sprint" id="rr-sprint" />
   </>
 )}
+
+<script is:inline>
+  // Expand/collapse the top-10 results tables. Each button toggles
+  // data-collapsed on its target panel; CSS hides .rr-extra rows while collapsed.
+  document.querySelectorAll('.tbl-expand').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var box = document.querySelector(btn.getAttribute('data-target'));
+      if (!box) return;
+      var collapsed = box.getAttribute('data-collapsed') === 'true';
+      box.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
+      btn.textContent = collapsed ? btn.getAttribute('data-less') : btn.getAttribute('data-more');
+    });
+  });
+</script>

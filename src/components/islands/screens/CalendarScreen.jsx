@@ -346,7 +346,7 @@ export default function CalendarScreen({ data }) {
       <div className="page-head">
         <div>
           <div className="t-eyebrow" style={{ marginBottom: 6 }}>{F.seasonYear || '2026'} Season</div>
-          <h1 className="page-title">Race Calendar</h1>
+          <h1 className="page-title">Next Race</h1>
           <div className="page-sub">
             {cal.length} rounds · {sprintCount} sprint weekends
             {completedRaces.length > 0 && (

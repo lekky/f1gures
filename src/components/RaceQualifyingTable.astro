@@ -1,0 +1,117 @@
+---
+// Standings-styled qualifying table. Same driver cell as the results table, but
+// the team-coloured bar shows how close each driver got to pole on their best
+// lap, and the gap chip reads "Pole" / "+0.234".
+
+import Flag from './Flag.astro';
+import { bestQualiSeconds } from '../lib/raceTimings.js';
+import { hasDriverFace } from '../lib/driverFaceExists.js';
+
+interface Row {
+  position: number | null;
+  driverRef: string | null;
+  driverName: string | null;
+  code: string | null;
+  constructorRef: string | null;
+  constructorName: string | null;
+  constructorColor?: string | null;
+  q1: string | null;
+  q2: string | null;
+  q3: string | null;
+  country?: string | null;
+  flag?: string | null;
+}
+
+interface Props {
+  rows: Row[];
+  id: string;
+  maxRows?: number;
+}
+
+const { rows, id, maxRows = 10 } = Astro.props;
+
+const bests = rows.map(bestQualiSeconds);
+const pole = Math.min(...bests.filter((b): b is number => b != null), Infinity);
+const gaps = bests.map(b => (b != null && Number.isFinite(pole) ? b - pole : null));
+const maxGap = Math.max(0, ...gaps.filter((g): g is number => g != null && g > 0));
+function barPct(gap: number | null): number {
+  if (gap == null) return 0;
+  if (gap <= 0) return 100;
+  if (maxGap <= 0) return 100;
+  return Math.max(14, 100 - (gap / maxGap) * 86);
+}
+function gapChip(gap: number | null): string | null {
+  if (gap == null) return null;
+  if (gap <= 0) return 'Pole';
+  return `+${gap.toFixed(3)}`;
+}
+// Wrapped in a frontmatter fn: Astro's template compiler misreads an inline
+// `<=` in a JSX expression as a tag opener.
+const isPole = (gap: number | null): boolean => gap != null && gap <= 0;
+
+const posClass = (n: number | null) => (n != null && n >= 1 && n <= 3 ? `pos pos-${n}` : 'pos');
+const overflow = rows.length > maxRows;
+function rowCls(i: number): string {
+  return i >= maxRows ? 'rr-extra' : '';
+}
+---
+
+<div class="panel tbl-collapsible" id={id} data-collapsed={overflow ? 'true' : 'false'}>
+  <table class="tbl tbl-static rr-tbl">
+    <thead>
+      <tr>
+        <th class="center">Pos</th>
+        <th>Driver</th>
+        <th>Team</th>
+        <th class="right">Q1</th>
+        <th class="right">Q2</th>
+        <th class="right">Q3</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r, i) => (
+        <tr class={rowCls(i)} style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
+          <td class="center"><div class={posClass(r.position)}>{r.position != null ? r.position : '-'}</div></td>
+          <td class="std-name-td">
+            <span class="std-bar" aria-hidden="true" style={`width:${barPct(gaps[i])}%; --tc:${r.constructorColor || 'var(--fg-3)'}`}></span>
+            <div class="std-name-inner rr-name-inner">
+              {r.driverRef ? (
+                <a class="std-name-id" href={`/drivers/${r.driverRef}/`}>
+                  {hasDriverFace(r.driverRef)
+                    ? <img class="rr-face" src={`/images/drivers/${r.driverRef}.webp`} alt="" width="26" height="26" loading="lazy" />
+                    : <span class="rr-flag"><Flag cc={r.country} flag={r.flag} name={r.driverName} /></span>}
+                  <span class="rr-name">{r.driverName}</span>
+                  {r.code && <span class="rr-code t-mono">{r.code}</span>}
+                </a>
+              ) : (
+                <span class="std-name-id">
+                  <span class="rr-flag"><Flag cc={r.country} flag={r.flag} name={r.driverName} /></span>
+                  <span class="rr-name">{r.driverName || '-'}</span>
+                </span>
+              )}
+              {gapChip(gaps[i]) && (
+                <span class={`std-gap ${isPole(gaps[i]) ? 'is-leader' : ''}`}>{gapChip(gaps[i])}</span>
+              )}
+            </div>
+          </td>
+          <td>
+            {r.constructorRef
+              ? <a href={`/teams/${r.constructorRef}/`} class="rr-team">{r.constructorName}</a>
+              : <span class="rr-team">{r.constructorName || '-'}</span>}
+          </td>
+          <td class="right t-mono">{r.q1 || '-'}</td>
+          <td class="right t-mono">{r.q2 || '-'}</td>
+          <td class="right t-mono">{r.q3 || '-'}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+{overflow && (
+  <button
+    class="btn btn-secondary btn-sm tbl-expand"
+    data-target={`#${id}`}
+    data-more={`Show all ${rows.length}`}
+    data-less={`Show top ${maxRows}`}
+  >Show all {rows.length}</button>
+)}

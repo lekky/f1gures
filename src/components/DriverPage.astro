@@ -61,6 +61,7 @@ import { buildDriverSummary } from '../lib/buildDriverSummary.js';
 import { getDriverBio } from '../data/driverBios.js';
 import Flag from './Flag.astro';
 import StatusIcon from './StatusIcon.astro';
+import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 
 const { driver } = Astro.props;
 const fullName = `${driver.forename} ${driver.surname}`;
@@ -274,6 +275,8 @@ function teamLogoPath(ref: string | null): string | null {
       </div>
     </div>
   </div>
+
+  <TriviaBoard client:visible />
 
   <div class="section-head section-head-band">
     <span class="section-head-mark" aria-hidden="true"></span>

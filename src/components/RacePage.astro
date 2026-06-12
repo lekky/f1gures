@@ -73,57 +73,39 @@ interface Props {
 import RaceResultsBody from './RaceResultsBody.astro';
 import RaceUpcomingBody from './RaceUpcomingBody.astro';
 import Flag from './Flag.astro';
+import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 
 const { race } = Astro.props;
-const podium = race.results.filter(r => r.position != null && r.position <= 3);
 // Upcoming holding pages carry sprint as a boolean flag; completed sprint
 // weekends carry the sprint *results* array - both mean "sprint weekend".
 const isSprintWeekend = race.sprint === true || (Array.isArray(race.sprint) && race.sprint.length > 0);
+// Big hero treatment: uppercase short name (strip "Grand Prix") + a red period,
+// matching the calendar's next-race hero. Full name stays in <title>/breadcrumb.
+const displayName = race.name.replace(/ Grand Prix$/i, '');
 ---
 
-<div class="page">
+<div class="page race-detail">
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/calendar/">← Calendar</a>
 
   <div class="panel race-hero">
-    <div class="race-hero-grid">
-      <div class="race-hero-meta">
-        <div class="t-eyebrow race-hero-round">
-          Round {race.round} · {race.year}
-        </div>
-        <h1 class="page-title race-hero-name">{race.name}</h1>
-        <div class="race-hero-stats">
-          {race.circuit && (
-            <a class="t-mono race-hero-circuit-link" href={`/circuits/${race.circuit.circuitRef}/`}>
-              <Flag cc={race.circuit.country} flag={race.circuit.flag} name={race.circuit.countryName} /> {race.circuit.name}
-            </a>
-          )}
-          {race.circuit && race.date && <span class="sep">·</span>}
-          {race.date && <span class="t-mono">{race.date}</span>}
-          {isSprintWeekend && <span class="sep">·</span>}
-          {isSprintWeekend && <span class="pill pill-sprint">⚡ Sprint</span>}
-        </div>
+    <div class="race-hero-meta">
+      <div class="t-eyebrow race-hero-round">
+        Round {String(race.round).padStart(2, '0')} · {race.year}{isSprintWeekend ? ' · Sprint Weekend' : ''}
       </div>
-      {race.results.length > 0 && podium.length > 0 && (
-        <div class="race-hero-podium">
-          {podium.map(p => (
-            <div class={`podium-step podium-${p.position}`}>
-              <div class="podium-pos">P{p.position}</div>
-              <div class="podium-name">
-                {p.driverRef ? (
-                  <a href={`/drivers/${p.driverRef}/`}>{p.driverName}</a>
-                ) : p.driverName}
-              </div>
-              <div class="podium-team">
-                {p.constructorRef
-                  ? <a href={`/teams/${p.constructorRef}/`}>{p.constructorName}</a>
-                  : p.constructorName}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <h1 class="page-title race-hero-name">{displayName}<span class="race-hero-dot">.</span></h1>
+      <div class="race-hero-stats">
+        {race.circuit && (
+          <a class="t-mono race-hero-circuit-link" href={`/circuits/${race.circuit.circuitRef}/`}>
+            <Flag cc={race.circuit.country} flag={race.circuit.flag} name={race.circuit.countryName} /> {race.circuit.name}
+          </a>
+        )}
+        {race.circuit && race.date && <span class="sep">·</span>}
+        {race.date && <span class="t-mono">{race.date}</span>}
+      </div>
     </div>
   </div>
+
+  <TriviaBoard client:visible />
 
   {race.results.length > 0
     ? <RaceResultsBody race={race} />
@@ -152,16 +134,17 @@ const isSprintWeekend = race.sprint === true || (Array.isArray(race.sprint) && r
      so global scope doesn't conflict with other pages. */
   race-countdown { display: block; }
 
-  .race-hero { padding: 20px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
-  .race-hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
-  .race-hero-round { color: var(--fg-3); margin-bottom: 6px; }
-  .race-hero-name { margin: 0 0 8px 0; font-size: 48px; line-height: 1.05; }
+  .race-hero { padding: 28px 24px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
+  .race-hero-round { color: var(--accent); margin-bottom: 8px; }
+  .race-hero-name { margin: 0 0 10px 0; font-size: 84px; line-height: 0.92; text-transform: uppercase; letter-spacing: -0.01em; }
+  .race-hero-dot { color: var(--accent); }
   .race-hero-stats { display: flex; gap: 10px; align-items: center; color: var(--fg-3); flex-wrap: wrap; }
   .race-hero-stats .sep { color: var(--fg-4); }
   /* Underline affordance comes from the canonical inline-link block in app.css;
      keep the local hover colour bump (ambient -> fg-1) for extra feedback. */
   .race-hero-circuit-link:hover { color: var(--fg-1); }
-  .race-hero-podium { display: flex; gap: 12px; }
+  /* Base podium-step classes below are still used by RaceUpcomingBody's
+     historic-podium block (the hero's own inline podium was removed). */
   .podium-step {
     border-left: 3px solid var(--line-1);
     padding: 0 14px;
@@ -176,14 +159,54 @@ const isSprintWeekend = race.sprint === true || (Array.isArray(race.sprint) && r
      inline-link block in app.css. */
 
   @media (max-width: 720px) {
-    .race-hero-name { font-size: 28px; }
-    .race-hero-grid { grid-template-columns: 1fr; }
-    .race-hero-podium { flex-direction: column; gap: 6px; }
+    .race-hero-name { font-size: 44px; }
   }
 
   .code-tag { font-size: 10px; color: var(--fg-3); margin-left: 6px; }
 
   .race-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; }
+
+  /* Band headers on the race detail page need breathing room above (the global
+     .section-head-band resets margin-top to 0 for the home bands). Scoped via
+     .race-detail so it doesn't touch other pages' .page wrappers. */
+  .race-detail .section-head-band { margin-top: 30px; }
+
+  /* ── Intro row: race summary card + key links ───────────────── */
+  .race-intro { display: grid; grid-template-columns: 1fr 300px; gap: 16px; margin-bottom: 8px; align-items: start; }
+  .race-summary-card { padding: 18px 20px; }
+  .race-summary-card p { margin: 0; color: var(--fg-2); font-size: 14px; line-height: 1.6; max-width: 70ch; }
+  .race-keylinks-card { padding: 16px 18px; }
+  .race-keylinks-title { display: block; color: var(--fg-4); margin-bottom: 12px; }
+  .race-keylinks-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .race-keylinks-card li { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .race-keylinks-lbl { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); }
+  .race-keylinks-card .inline-link { font-size: 13px; }
+
+  /* ── Podium spacing ─────────────────────────────────────────── */
+  .race-podium { margin-bottom: 8px; }
+
+  /* ── Standings-styled results tables ────────────────────────── */
+  .tbl-collapsible { padding: 0; overflow-x: auto; }
+  .tbl-collapsible[data-collapsed="true"] .rr-extra { display: none; }
+  .tbl-expand { margin: 10px 0 4px; }
+  .rr-tbl .pos { margin: 0 auto; }
+  .rr-name-inner { min-width: 220px; }
+  .rr-face { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: var(--bg-3); flex-shrink: 0; }
+  .rr-flag { flex-shrink: 0; display: inline-flex; }
+  .rr-flag :global(.flag-img) { width: 20px; height: 15px; border-radius: 1px; display: block; }
+  .rr-name { font-weight: 600; color: var(--fg-1); white-space: nowrap; }
+  .std-name-id:hover .rr-name { color: var(--accent); }
+  .rr-code { font-size: 10px; color: var(--fg-3); flex-shrink: 0; }
+  .rr-team { color: inherit; text-decoration: none; }
+  .rr-team:hover { color: var(--accent); }
+  .rr-pts { font-family: var(--f-display); font-weight: 800; font-size: 15px; color: var(--fg-1); font-variant-numeric: tabular-nums; }
+  .rr-fl { color: var(--fg-2); font-size: 12px; }
+  .status-cell { display: inline-flex; align-items: center; gap: 7px; }
+  .rr-status-lbl { color: var(--fg-3); font-size: 12px; }
+
+  @media (max-width: 720px) {
+    .race-intro { grid-template-columns: 1fr; }
+  }
 
   .race-upcoming-grid {
     display: grid;
