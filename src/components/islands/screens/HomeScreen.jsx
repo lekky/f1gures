@@ -1,7 +1,7 @@
 // Home / Dashboard. Ported from js/screens/home.jsx.
 // All `window.F1_DATA` reads → `data` prop. Recharts unused on this screen.
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useLayoutEffect } from 'react';
 import {
   SectionHead, SprintBadge, Countdown, TeamLogo, useIsMobile, urlFor, navigate, fmtDateLong,
   circuitTz, zoneShort, Flag,
@@ -12,6 +12,38 @@ import { circuitProfiles } from '../../../data/circuitProfiles.js';
 import SessionWeatherCell from './SessionWeatherCell.jsx';
 import SessionWeatherExpand from './SessionWeatherExpand.jsx';
 import TriviaBoard from './TriviaBoard.jsx';
+
+// Layout effect that's a no-op during SSR (avoids the React useLayoutEffect
+// server warning) but runs synchronously before paint on the client.
+const useIsoLayout = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+// Counts a number up from 0 on mount (page load). SSR and the first client
+// render show the final value (so the prerendered HTML and hydration match);
+// the layout effect then resets to 0 before the browser paints and eases up
+// via rAF. Honours prefers-reduced-motion.
+function CountUp({ value, decimals = 0, duration = 800 }) {
+  const [display, setDisplay] = useState(value);
+  useIsoLayout(() => {
+    if (!Number.isFinite(value)) { setDisplay(value); return; }
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { setDisplay(value); return; }
+    let raf;
+    let startTs = null;
+    setDisplay(0);
+    const tick = (ts) => {
+      if (startTs === null) startTs = ts;
+      const t = Math.min(1, (ts - startTs) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      setDisplay(value * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else setDisplay(value);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => { if (raf) cancelAnimationFrame(raf); };
+  }, [value]);
+  const shown = decimals > 0 ? Number(display).toFixed(decimals) : String(Math.round(Number(display)));
+  return <>{shown}</>;
+}
 
 function driversSummary(D, drivers, completedCount) {
   if (!drivers.length || !completedCount) return null;
@@ -204,9 +236,9 @@ function NextRacePanel({ data, cal, next, mob }) {
   // are zeros). next.circuit is the short id that keys circuitProfiles.
   const profile = circuitProfiles[next.circuit] || null;
   const circuitStats = profile ? [
-    profile.length  ? { l: 'Length',  v: profile.length.toFixed(3), u: ' km' } : null,
-    profile.laps    ? { l: 'Laps',    v: profile.laps,    u: '' } : null,
-    profile.corners ? { l: 'Corners', v: profile.corners, u: '' } : null,
+    profile.length  ? { l: 'Length',  v: profile.length,  d: 3, u: ' km' } : null,
+    profile.laps    ? { l: 'Laps',    v: profile.laps,    d: 0, u: '' } : null,
+    profile.corners ? { l: 'Corners', v: profile.corners, d: 0, u: '' } : null,
   ].filter(Boolean) : [];
   const lapRec = profile && profile.lapRecord && profile.lapRecord.time && profile.lapRecord.time !== '-'
     ? profile.lapRecord
@@ -248,7 +280,7 @@ function NextRacePanel({ data, cal, next, mob }) {
               {circuitStats.map(s => (
                 <div className="hs" key={s.l}>
                   <div className="hs-l">{s.l}</div>
-                  <div className="hs-v">{s.v}<span className="hs-u">{s.u}</span></div>
+                  <div className="hs-v"><CountUp value={s.v} decimals={s.d} /><span className="hs-u">{s.u}</span></div>
                 </div>
               ))}
             </div>
@@ -534,7 +566,7 @@ function SeasonProgress({ data, cal, next }) {
   return (
     <section className="home-band season-progress" aria-label={`${data.seasonYear || ''} season progress`}>
       <div className="sp-inner">
-        <div className="sp-pct">{pct}%</div>
+        <div className="sp-pct"><CountUp value={pct} />%</div>
         <div className="sp-meta">
           <div className="sp-title">{data.seasonYear} Season</div>
           <div className="sp-sub">{completed} of {total} rounds complete · {remaining} to go</div>
@@ -624,7 +656,7 @@ function TitleRace({ data, standings, mob }) {
           <div className="t-display" style={{ fontSize: 30, marginTop: 6 }}>{leader.driver.first} {leader.driver.last}</div>
           <div className="t-mono" style={{ color: 'var(--fg-3)', fontSize: 12 }}>#{leader.driver.num} · {leaderTeam.name}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 14 }}>
-            <span className="t-display" style={{ fontSize: 64, color: leaderTeam.color, lineHeight: 0.8 }}>{leader.points}</span>
+            <span className="t-display" style={{ fontSize: 64, color: leaderTeam.color, lineHeight: 0.8 }}><CountUp value={leader.points} /></span>
             <span className="t-eyebrow">pts</span>
           </div>
           <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--bg-1)', border: '1px solid var(--line-1)' }}>
@@ -638,6 +670,116 @@ function TitleRace({ data, standings, mob }) {
         </a>
       </div>
     </Band>
+  );
+}
+
+// Top-3 standings as a featured leader card (story, big points + stat tiles,
+// photo/crest) flanked by two compact 2nd/3rd cards. `mode` switches between
+// drivers and constructors. Keeps the real photo/logo, driver/team links, the
+// count-up and the last-5-rounds mini-chart (in the leader card).
+function ChampSection({ mode, title, fullHref, rows, D, recentRounds, blurb, after, mob }) {
+  if (!rows || rows.length < 1) return null;
+  const isDrv = mode === 'drivers';
+  const norm = (row) => {
+    if (isDrv) {
+      const t = D.teamById(row.driver.team);
+      return {
+        key: row.driver.id, position: row.position, points: row.points, color: t.color,
+        href: urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId }),
+        nameFirst: row.driver.first, nameLast: row.driver.last,
+        meta: <><Flag cc={row.driver.country} flag={row.driver.flag} /><span>{t.name}</span></>,
+        ghost: String(row.driver.num),
+        media: row.driver.jolpicaId
+          ? <img className="champ-photo-img" src={`/images/drivers/${row.driver.jolpicaId}.webp`} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          : null,
+        rowMedia: row.driver.jolpicaId
+          ? <img className="champ-row-img" src={`/images/drivers/${row.driver.jolpicaId}.webp`} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          : null,
+        stats: [{ v: row.wins, l: 'Wins' }, { v: row.podiums, l: 'Podiums' }, { v: row.poles, l: 'Poles' }],
+        sub: `${row.wins} wins · ${row.podiums} podiums · ${row.poles} poles`,
+        recent: recentRounds.map(r => driverPointsForRound(D, row.driver.id, r.round)),
+      };
+    }
+    const t = row.team;
+    const codes = (row.drivers || []).map(d => d.code).filter(Boolean).join(' · ');
+    return {
+      key: t.id, position: row.position, points: row.points, color: t.color,
+      href: urlFor({ name: 'team', id: t.id, ref: t.id }),
+      nameFirst: null, nameLast: t.name,
+      meta: <span>{codes || t.short}</span>,
+      ghost: t.short,
+      media: <TeamLogo team={t} fill />,
+      rowMedia: null,
+      stats: [{ v: row.wins, l: 'Wins' }, { v: row.podiums, l: 'Podiums' }],
+      sub: `${row.wins} wins · ${row.podiums} podiums`,
+      recent: recentRounds.map(r => teamPointsForRound(D, t.id, r.round)),
+    };
+  };
+  const ld = norm(rows[0]);
+  const rest = rows.slice(1, 3).map(norm);
+  return (
+    <>
+      <SectionHead variant="band" title={title} right={
+        <a className="btn btn-ghost btn-sm" href={fullHref}>View Full Standings <span className="arrow">→</span></a>
+      } />
+      <div className="champ">
+        <a className="champ-leader" href={ld.href} style={{ '--tc': ld.color }}>
+          <div className="champ-leader-photo">
+            <span className="champ-medal" aria-hidden="true">1</span>
+            {ld.media}
+            <span className="champ-photo-ghost" aria-hidden="true">1</span>
+          </div>
+          <div className="champ-leader-body">
+            <div className="champ-leader-head">
+              <span className="champ-pill">Championship Leader</span>
+              <span className="champ-after">After Round {after}</span>
+            </div>
+            <h3 className="champ-name">
+              {ld.nameFirst ? <span className="champ-name-first">{ld.nameFirst}</span> : null}
+              <span className="champ-name-last">{ld.nameLast}</span>
+            </h3>
+            <div className="champ-meta">{ld.meta}</div>
+            {blurb ? <p className="champ-leader-blurb">{blurb}</p> : null}
+            <div className="champ-figures">
+              <div className="champ-pts"><span className="champ-pts-v"><CountUp value={ld.points} /></span><span className="champ-pts-u">pts</span></div>
+              {ld.stats.map(s => (
+                <div className="champ-stat" key={s.l}>
+                  <span className="champ-stat-v"><CountUp value={s.v} /></span>
+                  <span className="champ-stat-l">{s.l}</span>
+                </div>
+              ))}
+            </div>
+            {ld.recent.length > 0 && (
+              <div className="champ-chart">
+                <span className="champ-chart-lbl">Last {ld.recent.length} rounds</span>
+                <MiniChart values={ld.recent} color={ld.color} width={mob ? 120 : 150} height={26} />
+              </div>
+            )}
+          </div>
+        </a>
+        <div className="champ-rest">
+          {rest.map(r => (
+            <a className="champ-row" key={r.key} href={r.href} style={{ '--tc': r.color }}>
+              <div className="champ-row-side">
+                <span className="champ-row-badge">{r.position}</span>
+                {r.rowMedia
+                  ? r.rowMedia
+                  : <span className="champ-row-ghost" aria-hidden="true">{r.ghost}</span>}
+              </div>
+              <div className="champ-row-body">
+                <div className="champ-row-name">{r.nameLast}</div>
+                <div className="champ-row-meta">{r.meta}</div>
+                <div className="champ-row-figs">
+                  <span className="champ-row-pts"><CountUp value={r.points} /></span>
+                  <span className="champ-row-pts-u">pts</span>
+                </div>
+                <div className="champ-row-sub">{r.sub}</div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -692,119 +834,17 @@ export default function HomeScreen({ data }) {
       <FormGuide data={D} mob={mob} />
 
       <Band tone="plain" mob={mob}>
-        <SectionHead variant="band" title="Top 3 · Drivers" right={
-          <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-d' })}>
-            View Full Standings <span className="arrow">→</span>
-          </a>
-        } />
-        {driversBlurb && (
-          <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--fg-2)', maxWidth: 780, marginBottom: 14 }}>
-            {driversBlurb}
-          </p>
-        )}
-        <div className="records-grid">
-        {top3Drivers.map(row => {
-          const team = D.teamById(row.driver.team);
-          const recent = recentRounds.map(r => driverPointsForRound(D, row.driver.id, r.round));
-          const driverImg = row.driver.jolpicaId ? `/images/drivers/${row.driver.jolpicaId}.webp` : null;
-          return (
-            <a key={row.driver.id}
-               className="card-accent"
-               href={urlFor({ name: 'driver', id: row.driver.id, ref: row.driver.jolpicaId })}
-               style={{ '--card-accent': team.color }}>
-              <header className="card-accent-head">
-                <span className="card-accent-rank">{row.position}</span>
-                <span className="card-accent-eyebrow">Drivers</span>
-                <span className="card-accent-arrow" aria-hidden="true">↗</span>
-              </header>
-
-              <div className="card-accent-value">
-                <span className="card-accent-num">{row.points}</span>
-                <span className="card-accent-unit">pts</span>
-              </div>
-
-              <div className="card-accent-holder">
-                <div className="card-accent-avatar card-accent-avatar-image">
-                  {driverImg && (
-                    <img src={driverImg} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                  )}
-                </div>
-                <div className="card-accent-holder-text">
-                  <div className="card-accent-holder-name">
-                    <Flag cc={row.driver.country} flag={row.driver.flag} className="card-accent-flag" />
-                    <span>{row.driver.first} {row.driver.last}</span>
-                  </div>
-                  <div className="card-accent-holder-ctx">
-                    #{row.driver.num} · {row.wins} {row.wins === 1 ? 'WIN' : 'WINS'} · {row.podiums} {row.podiums === 1 ? 'PODIUM' : 'PODIUMS'}
-                  </div>
-                </div>
-              </div>
-
-              {!mob && recent.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 4 }}>
-                  <span className="t-mono" style={{ fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Last {recent.length} rounds</span>
-                  <MiniChart values={recent} color={team.color} width={120} height={26} />
-                </div>
-              )}
-            </a>
-          );
-        })}
-        </div>
+        <ChampSection mode="drivers" title="Drivers' Championship"
+          fullHref={urlFor({ name: 'standings-d' })} rows={top3Drivers} D={D}
+          recentRounds={recentRounds} blurb={driversBlurb}
+          after={String(completedCount).padStart(2, '0')} mob={mob} />
       </Band>
 
       <Band tone="tint" mob={mob}>
-        <SectionHead variant="band" title="Top 3 · Constructors" right={
-          <a className="btn btn-ghost btn-sm" href={urlFor({ name: 'standings-c' })}>
-            View Full Standings <span className="arrow">→</span>
-          </a>
-        } />
-        {teamsBlurb && (
-          <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--fg-2)', maxWidth: 780, marginBottom: 14 }}>
-            {teamsBlurb}
-          </p>
-        )}
-        <div className="records-grid">
-        {top3Teams.map(row => {
-          const team = row.team;
-          const recent = recentRounds.map(r => teamPointsForRound(D, team.id, r.round));
-          return (
-            <a key={team.id}
-               className="card-accent"
-               href={urlFor({ name: 'team', id: team.id, ref: team.id })}
-               style={{ '--card-accent': team.color }}>
-              <header className="card-accent-head">
-                <span className="card-accent-rank">{row.position}</span>
-                <span className="card-accent-eyebrow">Constructors</span>
-                <span className="card-accent-arrow" aria-hidden="true">↗</span>
-              </header>
-
-              <div className="card-accent-value">
-                <span className="card-accent-num">{row.points}</span>
-                <span className="card-accent-unit">pts</span>
-              </div>
-
-              <div className="card-accent-holder">
-                <div className="card-accent-avatar card-accent-avatar-image" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <TeamLogo team={team} size={44} />
-                </div>
-                <div className="card-accent-holder-text">
-                  <div className="card-accent-holder-name"><span>{team.name}</span></div>
-                  <div className="card-accent-holder-ctx">
-                    {row.wins} {row.wins === 1 ? 'WIN' : 'WINS'} · {row.podiums} {row.podiums === 1 ? 'PODIUM' : 'PODIUMS'}
-                  </div>
-                </div>
-              </div>
-
-              {!mob && recent.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 4 }}>
-                  <span className="t-mono" style={{ fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Last {recent.length} rounds</span>
-                  <MiniChart values={recent} color={team.color} width={120} height={26} />
-                </div>
-              )}
-            </a>
-          );
-        })}
-        </div>
+        <ChampSection mode="teams" title="Constructors' Championship"
+          fullHref={urlFor({ name: 'standings-c' })} rows={top3Teams} D={D}
+          recentRounds={recentRounds} blurb={teamsBlurb}
+          after={String(completedCount).padStart(2, '0')} mob={mob} />
       </Band>
     </div>
   );
