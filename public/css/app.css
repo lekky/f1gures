@@ -954,6 +954,77 @@ button { font-family: inherit; }
 .race-mini-row .lbl { color: var(--fg-3); font-family: var(--f-display); font-weight: 600; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
 .race-mini-row .val { color: var(--fg-1); font-family: var(--f-mono); font-size: 11px; }
 
+/* ── Calendar schedule rows (unified 1→N list) ──
+   One row per round, ordered round 1 → N. Status drives the look:
+   completed rounds recede + carry a chequered flag, the next round is
+   outlined in --accent, upcoming rounds stay clean. */
+.cal-row {
+  position: relative;
+  display: grid;
+  align-items: center;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-top: 0;
+  transition: background .12s, border-color .12s;
+}
+.cal-row:first-child { border-top: 1px solid var(--line-1); }
+.cal-row:hover { background: var(--bg-elevated); border-color: var(--line-2); z-index: 2; }
+.cal-row.is-done .cal-name { color: var(--fg-2); }
+/* Completed rounds: a solid black-and-white chequered finish flag fills the
+   round cell, with the round number on a dark chip so it stays legible over
+   the busy pattern. Theme-independent on purpose. */
+.cal-flag-num {
+  position: relative;
+  align-self: stretch;
+  min-height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background-color: #f4f4f4;
+  background-image:
+    linear-gradient(45deg, #141414 25%, transparent 25%),
+    linear-gradient(-45deg, #141414 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #141414 75%),
+    linear-gradient(-45deg, transparent 75%, #141414 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+  border: 1px solid rgba(0,0,0,0.5);
+}
+.cal-flag-num-txt {
+  font-family: var(--f-mono); font-weight: 700; font-size: 12px;
+  line-height: 1; color: #fff;
+  background: rgba(10,10,12,0.86);
+  padding: 3px 5px; border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
+}
+.cal-row.is-next-row {
+  border: 2px solid var(--accent);
+  /* Vertical gap lifts it clear of the list so it reads as a featured row. */
+  margin: 10px 0;
+  background:
+    linear-gradient(to right,
+      color-mix(in srgb, var(--accent) 16%, var(--bg-elevated)),
+      color-mix(in srgb, var(--accent) 7%, var(--bg-elevated)));
+  box-shadow: 0 0 0 1px rgba(232,0,45,0.22), 0 12px 36px rgba(232,0,45,0.22);
+  z-index: 3;
+}
+.cal-row.is-next-row:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(232,0,45,0.30), 0 14px 42px rgba(232,0,45,0.28);
+}
+.cal-name {
+  font-family: var(--f-display); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.02em; color: var(--fg-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-circuit {
+  display: block; max-width: 100%;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-face {
+  width: 26px; height: 26px; flex-shrink: 0;
+  border-radius: 50%; object-fit: cover; object-position: center 12%;
+  background: var(--bg-3); border: 1px solid var(--line-2);
+}
+
 /* ============================================================
    DRIVER CARD (small)
    ============================================================ */
