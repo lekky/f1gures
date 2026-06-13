@@ -284,6 +284,40 @@ async function main() {
     if (resultsByRound[k].order?.length) results[k] = resultsByRound[k];
   });
 
+  // Pending sessions: a round whose qualifying (and, on a sprint weekend, its
+  // sprint) has already run but whose race hasn't (so it's deliberately NOT in
+  // `results`, which means "race ran" everywhere downstream - standings, win
+  // counts, etc.). Jolpica publishes each result the moment the session ends; we
+  // stash them in separate `pendingQuali` / `pendingSprint` maps so the race's
+  // holding page can show those tables without polluting `results`. Self-limiting:
+  // future endpoints return empty and rounds already in `results` are skipped, so
+  // this is usually one or two extra GETs around the current race weekend.
+  const nowISO = new Date().toISOString();
+  const sessionStarted = (s) => {
+    if (!s || !s.date) return false;
+    // Missing time → require the whole session day to have passed (conservative).
+    return `${s.date}T${s.time || '23:59:59Z'}` <= nowISO;
+  };
+  const pendingQuali = {};
+  const pendingSprint = {};
+  for (const r of calendarRaw) {
+    if (results[r.round]) continue; // race already run → handled in `results`
+    if (sessionStarted(r.sessions?.q)) {
+      try {
+        const q = reshapeQualifying(await get(`/${year}/${r.round}/qualifying/`));
+        if (q) pendingQuali[r.round] = q;
+      } catch (e) { console.warn(`  ⚠ round ${r.round} pending quali: ${e.message}`); }
+      await new Promise(res => setTimeout(res, 500));
+    }
+    if (r.sprint && sessionStarted(r.sessions?.sprint)) {
+      try {
+        const s = reshapeSprint(await get(`/${year}/${r.round}/sprint/`));
+        if (s) pendingSprint[r.round] = s;
+      } catch (e) { console.warn(`  ⚠ round ${r.round} pending sprint: ${e.message}`); }
+      await new Promise(res => setTimeout(res, 500));
+    }
+  }
+
   // Driver → team mapping from standings
   const teamByCode = {};
   (standingsList0?.DriverStandings || []).forEach(ds => {
@@ -296,13 +330,19 @@ async function main() {
   const teams = reshapeTeams(constructorsData);
 
   const bundle = { seasonYear, teams, drivers, calendar: calendarRaw, results, circuitsFromAPI };
+  if (Object.keys(pendingQuali).length) bundle.pendingQuali = pendingQuali;
+  if (Object.keys(pendingSprint).length) bundle.pendingSprint = pendingSprint;
 
   mkdirSync(join(ROOT, 'public', 'data'), { recursive: true });
   const outPath = join(ROOT, 'public', 'data', `${year}.json`);
   writeFileSync(outPath, JSON.stringify(bundle));
 
+  const pendingBits = [];
+  if (Object.keys(pendingQuali).length) pendingBits.push(`quali for round ${Object.keys(pendingQuali).join(',')}`);
+  if (Object.keys(pendingSprint).length) pendingBits.push(`sprint for round ${Object.keys(pendingSprint).join(',')}`);
+  const pendingNote = pendingBits.length ? `, +${pendingBits.join(', +')}` : '';
   const kb = Math.round(Buffer.byteLength(JSON.stringify(bundle)) / 1024);
-  console.log(`\n✓  public/data/${year}.json  (${kb} KB, ${Object.keys(results).length}/${completedRounds.length} rounds)\n`);
+  console.log(`\n✓  public/data/${year}.json  (${kb} KB, ${Object.keys(results).length}/${completedRounds.length} rounds${pendingNote})\n`);
 }
 
 main().catch(e => { console.error('\n✗', e.message); process.exit(1); });

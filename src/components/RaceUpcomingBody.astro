@@ -7,6 +7,8 @@
 // The shell (RacePage.astro) owns the hero, breadcrumb, prev/next nav.
 
 import RaceCountdownIsland from './islands/RaceCountdown.jsx';
+import RaceQualifyingTable from './RaceQualifyingTable.astro';
+import RaceResultsTable from './RaceResultsTable.astro';
 
 interface Session { date: string; time: string }
 interface RaceProp {
@@ -18,6 +20,10 @@ interface RaceProp {
   sprint: boolean;
   lastHeldHere: { year: number; round: number; podium: any[] } | null;
   circuitFirstTime: boolean;
+  // Populated when qualifying / the sprint have run but the race hasn't (see
+  // build-archive.mjs). sprint_results is only set on sprint weekends.
+  qualifying?: any[];
+  sprint_results?: any[] | null;
 }
 
 interface Props { race: RaceProp }
@@ -139,5 +145,36 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
     )}
   </div>
 </div>
+
+{race.qualifying && race.qualifying.length > 0 && (
+  <>
+    <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Qualifying</h2><div class="section-rule"></div></div>
+    <RaceQualifyingTable rows={race.qualifying} id="rr-quali" />
+  </>
+)}
+
+{race.sprint_results && race.sprint_results.length > 0 && (
+  <>
+    <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Sprint</h2><div class="section-rule"></div></div>
+    <RaceResultsTable rows={race.sprint_results} kind="sprint" id="rr-sprint" />
+  </>
+)}
+
+{((race.qualifying && race.qualifying.length > 0) || (race.sprint_results && race.sprint_results.length > 0)) && (
+  <script is:inline>
+    // Expand/collapse the top-10 quali/sprint tables. RaceResultsBody carries its
+    // own copy of this for completed races; holding pages don't render that
+    // component, so these pre-race tables need the handler here.
+    document.querySelectorAll('.tbl-expand').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var box = document.querySelector(btn.getAttribute('data-target'));
+        if (!box) return;
+        var collapsed = box.getAttribute('data-collapsed') === 'true';
+        box.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
+        btn.textContent = collapsed ? btn.getAttribute('data-less') : btn.getAttribute('data-more');
+      });
+    });
+  </script>
+)}
 
 <RaceCountdownIsland client:load />
