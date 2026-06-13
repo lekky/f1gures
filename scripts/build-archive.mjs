@@ -1052,34 +1052,60 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
     }
   }
 
-  // Pending qualifying: quali has run but the race hasn't, so this round is
-  // still a holding page. fetch-season stashes the quali under bundle.pendingQuali
-  // (kept out of bundle.results so the standings / win-count passes still treat
-  // the round as un-run). Map it to the same shape the completed pass emits so
-  // RaceUpcomingBody can render a quali table.
+  // Pending sessions: qualifying (and, on a sprint weekend, the sprint) have run
+  // but the race hasn't, so this round is still a holding page. fetch-season
+  // stashes them under bundle.pendingQuali / bundle.pendingSprint (kept out of
+  // bundle.results so the standings / win-count passes still treat the round as
+  // un-run). Map them to the same shapes the completed pass emits so
+  // RaceUpcomingBody can render the quali and sprint tables.
   let qualifying = [];
+  let sprintRows = null;
   const pendingQ = bundle.pendingQuali && bundle.pendingQuali[String(round)];
-  if (pendingQ) {
+  const pendingS = bundle.pendingSprint && bundle.pendingSprint[String(round)];
+  if (pendingQ || pendingS?.order) {
     const driverByCode = new Map(bundle.drivers.map(d => [d.id, d]));
     const teamById = new Map(bundle.teams.map(t => [t.id, t]));
-    qualifying = Object.entries(pendingQ)
-      .sort((a, b) => (a[1].position || 99) - (b[1].position || 99))
-      .map(([code, q]) => {
+    if (pendingQ) {
+      qualifying = Object.entries(pendingQ)
+        .sort((a, b) => (a[1].position || 99) - (b[1].position || 99))
+        .map(([code, q]) => {
+          const d = driverByCode.get(code);
+          const tId = d?.team;
+          const cRef = BUNDLE_TEAM_ALIAS[tId] || tId || null;
+          return {
+            position: q.position ?? null,
+            driverRef: d?.jolpicaId || null,
+            driverName: d ? `${d.first} ${d.last}` : code,
+            code,
+            constructorRef: cRef,
+            constructorName: (tId ? teamById.get(tId) : null)?.name || cRef || null,
+            q1: q.q1 || null,
+            q2: q.q2 || null,
+            q3: q.q3 || null,
+          };
+        });
+    }
+    if (pendingS?.order) {
+      sprintRows = pendingS.order.map(code => {
         const d = driverByCode.get(code);
+        const det = (pendingS.detail || {})[code] || {};
         const tId = d?.team;
         const cRef = BUNDLE_TEAM_ALIAS[tId] || tId || null;
         return {
-          position: q.position ?? null,
+          position: det.position != null ? parseInt(det.position, 10) : null,
+          positionText: det.position != null ? String(det.position) : null,
           driverRef: d?.jolpicaId || null,
           driverName: d ? `${d.first} ${d.last}` : code,
           code,
           constructorRef: cRef,
           constructorName: (tId ? teamById.get(tId) : null)?.name || cRef || null,
-          q1: q.q1 || null,
-          q2: q.q2 || null,
-          q3: q.q3 || null,
+          grid: det.grid ?? null,
+          points: det.points ?? 0,
+          time: det.time || null,
+          status: det.status || null,
         };
       });
+    }
   }
 
   const raceDoc = {
@@ -1110,7 +1136,7 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
     winner: null,
     results: [],
     qualifying,
-    sprint_results: null,
+    sprint_results: sprintRows,
     prev,
     next,
   };
