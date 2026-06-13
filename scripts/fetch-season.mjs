@@ -284,6 +284,30 @@ async function main() {
     if (resultsByRound[k].order?.length) results[k] = resultsByRound[k];
   });
 
+  // Pending qualifying: a round whose qualifying session has already run but
+  // whose race hasn't (so it's deliberately NOT in `results`, which means "race
+  // ran" everywhere downstream - standings, win counts, etc.). Jolpica publishes
+  // quali the moment the session ends; we stash it in a separate `pendingQuali`
+  // map so the race's holding page can show a quali table without polluting
+  // `results`. Self-limiting: future quali endpoints return empty, and rounds
+  // already in `results` are skipped, so this is usually a single extra GET.
+  const nowISO = new Date().toISOString();
+  const qualiStarted = (r) => {
+    const q = r.sessions?.q;
+    if (!q || !q.date) return false;
+    // Missing time → require the whole quali day to have passed (conservative).
+    return `${q.date}T${q.time || '23:59:59Z'}` <= nowISO;
+  };
+  const pendingQuali = {};
+  for (const r of calendarRaw) {
+    if (results[r.round] || !qualiStarted(r)) continue;
+    try {
+      const q = reshapeQualifying(await get(`/${year}/${r.round}/qualifying/`));
+      if (q) pendingQuali[r.round] = q;
+    } catch (e) { console.warn(`  ⚠ round ${r.round} pending quali: ${e.message}`); }
+    await new Promise(res => setTimeout(res, 500));
+  }
+
   // Driver → team mapping from standings
   const teamByCode = {};
   (standingsList0?.DriverStandings || []).forEach(ds => {
@@ -296,13 +320,15 @@ async function main() {
   const teams = reshapeTeams(constructorsData);
 
   const bundle = { seasonYear, teams, drivers, calendar: calendarRaw, results, circuitsFromAPI };
+  if (Object.keys(pendingQuali).length) bundle.pendingQuali = pendingQuali;
 
   mkdirSync(join(ROOT, 'public', 'data'), { recursive: true });
   const outPath = join(ROOT, 'public', 'data', `${year}.json`);
   writeFileSync(outPath, JSON.stringify(bundle));
 
+  const pendingNote = Object.keys(pendingQuali).length ? `, +quali for round ${Object.keys(pendingQuali).join(',')}` : '';
   const kb = Math.round(Buffer.byteLength(JSON.stringify(bundle)) / 1024);
-  console.log(`\n✓  public/data/${year}.json  (${kb} KB, ${Object.keys(results).length}/${completedRounds.length} rounds)\n`);
+  console.log(`\n✓  public/data/${year}.json  (${kb} KB, ${Object.keys(results).length}/${completedRounds.length} rounds${pendingNote})\n`);
 }
 
 main().catch(e => { console.error('\n✗', e.message); process.exit(1); });

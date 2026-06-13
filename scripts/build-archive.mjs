@@ -1052,6 +1052,36 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
     }
   }
 
+  // Pending qualifying: quali has run but the race hasn't, so this round is
+  // still a holding page. fetch-season stashes the quali under bundle.pendingQuali
+  // (kept out of bundle.results so the standings / win-count passes still treat
+  // the round as un-run). Map it to the same shape the completed pass emits so
+  // RaceUpcomingBody can render a quali table.
+  let qualifying = [];
+  const pendingQ = bundle.pendingQuali && bundle.pendingQuali[String(round)];
+  if (pendingQ) {
+    const driverByCode = new Map(bundle.drivers.map(d => [d.id, d]));
+    const teamById = new Map(bundle.teams.map(t => [t.id, t]));
+    qualifying = Object.entries(pendingQ)
+      .sort((a, b) => (a[1].position || 99) - (b[1].position || 99))
+      .map(([code, q]) => {
+        const d = driverByCode.get(code);
+        const tId = d?.team;
+        const cRef = BUNDLE_TEAM_ALIAS[tId] || tId || null;
+        return {
+          position: q.position ?? null,
+          driverRef: d?.jolpicaId || null,
+          driverName: d ? `${d.first} ${d.last}` : code,
+          code,
+          constructorRef: cRef,
+          constructorName: (tId ? teamById.get(tId) : null)?.name || cRef || null,
+          q1: q.q1 || null,
+          q2: q.q2 || null,
+          q3: q.q3 || null,
+        };
+      });
+  }
+
   const raceDoc = {
     raceId: `${bYear}_${round}`,
     year: bYear,
@@ -1074,12 +1104,12 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
     status: calEntry.status || 'upcoming',
     lastHeldHere,
     circuitFirstTime,
-    pole: null,
+    pole: qualifying.length ? (qualifying[0].driverRef || null) : null,
     fastest: null,
     fastestLapTime: null,
     winner: null,
     results: [],
-    qualifying: [],
+    qualifying,
     sprint_results: null,
     prev,
     next,
