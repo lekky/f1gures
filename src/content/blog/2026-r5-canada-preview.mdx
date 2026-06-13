@@ -8,6 +8,11 @@ heroImage: /images/blog/2026-canada-preview.jpg
 heroImageAlt: "Circuit Gilles Villeneuve pit straight at dusk, Montreal skyline silhouetted in the distance"
 ---
 import DriverChip from '../../components/blog/DriverChip.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import PullQuote from '../../components/blog/PullQuote.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
+import Sessions from '../../components/blog/Sessions.astro';
 
 The 2026 season comes to [Île Notre-Dame](/circuits/villeneuve/) on Sunday
 May 24 - the fifth round, the second sprint weekend in a row, and the first
@@ -20,13 +25,18 @@ championship on 22 points, the worst start to a season he's had since 2020.
 
 After four rounds:
 
-1. <DriverChip ref="antonelli" /> - 93 pts (3 wins, 4 podiums)
-2. <DriverChip ref="russell" /> - 67 pts
-3. <DriverChip ref="leclerc" /> - 46 pts
-4. <DriverChip ref="hamilton" /> - 43 pts
-5. <DriverChip ref="norris" /> - 38 pts
-6. <DriverChip ref="piastri" /> - 33 pts
-7. <DriverChip ref="max_verstappen" /> - 22 pts
+<StandingsCard
+  title="Drivers' Championship · After Round 04"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 93 },
+    { driver: 'russell',        team: 'MER', value: 67 },
+    { driver: 'leclerc',        team: 'FER', value: 46 },
+    { driver: 'hamilton',       team: 'FER', value: 43 },
+    { driver: 'norris',         team: 'MCL', value: 38 },
+    { driver: 'piastri',        team: 'MCL', value: 33 },
+    { driver: 'max_verstappen', team: 'RBR', value: 22 },
+  ]}
+/>
 
 Constructors: Mercedes 160, Ferrari 89, McLaren 71, Red Bull 26.
 
@@ -50,30 +60,51 @@ package:
   system that drops downforce on the straight, and weather that historically
   reaches in and changes the weekend without warning, expect a hit list.
 
+<PullQuote>“The Wall of Champions has put more world champions into the barrier than any other inanimate object in F1.”</PullQuote>
+
 ## The storylines
 
-- **Can anyone stop Antonelli?** The W17 has had race-pace advantage at every
-  weekend so far. Canada's lower-downforce setup window is the first track
-  that might neutralise some of it. If Mercedes win here too, the title
-  conversation moves from *when* to *which Mercedes*.
-- **The Russell counter.** Five years older, the racecraft is on his side,
-  and Antonelli has yet to face a teammate fight at the front of a real
-  championship. Russell's Montreal record - two podiums, one win in 2024 -
-  is one of the strongest in the current field.
-- **Red Bull's Canada upgrade.** A new floor and revised cooling are the
-  rumoured Miami-spec package that <DriverChip ref="max_verstappen" /> said
-  *didn't really do what we wanted*. Canada has another iteration of it. Red
-  Bull cannot afford another P5-best weekend.
-- **McLaren consolidating.** Two podiums in two rounds for <DriverChip ref="piastri" />
-  and <DriverChip ref="norris" /> respectively. A third weekend on the
-  podium with both cars would close the gap to Ferrari in the constructors
-  to under 20 points.
-- **The weather.** Forecasts on Thursday show a 60% chance of rain on Sunday.
-  Montreal in wet conditions is a genuinely different race; the safety car
-  appears once for every two visits across the last decade.
+<Storylines>
+  <Storyline title="Can anyone stop Antonelli?" driver="antonelli">
+    The W17 has had race-pace advantage at every weekend so far. Canada's
+    lower-downforce setup window is the first track that might neutralise some
+    of it. If Mercedes win here too, the title conversation moves from *when*
+    to *which Mercedes*.
+  </Storyline>
+  <Storyline title="The Russell counter" driver="russell">
+    Five years older, the racecraft is on his side, and Antonelli has yet to
+    face a teammate fight at the front of a real championship. Russell's
+    Montreal record - two podiums, one win in 2024 - is one of the strongest
+    in the current field.
+  </Storyline>
+  <Storyline title="Red Bull's Canada upgrade" driver="max_verstappen">
+    A new floor and revised cooling are the rumoured Miami-spec package that
+    <DriverChip ref="max_verstappen" /> said *didn't really do what we wanted*.
+    Canada has another iteration of it. Red Bull cannot afford another P5-best
+    weekend.
+  </Storyline>
+  <Storyline title="McLaren consolidating" driver="piastri">
+    Two podiums in two rounds for <DriverChip ref="piastri" /> and
+    <DriverChip ref="norris" /> respectively. A third weekend on the podium
+    with both cars would close the gap to Ferrari in the constructors to under
+    20 points.
+  </Storyline>
+  <Storyline title="The weather">
+    Forecasts on Thursday show a 60% chance of rain on Sunday. Montreal in wet
+    conditions is a genuinely different race; the safety car appears once for
+    every two visits across the last decade.
+  </Storyline>
+</Storylines>
 
 ## Sessions (Montreal time, UTC-4)
 
-- **Friday May 22**: FP1 12:30, Sprint Qualifying 16:30
-- **Saturday May 23**: Sprint 12:00, Qualifying 16:00
-- **Sunday May 24**: Race 16:00 (20:00 UTC)
+<Sessions
+  rows={[
+    { day: 'Fri', name: 'FP1', time: '12:30' },
+    { day: 'Fri', name: 'Sprint Qualifying', time: '16:30' },
+    { day: 'Sat', name: 'Sprint', time: '12:00' },
+    { day: 'Sat', name: 'Qualifying', time: '16:00' },
+    { day: 'Sun', name: 'Race', time: '16:00', race: true },
+  ]}
+  note="All times Montreal local (UTC-4). Race 16:00 is 20:00 UTC. Circuit Gilles Villeneuve, Île Notre-Dame."
+/>

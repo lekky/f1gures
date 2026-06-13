@@ -9,6 +9,7 @@ heroImageAlt: "Painted illustration of two Mercedes leading a Ferrari across the
 ---
 import DriverChip from '../../components/blog/DriverChip.astro';
 import RaceResult from '../../components/blog/RaceResult.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
 
 A maiden Grand Prix win for <DriverChip ref="antonelli" /> at 19 years and
 164 days. Pole, fastest lap, every lap led. The youngest race winner since
@@ -54,8 +55,18 @@ ratio in the field.
 
 ## The championship
 
-After two rounds: Antonelli 43, Russell 43, Hamilton 27, Leclerc 27,
-Bearman 16. Mercedes are level at the top of both championships. Red Bull
+<StandingsCard
+  title="Drivers' Championship · After Round 2"
+  rows={[
+    { driver: 'antonelli', team: 'MER', value: 43 },
+    { driver: 'russell',   team: 'MER', value: 43 },
+    { driver: 'hamilton',  team: 'FER', value: 27 },
+    { driver: 'leclerc',   team: 'FER', value: 27 },
+    { driver: 'bearman',   team: 'HAA', value: 16 },
+  ]}
+/>
+
+Mercedes are level at the top of both championships. Red Bull
 are fourth in constructors with 12 points - 8 from <DriverChip ref="max_verstappen" />'s
 Melbourne recovery, 4 from <DriverChip ref="hadjar" />'s P8 in Shanghai.
 

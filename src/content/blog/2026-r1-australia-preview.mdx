@@ -8,6 +8,8 @@ heroImage: /images/blog/2026-australia-preview.jpg
 heroImageAlt: "Illustrated track map of the Albert Park Grand Prix Circuit, Melbourne"
 ---
 import DriverChip from '../../components/blog/DriverChip.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
 
 The 2026 season starts at [Albert Park](/circuits/albert_park/) on Sunday March 8,
 and for the first time in a decade nobody is really sure who's quick. The new
@@ -33,18 +35,24 @@ minutes into qualifying on Saturday.
 
 ## The storylines
 
-- **<DriverChip ref="antonelli" /> in his second full season.** A year of
-  Mercedes data under his belt, the same car as <DriverChip ref="russell" />,
-  and a regulation reset that means his rookie-year deficit to the field is
-  gone. If the W17 is the car the testing data hinted at, he has a real shot
-  at his first pole.
-- **<DriverChip ref="hamilton" />'s first race in red.** Twelve seasons at
-  Mercedes, then Ferrari. Melbourne is a happy hunting ground for him -
-  two wins, eight podiums - but a brand-new car is a brand-new car.
-- **The active-aero rear wing.** The headline new feature: drivers can deploy
-  a low-drag mode on straights without DRS-style activation zones. Expect a
-  messy first race as the field works out which corners can be taken with
-  the wing still flat.
+<Storylines>
+  <Storyline title="Antonelli in his second full season" driver="antonelli">
+    A year of Mercedes data under his belt, the same car as <DriverChip ref="russell" />,
+    and a regulation reset that means his rookie-year deficit to the field is
+    gone. If the W17 is the car the testing data hinted at, he has a real shot
+    at his first pole.
+  </Storyline>
+  <Storyline title="Hamilton's first race in red" driver="hamilton">
+    Twelve seasons at Mercedes, then Ferrari. Melbourne is a happy hunting
+    ground for him - two wins, eight podiums - but a brand-new car is a
+    brand-new car.
+  </Storyline>
+  <Storyline title="The active-aero rear wing">
+    The headline new feature: drivers can deploy a low-drag mode on straights
+    without DRS-style activation zones. Expect a messy first race as the field
+    works out which corners can be taken with the wing still flat.
+  </Storyline>
+</Storylines>
 
 Albert Park itself doesn't ask the new cars hard questions about high-speed
 aero, which makes it a useful but incomplete first data point. The real

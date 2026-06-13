@@ -3,6 +3,7 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { BLOG_CATEGORY_LABELS } from '../../content/config';
 import { isPublic, sortPosts, fmtPostDate } from '../../lib/blog';
+import TriviaBoard from '../../components/islands/screens/TriviaBoard.jsx';
 
 export async function getStaticPaths() {
   const posts = (await getCollection('blog')).filter(isPublic);
@@ -22,6 +23,12 @@ const { Content } = await post.render();
 const categoryLabel = BLOG_CATEGORY_LABELS[post.data.category];
 const canonicalPath = `/blog/${post.slug}/`;
 const ogImage = post.data.heroImage || '/images/og-default.png';
+
+// Byline display: the house author renders as "The F1GURES Desk".
+const authorLabel = post.data.author === 'f1gures' ? 'The F1GURES Desk' : post.data.author;
+// Read time from the raw MDX body (~200 wpm), floored at 1 minute.
+const wordCount = post.body.split(/\s+/).filter(Boolean).length;
+const readMins = Math.max(1, Math.round(wordCount / 200));
 
 const allPosts = sortPosts((await getCollection('blog')).filter(isPublic));
 const idx = allPosts.findIndex((p) => p.slug === post.slug);
@@ -71,7 +78,34 @@ const breadcrumb = [
   <article class="page blog-article">
     <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/blog/">← Blog</a>
 
-    {post.data.heroImage ? (
+    <TriviaBoard client:visible />
+
+    <header class="blog-article-head">
+      <a class="t-eyebrow blog-article-cat" href={`/blog/category/${post.data.category}/`}>
+        {categoryLabel}
+      </a>
+      <h1 class="page-title blog-article-title">{post.data.title}</h1>
+      <p class="blog-article-standfirst">{post.data.description}</p>
+
+      <div class="blog-byline">
+        <span class="blog-byline-avatar" aria-hidden="true">F1</span>
+        <span class="blog-byline-text">
+          <span class="blog-byline-author">By {authorLabel}</span>
+          <span class="sep">·</span>
+          <span class="t-mono">{fmtPostDate(post.data.publishedAt)}</span>
+          <span class="sep">·</span>
+          <span class="t-mono">{readMins} min read</span>
+          {post.data.updatedAt && (
+            <>
+              <span class="sep">·</span>
+              <span class="t-mono">Updated {fmtPostDate(post.data.updatedAt)}</span>
+            </>
+          )}
+        </span>
+      </div>
+    </header>
+
+    {post.data.heroImage && (
       <div class="blog-article-hero-wrap">
         <img
           class="blog-article-hero"
@@ -79,37 +113,6 @@ const breadcrumb = [
           alt={post.data.heroImageAlt || post.data.title}
           loading="eager"
         />
-        <div class="blog-article-head blog-article-head--over">
-          <a class="t-eyebrow blog-article-cat" href={`/blog/category/${post.data.category}/`}>
-            {categoryLabel}
-          </a>
-          <h1 class="page-title blog-article-title">{post.data.title}</h1>
-          <div class="blog-article-meta">
-            <span class="t-mono">{fmtPostDate(post.data.publishedAt)}</span>
-            {post.data.updatedAt && (
-              <>
-                <span class="sep">·</span>
-                <span class="t-mono">Updated {fmtPostDate(post.data.updatedAt)}</span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    ) : (
-      <div class="blog-article-head">
-        <a class="t-eyebrow blog-article-cat" href={`/blog/category/${post.data.category}/`}>
-          {categoryLabel}
-        </a>
-        <h1 class="page-title blog-article-title">{post.data.title}</h1>
-        <div class="blog-article-meta">
-          <span class="t-mono">{fmtPostDate(post.data.publishedAt)}</span>
-          {post.data.updatedAt && (
-            <>
-              <span class="sep">·</span>
-              <span class="t-mono">Updated {fmtPostDate(post.data.updatedAt)}</span>
-            </>
-          )}
-        </div>
       </div>
     )}
 
@@ -118,20 +121,27 @@ const breadcrumb = [
     </div>
 
     {(newer || older) && (
-      <nav class="blog-article-nav" aria-label="More posts">
-        {newer ? (
-          <a class="panel blog-article-nav-link" href={`/blog/${newer.slug}/`}>
-            <span class="t-eyebrow">Newer</span>
-            <span class="blog-article-nav-title">{newer.data.title}</span>
-          </a>
-        ) : <span></span>}
-        {older ? (
-          <a class="panel blog-article-nav-link blog-article-nav-older" href={`/blog/${older.slug}/`}>
-            <span class="t-eyebrow">Older</span>
-            <span class="blog-article-nav-title">{older.data.title}</span>
-          </a>
-        ) : <span></span>}
-      </nav>
+      <>
+        <div class="section-head section-head-band blog-keep-reading-head">
+          <span class="section-head-mark" aria-hidden="true"></span>
+          <h2>Keep Reading</h2>
+          <div class="section-rule"></div>
+        </div>
+        <nav class="blog-article-nav" aria-label="More posts">
+          {newer ? (
+            <a class="panel blog-article-nav-link" href={`/blog/${newer.slug}/`}>
+              <span class="t-eyebrow">Newer</span>
+              <span class="blog-article-nav-title">{newer.data.title}</span>
+            </a>
+          ) : <span></span>}
+          {older ? (
+            <a class="panel blog-article-nav-link blog-article-nav-older" href={`/blog/${older.slug}/`}>
+              <span class="t-eyebrow">Older</span>
+              <span class="blog-article-nav-title">{older.data.title}</span>
+            </a>
+          ) : <span></span>}
+        </nav>
+      </>
     )}
   </article>
 </BaseLayout>

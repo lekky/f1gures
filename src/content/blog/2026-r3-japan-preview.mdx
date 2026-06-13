@@ -8,6 +8,9 @@ heroImage: /images/blog/2026-japan-preview.jpg
 heroImageAlt: "Illustrated track map of the Suzuka International Racing Course"
 ---
 import DriverChip from '../../components/blog/DriverChip.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
 
 [Suzuka](/circuits/suzuka/) on Sunday March 29. The third round, the first
 back-to-back-to-back-week gap in the calendar, and the first weekend the 2026
@@ -19,10 +22,20 @@ tracks?
 
 ## The state of the championship
 
-After Melbourne and Shanghai: <DriverChip ref="antonelli" /> and <DriverChip ref="russell" />
-tied on 43 points at the top, <DriverChip ref="hamilton" /> and <DriverChip ref="leclerc" />
-27 each, and <DriverChip ref="bearman" /> a quiet but extraordinary fifth on
-16. Red Bull are fourth in constructors on 12 points - 8 from <DriverChip ref="max_verstappen" />'s
+After Melbourne and Shanghai:
+
+<StandingsCard
+  title="Drivers' Championship · After Round 02"
+  rows={[
+    { driver: 'antonelli', team: 'MER', value: 43 },
+    { driver: 'russell',   team: 'MER', value: 43 },
+    { driver: 'hamilton',  team: 'FER', value: 27 },
+    { driver: 'leclerc',   team: 'FER', value: 27 },
+    { driver: 'bearman',   team: 'HAA', value: 16 },
+  ]}
+/>
+
+Red Bull are fourth in constructors on 12 points - 8 from <DriverChip ref="max_verstappen" />'s
 P20-to-P6 recovery in Melbourne, 4 from <DriverChip ref="hadjar" />'s P8 in
 Shanghai. <DriverChip ref="norris" /> is still on zero after the Shanghai
 hydraulic failure cost McLaren a result that should have been there for the
@@ -38,20 +51,28 @@ Ferrari historically over-performs at - the championship reopens.
 
 ## The other questions
 
-- **Verstappen at home.** Honda's home race, the last one in the current PU
-  partnership. The RB22 has looked like a midfield car in race trim for two
-  rounds. A Suzuka recovery would mean very different things from a Melbourne
-  recovery - the car would need to actually be competitive, not just driven
-  brilliantly.
-- **McLaren's recovery weekend.** Round three is the latest the [Woking team](/teams/mclaren/)
-  has ever been pointless at the start of a season. <DriverChip ref="piastri" />'s
-  start in Shanghai was a low point. Norris hasn't completed a race yet.
-- **<DriverChip ref="hadjar" />.** Two strong qualifying performances ruined
-  by car failures in races. Suzuka is where rookies traditionally either
-  arrive or get found out.
-- **The weather.** Forecasts on Wednesday show a 40% chance of rain on Sunday.
-  A wet Suzuka with the new regulations - cars no driver has raced in the
-  rain at speed yet, active-aero behaviour in standing water still untested -
-  would be the first genuine unknown of 2026.
+<Storylines>
+  <Storyline title="Verstappen at home" driver="max_verstappen">
+    Honda's home race, the last one in the current PU partnership. The RB22 has
+    looked like a midfield car in race trim for two rounds. A Suzuka recovery
+    would mean very different things from a Melbourne recovery - the car would
+    need to actually be competitive, not just driven brilliantly.
+  </Storyline>
+  <Storyline title="McLaren's recovery weekend" team="mclaren">
+    Round three is the latest the [Woking team](/teams/mclaren/) has ever been
+    pointless at the start of a season. <DriverChip ref="piastri" />'s start in
+    Shanghai was a low point. Norris hasn't completed a race yet.
+  </Storyline>
+  <Storyline title="Hadjar" driver="hadjar">
+    Two strong qualifying performances ruined by car failures in races. Suzuka
+    is where rookies traditionally either arrive or get found out.
+  </Storyline>
+  <Storyline title="The weather" team="mercedes">
+    Forecasts on Wednesday show a 40% chance of rain on Sunday. A wet Suzuka
+    with the new regulations - cars no driver has raced in the rain at speed
+    yet, active-aero behaviour in standing water still untested - would be the
+    first genuine unknown of 2026.
+  </Storyline>
+</Storylines>
 
 Lights out on Sunday March 29 at 14:00 local (05:00 UTC).

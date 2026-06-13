@@ -1,0 +1,44 @@
+---
+// Session timetable for MDX blog posts. A compact day · session · time table
+// with the race row picked out in accent red, plus an optional muted footnote
+// (timezone, circuit, lap count).
+//
+// Usage in MDX:
+//   import Sessions from '../../components/blog/Sessions.astro';
+//   <Sessions
+//     rows={[
+//       { day: 'Fri', name: 'Practice 1', time: '13:30' },
+//       { day: 'Sun', name: 'Race', time: '15:00', race: true },
+//     ]}
+//     note="All times local (CEST, GMT+2). Autodromo Enzo e Dino Ferrari, 63 laps of 4.909 km."
+//   />
+
+interface Row {
+  day: string;
+  name: string;
+  time: string;
+  /** Highlight this row in accent red (the race) */
+  race?: boolean;
+}
+
+interface Props {
+  rows: Row[];
+  note?: string;
+}
+
+const { rows, note } = Astro.props;
+---
+<aside class="blog-sessions">
+  <table class="blog-sessions-table">
+    <tbody>
+      {rows.map((r) => (
+        <tr class={r.race ? 'is-race' : ''}>
+          <td class="blog-sessions-day t-mono">{r.day}</td>
+          <td class="blog-sessions-name">{r.name}</td>
+          <td class="blog-sessions-time t-mono">{r.time}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  {note && <p class="blog-sessions-note">{note}</p>}
+</aside>

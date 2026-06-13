@@ -1,0 +1,20 @@
+---
+// Pull-quote for MDX blog posts. A bold red standfirst quote with a thick
+// accent left border. The quoted text is the slotted children so it can carry
+// inline markup; pass an optional `cite` for attribution.
+//
+// Usage in MDX:
+//   import PullQuote from '../../components/blog/PullQuote.astro';
+//   <PullQuote>"At Imola you don't win on Sunday. You win on Saturday, and survive on Sunday."</PullQuote>
+//   <PullQuote cite="— a paddock engineer">"…"</PullQuote>
+
+interface Props {
+  cite?: string;
+}
+
+const { cite } = Astro.props;
+---
+<figure class="blog-pullquote">
+  <blockquote class="blog-pullquote-q"><slot /></blockquote>
+  {cite && <figcaption class="blog-pullquote-cite">{cite}</figcaption>}
+</figure>

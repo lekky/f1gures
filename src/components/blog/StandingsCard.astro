@@ -1,0 +1,81 @@
+---
+// Championship standings card for MDX blog posts. Echoes the records/standings
+// visual language: a team-coloured top rule, a condensed eyebrow title, then
+// rows of position · team-colour bar · driver surname · muted team code · pts.
+//
+// Surname + team colour are resolved from the driver archive index when a
+// `driver` ref is given; `name`/`color`/`team` props override. The card's top
+// rule takes the leader's colour unless `accent` is set.
+//
+// Usage in MDX:
+//   import StandingsCard from '../../components/blog/StandingsCard.astro';
+//   <StandingsCard
+//     title="Drivers' Championship · Top 5"
+//     rows={[
+//       { driver: 'norris',  team: 'MCL', value: 136 },
+//       { driver: 'piastri', team: 'MCL', value: 136 },
+//       { driver: 'max_verstappen', team: 'RBR', value: 113 },
+//     ]}
+//   />
+
+import { getDriverEntry } from '../../lib/blogData';
+import { hasDriverFace } from '../../lib/driverFaceExists.js';
+
+interface Row {
+  /** driverRef slug, e.g. "norris", "max_verstappen" */
+  driver?: string;
+  /** Display name override (defaults to the driver's surname) */
+  name?: string;
+  /** Short team code shown muted on the right, e.g. "MCL" */
+  team?: string;
+  /** Bar colour override (defaults to the driver's team colour) */
+  color?: string;
+  /** Points / value shown bold on the right */
+  value: number | string;
+}
+
+interface Props {
+  title: string;
+  rows: Row[];
+  /** Top-rule colour. Defaults to the leader row's colour. */
+  accent?: string;
+}
+
+const { title, rows, accent } = Astro.props;
+
+const resolved = rows.map((r) => {
+  const d = r.driver ? getDriverEntry(r.driver) : null;
+  return {
+    driver: r.driver || null,
+    face: r.driver ? hasDriverFace(r.driver) : false,
+    href: r.driver ? `/drivers/${r.driver}/` : null,
+    name: r.name || (d ? d.surname : r.driver || '—'),
+    team: r.team || d?.code || '',
+    color: r.color || d?.teamColor || 'var(--accent)',
+    value: r.value,
+  };
+});
+
+const lead = accent || resolved[0]?.color || 'var(--accent)';
+---
+<aside class="blog-standings panel" style={`--lead: ${lead}`}>
+  <div class="blog-standings-eyebrow">{title}</div>
+  <ol class="blog-standings-list">
+    {resolved.map((r, i) => (
+      <li class="blog-standings-row" style={`--bar: ${r.color}`}>
+        <span class="blog-standings-pos t-mono">{i + 1}</span>
+        <span class="blog-standings-mark" aria-hidden="true"></span>
+        {r.face
+          ? <img class="blog-standings-face" src={`/images/drivers/${r.driver}.webp`} alt="" width="26" height="26" loading="lazy" />
+          : <span class="blog-standings-face blog-standings-face--ph" aria-hidden="true"></span>}
+        {r.href ? (
+          <a class="blog-standings-name" href={r.href}>{r.name}</a>
+        ) : (
+          <span class="blog-standings-name">{r.name}</span>
+        )}
+        <span class="blog-standings-team t-mono">{r.team}</span>
+        <span class="blog-standings-val t-mono">{r.value}</span>
+      </li>
+    ))}
+  </ol>
+</aside>

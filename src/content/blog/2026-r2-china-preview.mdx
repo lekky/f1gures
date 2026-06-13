@@ -8,6 +8,8 @@ heroImage: /images/blog/2026-china-preview.jpg
 heroImageAlt: "Illustrated track map of the Shanghai International Circuit"
 ---
 import DriverChip from '../../components/blog/DriverChip.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
 
 [Shanghai](/circuits/shanghai/) gets the season's first sprint format on March
 13-15. One hour of practice on Friday morning, sprint qualifying that evening,
@@ -28,20 +30,30 @@ to look one-sided very early.
 
 ## The other storylines
 
-- **<DriverChip ref="max_verstappen" />'s recovery, take two.** Red Bull went
-  home from Melbourne with a long list of correlation work to do. A sprint
-  weekend is the worst possible setting for a team that wanted three hours
-  of practice to fix their car. He'll grid up wherever the car can put him.
-- **McLaren's response.** <DriverChip ref="piastri" />'s lap-one spin in
-  Australia was the kind of result that triggers internal reviews. Shanghai
-  is the chance to draw a line under it.
-- **<DriverChip ref="hamilton" /> at a circuit he likes.** Six wins in
-  Shanghai across his career, more than any active driver. In a Ferrari that
-  qualified third in Melbourne, on a track that rewards experience reading
-  the surface, this is the weekend the move starts to make sense or doesn't.
-- **Sprint points.** 8 for the sprint winner, scaling to 1 for eighth. In a
-  championship that already looks like Mercedes' to lose, banked points in
-  March matter more than they look like they should.
+<Storylines>
+  <Storyline title="Verstappen's recovery, take two" driver="max_verstappen">
+    Red Bull went home from Melbourne with a long list of correlation work to
+    do. A sprint weekend is the worst possible setting for a team that wanted
+    three hours of practice to fix their car. He'll grid up wherever the car
+    can put him.
+  </Storyline>
+  <Storyline title="McLaren's response" driver="piastri">
+    <DriverChip ref="piastri" />'s lap-one spin in Australia was the kind of
+    result that triggers internal reviews. Shanghai is the chance to draw a
+    line under it.
+  </Storyline>
+  <Storyline title="Hamilton at a circuit he likes" driver="hamilton">
+    Six wins in Shanghai across his career, more than any active driver. In a
+    Ferrari that qualified third in Melbourne, on a track that rewards
+    experience reading the surface, this is the weekend the move starts to make
+    sense or doesn't.
+  </Storyline>
+  <Storyline title="Sprint points">
+    8 for the sprint winner, scaling to 1 for eighth. In a championship that
+    already looks like Mercedes' to lose, banked points in March matter more
+    than they look like they should.
+  </Storyline>
+</Storylines>
 
 ## What to watch on Friday
 

@@ -9,6 +9,9 @@
 //   <RaceResult year={1976} round={16} top={3} />
 
 import { getRaceArchive, getDriverEntry } from '../../lib/blogData';
+import Flag from '../Flag.astro';
+import { hasDriverFace } from '../../lib/driverFaceExists.js';
+import { teamLogoPath } from '../../lib/teamLogo.js';
 
 interface Props {
   year: number;
@@ -25,7 +28,7 @@ const race = getRaceArchive(year, round);
     <div class="blog-race-card-head">
       <span class="t-eyebrow">Round {race.round}, {race.year}</span>
       <a class="blog-race-card-title" href={`/races/${race.year}/${race.round}/`}>
-        {race.circuit.flag} {race.name}
+        <Flag cc={race.circuit.country} flag={race.circuit.flag} name={race.circuit.countryName} class="blog-race-card-flag" /> {race.name}
       </a>
       <span class="blog-race-card-date t-mono">{race.date}</span>
     </div>
@@ -45,13 +48,17 @@ const race = getRaceArchive(year, round);
             <td class="t-mono">{r.positionText}</td>
             <td>
               <a class="blog-race-card-driver" href={`/drivers/${r.driverRef}/`}>
-                {r.driverName}
+                {hasDriverFace(r.driverRef)
+                  ? <img class="blog-rr-face" src={`/images/drivers/${r.driverRef}.webp`} alt="" width="24" height="24" loading="lazy" />
+                  : null}
+                <span>{r.driverName}</span>
               </a>
             </td>
             <td>
               {r.constructorRef ? (
                 <a class="blog-race-card-team" href={`/teams/${r.constructorRef}/`} style={`color: ${r.constructorColor || 'inherit'}`}>
-                  {r.constructorName}
+                  {teamLogoPath(r.constructorRef) && <img class="blog-rr-logo" src={teamLogoPath(r.constructorRef)} alt="" width="18" height="18" loading="lazy" />}
+                  <span>{r.constructorName}</span>
                 </a>
               ) : <span>{r.constructorName || '-'}</span>}
             </td>
