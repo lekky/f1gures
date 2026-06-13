@@ -1,0 +1,90 @@
+---
+title: "Emilia Romagna 2026 Preview: Old-School Kerbs, New-Era Cars"
+description: "Round 07 drops the 2026 grid into the narrowest layout of the season so far. With Norris level at the top and active-aero still settling, Imola could be the weekend the order finally moves."
+category: race-preview
+publishedAt: 2026-05-14
+author: "f1gures"
+---
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import PullQuote from '../../components/blog/PullQuote.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
+import Sessions from '../../components/blog/Sessions.astro';
+import DriverChip from '../../components/blog/DriverChip.astro';
+
+The 2026 season has been many things — fast, loud, unfamiliar — but it has
+not yet been **close**. Four of the first six rounds have gone to the same
+car, and the championship table reads like a McLaren internal memo. Imola is
+the first real test of whether that's a quirk of the calendar or the shape of
+the year.
+
+This is the kind of circuit that has historically scrambled the form book.
+Narrow, undulating and starved of overtaking, the Autodromo Enzo e Dino
+Ferrari rewards precision over raw aero efficiency — and punishes the smallest
+mistake with a wall. For the first time in 2026, qualifying may matter more
+than race pace.
+
+## The championship
+
+<DriverChip ref="norris" /> arrives level on points at the front, but the gap
+behind is tightening. Here's the picture after Round 06:
+
+<StandingsCard
+  title="Drivers' Championship · Top 5"
+  rows={[
+    { driver: 'norris',         team: 'MCL', value: 136 },
+    { driver: 'piastri',        team: 'MCL', value: 136 },
+    { driver: 'max_verstappen', team: 'RBR', value: 113 },
+    { driver: 'leclerc',        team: 'FER', value: 90 },
+    { driver: 'hamilton',       team: 'FER', value: 66 },
+  ]}
+/>
+
+## What Imola asks of the cars
+
+Three demands separate Imola from the opening flyaways. **Kerb tolerance:** the
+chicanes are aggressive and the cars that can ride them carry the laptime.
+**Mechanical grip:** with low average speeds, this is less about downforce and
+more about how cleanly the car puts power down out of slow corners. **Track
+position:** with one DRS zone and barely a clean overtaking spot, where you
+start is very nearly where you finish.
+
+<PullQuote>“At Imola you don’t win on Sunday. You win on Saturday, and survive on Sunday.”</PullQuote>
+
+The 2026 regulations sharpen all of this. The active-aero system that bleeds
+drag on the straights is at its least useful on a lap with so few of them, and
+the narrower tyres give less margin over the kerbs. Expect the engineers who
+nail the mechanical balance on Friday to be the ones smiling on Sunday.
+
+## The storylines
+
+<Storylines>
+  <Storyline title="Can anyone stop MCL?" driver="norris">
+    Norris has converted pace into points at every weekend so far. Imola's
+    low-grip, high-consequence window is the first track that might neutralise
+    some of that advantage.
+  </Storyline>
+  <Storyline title="Ferrari's home race" driver="leclerc">
+    Tifosi red fills the banks at Imola, and a podium in front of them would
+    change Ferrari's season narrative overnight. The Scuderia have quietly
+    closed the qualifying gap over the last three rounds.
+  </Storyline>
+  <Storyline title="Red Bull's upgrade gamble" driver="max_verstappen">
+    A revised floor arrives this weekend. On a circuit this sensitive to
+    mechanical balance, it's a risky place to introduce new parts — but Red
+    Bull cannot afford another P5-best Sunday.
+  </Storyline>
+</Storylines>
+
+## Sessions · Track time
+
+<Sessions
+  rows={[
+    { day: 'Fri', name: 'Practice 1', time: '13:30' },
+    { day: 'Fri', name: 'Practice 2', time: '17:00' },
+    { day: 'Sat', name: 'Practice 3', time: '12:30' },
+    { day: 'Sat', name: 'Qualifying', time: '16:00' },
+    { day: 'Sun', name: 'Race', time: '15:00', race: true },
+  ]}
+  note="All times local (CEST, GMT+2). Autodromo Enzo e Dino Ferrari, 63 laps of 4.909 km."
+/>

@@ -1,0 +1,39 @@
+---
+// A single storyline card for MDX blog posts. Renders a team-coloured left
+// edge, a bold condensed lead-in title, and the slotted body (which can carry
+// inline markup such as <DriverChip>). The edge colour comes from `color`, or
+// the driver's / team's colour resolved from the archive, falling back to the
+// accent red.
+//
+// Usage in MDX (inside <Storylines>):
+//   <Storyline title="Red Bull's upgrade gamble" team="red_bull">A revised floor…</Storyline>
+
+import { getDriverEntry, getDriverIndex } from '../../lib/blogData';
+
+interface Props {
+  title: string;
+  /** driverRef — resolves the team colour from the driver's current team */
+  driver?: string;
+  /** constructorRef (teamRef) — resolves the team colour from the index */
+  team?: string;
+  /** Explicit colour override (CSS colour or var) */
+  color?: string;
+}
+
+const { title, driver, team, color } = Astro.props;
+
+function teamColor(ref: string): string | null {
+  const d = getDriverIndex().find((x) => x.teamRef === ref);
+  return d?.teamColor ?? null;
+}
+
+const edge =
+  color ||
+  (driver ? getDriverEntry(driver)?.teamColor : null) ||
+  (team ? teamColor(team) : null) ||
+  'var(--accent)';
+---
+<div class="blog-storyline" style={`--edge: ${edge}`}>
+  <div class="blog-storyline-title">{title}</div>
+  <div class="blog-storyline-body"><slot /></div>
+</div>

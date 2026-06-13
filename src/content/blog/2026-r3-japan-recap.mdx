@@ -9,6 +9,7 @@ heroImageAlt: "Painted illustration of a Mercedes leading a McLaren and a Ferrar
 ---
 import DriverChip from '../../components/blog/DriverChip.astro';
 import RaceResult from '../../components/blog/RaceResult.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
 
 The W17 is the fastest car in F1 in qualifying, in race trim, on slow circuits,
 on fast ones. <DriverChip ref="antonelli" /> took pole at [Suzuka](/races/2026/3/)
@@ -51,8 +52,19 @@ are in trouble, and it isn't temporary.
 
 ## The championship
 
-After three: Antonelli 68, Russell 55, Leclerc 42, Hamilton 35, Norris 20,
-Piastri 18. Constructors: Mercedes 123, Ferrari 77, McLaren 38, Haas 16,
+<StandingsCard
+  title="Drivers' Championship · After Round 3"
+  rows={[
+    { driver: 'antonelli', team: 'MER', value: 68 },
+    { driver: 'russell',   team: 'MER', value: 55 },
+    { driver: 'leclerc',   team: 'FER', value: 42 },
+    { driver: 'hamilton',  team: 'FER', value: 35 },
+    { driver: 'norris',    team: 'MCL', value: 20 },
+    { driver: 'piastri',   team: 'MCL', value: 18 },
+  ]}
+/>
+
+Constructors: Mercedes 123, Ferrari 77, McLaren 38, Haas 16,
 Red Bull 16.
 [Miami](/circuits/miami/) in five weeks is another sprint weekend and the
 first long-haul break of the season.

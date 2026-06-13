@@ -8,6 +8,9 @@ heroImage: /images/blog/2026-miami-preview.jpg
 heroImageAlt: "Illustrated track map of the Miami International Autodrome"
 ---
 import DriverChip from '../../components/blog/DriverChip.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
 
 The 2026 season comes to [Miami](/circuits/miami/) on Sunday May 3 after a
 five-week gap - the longest mid-season break in the calendar. Sprint weekend
@@ -16,10 +19,18 @@ race-pace numbers nobody in the paddock can explain.
 
 ## The state of play
 
-<DriverChip ref="antonelli" /> leads <DriverChip ref="russell" /> 68-55 in the
-drivers' championship. Mercedes lead Ferrari 123-77 in the constructors'.
-<DriverChip ref="leclerc" /> is third in the drivers' table on 42, ahead of
-<DriverChip ref="hamilton" /> on 35. <DriverChip ref="piastri" />'s Suzuka P2
+<StandingsCard
+  title="Drivers' Championship · After Round 03"
+  rows={[
+    { driver: 'antonelli', team: 'MER', value: 68 },
+    { driver: 'russell',   team: 'MER', value: 55 },
+    { driver: 'leclerc',   team: 'FER', value: 42 },
+    { driver: 'hamilton',  team: 'FER', value: 35 },
+  ]}
+/>
+
+Mercedes lead Ferrari 123-77 in the constructors'.
+<DriverChip ref="piastri" />'s Suzuka P2
 moved McLaren ahead of Red Bull and within striking range of Haas. Five-week
 break means upgrades. Every team in the points-paying half of the grid is
 expected to bring a meaningful package.
@@ -34,20 +45,28 @@ will find easy laptime. Teams that haven't will have a messy weekend.
 
 ## What to watch
 
-- **<DriverChip ref="max_verstappen" />'s upgrade.** Red Bull have been
-  trailing a major package for Miami all month. If it doesn't work, the
-  season story stops being *Mercedes are dominant* and starts being *Red Bull
-  are broken*. P8 in Suzuka was the floor; Marko's quotes suggest it can go
-  lower.
-- **McLaren's Sunday.** <DriverChip ref="piastri" />'s Suzuka P2 was the
-  Australian's first sign that the car the team have been telling us about
-  in private actually exists. A second strong weekend would make it a trend.
-- **Sprint points.** With Mercedes' race pace looking unassailable, the
-  smaller teams that pick up sprint points - one-stop strategy, cooler tyre
-  temps, less rubber on the surface - have an outsized opportunity. Haas
-  showed in Shanghai how to convert this.
-- **Hamilton's first US race for Ferrari.** He's never won in Miami. The
-  tifosi turn up for this one in numbers and his result tends to set the
-  tone for the European leg of the season.
+<Storylines>
+  <Storyline title="Verstappen's upgrade" driver="max_verstappen">
+    Red Bull have been trailing a major package for Miami all month. If it
+    doesn't work, the season story stops being *Mercedes are dominant* and
+    starts being *Red Bull are broken*. P8 in Suzuka was the floor; Marko's
+    quotes suggest it can go lower.
+  </Storyline>
+  <Storyline title="McLaren's Sunday" team="mclaren">
+    <DriverChip ref="piastri" />'s Suzuka P2 was the Australian's first sign
+    that the car the team have been telling us about in private actually
+    exists. A second strong weekend would make it a trend.
+  </Storyline>
+  <Storyline title="Sprint points" team="haas">
+    With Mercedes' race pace looking unassailable, the smaller teams that pick
+    up sprint points - one-stop strategy, cooler tyre temps, less rubber on the
+    surface - have an outsized opportunity. Haas showed in Shanghai how to
+    convert this.
+  </Storyline>
+  <Storyline title="Hamilton's first US race for Ferrari" driver="hamilton">
+    He's never won in Miami. The tifosi turn up for this one in numbers and his
+    result tends to set the tone for the European leg of the season.
+  </Storyline>
+</Storylines>
 
 Sprint Saturday at 12:00 local, race Sunday at 16:00 local (20:00 UTC).

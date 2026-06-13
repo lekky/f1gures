@@ -9,6 +9,7 @@ heroImageAlt: "Painted illustration of a Mercedes leading two McLarens across th
 ---
 import DriverChip from '../../components/blog/DriverChip.astro';
 import RaceResult from '../../components/blog/RaceResult.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
 
 Four rounds in, three wins for <DriverChip ref="antonelli" />, who took pole
 in [Miami](/races/2026/4/), led lights-to-flag and finished 3.264s clear of
@@ -52,8 +53,20 @@ hired for, even if the headline result hasn't come.
 
 ## The championship
 
-After four: Antonelli 93, Russell 67, Leclerc 46, Hamilton 43, Norris 38,
-Piastri 33, Verstappen 22. Constructors: Mercedes 160, Ferrari 89,
+<StandingsCard
+  title="Drivers' Championship · After Round 4"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 93 },
+    { driver: 'russell',        team: 'MER', value: 67 },
+    { driver: 'leclerc',        team: 'FER', value: 46 },
+    { driver: 'hamilton',       team: 'FER', value: 43 },
+    { driver: 'norris',         team: 'MCL', value: 38 },
+    { driver: 'piastri',        team: 'MCL', value: 33 },
+    { driver: 'max_verstappen', team: 'RBR', value: 22 },
+  ]}
+/>
+
+Constructors: Mercedes 160, Ferrari 89,
 McLaren 71, Red Bull 26.
 
 The gap from Antonelli to Russell is now 26 points. The gap from Antonelli

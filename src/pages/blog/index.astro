@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { BLOG_CATEGORY_LABELS } from '../../content/config';
 import { sortPosts, isPublic, fmtPostDate } from '../../lib/blog';
+import TriviaBoard from '../../components/islands/screens/TriviaBoard.jsx';
 
 const posts = sortPosts((await getCollection('blog')).filter(isPublic));
 
@@ -45,21 +46,15 @@ const breadcrumb = [
   breadcrumb={breadcrumb}
 >
   <div class="page">
-    <div class="page-head">
+    <div class="page-head blog-index-head">
       <div>
         <div class="t-eyebrow">f1gures</div>
-        <h1 class="page-title">Blog</h1>
+        <h1 class="page-title blog-index-title">The Blog</h1>
         <p class="page-sub">Race recaps, technical explainers and historic deep-dives.</p>
       </div>
     </div>
 
-    <div class="blog-categories">
-      <span class="blog-categories-label">Categories</span>
-      {Object.entries(BLOG_CATEGORY_LABELS).map(([slug, label]) => (
-        <a class="blog-category-chip" href={`/blog/category/${slug}/`}>{label}</a>
-      ))}
-      <a class="blog-category-chip blog-category-rss" href="/blog/rss.xml">RSS</a>
-    </div>
+    <TriviaBoard client:visible />
 
     {posts.length === 0 ? (
       <div class="panel">
@@ -68,39 +63,79 @@ const breadcrumb = [
         </div>
       </div>
     ) : (
-      <ul class="blog-list">
-        {posts.map((post) => (
-          <li class="blog-list-item">
-            <div class="panel blog-card">
-              {post.data.heroImage ? (
-                <div class="blog-card-img">
-                  <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
-                    <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} loading="lazy" />
-                  </a>
-                  <div class="blog-card-over">
+      <>
+        <div class="blog-filter" role="tablist" aria-label="Filter posts by category">
+          <button class="blog-filter-tab is-active" type="button" data-cat="all" aria-selected="true">All</button>
+          {Object.entries(BLOG_CATEGORY_LABELS).map(([slug, label]) => (
+            <button class="blog-filter-tab" type="button" data-cat={slug} aria-selected="false">{label}</button>
+          ))}
+          <a class="blog-filter-rss" href="/blog/rss.xml">RSS</a>
+        </div>
+
+        <ul class="blog-list" id="blog-list">
+          {posts.map((post, i) => (
+            <li class={`blog-list-item${i === 0 ? ' blog-list-item--featured' : ''}`} data-category={post.data.category}>
+              <div class={`panel blog-card${i === 0 ? ' blog-card--featured' : ''}`}>
+                {post.data.heroImage ? (
+                  <div class="blog-card-img">
+                    <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
+                      <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} loading="lazy" />
+                    </a>
+                    <div class="blog-card-over">
+                      <div class="blog-card-meta">
+                        <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                        <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                      </div>
+                      <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+                      {i === 0 && <p class="blog-card-desc blog-card-desc--over">{post.data.description}</p>}
+                    </div>
+                  </div>
+                ) : (
+                  <div class="blog-card-body">
                     <div class="blog-card-meta">
                       <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
                       <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
                     </div>
                     <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
                   </div>
-                </div>
-              ) : (
+                )}
                 <div class="blog-card-body">
-                  <div class="blog-card-meta">
-                    <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
-                    <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
-                  </div>
-                  <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+                  <p class="blog-card-desc">{post.data.description}</p>
                 </div>
-              )}
-              <div class="blog-card-body">
-                <p class="blog-card-desc">{post.data.description}</p>
               </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+        <p class="blog-filter-empty" id="blog-empty" hidden>No posts in this category yet.</p>
+      </>
     )}
   </div>
+
+  <script is:inline>
+    (function () {
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('.blog-filter-tab'));
+      var items = Array.prototype.slice.call(document.querySelectorAll('#blog-list .blog-list-item'));
+      var empty = document.getElementById('blog-empty');
+      if (!tabs.length || !items.length) return;
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var cat = tab.getAttribute('data-cat');
+          tabs.forEach(function (t) {
+            var on = t === tab;
+            t.classList.toggle('is-active', on);
+            t.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          var shown = 0;
+          items.forEach(function (li) {
+            var match = cat === 'all' || li.getAttribute('data-category') === cat;
+            // The featured (span-2) treatment only makes sense in the All view.
+            li.classList.toggle('blog-list-item--filtered', cat !== 'all');
+            li.hidden = !match;
+            if (match) shown++;
+          });
+          if (empty) empty.hidden = shown !== 0;
+        });
+      });
+    })();
+  </script>
 </BaseLayout>

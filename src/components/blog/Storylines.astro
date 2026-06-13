@@ -1,0 +1,14 @@
+---
+// Wrapper for a stack of <Storyline> cards in MDX blog posts. Pairs with
+// Storyline.astro — this just provides the list container so the children
+// flow with consistent spacing.
+//
+// Usage in MDX:
+//   import Storylines from '../../components/blog/Storylines.astro';
+//   import Storyline from '../../components/blog/Storyline.astro';
+//   <Storylines>
+//     <Storyline title="Can anyone stop MCL?" driver="norris">Norris has…</Storyline>
+//     <Storyline title="Ferrari's home race" team="ferrari">Tifosi red…</Storyline>
+//   </Storylines>
+---
+<div class="blog-storylines"><slot /></div>
