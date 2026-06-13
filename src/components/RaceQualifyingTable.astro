@@ -31,19 +31,22 @@ interface Props {
 
 const { rows, id, maxRows = 10 } = Astro.props;
 
-// Modern knockout qualifying: the top 10 contest Q3. A driver classified in
-// that group who set no Q3 lap (reached Q3 but didn't run - crash, no tyres,
-// saving an engine, etc.) has no pole-comparable time. Using their Q1/Q2 best
-// would show a misleadingly small gap and place them ahead of slower drivers
-// who *did* set a Q3 lap (e.g. a P10 whose Q2 beat the P8/P9 Q3 times). Show
-// "No time" instead. Only triggers on knockout sessions (hasAnyQ3), so the
-// pre-2006 single-time quali format is untouched.
+// Modern knockout qualifying: the top 10 contest Q3 and are classified by
+// their Q3 lap, so rank/gap them strictly by Q3 time - not their best across
+// Q1-Q3. A driver's Q2 lap can be quicker than their own Q3 lap, and a P10 who
+// set no Q3 lap would borrow their Q1/Q2 time; either mis-orders the bars vs
+// the official result (e.g. Leclerc P10 at 2026 Barcelona showed +0.602, ahead
+// of the P8/P9 gaps). A top-10 driver with no Q3 lap has no pole-comparable
+// time → "No time". Q1/Q2 knockouts (P11+) keep their best lap. Only triggers
+// on knockout sessions (hasAnyQ3), so the pre-2006 single-time format is left
+// untouched.
 const Q3_CUTOFF = 10;
 const hasAnyQ3 = rows.some(r => parseClock(r.q3) != null);
-const noQ3Time = (r: Row): boolean =>
-  hasAnyQ3 && r.position != null && r.position <= Q3_CUTOFF && parseClock(r.q3) == null;
+const inQ3Group = (r: Row): boolean =>
+  hasAnyQ3 && r.position != null && r.position <= Q3_CUTOFF;
+const noQ3Time = (r: Row): boolean => inQ3Group(r) && parseClock(r.q3) == null;
 
-const bests = rows.map(r => (noQ3Time(r) ? null : bestQualiSeconds(r)));
+const bests = rows.map(r => (inQ3Group(r) ? parseClock(r.q3) : bestQualiSeconds(r)));
 const pole = Math.min(...bests.filter((b): b is number => b != null), Infinity);
 const gaps = bests.map(b => (b != null && Number.isFinite(pole) ? b - pole : null));
 const maxGap = Math.max(0, ...gaps.filter((g): g is number => g != null && g > 0));
