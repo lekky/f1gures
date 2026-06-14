@@ -178,7 +178,7 @@ function CountdownLabel({ days, accent }) {
 //  - completed: chequered wash + winner face / fastest-lap, recessed
 //  - next: red-tinted, lifted out, date + day countdown + NEXT pill
 //  - upcoming: date + day countdown + UPCOMING pill
-function ScheduleRow({ F, race, mob, now }) {
+function ScheduleRow({ F, race, status, mob, now }) {
   const circuit = F.circuits[race.circuit] || { name: race.circuit };
   const circuitHref = urlFor({ name: 'circuit', id: race.circuit });
   const result = F.results[race.round];
@@ -204,8 +204,8 @@ function ScheduleRow({ F, race, mob, now }) {
     />
   ) : null;
 
-  const isNext = race.status === 'next';
-  const isDone = race.status === 'completed';
+  const isNext = status === 'next';
+  const isDone = status === 'completed';
   const statusCls = isNext ? 'is-next-row' : isDone ? 'is-done' : 'is-up';
   const days = daysUntil(race.date, now);
 
@@ -234,7 +234,7 @@ function ScheduleRow({ F, race, mob, now }) {
       <span style={{ color: 'var(--fg-3)' }}>—</span>
     )
   ) : (
-    <span className={`pill pill-${race.status}`}>{race.status}</span>
+    <span className={`pill pill-${status}`}>{status}</span>
   );
 
   return (
@@ -295,7 +295,7 @@ function ScheduleRow({ F, race, mob, now }) {
             {!isDone && (
               <>
                 <span style={{ color: 'var(--fg-4)' }}>·</span>
-                <span className={`pill pill-${race.status}`}>{race.status}</span>
+                <span className={`pill pill-${status}`}>{status}</span>
                 <CountdownLabel days={days} accent={isNext} />
               </>
             )}
@@ -332,9 +332,18 @@ export default function CalendarScreen({ data }) {
   const cal = F.calendar;
   const sprintCount = cal.filter(r => r.sprint).length;
 
-  const nextRace = cal.find(r => r.status === 'next');
-  const completedRaces = cal.filter(r => r.status === 'completed');
-  const hasFuture = !!nextRace || cal.some(r => r.status === 'upcoming');
+  // A race counts as "completed" only once its results are in the bundle - the
+  // canonical "race has run" signal used everywhere else in the app. The
+  // bundle's own `status` string can read 'completed' on race-day morning,
+  // before results land, which would wrongly bump the hero to the following
+  // round. Deriving status from results keeps the current race weekend as the
+  // hero until it's actually been run.
+  const isDone = (r) => !!F.results[r.round];
+  const nextRace = cal.find(r => !isDone(r)) || null;
+  const statusOf = (r) =>
+    isDone(r) ? 'completed' : (nextRace && r.round === nextRace.round ? 'next' : 'upcoming');
+  const completedRaces = cal.filter(isDone);
+  const hasFuture = !!nextRace;
 
   // Set on mount only, so SSR / first client render agree (no `now`) and the
   // day countdowns fill in after hydration.
@@ -360,7 +369,7 @@ export default function CalendarScreen({ data }) {
 
       <SectionHead variant="band" title={hasFuture ? 'Full Schedule' : 'Season Results'} />
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {cal.map(race => <ScheduleRow key={race.round} F={F} race={race} mob={mob} now={now} />)}
+        {cal.map(race => <ScheduleRow key={race.round} F={F} race={race} status={statusOf(race)} mob={mob} now={now} />)}
       </div>
     </div>
   );
