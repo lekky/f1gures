@@ -604,16 +604,14 @@ export default function HomeScreen({ data }) {
 
   const cal = D.calendar;
 
-  // "Next race" = first race whose date is today or later. Falls back to
-  // the legacy `status: 'next'` flag (only set on buildFallback's hardcoded
-  // 2026 grid) so the dev-data path keeps working when system date drifts
-  // past the speculative calendar. A season is "historic" iff there's no
-  // upcoming race AND results have been recorded for at least one round.
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const next =
-    cal.find(r => r.date && r.date >= todayIso) ||
-    cal.find(r => r.status === 'next') ||
-    null;
+  // "Next race" = first race whose results aren't in the bundle yet. Presence
+  // in `results` is the canonical "race has run" signal across the app, so the
+  // race weekend currently in progress stays the hero until it's actually been
+  // run - even on race-day morning, or after midnight while results still lag.
+  // (Trusting the bundle's precomputed `status` string, or a bare date >= today
+  // check, would prematurely flip the hero to the following round.) A season is
+  // "historic" iff every round has results.
+  const next = cal.find(r => !D.results[r.round]) || null;
   const isHistoric = !next && cal.some(r => D.results[r.round]);
 
   const top3Drivers = standings.drivers.slice(0, 3);
