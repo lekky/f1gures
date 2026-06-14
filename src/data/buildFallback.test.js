@@ -10,7 +10,7 @@ import { buildFromYearJson } from './buildFallback.js';
 // from main race finishing order rather than the actual sprint result).
 //
 // The numbers below are the real 2026 World Championship standings after
-// 6 rounds, taken from the official F1 standings table. If these drift,
+// 7 rounds, taken from the official F1 standings table. If these drift,
 // the bundle has been refreshed and the expectations need updating - but
 // the home page Top 3 and the standings page MUST always agree, so any
 // change here should be matched by re-checking both screens.
@@ -38,8 +38,8 @@ describe('buildFromYearJson computeStandings (2026 bundle)', () => {
     // sprintResults.detail.<code>.points. The old code derived sprint
     // points from the main-race finishing order instead, so it miscounted
     // anyone whose sprint result diverged from their race result.
-    expect(byCode.RUS.points).toBe(88);
-    expect(byCode.HAM.points).toBe(90);
+    expect(byCode.RUS.points).toBe(106);
+    expect(byCode.HAM.points).toBe(115);
     expect(byCode.LEC.points).toBe(75);
   });
 
@@ -48,14 +48,14 @@ describe('buildFromYearJson computeStandings (2026 bundle)', () => {
     // /standings-constructors/ page both read computeStandings, so
     // these have to add up correctly.
     expect(byTeam.mercedes.points).toBe(byCode.ANT.points + byCode.RUS.points);
-    expect(byTeam.mercedes.points).toBe(244);
+    expect(byTeam.mercedes.points).toBe(262);
     expect(byTeam.ferrari.points).toBe(byCode.LEC.points + byCode.HAM.points);
-    expect(byTeam.ferrari.points).toBe(165);
+    expect(byTeam.ferrari.points).toBe(190);
   });
 
   it('ranks drivers in the order the official standings show', () => {
     const top5 = drivers.slice(0, 5).map(r => r.driver.id);
-    expect(top5).toEqual(['ANT', 'HAM', 'RUS', 'LEC', 'PIA']);
+    expect(top5).toEqual(['ANT', 'HAM', 'RUS', 'LEC', 'NOR']);
   });
 
   it('ranks constructors in the order the official standings show', () => {
