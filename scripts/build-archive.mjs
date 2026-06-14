@@ -2317,7 +2317,6 @@ if (postArchiveTeamYears > 0) {
   // Without this, title-margin and team-1-2 silently stop at the Ergast
   // cutoff while every other record includes bundle years.
   for (const { year, path } of seasonFiles) {
-    if (year >= currentYear) continue; // in-progress season - no final standings yet
     const season = JSON.parse(readFileSync(path, 'utf8'));
     if (!season.results || !Array.isArray(season.calendar)) continue;
     const driverByCode = new Map();
@@ -2330,6 +2329,24 @@ if (postArchiveTeamYears > 0) {
       return t?.jolpicaId || (d?.team ? (HAND_CONSTRUCTOR_ALIAS[d.team] || d.team) : null);
     };
 
+    const completedRaces = season.calendar.filter(r => season.results[r.round] || season.results[String(r.round)]);
+
+    // P1/P2 rows for team-1-2: a 1-2 finish is a completed-race fact, so include
+    // the in-progress current year (the records generator counts it too).
+    for (const race of completedRaces) {
+      const result = season.results[race.round] || season.results[String(race.round)];
+      const order = (result && result.order) || [];
+      for (let i = 0; i < 2 && i < order.length; i++) {
+        const cref = teamRefOf(order[i]);
+        if (!cref) continue;
+        allResults.push({ year, round: toInt(race.round), constructorRef: cref, position: i + 1 });
+      }
+    }
+
+    // Final-standings-derived inputs (title-margin, youngest-champion event
+    // date) need a completed season - skip the in-progress current year.
+    if (year >= currentYear) continue;
+
     // yearStandings P1/P2 (title-margin input), sprint-aware via the engine
     const ranked = computeBundleSeasonStandings(season).drivers;
     const toEntry = (row, pos) => {
@@ -2341,20 +2358,8 @@ if (postArchiveTeamYears > 0) {
     const p2 = ranked[1] && toEntry(ranked[1], 2);
     if (p1 && p2 && !yearStandings[year]) yearStandings[year] = { p1, p2 };
 
-    const completedRaces = season.calendar.filter(r => season.results[r.round] || season.results[String(r.round)]);
     const lastRace = completedRaces[completedRaces.length - 1];
     if (lastRace?.date && !finalRoundDateByYear[year]) finalRoundDateByYear[year] = lastRace.date;
-
-    // P1/P2 rows for team-1-2
-    for (const race of completedRaces) {
-      const result = season.results[race.round] || season.results[String(race.round)];
-      const order = (result && result.order) || [];
-      for (let i = 0; i < 2 && i < order.length; i++) {
-        const cref = teamRefOf(order[i]);
-        if (!cref) continue;
-        allResults.push({ year, round: toInt(race.round), constructorRef: cref, position: i + 1 });
-      }
-    }
   }
 
   const { index, byTopic } = buildRecords({

@@ -4,13 +4,20 @@
 
 export const MODERN_ERA_START_YEAR = 1981;
 
-// Drop rows whose year is the in-progress current year (we don't have the data
-// to compute a stable final standing yet) and, when era === 'modern', drop
-// anything before MODERN_ERA_START_YEAR.
-export function filterPerRaceByEra(rows, era, currentYear) {
+// Filter per-race rows by era and (by default) drop the in-progress current
+// year. When era === 'modern' drop anything before MODERN_ERA_START_YEAR.
+//
+// `includeCurrentYear`: cumulative event-count records (career wins/podiums/
+// poles/starts/fastest-laps, streaks, oldest winner, team wins, circuit
+// wins/poles) should count completed current-year races - a race that has run
+// is a fact regardless of whether the season is over. Standings-based records
+// (championships, title-margin, youngest-champion, team titles) keep the
+// default exclusion because final standings aren't stable mid-season; those
+// generators also self-guard the current year independently.
+export function filterPerRaceByEra(rows, era, currentYear, { includeCurrentYear = false } = {}) {
   return rows.filter(r => {
     if (r.year == null) return false;
-    if (r.year === currentYear) return false;
+    if (!includeCurrentYear && r.year === currentYear) return false;
     if (era === 'modern' && r.year < MODERN_ERA_START_YEAR) return false;
     if (era === 'classic' && r.year >= MODERN_ERA_START_YEAR) return false;
     return true;
