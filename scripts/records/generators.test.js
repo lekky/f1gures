@@ -36,10 +36,13 @@ describe('generateDriverCareerEntries - wins', () => {
     expect(entries[1].value).toBe(1);
   });
 
-  it('current-year rows excluded - norris drops to 0 wins and is filtered out', () => {
+  it('completed current-year races count toward career totals', () => {
+    // Norris's only win is in 2024; with 2024 as the in-progress year it must
+    // still count - a race that has run is a fact regardless of season status.
     const entries = generateDriverCareerEntries(DRIVERS, 'wins', 'all-time', 2024);
     const norris = entries.find(e => e.driverRef === 'norris');
-    expect(norris).toBeUndefined();
+    expect(norris).toBeDefined();
+    expect(norris.value).toBe(1);
   });
 
   it('modern-era filter drops a pre-1981 row', () => {

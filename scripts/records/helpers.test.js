@@ -20,10 +20,17 @@ describe('filterPerRaceByEra', () => {
     expect(out.every(r => r.year >= MODERN_ERA_START_YEAR)).toBe(true);
   });
 
-  it('drops in-progress current year for both eras', () => {
+  it('drops in-progress current year for both eras by default', () => {
     const withCurrent = [...rows, { year: 2026, round: 5 }];
     expect(filterPerRaceByEra(withCurrent, 'all-time', 2026)).toHaveLength(4);
     expect(filterPerRaceByEra(withCurrent, 'modern', 2026)).toHaveLength(2);
+  });
+
+  it('keeps the current year when includeCurrentYear is set', () => {
+    const withCurrent = [...rows, { year: 2026, round: 5 }];
+    expect(filterPerRaceByEra(withCurrent, 'all-time', 2026, { includeCurrentYear: true })).toHaveLength(5);
+    // era filter still applies alongside the current-year inclusion
+    expect(filterPerRaceByEra(withCurrent, 'modern', 2026, { includeCurrentYear: true })).toHaveLength(3);
   });
 });
 

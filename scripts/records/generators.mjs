@@ -75,7 +75,9 @@ function countStat(rows, stat, finalStandingByYear, era, currentYear) {
 export function generateDriverCareerEntries(drivers, stat, era, currentYear) {
   const entries = [];
   for (const d of drivers) {
-    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear);
+    // Count completed current-year races: championships still self-guard the
+    // in-progress year inside countStat, so this only affects event counts.
+    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear, { includeCurrentYear: true });
 
     const value = countStat(rows, stat, d.finalStandingByYear, era, currentYear);
     if (value === 0) continue;
@@ -163,7 +165,7 @@ export function generateStreakEntries(drivers, kind, era, currentYear) {
 
   const entries = [];
   for (const d of drivers) {
-    const filteredAll = filterPerRaceByEra(d.perRace || [], era, currentYear);
+    const filteredAll = filterPerRaceByEra(d.perRace || [], era, currentYear, { includeCurrentYear: true });
     if (!filteredAll.length) continue;
 
     // Sort chronologically (perRace already mostly is, but be safe)
@@ -320,7 +322,7 @@ export function generateOldestWinnerEntries(drivers, era, currentYear) {
   const entries = [];
   for (const d of drivers) {
     if (!d.dob) continue;
-    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear)
+    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear, { includeCurrentYear: true })
       .filter(r => r.position === 1 && r.date);
     if (!rows.length) continue;
     let oldestRow = rows[0], oldestDays = ageInDays(d.dob, rows[0].date) ?? -1;
@@ -358,7 +360,9 @@ export function generateOldestWinnerEntries(drivers, era, currentYear) {
 export function generateTeamCareerEntries(teams, stat, era, currentYear) {
   const entries = [];
   for (const t of teams) {
-    const rows = filterPerRaceByEra(t.perRace || [], era, currentYear);
+    // team-wins counts completed current-year races; team-titles loops
+    // finalStandingByYear with its own current-year guard below.
+    const rows = filterPerRaceByEra(t.perRace || [], era, currentYear, { includeCurrentYear: true });
     let value = 0;
     if (stat === 'wins') {
       value = rows.filter(r => r.position === 1).length;
@@ -398,9 +402,10 @@ export function generateTeamCareerEntries(teams, stat, era, currentYear) {
 // results: array of all per-race result rows { year, round, constructorRef, position }
 export function generateTeam12FinishesEntries(results, teamsByRef, era, currentYear) {
   // Group rows by (year-round)
+  // A 1-2 finish is a completed-race fact, so completed current-year races count.
   const byRace = new Map();
   for (const r of results) {
-    if (r.year == null || r.year === currentYear) continue;
+    if (r.year == null) continue;
     if (era === 'modern' && r.year < 1981) continue;
     if (era === 'classic' && r.year >= 1981) continue;
     if (r.position !== 1 && r.position !== 2) continue;
@@ -449,7 +454,7 @@ export function generateDriverAtCircuitEntries(drivers, kind, era, currentYear) 
 
   const entries = [];
   for (const d of drivers) {
-    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear).filter(predicate);
+    const rows = filterPerRaceByEra(d.perRace || [], era, currentYear, { includeCurrentYear: true }).filter(predicate);
     if (!rows.length) continue;
 
     // Group by circuitRef
