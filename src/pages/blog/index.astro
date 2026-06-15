@@ -72,10 +72,44 @@ const breadcrumb = [
           <a class="blog-filter-rss" href="/blog/rss.xml">RSS</a>
         </div>
 
+        {/* Two-post lede: a larger "major" card beside a smaller "minor" one.
+            Text-forward, so it never depends on a hero image. Hidden by the
+            filter script whenever a single category is selected. */}
+        <div class="blog-lede" id="blog-lede">
+          {posts.slice(0, 2).map((post, i) => (
+            <article class={`panel blog-card blog-lede-card ${i === 0 ? 'blog-lede-card--major' : 'blog-lede-card--minor'}`}>
+              {post.data.heroImage ? (
+                <div class="blog-card-img blog-lede-img">
+                  <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
+                    <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} />
+                  </a>
+                  <div class="blog-card-over blog-lede-over">
+                    <div class="blog-card-meta">
+                      <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                      <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                    </div>
+                    <h2 class="blog-card-title blog-lede-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+                    {i === 0 && <p class="blog-lede-desc">{post.data.description}</p>}
+                  </div>
+                </div>
+              ) : (
+                <div class="blog-card-body blog-lede-text">
+                  <div class="blog-card-meta">
+                    <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                    <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                  </div>
+                  <h2 class="blog-card-title blog-lede-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+                  {i === 0 && <p class="blog-card-desc">{post.data.description}</p>}
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+
         <ul class="blog-list" id="blog-list">
           {posts.map((post, i) => (
-            <li class={`blog-list-item${i === 0 ? ' blog-list-item--featured' : ''}`} data-category={post.data.category}>
-              <div class={`panel blog-card${i === 0 ? ' blog-card--featured' : ''}`}>
+            <li class="blog-list-item" data-category={post.data.category} data-in-lede={i < 2 ? '1' : undefined} hidden={i < 2 ? true : undefined}>
+              <div class="panel blog-card">
                 {post.data.heroImage ? (
                   <div class="blog-card-img">
                     <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
@@ -87,7 +121,6 @@ const breadcrumb = [
                         <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
                       </div>
                       <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
-                      {i === 0 && <p class="blog-card-desc blog-card-desc--over">{post.data.description}</p>}
                     </div>
                   </div>
                 ) : (
@@ -115,21 +148,26 @@ const breadcrumb = [
     (function () {
       var tabs = Array.prototype.slice.call(document.querySelectorAll('.blog-filter-tab'));
       var items = Array.prototype.slice.call(document.querySelectorAll('#blog-list .blog-list-item'));
+      var lede = document.getElementById('blog-lede');
       var empty = document.getElementById('blog-empty');
       if (!tabs.length || !items.length) return;
       tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
           var cat = tab.getAttribute('data-cat');
+          var all = cat === 'all';
           tabs.forEach(function (t) {
             var on = t === tab;
             t.classList.toggle('is-active', on);
             t.setAttribute('aria-selected', on ? 'true' : 'false');
           });
+          // The lede shows the two latest posts; in the All view they're served
+          // there, so their grid duplicates stay hidden. A category filter hides
+          // the lede and lets those posts flow back into the filtered grid.
+          if (lede) lede.hidden = !all;
           var shown = 0;
           items.forEach(function (li) {
-            var match = cat === 'all' || li.getAttribute('data-category') === cat;
-            // The featured (span-2) treatment only makes sense in the All view.
-            li.classList.toggle('blog-list-item--filtered', cat !== 'all');
+            var inLede = li.hasAttribute('data-in-lede');
+            var match = all ? !inLede : li.getAttribute('data-category') === cat;
             li.hidden = !match;
             if (match) shown++;
           });

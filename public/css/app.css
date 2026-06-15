@@ -1547,7 +1547,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 12px;
 }
 .blog-list-item { margin: 0; }
@@ -1582,12 +1582,12 @@ html.light .circuit-track .circuit-track-light { display: block; }
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 24px 18px 14px;
+  padding: 18px 16px 12px;
   z-index: 1;
 }
-.blog-card-over .blog-card-cat { color: var(--accent); font-size: 12px; letter-spacing: 0.18em; }
-.blog-card-over .blog-card-title { color: #fff; margin-bottom: 0; font-size: 26px; }
-.blog-card-over .blog-card-date { color: rgba(255,255,255,0.55); font-size: 13px; }
+.blog-card-over .blog-card-cat { color: var(--accent); font-size: 11px; letter-spacing: 0.16em; }
+.blog-card-over .blog-card-title { color: #fff; margin-bottom: 0; font-size: 18px; }
+.blog-card-over .blog-card-date { color: rgba(255,255,255,0.55); font-size: 12px; }
 .blog-card-img-link {
   display: block;
   width: 100%;
@@ -1604,7 +1604,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   transform: scale(1.03);
 }
 .blog-card-body {
-  padding: 18px 20px;
+  padding: 14px 16px;
 }
 .blog-card-meta {
   display: flex;
@@ -1623,9 +1623,9 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .blog-card-title {
   font-family: var(--f-display);
   font-weight: 700;
-  font-size: 22px;
+  font-size: 18px;
   letter-spacing: 0;
-  line-height: 1.1;
+  line-height: 1.15;
   text-transform: none;
   margin: 0 0 6px;
 }
@@ -2015,11 +2015,11 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .blog-season-chart-totals { margin-left: 0; }
 }
 
-/* ---- Blog index: oversized hero title ---- */
+/* ---- Blog index: hero title (a restrained step up from .page-title's 36px) ---- */
 .blog-index-title {
-  font-size: 56px;
+  font-size: 40px;
   letter-spacing: -0.01em;
-  line-height: 0.95;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -2069,16 +2069,60 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .blog-filter-rss:hover { color: var(--fg-1); border-color: var(--accent); }
 .blog-filter-empty { color: var(--fg-3); padding: 28px 0; }
 
-/* ---- Blog index: featured (latest) card spans the grid in the All view ---- */
-.blog-card-desc--over { display: none; }
-.blog-list-item--featured:not(.blog-list-item--filtered) { grid-column: 1 / -1; }
-.blog-list-item--featured:not(.blog-list-item--filtered) .blog-card-img { aspect-ratio: 2.4 / 1; }
-.blog-list-item--featured:not(.blog-list-item--filtered) .blog-card-over .blog-card-title { font-size: 32px; }
-.blog-list-item--featured:not(.blog-list-item--filtered) .blog-card-desc--over {
-  display: block;
-  color: rgba(255, 255, 255, 0.82);
+/* ---- Blog index: two-post lede (major + minor), image cards ---- */
+.blog-lede {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+/* The display:grid above out-specifies the UA [hidden] rule, so hide explicitly
+   when the filter script sets the hidden attribute on the lede. */
+.blog-lede[hidden] { display: none; }
+.blog-lede-card {
+  display: flex;
+  flex-direction: column;
+  border-left-width: 4px;
+}
+/* The image flex-fills, so both unequal-width columns end up the same height. */
+.blog-lede-img {
+  flex: 1;
+  aspect-ratio: auto;
+  min-height: clamp(200px, 20vw, 280px);
+}
+/* Stronger, taller scrim than the grid cards — the lede holds more text
+   (title + standfirst) and may sit over busy artwork or a light circuit map. */
+.blog-lede-img::after {
+  background: linear-gradient(to top,
+    rgba(0, 0, 0, 0.94) 0%,
+    rgba(0, 0, 0, 0.86) 28%,
+    rgba(0, 0, 0, 0.46) 54%,
+    transparent 80%);
+}
+.blog-lede-over {
+  padding: 22px 22px 18px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+.blog-lede-over .blog-card-cat { font-size: 12px; letter-spacing: 0.18em; }
+.blog-lede-over .blog-card-date { font-size: 13px; color: rgba(255, 255, 255, 0.7); }
+.blog-lede-title { line-height: 1.05; margin: 0; }
+.blog-lede-card--major .blog-lede-title { font-weight: 800; font-size: 28px; }
+.blog-lede-card--minor .blog-lede-title { font-weight: 700; font-size: 20px; }
+.blog-lede-desc {
   margin: 8px 0 0;
-  max-width: 64ch;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 56ch;
+}
+/* Fallback when one of the top two posts has no hero image */
+.blog-lede-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: clamp(200px, 20vw, 280px);
 }
 
 /* ---- Blog article: standfirst + byline ---- */
@@ -2263,12 +2307,14 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .blog-sessions-note { margin-top: 14px; color: var(--fg-3); font-size: 13px; line-height: 1.5; }
 
 @media (max-width: 720px) {
-  .blog-index-title { font-size: 40px; }
+  /* .blog-index-title falls back to .page-title's 28px (!important) on mobile. */
   .blog-pullquote-q { font-size: 20px; }
   .blog-article-body h2 { font-size: 19px; }
   .blog-article-standfirst { font-size: 17px; }
-  .blog-list-item--featured:not(.blog-list-item--filtered) .blog-card-img { aspect-ratio: 16 / 9; }
-  .blog-list-item--featured:not(.blog-list-item--filtered) .blog-card-over .blog-card-title { font-size: 24px; }
+  .blog-lede { grid-template-columns: 1fr; }
+  .blog-lede-img, .blog-lede-text { min-height: clamp(190px, 50vw, 230px); }
+  .blog-lede-card--major .blog-lede-title { font-size: 24px; }
+  .blog-lede-card--minor .blog-lede-title { font-size: 20px; }
 }
 
 /* ============================================================
