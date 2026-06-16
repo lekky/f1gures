@@ -1,7 +1,7 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { publishedGuidesSorted, resolveRelated, prevNext, isPublishedGuide, guideColor } from '../../lib/guide';
+import { publishedGuidesSorted, resolveRelated, prevNext, isPublishedGuide, guideColor, categoryLabel } from '../../lib/guide';
 
 export async function getStaticPaths() {
   const pages = (await getCollection('guide')).filter(isPublishedGuide);
@@ -10,12 +10,16 @@ export async function getStaticPaths() {
 
 interface Props { page: CollectionEntry<'guide'>; }
 const { page } = Astro.props;
-const { Content } = await page.render();
+const { Content, headings } = await page.render();
+const toc = headings.filter((h) => h.depth === 2);
 
 const all = await getCollection('guide');
 const sorted = publishedGuidesSorted(all);
 const related = resolveRelated(page, all);
 const { prev, next } = prevNext(sorted, page.slug);
+const pos = sorted.findIndex((p) => p.slug === page.slug) + 1;
+const total = sorted.length;
+const pad2 = (n: number) => String(n).padStart(2, '0');
 
 const canonicalPath = `/guide/${page.slug}/`;
 const ORIGIN = 'https://f1gures.app';
@@ -49,49 +53,94 @@ const jsonLd = {
   jsonLd={jsonLd}
   breadcrumb={breadcrumb}
 >
-  <article class="page guide-article">
-    <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/guide/">← Guide</a>
-
-    <div class="guide-article-head">
-      <div class="t-eyebrow">F1 Beginner's Guide</div>
-      <h1 class="page-title">{page.data.title}</h1>
-      <p class="guide-lede">{page.data.summary}</p>
-    </div>
-
-    <div class="blog-article-body">
-      <Content />
-    </div>
-
-    {related.length > 0 && (
-      <section class="guide-section">
-        <div class="section-head"><h2>Related</h2></div>
-        <div class="records-grid">
-          {related.map((r) => (
-            <a class="guide-card" href={`/guide/${r.slug}/`} style={`--card-accent: ${guideColor(r.data.order)}`}>
-              <span class="guide-card-title">{r.data.title}</span>
-              <span class="guide-card-sum">{r.data.summary}</span>
-              <span class="guide-card-go" aria-hidden="true">»</span>
-            </a>
-          ))}
+  <div class="page guide-article">
+    <div class="guide-art-grid">
+      <aside class="guide-rail">
+        <a class="guide-back" href="/guide/"><span aria-hidden="true">‹</span> The Guide</a>
+        {toc.length > 0 && (
+          <div class="guide-rail-sec toc">
+            <div class="guide-rail-h">Contents</div>
+            <nav class="guide-toc">
+              {toc.map((h, i) => (
+                <a href={`#${h.slug}`} data-toc={h.slug}>
+                  <span class="tn">{pad2(i + 1)}</span><span>{h.text}</span>
+                </a>
+              ))}
+            </nav>
+          </div>
+        )}
+        <div class="guide-meta">
+          <div class="m"><span class="k">Read</span><span class="v">{pad2(pos)} / {pad2(total)}</span></div>
+          <div class="m"><span class="k">Topic</span><span class="v">{categoryLabel(page.data.category)}</span></div>
+          <div class="m"><span class="k">Time</span><span class="v">{page.data.readMinutes} min</span></div>
         </div>
-      </section>
-    )}
+      </aside>
 
-    {(prev || next) && (
-      <nav class="blog-article-nav" aria-label="Guide navigation">
-        {prev ? (
-          <a class="panel blog-article-nav-link" href={`/guide/${prev.slug}/`}>
-            <span class="t-eyebrow">Previous</span>
-            <span class="blog-article-nav-title">{prev.data.title}</span>
-          </a>
-        ) : <span></span>}
-        {next ? (
-          <a class="panel blog-article-nav-link blog-article-nav-older" href={`/guide/${next.slug}/`}>
-            <span class="t-eyebrow">Next</span>
-            <span class="blog-article-nav-title">{next.data.title}</span>
-          </a>
-        ) : <span></span>}
-      </nav>
-    )}
-  </article>
+      <article class="guide-art-body">
+        <div class="guide-art-eyebrow">F1 Beginner's Guide</div>
+        <h1 class="guide-art-title">{page.data.title}</h1>
+        <p class="guide-art-lead">{page.data.summary}</p>
+        <div class="guide-art-rule"></div>
+
+        <div class="blog-article-body">
+          <Content />
+        </div>
+
+        {related.length > 0 && (
+          <div class="guide-related">
+            <div class="guide-related-head"><span class="t">Related</span><span class="rule"></span></div>
+            <div class="guide-rel-grid">
+              {related.map((r) => (
+                <a class="guide-rel-card" href={`/guide/${r.slug}/`} style={`--card-accent: ${guideColor(r.data.order)}`}>
+                  <div class="rc-top"><span class="rc-n">{pad2(r.data.order)}</span><span class="rc-cat">{categoryLabel(r.data.category)}</span></div>
+                  <div class="rc-ttl">{r.data.title}</div>
+                  <p class="rc-ex">{r.data.summary}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <nav class="guide-pager" aria-label="Guide navigation">
+          {prev ? (
+            <a class="guide-pg prev" href={`/guide/${prev.slug}/`}>
+              <span class="dir"><span class="ar" aria-hidden="true">‹</span> Previous</span>
+              <span class="nm">{prev.data.title}</span>
+            </a>
+          ) : (
+            <span class="guide-pg prev disabled"><span class="dir">Previous</span><span class="nm">Start</span></span>
+          )}
+          {next ? (
+            <a class="guide-pg next" href={`/guide/${next.slug}/`}>
+              <span class="dir">Next <span class="ar" aria-hidden="true">›</span></span>
+              <span class="nm">{next.data.title}</span>
+            </a>
+          ) : (
+            <span class="guide-pg next disabled"><span class="dir">Next</span><span class="nm">End</span></span>
+          )}
+        </nav>
+      </article>
+    </div>
+  </div>
+
+  <script is:inline>
+    /* Contents-rail scroll-spy: highlight the section currently in view. */
+    (function () {
+      var links = Array.prototype.slice.call(document.querySelectorAll('.guide-toc a'));
+      if (!links.length || !('IntersectionObserver' in window)) return;
+      var secs = links
+        .map(function (l) { return document.getElementById(l.getAttribute('data-toc')); })
+        .filter(Boolean);
+      function setOn(id) {
+        links.forEach(function (l) { l.classList.toggle('on', l.getAttribute('data-toc') === id); });
+      }
+      var io = new IntersectionObserver(function (ents) {
+        var vis = ents.filter(function (e) { return e.isIntersecting; })
+          .sort(function (x, y) { return x.boundingClientRect.top - y.boundingClientRect.top; });
+        if (vis.length) setOn(vis[0].target.id);
+      }, { rootMargin: '-80px 0px -62% 0px', threshold: 0 });
+      secs.forEach(function (s) { io.observe(s); });
+      if (secs[0]) setOn(secs[0].id);
+    })();
+  </script>
 </BaseLayout>

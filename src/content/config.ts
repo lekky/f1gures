@@ -42,11 +42,23 @@ const blog = defineCollection({
   }),
 });
 
+// Guide categories live in a plain module so the unit-tested guide lib can
+// share them without importing the content runtime. Re-exported here so
+// existing `../content/config` imports keep working.
+export {
+  GUIDE_CATEGORIES,
+  GUIDE_CATEGORY_LABELS,
+  GUIDE_CATEGORY_DESCRIPTIONS,
+} from '../lib/guideCategories';
+import { GUIDE_CATEGORIES } from '../lib/guideCategories';
+
 const guide = defineCollection({
   type: 'content',
   schema: z.object({
     title: z.string().max(120),
     order: z.number().int().positive(),
+    category: z.enum(GUIDE_CATEGORIES),
+    readMinutes: z.number().int().positive(),
     summary: z.string().min(40).max(200),
     related: z.array(z.string()).default([]),
     updatedAt: z.coerce.date().optional(),

@@ -1,6 +1,21 @@
 import type { CollectionEntry } from 'astro:content';
+import {
+  GUIDE_CATEGORIES,
+  GUIDE_CATEGORY_LABELS,
+  GUIDE_CATEGORY_DESCRIPTIONS,
+  type GuideCategory,
+} from './guideCategories';
 
 type Guide = CollectionEntry<'guide'>;
+
+export type { GuideCategory };
+
+export function categoryLabel(id: GuideCategory): string {
+  return GUIDE_CATEGORY_LABELS[id];
+}
+export function categoryBlurb(id: GuideCategory): string {
+  return GUIDE_CATEGORY_DESCRIPTIONS[id];
+}
 
 // Per-topic accent colours: a vibrant spectrum indexed by reading order
 // (order 1 to 10). Used inline as --card-accent on the hub step cards and
@@ -18,7 +33,10 @@ export function guideColor(order: number): string {
 
 // Minimal duck-typed shape so the helpers are unit-testable without the
 // content runtime (the test passes plain objects with the same shape).
-type GuideLike = { slug: string; data: { order: number; related?: string[]; draft?: boolean } };
+type GuideLike = {
+  slug: string;
+  data: { order: number; category?: GuideCategory; related?: string[]; draft?: boolean };
+};
 
 export function isPublishedGuide<T extends GuideLike>(page: T): boolean {
   if (page.data.draft && import.meta.env.PROD) return false;
@@ -48,4 +66,25 @@ export function prevNext<T extends GuideLike>(sorted: T[], slug: string): { prev
 // Convenience for pages: filter + sort in one call.
 export function publishedGuidesSorted(all: Guide[]): Guide[] {
   return sortGuides(all.filter(isPublishedGuide));
+}
+
+// Group sorted guides under the canonical category order, dropping any
+// category with no articles. Each group keeps its label + blurb so the
+// index can render category heads without re-reading config. Articles stay
+// in their incoming (reading) order within each group.
+export type GuideGroup<T> = {
+  id: GuideCategory;
+  label: string;
+  blurb: string;
+  items: T[];
+};
+export function guidesByCategory<T extends GuideLike>(sorted: T[]): GuideGroup<T>[] {
+  return GUIDE_CATEGORIES
+    .map((id) => ({
+      id,
+      label: GUIDE_CATEGORY_LABELS[id],
+      blurb: GUIDE_CATEGORY_DESCRIPTIONS[id],
+      items: sorted.filter((p) => p.data.category === id),
+    }))
+    .filter((g) => g.items.length > 0);
 }
