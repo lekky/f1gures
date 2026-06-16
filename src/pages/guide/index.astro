@@ -1,9 +1,12 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { publishedGuidesSorted, guideColor } from '../../lib/guide';
+import { publishedGuidesSorted, guidesByCategory, guideColor } from '../../lib/guide';
 
 const pages = publishedGuidesSorted(await getCollection('guide'));
+const groups = guidesByCategory(pages);
+const first = pages[0];
+const pad2 = (n: number) => String(n).padStart(2, '0');
 
 const title = 'F1 for Beginners - A Guide to Following the Race | f1gures';
 const description = 'New to Formula 1? Learn the race weekend, points, tyres, DRS, safety cars and strategy so you can follow every race like a regular.';
@@ -42,32 +45,48 @@ const jsonLd = {
   <div class="page guide-hub">
     <div class="page-head">
       <div>
-        <div class="t-eyebrow">f1gures</div>
+        <div class="t-eyebrow">Beginner's Guide</div>
         <h1 class="page-title">F1 for Beginners</h1>
-        <p class="page-sub">Everything you need to follow a Grand Prix and understand the commentary: the weekend format, points, tyres, strategy and the rules.</p>
+        <p class="page-sub">Everything you need to follow a Grand Prix and understand the commentary: the weekend format, points, tyres, strategy and the rules. Short reads, in plain language, in the order they build on each other.</p>
       </div>
     </div>
 
-    <section class="guide-section">
-      <div class="section-head">
-        <h2>Start here</h2>
-        <span class="section-rule"></span>
-        <span class="guide-path-note">{pages.length} short reads, in order</span>
+    {first && (
+      <div class="guide-startbar">
+        <span class="guide-startbar-lbl"><span class="sq" aria-hidden="true"></span>Start Here</span>
+        <span class="guide-startbar-meta">{pages.length} short reads &middot; in order</span>
+        <span class="guide-startbar-sp"></span>
+        <a class="btn btn-primary" href={`/guide/${first.slug}/`}>Begin with {first.data.title} <span class="arrow" aria-hidden="true">›</span></a>
       </div>
-      <ol class="guide-path">
-        {pages.map((p, i) => (
-          <li class="guide-step-item">
-            <a class="guide-step" href={`/guide/${p.slug}/`} style={`--card-accent: ${guideColor(p.data.order)}`}>
-              <span class="guide-step-num">{String(i + 1).padStart(2, '0')}</span>
-              <span class="guide-step-text">
-                <span class="guide-step-title">{p.data.title}</span>
-                <span class="guide-step-sum">{p.data.summary}</span>
-              </span>
-              <span class="guide-step-go" aria-hidden="true">»</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
+    )}
+
+    <div class="guide-cats">
+      {groups.map((group, i) => (
+        <section class="guide-cat-block">
+          <div class="guide-cat-head">
+            <span class="ix">{pad2(i + 1)}</span>
+            <h2>{group.label}</h2>
+            <span class="rule"></span>
+            <span class="desc">{group.items.length} {group.items.length === 1 ? 'read' : 'reads'}</span>
+          </div>
+          <div class="guide-index">
+            {group.items.map((a) => (
+              <a class="guide-entry" href={`/guide/${a.slug}/`} style={`--card-accent: ${guideColor(a.data.order)}`}>
+                <span class="guide-entry-num" aria-hidden="true">{pad2(a.data.order)}</span>
+                <div class="guide-entry-main">
+                  <div class="guide-entry-cat">{group.label}</div>
+                  <div class="guide-entry-title">{a.data.title}</div>
+                  <p class="guide-entry-blurb">{a.data.summary}</p>
+                  <div class="guide-entry-foot">
+                    <span class="guide-entry-read">{a.data.readMinutes} min read</span>
+                    <span class="guide-entry-go">Read <span class="arrow" aria-hidden="true">›</span></span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
   </div>
 </BaseLayout>
