@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Driver-page prototypes · f1gures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg-1:#0A0A0A;--bg-2:#1C1D22;--bg-3:#252629;--line-1:#2C2E36;--line-2:#383A44;--line-3:#484C56;
+    --fg-1:#F5F5F5;--fg-2:#B8B9BD;--fg-3:#9A9BA1;--fg-4:#636469;--accent:#E8002D;
+    --f-display:'Barlow Condensed',sans-serif;--f-body:'Barlow',system-ui,sans-serif;--f-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-1);color:var(--fg-1);font-family:var(--f-body)}
+  .page{max-width:880px;margin:0 auto;padding:36px 24px 80px}
+  .brand{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase}
+  .brand b{color:var(--accent)}
+  h1{font-family:var(--f-display);font-weight:800;font-size:40px;text-transform:uppercase;margin:18px 0 4px}
+  .lede{color:var(--fg-3);font-size:14px;max-width:70ch;margin:0 0 28px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  a.card{display:block;background:var(--bg-2);border:1px solid var(--line-1);border-left:4px solid var(--accent);padding:18px 20px;text-decoration:none;color:inherit;transition:border-color .12s}
+  a.card:hover{border-color:var(--line-3);border-left-color:var(--accent)}
+  .card .n{font-family:var(--f-mono);font-size:11px;color:var(--fg-4);letter-spacing:.1em}
+  .card h2{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;margin:6px 0 6px}
+  .card p{color:var(--fg-3);font-size:13px;margin:0}
+  .card .tag{display:inline-block;margin-top:12px;font-family:var(--f-display);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-4)}
+  .first{border-left-color:#FF8000}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <span class="brand">F1<b>GURES</b></span>
+  <h1>Driver-page prototypes</h1>
+  <p class="lede">Five Savant-inspired ways to show driver stats vibrantly, each with up to three takes.
+  Sample driver throughout: <b style="color:#FF8000">Lando Norris</b>. Every file has a dark/light toggle (top-right).
+  Start with the earlier <a href="driver-heat-mockups.html" style="color:var(--accent)">heat-map mockups</a> for the original 3 ideas.</p>
+  <div class="grid">
+    <a class="card first" href="proto-1-racecraft-spray.html"><span class="n">Proto 1 · from the spray chart</span><h2>Racecraft Spray</h2><p>Grid → finish for every race: slope ribbons, spray scatter, gain/loss timeline.</p><span class="tag">3 takes →</span></a>
+    <a class="card" href="proto-2-calendar-heatmap.html"><span class="n">Proto 2 · from the zone heatmap</span><h2>Calendar Heat-Map</h2><p>Circuits painted by avg finish: tiles, track archetypes, best/worst grounds.</p><span class="tag">3 takes →</span></a>
+    <a class="card" href="proto-3-quali-race-quadrant.html"><span class="n">Proto 3 · from the movement plot</span><h2>Quali vs Race</h2><p>Saturday vs Sunday identity: the quadrant, career trajectory, dumbbell.</p><span class="tag">3 takes →</span></a>
+    <a class="card" href="proto-4-career-outcomes.html"><span class="n">Proto 4 · from the arsenal donut</span><h2>Career Outcomes</h2><p>Every start by result: outcome donut, reliability eras, attrition waffle.</p><span class="tag">3 takes →</span></a>
+    <a class="card" href="proto-5-teammate-duel.html"><span class="n">Proto 5 · from player comparison</span><h2>Teammate Duel</h2><p>Beating the same car: quali H2H, quali+race paired, career duel meter.</p><span class="tag">3 takes →</span></a>
+  </div>
+</div>
+</body>
+</html>

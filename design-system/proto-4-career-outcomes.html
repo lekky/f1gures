@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Proto 4 — Career Outcomes · f1gures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg-0:#050505;--bg-1:#0A0A0A;--bg-2:#1C1D22;--bg-3:#252629;--bg-hover:#2D2F36;
+    --line-1:#2C2E36;--line-2:#383A44;--line-3:#484C56;
+    --fg-1:#F5F5F5;--fg-2:#B8B9BD;--fg-3:#9A9BA1;--fg-4:#636469;
+    --accent:#E8002D;--pos:#2ECC71;--neg:#FF4444;--warn:#FFB020;
+    --f-display:'Barlow Condensed','Arial Narrow',sans-serif;
+    --f-body:'Barlow',system-ui,sans-serif;--f-mono:'JetBrains Mono',ui-monospace,monospace;
+    --team:#FF8000;
+    /* outcome palette: hot wins -> cold retirements */
+    --o-win:#E61C34;--o-pod:#F2683C;--o-pts:#E8A53A;--o-fin:#9DA0A6;--o-mech:#5C97C9;--o-crash:#2F74B5;--o-dsq:#B45309;
+  }
+  html.light{
+    --bg-0:#EEEEF2;--bg-1:#F5F5F8;--bg-2:#FFFFFF;--bg-3:#EDEDF1;--bg-hover:#E6E6EA;
+    --line-1:#E0E1E6;--line-2:#CCCDD4;--line-3:#B2B3BC;
+    --fg-1:#0D0E12;--fg-2:#3D3E48;--fg-3:#6A6B75;--fg-4:#9A9BA6;
+    --accent:#E8002D;--pos:#15803D;--neg:#DC2626;--warn:#B45309;
+    --o-win:#D8112B;--o-pod:#E8602F;--o-pts:#CE9426;--o-fin:#AFB2B9;--o-mech:#5C97C9;--o-crash:#2F74B5;--o-dsq:#B45309;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-1);color:var(--fg-1);font-family:var(--f-body);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .page{max-width:1040px;margin:0 auto;padding:28px 24px 80px}
+  .topbar{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+  .brand{font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:.02em;text-transform:uppercase}
+  .brand b{color:var(--accent)}
+  .eyebrow{font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-3)}
+  .topbar .spacer{margin-left:auto}
+  .tgl{font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-2);background:var(--bg-3);border:1px solid var(--line-2);padding:7px 12px;cursor:pointer}
+  .tgl:hover{border-color:var(--line-3)}
+  .hero{display:flex;align-items:baseline;gap:14px;margin:14px 0 4px}
+  .hero h1{font-family:var(--f-display);font-weight:800;font-size:34px;letter-spacing:.01em;text-transform:uppercase;margin:0}
+  .hero .sub{font-family:var(--f-mono);font-size:12px;color:var(--fg-3);letter-spacing:.04em}
+  .lede{color:var(--fg-3);font-size:14px;max-width:74ch;margin:6px 0 26px}
+  .lede b{color:var(--fg-2)}
+  .idea-head{display:flex;align-items:baseline;gap:12px;margin:40px 0 4px}
+  .idea-num{font-family:var(--f-display);font-weight:800;font-size:12px;letter-spacing:.1em;color:#fff;background:var(--accent);padding:3px 9px;line-height:1;text-transform:uppercase}
+  .idea-head h2{font-family:var(--f-display);font-weight:800;font-size:23px;letter-spacing:.01em;text-transform:uppercase;margin:0}
+  .idea-note{color:var(--fg-3);font-size:13px;margin:6px 0 16px;max-width:78ch}
+  .idea-note b{color:var(--fg-2);font-weight:600}
+  .panel{background:var(--bg-2);border:1px solid var(--line-1)}
+  .grp-head{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line-1)}
+  .grp-head .mark{width:4px;height:15px;background:var(--team)}
+  .grp-head h3{font-family:var(--f-display);font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase;margin:0}
+  .grp-head .count{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--fg-4);letter-spacing:.06em}
+  .body{padding:20px 18px 22px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .txt{font-family:var(--f-mono);font-size:10px;fill:var(--fg-4)}
+
+  .donut-wrap{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:center}
+  .keys{display:flex;flex-direction:column;gap:9px}
+  .key{display:grid;grid-template-columns:14px 1fr auto auto;gap:10px;align-items:center;font-size:13px}
+  .key i{width:14px;height:14px;display:inline-block}
+  .key .kl{color:var(--fg-2)}
+  .key .kn{font-family:var(--f-mono);font-weight:600;color:var(--fg-1)}
+  .key .kp{font-family:var(--f-mono);font-size:11px;color:var(--fg-4);width:42px;text-align:right}
+
+  /* stacked-by-season */
+  .stk{display:flex;flex-direction:column;gap:8px}
+  .srow{display:grid;grid-template-columns:42px 1fr;gap:12px;align-items:center}
+  .srow .sy{font-family:var(--f-mono);font-size:12px;color:var(--fg-3)}
+  .sbar{display:flex;height:22px;overflow:hidden;border:1px solid var(--line-1)}
+  .sseg{height:100%}
+
+  /* waffle */
+  .waffle{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}
+  .wc{aspect-ratio:1;min-width:9px}
+  .wlegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px}
+  .wk{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-3)}
+  .wk i{width:12px;height:12px;display:inline-block}
+  @media(max-width:720px){.donut-wrap{grid-template-columns:1fr}.waffle{grid-template-columns:repeat(16,1fr)}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <span class="brand">F1<b>GURES</b></span>
+    <span class="eyebrow" style="color:var(--fg-4)">Prototype 4 / 5</span>
+    <span class="spacer"></span>
+    <button class="tgl" id="themeBtn">Light mode</button>
+  </div>
+  <div class="hero"><h1>Career Outcomes</h1><span class="sub">Lando Norris · every race start, by result</span></div>
+  <p class="lede">
+    Savant breaks a pitcher's <b>arsenal</b> into a colour-coded donut. Here we break every race start into outcome
+    bands — <b>win → podium → points → finished → DNF → DSQ</b> — on a hot-to-cold palette. The shape <i>is</i> the
+    career: how often does this driver convert, and how often does the car (or a wall) stop him?
+  </p>
+
+  <div class="idea-head"><span class="idea-num">4A</span><h2>Outcome donut</h2></div>
+  <p class="idea-note">The headline. A single ring of every career start, hottest results at the top. The centre carries the total; the legend doubles as a mini stat table. One glance = "wins often, rarely retires."</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Result distribution</h3><span class="count" id="donutTot"></span></div>
+    <div class="body"><div class="donut-wrap">
+      <svg id="donut" viewBox="0 0 240 240" role="img" aria-label="Donut"></svg>
+      <div class="keys" id="keys"></div>
+    </div></div>
+  </div>
+
+  <div class="idea-head"><span class="idea-num">4B</span><h2>Reliability eras</h2></div>
+  <p class="idea-note">The same bands, stacked 100% per season. Reads as a timeline — watch the hot colours grow as the car improves, and spot the seasons wrecked by a string of <b>DNFs</b> (the blue creeping in).</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Outcome mix by season</h3><span class="count">100% stacked</span></div>
+    <div class="body"><div class="stk" id="stk"></div></div>
+  </div>
+
+  <div class="idea-head"><span class="idea-num">4C</span><h2>Attrition waffle</h2></div>
+  <p class="idea-note">One square per race across the whole career, packed and sorted by outcome. A dense, satisfying mosaic that shows proportion viscerally — the block of red wins, the long tail of points, the small cold corner of retirements.</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Every start as a tile</h3><span class="count" id="waffleTot"></span></div>
+    <div class="body"><div class="waffle" id="waffle"></div>
+      <div class="wlegend" id="wlegend"></div></div>
+  </div>
+</div>
+
+<script>
+// label, count, cssVar
+const O=[
+  ['Win',16,'--o-win'],['Podium',45,'--o-pod'],['Points',70,'--o-pts'],
+  ['Finished',10,'--o-fin'],['DNF — mech',6,'--o-mech'],['DNF — crash',3,'--o-crash'],['DSQ',1,'--o-dsq'],
+];
+const TOTAL=O.reduce((a,o)=>a+o[1],0);
+const css=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+
+function donut(){
+  const cx=120,cy=120,r=86,sw=34,C=2*Math.PI*r;let off=0;let s='';
+  s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${css('--bg-3')}" stroke-width="${sw}"/>`;
+  O.forEach(([lab,n,v])=>{
+    const frac=n/TOTAL,len=frac*C;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${css(v)}" stroke-width="${sw}"
+        stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    off+=len;
+  });
+  s+=`<text x="${cx}" y="${cy-4}" text-anchor="middle" font-family="var(--f-display)" font-weight="800" font-size="38" fill="${css('--fg-1')}">${TOTAL}</text>`;
+  s+=`<text x="${cx}" y="${cy+16}" text-anchor="middle" font-family="var(--f-display)" font-weight="700" font-size="11" letter-spacing="2" fill="${css('--fg-3')}">STARTS</text>`;
+  document.getElementById('donut').innerHTML=s;
+  const keys=document.getElementById('keys');keys.innerHTML='';
+  O.forEach(([lab,n,v])=>{
+    const d=document.createElement('div');d.className='key';
+    d.innerHTML=`<i style="background:${css(v)}"></i><span class="kl">${lab}</span><span class="kn">${n}</span><span class="kp">${(n/TOTAL*100).toFixed(0)}%</span>`;
+    keys.appendChild(d);
+  });
+  document.getElementById('donutTot').textContent=`${TOTAL} starts · ${O[0][1]} wins · ${(O.slice(4).reduce((a,o)=>a+o[1],0))} DNF/DSQ`;
+}
+
+// per-season counts [year, win,pod,pts,fin,mech,crash,dsq]
+const SY=[
+  [2019,0,0,11,6,3,1,0],[2020,0,2,12,2,1,1,0],[2021,1,4,14,1,1,1,0],[2022,0,3,14,2,2,1,0],
+  [2023,0,7,12,1,1,0,1],[2024,4,9,8,1,1,1,0],[2025,7,12,3,0,1,1,0],[2026,4,8,1,0,0,1,0],
+];
+function stacked(){
+  const root=document.getElementById('stk');root.innerHTML='';
+  const cv=['--o-win','--o-pod','--o-pts','--o-fin','--o-mech','--o-crash','--o-dsq'];
+  SY.forEach(row=>{
+    const y=row[0],vals=row.slice(1),tot=vals.reduce((a,b)=>a+b,0)||1;
+    let segs='';
+    vals.forEach((n,i)=>{if(n>0)segs+=`<div class="sseg" style="width:${n/tot*100}%;background:${css(cv[i])}" title="${n}"></div>`;});
+    const d=document.createElement('div');d.className='srow';
+    d.innerHTML=`<span class="sy">${y}</span><div class="sbar">${segs}</div>`;
+    root.appendChild(d);
+  });
+}
+
+function waffle(){
+  const root=document.getElementById('waffle');root.innerHTML='';
+  O.forEach(([lab,n,v])=>{for(let i=0;i<n;i++){const d=document.createElement('div');d.className='wc';d.style.background=css(v);d.title=lab;root.appendChild(d);}});
+  document.getElementById('waffleTot').textContent=`${TOTAL} tiles`;
+  const wl=document.getElementById('wlegend');wl.innerHTML='';
+  O.forEach(([lab,n,v])=>{const d=document.createElement('div');d.className='wk';d.innerHTML=`<i style="background:${css(v)}"></i>${lab} · ${n}`;wl.appendChild(d);});
+}
+
+function renderAll(){donut();stacked();waffle();}
+renderAll();
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  const l=document.documentElement.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=l?'Dark mode':'Light mode';renderAll();
+});
+</script>
+</body>
+</html>

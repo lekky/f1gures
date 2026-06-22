@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Proto 1 — Racecraft Spray · f1gures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg-0:#050505;--bg-1:#0A0A0A;--bg-2:#1C1D22;--bg-3:#252629;--bg-hover:#2D2F36;
+    --line-1:#2C2E36;--line-2:#383A44;--line-3:#484C56;
+    --fg-1:#F5F5F5;--fg-2:#B8B9BD;--fg-3:#9A9BA1;--fg-4:#636469;
+    --accent:#E8002D;--pos:#2ECC71;--neg:#FF4444;--warn:#FFB020;
+    --f-display:'Barlow Condensed','Arial Narrow',sans-serif;
+    --f-body:'Barlow',system-ui,sans-serif;--f-mono:'JetBrains Mono',ui-monospace,monospace;
+    --team:#FF8000;
+  }
+  html.light{
+    --bg-0:#EEEEF2;--bg-1:#F5F5F8;--bg-2:#FFFFFF;--bg-3:#EDEDF1;--bg-hover:#E6E6EA;
+    --line-1:#E0E1E6;--line-2:#CCCDD4;--line-3:#B2B3BC;
+    --fg-1:#0D0E12;--fg-2:#3D3E48;--fg-3:#6A6B75;--fg-4:#9A9BA6;
+    --accent:#E8002D;--pos:#15803D;--neg:#DC2626;--warn:#B45309;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-1);color:var(--fg-1);font-family:var(--f-body);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .page{max-width:1040px;margin:0 auto;padding:28px 24px 80px}
+  .topbar{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+  .brand{font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:.02em;text-transform:uppercase}
+  .brand b{color:var(--accent)}
+  .eyebrow{font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-3)}
+  .topbar .spacer{margin-left:auto}
+  .tgl{font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-2);background:var(--bg-3);border:1px solid var(--line-2);padding:7px 12px;cursor:pointer}
+  .tgl:hover{border-color:var(--line-3)}
+  .hero{display:flex;align-items:baseline;gap:14px;margin:14px 0 4px}
+  .hero h1{font-family:var(--f-display);font-weight:800;font-size:34px;letter-spacing:.01em;text-transform:uppercase;margin:0}
+  .hero .sub{font-family:var(--f-mono);font-size:12px;color:var(--fg-3);letter-spacing:.04em}
+  .lede{color:var(--fg-3);font-size:14px;max-width:74ch;margin:6px 0 26px}
+  .lede b{color:var(--fg-2)}
+  .idea-head{display:flex;align-items:baseline;gap:12px;margin:40px 0 4px}
+  .idea-num{font-family:var(--f-display);font-weight:800;font-size:12px;letter-spacing:.1em;color:#fff;background:var(--accent);padding:3px 9px;line-height:1;text-transform:uppercase}
+  .idea-head h2{font-family:var(--f-display);font-weight:800;font-size:23px;letter-spacing:.01em;text-transform:uppercase;margin:0}
+  .idea-note{color:var(--fg-3);font-size:13px;margin:6px 0 16px;max-width:78ch}
+  .idea-note b{color:var(--fg-2);font-weight:600}
+  .panel{background:var(--bg-2);border:1px solid var(--line-1)}
+  .grp-head{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line-1)}
+  .grp-head .mark{width:4px;height:15px;background:var(--team)}
+  .grp-head h3{font-family:var(--f-display);font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase;margin:0}
+  .grp-head .count{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--fg-4);letter-spacing:.06em}
+  .legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .lk{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-3)}
+  .lk i{width:13px;height:13px;display:inline-block}
+  .body{padding:20px 18px 22px}
+  .cap{font-family:var(--f-mono);font-size:11px;color:var(--fg-4);margin-top:10px;letter-spacing:.03em}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .txt{font-family:var(--f-mono);font-size:10px;fill:var(--fg-4)}
+  .txt-s{font-family:var(--f-display);font-weight:700;font-size:10px;letter-spacing:.1em;fill:var(--fg-3);text-transform:uppercase}
+  .gained{color:var(--pos)} .lost{color:var(--neg)}
+  @media(max-width:720px){.hero h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <span class="brand">F1<b>GURES</b></span>
+    <span class="eyebrow" style="color:var(--fg-4)">Prototype 1 / 5</span>
+    <span class="spacer"></span>
+    <button class="tgl" id="themeBtn">Light mode</button>
+  </div>
+  <div class="hero"><h1>Racecraft Spray</h1><span class="sub">Lando Norris · 2024 · grid → finish</span></div>
+  <p class="lede">
+    Savant's <b>spray chart</b> shows where every ball went, colour-coded by outcome. The F1 translation:
+    every race plotted as <b>started P-x → finished P-y</b>. Green = positions <span class="gained">gained</span>,
+    red = positions <span class="lost">lost</span>. Three ways to read the same fingerprint.
+  </p>
+
+  <div class="idea-head"><span class="idea-num">1A</span><h2>Slope ribbons</h2></div>
+  <p class="idea-note">Two columns — <b>grid</b> on the left, <b>finish</b> on the right — one ribbon per race. Upward, green ribbons are overtakes / strong Sundays; downward red ones are races that went backwards. Density tells the story like a spray chart does.</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Grid → Finish · every 2024 round</h3>
+      <span class="count"><span class="legend"><span class="lk"><i style="background:var(--pos)"></i>Gained</span><span class="lk"><i style="background:var(--neg)"></i>Lost</span><span class="lk"><i style="background:var(--fg-4)"></i>DNF</span></span></span></div>
+    <div class="body"><svg id="slope" viewBox="0 0 760 430" role="img" aria-label="Slope chart"></svg>
+      <div class="cap" id="slopeCap"></div></div>
+  </div>
+
+  <div class="idea-head"><span class="idea-num">1B</span><h2>Spray scatter</h2></div>
+  <p class="idea-note">The literal spray chart. X = grid, Y = finish. The diagonal is "held station"; everything <b>above</b> it (green wash) is a net gain, <b>below</b> (red wash) a net loss. Dot size = points scored. Clusters reveal whether a driver lives in the gain zone.</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Started vs finished</h3><span class="count">dot size = points</span></div>
+    <div class="body"><svg id="scatter" viewBox="0 0 760 460" role="img" aria-label="Scatter"></svg>
+      <div class="cap" id="scatterCap"></div></div>
+  </div>
+
+  <div class="idea-head"><span class="idea-num">1C</span><h2>Gain / loss timeline</h2></div>
+  <p class="idea-note">A diverging bar per round, swept up (green) or down (red) by net positions. Reads left-to-right like a season heartbeat — momentum, bad weekends, and DNFs all pop instantly.</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Net positions per round</h3><span class="count" id="netAvg"></span></div>
+    <div class="body"><svg id="diverge" viewBox="0 0 760 260" role="img" aria-label="Diverging bars"></svg></div>
+  </div>
+</div>
+
+<script>
+const R = [
+  [1,'BHR',7,4,12,'F'],[2,'SAU',8,8,4,'F'],[3,'AUS',6,3,15,'F'],[4,'JPN',4,5,10,'F'],
+  [5,'CHN',5,2,18,'F'],[6,'MIA',5,1,26,'F'],[7,'EMI',3,3,15,'F'],[8,'MON',4,4,12,'F'],
+  [9,'CAN',6,5,10,'F'],[10,'ESP',2,2,18,'F'],[11,'AUT',3,1,25,'F'],[12,'GBR',2,3,15,'F'],
+  [13,'HUN',1,2,18,'F'],[14,'BEL',5,4,12,'F'],[15,'NED',1,1,25,'F'],[16,'ITA',1,3,15,'F'],
+  [17,'AZE',2,21,0,'DNF'],[18,'SGP',1,1,25,'F'],[19,'USA',4,4,12,'F'],[20,'MXC',3,6,8,'F'],
+  [21,'SAP',6,21,0,'DNF'],[22,'LAS',6,2,18,'F'],[23,'QAT',1,1,25,'F'],[24,'ABU',1,2,18,'F'],
+];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function glColor(delta){ return delta>0?css('--pos'):delta<0?css('--neg'):css('--fg-4'); }
+function glOpacity(delta){ return 0.4 + 0.6*Math.min(1, Math.abs(delta)/8); }
+const POSN = 20;
+
+/* ── 1A slope ───────────────────────────────────────────────── */
+function slope(){
+  const W=760,H=430,top=34,bot=400,xL=150,xR=610;
+  const y=p=>top+(Math.min(p,21)-1)/(21-1)*(bot-top);
+  let s=`<text class="txt-s" x="${xL}" y="20" text-anchor="middle">GRID</text>`
+       +`<text class="txt-s" x="${xR}" y="20" text-anchor="middle">FINISH</text>`;
+  [1,5,10,15,20].forEach(p=>{
+    s+=`<text class="txt" x="${xL-14}" y="${y(p)+3}" text-anchor="end">P${p}</text>`
+      +`<text class="txt" x="${xR+12}" y="${y(p)+3}" text-anchor="start">P${p}</text>`
+      +`<line x1="${xL}" y1="${y(p)}" x2="${xR}" y2="${y(p)}" stroke="${css('--line-1')}" stroke-width="1" opacity=".5"/>`;
+  });
+  s+=`<line x1="${xL}" y1="${top}" x2="${xL}" y2="${bot}" stroke="${css('--line-2')}"/>`
+    +`<line x1="${xR}" y1="${top}" x2="${xR}" y2="${bot}" stroke="${css('--line-2')}"/>`;
+  R.forEach(([rd,code,g,f,pts,st])=>{
+    const dnf=st==='DNF', delta=dnf?-99:g-f;
+    const col=dnf?css('--fg-4'):glColor(delta), op=dnf?0.5:glOpacity(delta);
+    s+=`<line x1="${xL}" y1="${y(g)}" x2="${xR}" y2="${y(f)}" stroke="${col}" stroke-width="${dnf?2:2.4}" opacity="${op}" ${dnf?'stroke-dasharray="3 4"':''}/>`
+      +`<circle cx="${xL}" cy="${y(g)}" r="3" fill="${col}" opacity="${op}"/>`
+      +`<circle cx="${xR}" cy="${y(f)}" r="${dnf?2.5:3.4}" fill="${col}" opacity="${op}"/>`;
+  });
+  document.getElementById('slope').innerHTML=s;
+  const fin=R.filter(r=>r[5]!=='DNF');
+  const avgG=(fin.reduce((a,r)=>a+r[2],0)/fin.length).toFixed(1);
+  const avgF=(fin.reduce((a,r)=>a+r[3],0)/fin.length).toFixed(1);
+  document.getElementById('slopeCap').textContent=`Avg grid P${avgG} → avg finish P${avgF} · 2 DNF (dashed)`;
+}
+
+/* ── 1B scatter ─────────────────────────────────────────────── */
+function scatter(){
+  const W=760,H=460,pL=80,pT=30,pR=40,pB=46, iw=W-pL-pR, ih=H-pT-pB;
+  const x=g=>pL+(g-1)/(POSN-1)*iw, yy=f=>pT+(Math.min(f,POSN)-1)/(POSN-1)*ih;
+  let s='';
+  // washes
+  s+=`<polygon points="${pL},${pT} ${pL+iw},${pT} ${pL},${pT+ih}" fill="${css('--pos')}" opacity=".06"/>`;
+  s+=`<polygon points="${pL+iw},${pT} ${pL+iw},${pT+ih} ${pL},${pT+ih}" fill="${css('--neg')}" opacity=".06"/>`;
+  s+=`<line x1="${pL}" y1="${pT}" x2="${pL+iw}" y2="${pT+ih}" stroke="${css('--line-3')}" stroke-dasharray="4 4"/>`;
+  s+=`<text class="txt-s" x="${pL+iw*0.28}" y="${pT+ih*0.20}" fill="${css('--pos')}" text-anchor="middle">GAINED ▲</text>`;
+  s+=`<text class="txt-s" x="${pL+iw*0.74}" y="${pT+ih*0.86}" fill="${css('--neg')}" text-anchor="middle">▼ LOST</text>`;
+  [1,5,10,15,20].forEach(p=>{
+    s+=`<text class="txt" x="${x(p)}" y="${pT+ih+18}" text-anchor="middle">P${p}</text>`
+      +`<text class="txt" x="${pL-12}" y="${yy(p)+3}" text-anchor="end">P${p}</text>`
+      +`<line x1="${pL}" y1="${yy(p)}" x2="${pL+iw}" y2="${yy(p)}" stroke="${css('--line-1')}" opacity=".4"/>`;
+  });
+  s+=`<text class="txt-s" x="${pL+iw/2}" y="${H-6}" text-anchor="middle">GRID  →</text>`;
+  s+=`<text class="txt-s" transform="translate(22,${pT+ih/2}) rotate(-90)" text-anchor="middle">FINISH  →</text>`;
+  R.forEach(([rd,code,g,f,pts,st])=>{
+    const dnf=st==='DNF', delta=g-f, r=4+ (pts/26)*7;
+    const col=dnf?css('--fg-4'):glColor(delta), op=dnf?0.5:glOpacity(delta);
+    s+=`<circle cx="${x(g)}" cy="${yy(f)}" r="${dnf?4:r}" fill="${col}" opacity="${op}" stroke="${css('--bg-2')}" stroke-width="1"/>`;
+    if(pts>=18) s+=`<text class="txt" x="${x(g)}" y="${yy(f)-r-3}" text-anchor="middle" fill="${css('--fg-3')}">${code}</text>`;
+  });
+  document.getElementById('scatter').innerHTML=s;
+  const gains=R.filter(r=>r[2]-r[3]>0&&r[5]!=='DNF').length;
+  document.getElementById('scatterCap').textContent=`${gains} of ${R.length} races finished ahead of grid · biggest gain +${Math.max(...R.map(r=>r[5]==='DNF'?-9:r[2]-r[3]))} (Las Vegas)`;
+}
+
+/* ── 1C diverging ───────────────────────────────────────────── */
+function diverge(){
+  const W=760,H=260,pL=40,pR=20,pT=24,pB=30, iw=W-pL-pR, mid=(H-pB+pT)/2;
+  const n=R.length, step=iw/n, bw=step*0.6, scale=15;
+  let s=`<line x1="${pL}" y1="${mid}" x2="${pL+iw}" y2="${mid}" stroke="${css('--line-2')}"/>`;
+  s+=`<text class="txt-s" x="${pL}" y="${pT-8}" fill="${css('--pos')}">GAINED ▲</text>`;
+  s+=`<text class="txt-s" x="${pL}" y="${H-6}" fill="${css('--neg')}">▼ LOST</text>`;
+  R.forEach(([rd,code,g,f,pts,st],i)=>{
+    const cx=pL+step*i+step/2, dnf=st==='DNF', delta=g-f;
+    if(dnf){ s+=`<line x1="${cx-5}" y1="${mid-5}" x2="${cx+5}" y2="${mid+5}" stroke="${css('--fg-4')}" stroke-width="2"/><line x1="${cx-5}" y1="${mid+5}" x2="${cx+5}" y2="${mid-5}" stroke="${css('--fg-4')}" stroke-width="2"/>`; }
+    else{
+      const h=Math.abs(delta)*scale, col=glColor(delta), op=glOpacity(delta);
+      const yTop= delta>0? mid-h : mid;
+      s+=`<rect x="${cx-bw/2}" y="${yTop}" width="${bw}" height="${Math.max(h,1)}" fill="${col}" opacity="${op}"/>`;
+      if(delta!==0) s+=`<text class="txt" x="${cx}" y="${delta>0?yTop-4:yTop+h+11}" text-anchor="middle" fill="${col}">${delta>0?'+':''}${delta}</text>`;
+    }
+    s+=`<text class="txt" x="${cx}" y="${H-2}" text-anchor="middle" transform="rotate(0)">${code}</text>`;
+  });
+  document.getElementById('diverge').innerHTML=s;
+  const fin=R.filter(r=>r[5]!=='DNF'); const net=fin.reduce((a,r)=>a+(r[2]-r[3]),0);
+  document.getElementById('netAvg').textContent=`net ${net>0?'+':''}${net} across the season`;
+}
+
+function renderAll(){ slope(); scatter(); diverge(); }
+renderAll();
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  const l=document.documentElement.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=l?'Dark mode':'Light mode';
+  renderAll();
+});
+</script>
+</body>
+</html>

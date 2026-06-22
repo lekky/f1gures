@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Proto 2 — Calendar Heat-Map · f1gures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg-0:#050505;--bg-1:#0A0A0A;--bg-2:#1C1D22;--bg-3:#252629;--bg-hover:#2D2F36;
+    --line-1:#2C2E36;--line-2:#383A44;--line-3:#484C56;
+    --fg-1:#F5F5F5;--fg-2:#B8B9BD;--fg-3:#9A9BA1;--fg-4:#636469;
+    --accent:#E8002D;--pos:#2ECC71;--neg:#FF4444;--warn:#FFB020;
+    --f-display:'Barlow Condensed','Arial Narrow',sans-serif;
+    --f-body:'Barlow',system-ui,sans-serif;--f-mono:'JetBrains Mono',ui-monospace,monospace;
+    --team:#FF8000;
+    --heat-track:#2A2B30;--heat-c0:#2F74B5;--heat-c1:#5C97C9;--heat-c2:#9DA0A6;--heat-c3:#E06B4A;--heat-c4:#E61C34;
+  }
+  html.light{
+    --bg-0:#EEEEF2;--bg-1:#F5F5F8;--bg-2:#FFFFFF;--bg-3:#EDEDF1;--bg-hover:#E6E6EA;
+    --line-1:#E0E1E6;--line-2:#CCCDD4;--line-3:#B2B3BC;
+    --fg-1:#0D0E12;--fg-2:#3D3E48;--fg-3:#6A6B75;--fg-4:#9A9BA6;
+    --accent:#E8002D;--pos:#15803D;--neg:#DC2626;--warn:#B45309;
+    --heat-track:#E4E4EA;--heat-c0:#2F74B5;--heat-c1:#6AA6D6;--heat-c2:#AFB2B9;--heat-c3:#E0703F;--heat-c4:#D8112B;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-1);color:var(--fg-1);font-family:var(--f-body);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .page{max-width:1040px;margin:0 auto;padding:28px 24px 80px}
+  .topbar{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+  .brand{font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:.02em;text-transform:uppercase}
+  .brand b{color:var(--accent)}
+  .eyebrow{font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-3)}
+  .topbar .spacer{margin-left:auto}
+  .tgl{font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-2);background:var(--bg-3);border:1px solid var(--line-2);padding:7px 12px;cursor:pointer}
+  .tgl:hover{border-color:var(--line-3)}
+  .hero{display:flex;align-items:baseline;gap:14px;margin:14px 0 4px}
+  .hero h1{font-family:var(--f-display);font-weight:800;font-size:34px;letter-spacing:.01em;text-transform:uppercase;margin:0}
+  .hero .sub{font-family:var(--f-mono);font-size:12px;color:var(--fg-3);letter-spacing:.04em}
+  .lede{color:var(--fg-3);font-size:14px;max-width:74ch;margin:6px 0 26px}
+  .lede b{color:var(--fg-2)}
+  .idea-head{display:flex;align-items:baseline;gap:12px;margin:40px 0 4px}
+  .idea-num{font-family:var(--f-display);font-weight:800;font-size:12px;letter-spacing:.1em;color:#fff;background:var(--accent);padding:3px 9px;line-height:1;text-transform:uppercase}
+  .idea-head h2{font-family:var(--f-display);font-weight:800;font-size:23px;letter-spacing:.01em;text-transform:uppercase;margin:0}
+  .idea-note{color:var(--fg-3);font-size:13px;margin:6px 0 16px;max-width:78ch}
+  .idea-note b{color:var(--fg-2);font-weight:600}
+  .panel{background:var(--bg-2);border:1px solid var(--line-1)}
+  .grp-head{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line-1)}
+  .grp-head .mark{width:4px;height:15px;background:var(--team)}
+  .grp-head h3{font-family:var(--f-display);font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase;margin:0}
+  .grp-head .count{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--fg-4);letter-spacing:.06em}
+  .legend{display:flex;align-items:center;gap:8px}
+  .legend .scale{width:150px;height:7px;background:linear-gradient(90deg,var(--heat-c0),var(--heat-c1),var(--heat-c2),var(--heat-c3),var(--heat-c4))}
+  .legend .lbl{font-family:var(--f-display);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-4)}
+  .body{padding:18px}
+  .cap{font-family:var(--f-mono);font-size:11px;color:var(--fg-4);margin-top:12px;letter-spacing:.03em}
+
+  /* 2A tiles */
+  .tiles{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+  .tile{aspect-ratio:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;border:1px solid rgba(255,255,255,.08)}
+  html.light .tile{border-color:rgba(0,0,0,.06)}
+  .tile .code{font-family:var(--f-display);font-weight:800;font-size:14px;letter-spacing:.04em;line-height:1}
+  .tile .v{font-family:var(--f-mono);font-size:10px;margin-top:3px;opacity:.92}
+  .tile .pod{position:absolute;top:4px;right:5px;font-family:var(--f-mono);font-size:8px;opacity:.85}
+
+  /* 2B archetype bars */
+  .arch{display:flex;flex-direction:column;gap:14px}
+  .arow{display:grid;grid-template-columns:140px 1fr 46px;gap:14px;align-items:center}
+  .arow .al{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-2);text-align:right}
+  .atrack{height:30px;background:var(--heat-track);position:relative;display:flex;align-items:center}
+  .afill{height:100%;position:absolute;left:0;top:0}
+  .achips{position:relative;display:flex;gap:4px;padding-left:8px;z-index:1}
+  .achip{font-family:var(--f-mono);font-size:9px;color:rgba(255,255,255,.9);background:rgba(0,0,0,.28);padding:1px 4px}
+  html.light .achip{color:#fff;background:rgba(0,0,0,.32)}
+  .av{font-family:var(--f-mono);font-weight:600;font-size:13px;text-align:right}
+
+  /* 2C ranked */
+  .rank{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  .rcol h4{font-family:var(--f-display);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 12px;color:var(--fg-3)}
+  .rrow{display:grid;grid-template-columns:42px 1fr 38px;gap:10px;align-items:center;margin-bottom:8px}
+  .rrow .rc{font-family:var(--f-display);font-weight:800;font-size:13px;color:var(--fg-2)}
+  .rtrack{height:18px;background:var(--heat-track);position:relative}
+  .rfill{height:100%}
+  .rv{font-family:var(--f-mono);font-size:12px;text-align:right;color:var(--fg-2)}
+  @media(max-width:720px){.tiles{grid-template-columns:repeat(5,1fr)}.rank{grid-template-columns:1fr}.arow{grid-template-columns:96px 1fr 40px}.arow .al{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <span class="brand">F1<b>GURES</b></span>
+    <span class="eyebrow" style="color:var(--fg-4)">Prototype 2 / 5</span>
+    <span class="spacer"></span>
+    <button class="tgl" id="themeBtn">Light mode</button>
+  </div>
+  <div class="hero"><h1>Calendar Heat-Map</h1><span class="sub">Lando Norris · career avg finish by venue</span></div>
+  <p class="lede">
+    Savant's <b>zone heatmap</b> paints the strike zone red where a hitter crushes it. Here we paint the
+    <b>calendar</b>: each circuit coloured by the driver's career average finish — hot red = a happy hunting
+    ground, cold blue = a bogey track. Reveals track-type DNA at a glance.
+  </p>
+
+  <div class="idea-head"><span class="idea-num">2A</span><h2>Circuit tiles</h2></div>
+  <p class="idea-note">A tile per venue, in calendar order, heat-coloured by average finishing position. Podium count tucked top-right. Scan it like a weather map — where does this driver light up?</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Every venue · avg finish</h3>
+      <span class="count"><span class="legend"><span class="lbl">Cold</span><span class="scale"></span><span class="lbl">Hot</span></span></span></div>
+    <div class="body"><div class="tiles" id="tiles"></div><div class="cap" id="tilesCap"></div></div>
+  </div>
+
+  <div class="idea-head"><span class="idea-num">2B</span><h2>Track archetypes</h2></div>
+  <p class="idea-note">Roll the calendar up into circuit <b>types</b> — street, high-speed, high-downforce, stop-go — each a heat bar. Answers the scouting question directly: is this a street-circuit specialist or a power-track merchant?</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Performance by circuit type</h3><span class="count">fill = strength · avg finish</span></div>
+    <div class="body"><div class="arch" id="arch"></div></div>
+  </div>
+
+  <div class="idea-head"><span class="idea-num">2C</span><h2>Best &amp; worst hunting grounds</h2></div>
+  <p class="idea-note">The leaderboard cut — top five venues where the driver is hottest, and the five where he's coldest, as ranked heat bars. Compact enough to sit in a sidebar.</p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Hottest vs coldest tracks</h3><span class="count">career avg finish</span></div>
+    <div class="body"><div class="rank"><div class="rcol"><h4 style="color:var(--heat-c4)">▲ Strongest</h4><div id="best"></div></div><div class="rcol"><h4 style="color:var(--heat-c0)">▼ Weakest</h4><div id="worst"></div></div></div></div>
+  </div>
+</div>
+
+<script>
+// [code, name, avgFinish, podiums, type]  type: street|fast|downforce|stopgo
+const C = [
+  ['BHR','Bahrain',5.4,1,'stopgo'],['SAU','Jeddah',6.8,1,'street'],['AUS','Albert Park',3.6,3,'street'],
+  ['JPN','Suzuka',4.9,2,'fast'],['CHN','Shanghai',4.1,2,'downforce'],['MIA','Miami',2.2,4,'street'],
+  ['EMI','Imola',3.5,3,'fast'],['MON','Monaco',3.4,4,'street'],['CAN','Montréal',5.1,2,'stopgo'],
+  ['ESP','Barcelona',3.8,3,'downforce'],['AUT','Red Bull Ring',3.0,4,'fast'],['GBR','Silverstone',3.1,5,'fast'],
+  ['HUN','Hungaroring',4.6,2,'downforce'],['BEL','Spa',4.4,3,'fast'],['NED','Zandvoort',2.8,4,'downforce'],
+  ['ITA','Monza',5.2,1,'fast'],['AZE','Baku',8.6,0,'street'],['SGP','Singapore',2.5,4,'street'],
+  ['USA','Austin',4.2,3,'fast'],['MXC','Mexico City',7.4,1,'stopgo'],['SAP','Interlagos',7.9,1,'fast'],
+  ['LAS','Las Vegas',6.9,1,'street'],['QAT','Lusail',2.4,4,'fast'],['ABU','Yas Marina',3.2,3,'stopgo'],
+];
+const css=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const hex2rgb=h=>{h=h.replace('#','');return[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));};
+const rgbcss=r=>`rgb(${r.map(Math.round).join(',')})`;
+const lerp=(a,b,t)=>a+(b-a)*t;
+function heat(p){const s=[0,1,2,3,4].map(i=>hex2rgb(css('--heat-c'+i)));const x=Math.max(0,Math.min(100,p))/100*4;const i=Math.min(3,Math.floor(x)),t=x-i;return rgbcss(s[i].map((c,k)=>lerp(c,s[i+1][k],t)));}
+// avg finish 1 (hot) .. 12 (cold) -> percentile
+const fHeat=avg=>Math.max(0,Math.min(100,100-(avg-1)*9));
+
+function tiles(){
+  const root=document.getElementById('tiles');root.innerHTML='';
+  C.forEach(([code,name,avg,pod])=>{
+    const d=document.createElement('div');d.className='tile';d.style.background=heat(fHeat(avg));d.title=`${name} · avg P${avg}`;
+    d.innerHTML=`<span class="code">${code}</span><span class="v">P${avg.toFixed(1)}</span>${pod>=3?`<span class="pod">●${pod}</span>`:''}`;
+    root.appendChild(d);
+  });
+  const best=[...C].sort((a,b)=>a[2]-b[2])[0];
+  document.getElementById('tilesCap').textContent=`Hottest: ${best[1]} (avg P${best[2]}) · ● = podiums (3+)`;
+}
+
+function arch(){
+  const groups={street:'Street',fast:'High-speed',downforce:'High-downforce',stopgo:'Stop-go'};
+  const root=document.getElementById('arch');root.innerHTML='';
+  Object.entries(groups).forEach(([k,label])=>{
+    const items=C.filter(c=>c[4]===k);
+    const avg=items.reduce((a,c)=>a+c[2],0)/items.length;
+    const p=fHeat(avg),col=heat(p);
+    const chips=items.sort((a,b)=>a[2]-b[2]).slice(0,5).map(c=>`<span class="achip">${c[0]}</span>`).join('');
+    const row=document.createElement('div');row.className='arow';
+    row.innerHTML=`<div class="al">${label}</div>
+      <div class="atrack"><div class="afill" style="width:${p}%;background:${col};opacity:.5"></div><div class="achips">${chips}</div></div>
+      <div class="av" style="color:${col}">P${avg.toFixed(1)}</div>`;
+    root.appendChild(row);
+  });
+}
+
+function ranked(){
+  const sorted=[...C].sort((a,b)=>a[2]-b[2]);
+  const best=sorted.slice(0,5), worst=sorted.slice(-5).reverse();
+  const draw=(arr,el)=>{const root=document.getElementById(el);root.innerHTML='';
+    arr.forEach(([code,name,avg],i)=>{const p=fHeat(avg),col=heat(p);
+      const r=document.createElement('div');r.className='rrow';
+      r.innerHTML=`<div class="rc">${code}</div><div class="rtrack"><div class="rfill" style="width:${p}%;background:${col}"></div></div><div class="rv">P${avg.toFixed(1)}</div>`;
+      root.appendChild(r);});};
+  draw(best,'best');draw(worst,'worst');
+}
+
+function renderAll(){tiles();arch();ranked();}
+renderAll();
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  const l=document.documentElement.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=l?'Dark mode':'Light mode';renderAll();
+});
+</script>
+</body>
+</html>
