@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en" class="">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Driver page — heat-map mockups · f1gures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ───────────────────────────────────────────────────────────────
+     f1gures tokens (mirrored from public/css/app.css so this mockup
+     is standalone-viewable). Dark is canonical; html.light overrides.
+     The ONLY new thing here is the --heat-* scale (cold→hot), which
+     in a real PR would become first-class tokens in app.css.
+     ─────────────────────────────────────────────────────────────── */
+  :root {
+    --bg-0:#050505; --bg-1:#0A0A0A; --bg-2:#1C1D22; --bg-3:#252629;
+    --bg-hover:#2D2F36; --bg-elevated:#22232A;
+    --line-1:#2C2E36; --line-2:#383A44; --line-3:#484C56;
+    --fg-1:#F5F5F5; --fg-2:#B8B9BD; --fg-3:#9A9BA1; --fg-4:#636469;
+    --accent:#E8002D; --accent-dim:#B8002A;
+    --pos:#2ECC71; --neg:#FF4444; --warn:#FFB020;
+    --f-display:'Barlow Condensed','Arial Narrow',sans-serif;
+    --f-body:'Barlow',system-ui,sans-serif;
+    --f-mono:'JetBrains Mono',ui-monospace,monospace;
+    /* heat scale — cold (poor) → hot (great) */
+    --heat-track:#2A2B30;
+    --heat-c0:#2F74B5;  /* 0   cold blue   */
+    --heat-c1:#5C97C9;  /* 25  cool        */
+    --heat-c2:#9DA0A6;  /* 50  neutral     */
+    --heat-c3:#E06B4A;  /* 75  warm        */
+    --heat-c4:#E61C34;  /* 100 hot red     */
+    --team:#FF8000;     /* McLaren strip   */
+  }
+  html.light {
+    --bg-0:#EEEEF2; --bg-1:#F5F5F8; --bg-2:#FFFFFF; --bg-3:#EDEDF1;
+    --bg-hover:#E6E6EA; --bg-elevated:#FFFFFF;
+    --line-1:#E0E1E6; --line-2:#CCCDD4; --line-3:#B2B3BC;
+    --fg-1:#0D0E12; --fg-2:#3D3E48; --fg-3:#6A6B75; --fg-4:#9A9BA6;
+    --accent:#E8002D; --pos:#15803D; --neg:#DC2626; --warn:#B45309;
+    --heat-track:#E4E4EA;
+    --heat-c0:#2F74B5; --heat-c1:#6AA6D6; --heat-c2:#AFB2B9;
+    --heat-c3:#E0703F; --heat-c4:#D8112B;
+  }
+
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg-1); color:var(--fg-1);
+    font-family:var(--f-body); -webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;
+  }
+  .num { font-family:var(--f-mono); font-variant-numeric:tabular-nums; }
+  .page { max-width:1100px; margin:0 auto; padding:28px 24px 80px; }
+
+  /* page chrome */
+  .topbar { display:flex; align-items:center; gap:16px; margin-bottom:8px; }
+  .brand { font-family:var(--f-display); font-weight:800; font-size:20px; letter-spacing:.02em; text-transform:uppercase; }
+  .brand b { color:var(--accent); }
+  .topbar .spacer { margin-left:auto; }
+  .tgl {
+    font-family:var(--f-display); font-weight:700; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--fg-2); background:var(--bg-3);
+    border:1px solid var(--line-2); padding:7px 12px; cursor:pointer;
+  }
+  .tgl:hover { border-color:var(--line-3); }
+  .lede { color:var(--fg-3); font-size:14px; max-width:70ch; margin:0 0 26px; }
+
+  /* idea framing */
+  .idea-head { display:flex; align-items:baseline; gap:12px; margin:46px 0 4px; }
+  .idea-num {
+    font-family:var(--f-display); font-weight:800; font-size:13px; letter-spacing:.1em;
+    color:#fff; background:var(--accent); padding:3px 9px; line-height:1; text-transform:uppercase;
+  }
+  .idea-head h2 { font-family:var(--f-display); font-weight:800; font-size:26px; letter-spacing:.01em; text-transform:uppercase; margin:0; }
+  .idea-note { color:var(--fg-3); font-size:13px; margin:6px 0 18px; max-width:74ch; }
+  .idea-note b { color:var(--fg-2); font-weight:600; }
+
+  /* panel + section heads (mirrors .panel / .section-head) */
+  .panel { background:var(--bg-2); border:1px solid var(--line-1); }
+  .eyebrow { font-family:var(--f-display); font-weight:700; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--fg-3); }
+  .grp-head {
+    display:flex; align-items:center; gap:10px; padding:14px 18px 10px;
+    border-bottom:1px solid var(--line-1);
+  }
+  .grp-head .mark { width:4px; height:15px; background:var(--team); }
+  .grp-head h3 { font-family:var(--f-display); font-weight:800; font-size:15px; letter-spacing:.08em; text-transform:uppercase; margin:0; }
+  .grp-head .count { margin-left:auto; font-family:var(--f-mono); font-size:11px; color:var(--fg-4); letter-spacing:.06em; }
+
+  /* ── shared heat legend ─────────────────────────────────────── */
+  .legend { display:flex; align-items:center; gap:8px; }
+  .legend .scale {
+    width:160px; height:7px;
+    background:linear-gradient(90deg,var(--heat-c0),var(--heat-c1),var(--heat-c2),var(--heat-c3),var(--heat-c4));
+  }
+  .legend .lbl { font-family:var(--f-display); font-weight:700; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-4); }
+
+  /* ===========================================================
+     IDEA 1 — Percentile rankings (the Savant adaptation)
+     =========================================================== */
+  .pct-row {
+    display:grid; grid-template-columns:148px 1fr 56px; align-items:center;
+    gap:14px; padding:7px 18px;
+  }
+  .pct-row + .pct-row { border-top:1px solid var(--line-1); }
+  .pct-name { font-size:13px; color:var(--fg-2); font-weight:500; text-align:right; }
+  .pct-track {
+    position:relative; height:22px; background:var(--heat-track);
+  }
+  .pct-fill { position:absolute; top:0; left:0; height:100%; }
+  .pct-dot {
+    position:absolute; top:50%; transform:translate(-50%,-50%);
+    width:24px; height:24px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--f-mono); font-weight:600; font-size:11px; color:#fff;
+    border:2px solid var(--bg-2); z-index:2;
+  }
+  .pct-val { font-family:var(--f-mono); font-weight:600; font-size:13px; color:var(--fg-1); text-align:right; }
+  /* gridline markers behind the bars (poor / avg / great) */
+  .pct-axis { display:grid; grid-template-columns:148px 1fr 56px; gap:14px; padding:4px 18px 8px; }
+  .pct-axis .ticks { position:relative; height:14px; }
+  .pct-axis .tick { position:absolute; top:0; transform:translateX(-50%); font-family:var(--f-display); font-weight:700; font-size:9px; letter-spacing:.1em; color:var(--fg-4); }
+  .pct-axis .tick.poor  { left:8%;  color:var(--heat-c0); }
+  .pct-axis .tick.avg   { left:50%; }
+  .pct-axis .tick.great { left:92%; color:var(--heat-c4); }
+
+  /* ===========================================================
+     IDEA 2 — Career heat-grid (seasons × rounds)
+     =========================================================== */
+  .hm-wrap { padding:18px; overflow-x:auto; }
+  .hm-grid { display:grid; gap:3px; min-width:560px; }
+  .hm-rowlabel { font-family:var(--f-mono); font-size:11px; color:var(--fg-3); display:flex; align-items:center; padding-right:8px; }
+  .hm-cell {
+    aspect-ratio:1; min-width:18px; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--f-mono); font-size:9px; color:rgba(255,255,255,.85);
+  }
+  html.light .hm-cell { color:rgba(0,0,0,.62); }
+  .hm-cell.empty { background:transparent; }
+  .hm-cell.dnf { background:var(--bg-3); color:var(--fg-4); }
+  .hm-cell.dnf::after { content:""; position:absolute; inset:30%; border:1px solid var(--neg); opacity:.7; }
+  .hm-colhead { font-family:var(--f-mono); font-size:9px; color:var(--fg-4); text-align:center; }
+  .hm-legend-row { display:flex; align-items:center; gap:18px; padding:0 18px 16px; flex-wrap:wrap; }
+  .hm-key { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--fg-3); }
+  .hm-key i { width:14px; height:14px; display:inline-block; }
+
+  /* ===========================================================
+     IDEA 3 — Skill heat dials (radial gauges)
+     =========================================================== */
+  .dials { display:grid; grid-template-columns:repeat(5,1fr); gap:0; }
+  .dial { padding:20px 12px 16px; text-align:center; border-right:1px solid var(--line-1); }
+  .dial:last-child { border-right:0; }
+  .dial svg { display:block; margin:0 auto 6px; }
+  .dial .gv { font-family:var(--f-display); font-weight:800; font-size:30px; line-height:1; }
+  .dial .gl { font-family:var(--f-display); font-weight:700; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3); margin-top:8px; }
+  .dial .gctx { font-family:var(--f-mono); font-size:10px; color:var(--fg-4); margin-top:3px; }
+
+  @media (max-width:720px){
+    .pct-row { grid-template-columns:104px 1fr 44px; gap:9px; padding:7px 12px; }
+    .pct-axis { grid-template-columns:104px 1fr 44px; gap:9px; padding:4px 12px 8px; }
+    .pct-name { font-size:12px; }
+    .dials { grid-template-columns:repeat(2,1fr); }
+    .dial:nth-child(2n){ border-right:0; }
+    .dial { border-bottom:1px solid var(--line-1); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <span class="brand">F1<b>GURES</b></span>
+    <span class="eyebrow" style="color:var(--fg-4)">Driver page · heat-map mockups</span>
+    <span class="spacer"></span>
+    <button class="tgl" id="themeBtn">Light mode</button>
+  </div>
+  <p class="lede">
+    Three ways to bring the Baseball-Savant "heat" language onto a driver page.
+    Each ranks <b style="color:var(--fg-1)">Lando Norris</b> against a population and paints the result on a
+    cold&rarr;hot scale. All use existing f1gures tokens (surfaces, type, mono numerics,
+    hard corners, team colour on a strip) plus one new <span class="num">--heat-*</span> scale.
+  </p>
+
+  <!-- ════════════════════════════ IDEA 1 ════════════════════════════ -->
+  <div class="idea-head"><span class="idea-num">Idea 1</span><h2>Percentile Rankings</h2></div>
+  <p class="idea-note">
+    The faithful adaptation. Every metric is plotted on a 0&ndash;100 percentile vs the
+    <b>current grid</b>, fill + marker coloured by heat, raw value on the right.
+    Grouped into skill blocks with a team-colour rule. Best as a headline panel right under the hero.
+  </p>
+  <div class="panel">
+    <div class="grp-head" style="border-bottom:1px solid var(--line-1)">
+      <span class="mark"></span><h3>Percentile Rankings</h3>
+      <span class="count" style="margin-left:auto; display:flex; align-items:center; gap:10px">
+        <span class="legend"><span class="lbl">Poor</span><span class="scale"></span><span class="lbl">Great</span></span>
+      </span>
+    </div>
+    <div class="pct-axis">
+      <div></div>
+      <div class="ticks">
+        <span class="tick poor">▲ Poor</span><span class="tick avg">Avg</span><span class="tick great">Great ▲</span>
+      </div>
+      <div></div>
+    </div>
+    <div id="pctGroups"></div>
+  </div>
+
+  <!-- ════════════════════════════ IDEA 2 ════════════════════════════ -->
+  <div class="idea-head"><span class="idea-num">Idea 2</span><h2>Career Heat-Grid</h2></div>
+  <p class="idea-note">
+    Same heat language, totally different surface. Every race of the driver's career as one cell —
+    rows are seasons, columns are rounds — coloured by <b>finishing position</b> (P1 hot red &rarr; backmarker cold blue,
+    DNF crossed). A whole career's form readable in one glance, like a GitHub contribution graph.
+  </p>
+  <div class="panel">
+    <div class="grp-head"><span class="mark"></span><h3>Form Heat-Grid</h3><span class="count">2019 — 2026 · finishing position</span></div>
+    <div class="hm-wrap"><div class="hm-grid" id="heatGrid"></div></div>
+    <div class="hm-legend-row">
+      <span class="hm-key"><i style="background:var(--heat-c4)"></i> Win / podium</span>
+      <span class="hm-key"><i style="background:var(--heat-c3)"></i> Points</span>
+      <span class="hm-key"><i style="background:var(--heat-c2)"></i> Midfield</span>
+      <span class="hm-key"><i style="background:var(--heat-c0)"></i> Backmarker</span>
+      <span class="hm-key"><i style="background:var(--bg-3);border:1px solid var(--neg)"></i> DNF</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════ IDEA 3 ════════════════════════════ -->
+  <div class="idea-head"><span class="idea-num">Idea 3</span><h2>Skill Heat-Dials</h2></div>
+  <p class="idea-note">
+    The hero-friendly take. A row of radial gauges — one per composite skill — with the arc
+    swept and coloured by heat. Big, dramatic, scannable; pairs with the percentile panel
+    (dials = summary, bars = detail) or stands alone as a compact "scouting" strip.
+  </p>
+  <div class="panel"><div class="dials" id="dials"></div></div>
+
+</div>
+
+<script>
+/* ── heat colour from a 0..100 value ───────────────────────────── */
+function readVars(){
+  const cs = getComputedStyle(document.documentElement);
+  return [0,1,2,3,4].map(i => cs.getPropertyValue('--heat-c'+i).trim());
+}
+function lerp(a,b,t){ return a+(b-a)*t; }
+function hex2rgb(h){ h=h.replace('#',''); return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)); }
+function rgb2css(r){ return `rgb(${r.map(Math.round).join(',')})`; }
+function heat(p){              // p: 0..100
+  const stops = readVars().map(hex2rgb);
+  const x = Math.max(0,Math.min(100,p))/100 * 4;   // 0..4 across 5 stops
+  const i = Math.min(3, Math.floor(x)), t = x - i;
+  return rgb2css(stops[i].map((c,k)=>lerp(c,stops[i+1][k],t)));
+}
+
+/* ── Idea 1 data ───────────────────────────────────────────────── */
+const GROUPS = [
+  ['Qualifying', [
+    ['Pole Rate',        92, '21%'],
+    ['Quali H2H',        86, '+0.07s'],
+    ['Avg Grid',         90, 'P3.4'],
+    ['Q3 Rate',          96, '94%'],
+  ]],
+  ['Race Craft', [
+    ['Win Rate',         84, '15%'],
+    ['Podium Rate',      91, '46%'],
+    ['Points Rate',      97, '90%'],
+    ['Positions Gained', 58, '+0.6'],
+    ['Overtakes / GP',   71, '3.2'],
+  ]],
+  ['Consistency', [
+    ['Finish Rate',      88, '92%'],
+    ['Avg Finish',       93, 'P4.6'],
+    ['Laps Led',         79, '23%'],
+    ['Wet Pace',         37, 'P6 avg'],
+  ]],
+];
+function renderPct(){
+  const root = document.getElementById('pctGroups');
+  root.innerHTML='';
+  GROUPS.forEach(([name,rows],gi)=>{
+    const gh = document.createElement('div');
+    gh.className='grp-head';
+    gh.style.borderTop = gi? '1px solid var(--line-1)':'0';
+    gh.innerHTML = `<span class="mark"></span><h3>${name}</h3><span class="count">${rows.length} metrics</span>`;
+    root.appendChild(gh);
+    rows.forEach(([label,pct,val])=>{
+      const c = heat(pct);
+      const row = document.createElement('div');
+      row.className='pct-row';
+      row.innerHTML = `
+        <div class="pct-name">${label}</div>
+        <div class="pct-track">
+          <div class="pct-fill" style="width:${pct}%;background:${c};opacity:.55"></div>
+          <div class="pct-dot" style="left:${pct}%;background:${c}">${pct}</div>
+        </div>
+        <div class="pct-val">${val}</div>`;
+      root.appendChild(row);
+    });
+  });
+}
+
+/* ── Idea 2 data: seasons × rounds finishing positions ─────────── */
+const SEASONS = [
+  ['2019', [11,'dnf',6,8,7,10,11,9,'dnf',6,8,5,8,'dnf',6,5,8,8,9,11,11,'dnf']],
+  ['2020', [5,3,8,'dnf',5,'dnf',9,5,4,5,4,10,8,9,3,7,6]],
+  ['2021', [4,8,3,5,9,'dnf',7,3,2,5,3,3,7,'dnf',1,10,3,5,8,7,3,6]],
+  ['2022', [15,5,7,'dnf',6,4,7,5,7,9,'dnf',6,3,4,2,5,7,6,7,4,'dnf',5]],
+  ['2023', [17,4,'dnf',7,9,6,4,8,2,2,2,5,6,2,7,2,4,5,4,3,2,8]],
+  ['2024', [2,3,5,5,2,'dnf',16,3,1,2,4,2,3,1,2,2,5,1,4,3,2,1,2,4]],
+  ['2025', [2,1,'dnf',3,2,2,1,4,3,2,1,1,2,2,'dnf',3,1,2,2,1,2,3,1,2]],
+  ['2026', [1,2,1,3,2,1,'dnf',2,1,1]],
+];
+function posHeat(v){
+  if(v==='dnf') return null;
+  // P1 -> 100 (hot), P20 -> 0 (cold). Compress so points (~top10) reads warm.
+  const p = Math.max(0, 100 - (v-1)*5.2);
+  return p;
+}
+function renderGrid(){
+  const maxRounds = Math.max(...SEASONS.map(s=>s[1].length));
+  const grid = document.getElementById('heatGrid');
+  grid.style.gridTemplateColumns = `52px repeat(${maxRounds}, 1fr)`;
+  grid.innerHTML='';
+  // header row
+  grid.appendChild(cell('hm-colhead',''));
+  for(let r=1;r<=maxRounds;r++) grid.appendChild(cell('hm-colhead', r%2? r : ''));
+  // season rows
+  SEASONS.forEach(([yr,res])=>{
+    const lab=document.createElement('div'); lab.className='hm-rowlabel'; lab.textContent=yr; grid.appendChild(lab);
+    for(let r=0;r<maxRounds;r++){
+      const v = res[r];
+      if(v===undefined){ grid.appendChild(cell('hm-cell empty','')); continue; }
+      if(v==='dnf'){ grid.appendChild(cell('hm-cell dnf','')); continue; }
+      const d=document.createElement('div'); d.className='hm-cell';
+      d.style.background=heat(posHeat(v)); d.textContent=v; d.title=`${yr} R${r+1} · P${v}`;
+      grid.appendChild(d);
+    }
+  });
+}
+function cell(cls,txt){ const d=document.createElement('div'); d.className=cls; d.textContent=txt; return d; }
+
+/* ── Idea 3 data: composite skill dials ────────────────────────── */
+const DIALS = [
+  ['Qualifying', 92, '92nd pct'],
+  ['Race Craft', 83, '83rd pct'],
+  ['Consistency',88, '88th pct'],
+  ['Tyre Mgmt',  76, '76th pct'],
+  ['Wet Pace',   41, '41st pct'],
+];
+function renderDials(){
+  const root=document.getElementById('dials'); root.innerHTML='';
+  const R=42, C=50, SW=9, circ=Math.PI*R; // semicircle length
+  DIALS.forEach(([label,val,ctx])=>{
+    const c=heat(val);
+    const off = circ*(1-val/100);
+    const el=document.createElement('div'); el.className='dial';
+    el.innerHTML=`
+      <svg width="104" height="64" viewBox="0 0 100 60">
+        <path d="M8 56 A42 42 0 0 1 92 56" fill="none" stroke="var(--heat-track)" stroke-width="${SW}" stroke-linecap="round"/>
+        <path d="M8 56 A42 42 0 0 1 92 56" fill="none" stroke="${c}" stroke-width="${SW}" stroke-linecap="round"
+              stroke-dasharray="${circ}" stroke-dashoffset="${off}"/>
+      </svg>
+      <div class="gv" style="color:${c}">${val}</div>
+      <div class="gl">${label}</div>
+      <div class="gctx">${ctx}</div>`;
+    root.appendChild(el);
+  });
+}
+
+function renderAll(){ renderPct(); renderGrid(); renderDials(); }
+renderAll();
+
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  document.documentElement.classList.toggle('light');
+  document.getElementById('themeBtn').textContent =
+    document.documentElement.classList.contains('light') ? 'Dark mode' : 'Light mode';
+  renderAll(); // re-read heat vars for the active theme
+});
+</script>
+</body>
+</html>
