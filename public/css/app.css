@@ -2195,6 +2195,10 @@ html.light .circuit-track .circuit-track-light { display: block; }
   padding: 12px 0;
   border-bottom: 1px solid var(--line-1);
 }
+/* Constructors variant: no headshot, no team-code column. */
+.blog-standings--teams .blog-standings-row {
+  grid-template-columns: 26px 4px 1fr auto;
+}
 /* Driver headshot column. Scoped under .blog-article-body + reset so the
    generic article-body img rule doesn't inflate it (same fix as the
    race-result faces). The placeholder keeps the column aligned for drivers
