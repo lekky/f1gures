@@ -1,0 +1,117 @@
+---
+title: "Austria 2026 Preview: Red Bull's Home Race, and a Garden Party They Aren't Hosting"
+description: "Round 08 takes the grid to the Red Bull Ring with the home team fourth and winless. Antonelli leads by 41, Ferrari are surging - and Spielberg's braking zones reward exactly what Red Bull lack."
+category: race-preview
+publishedAt: 2026-06-24
+author: "f1gures"
+heroImage: /images/blog/2026-austria-preview.jpg
+heroImageAlt: "Illustrated track map of the Red Bull Ring, Spielberg"
+---
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import PullQuote from '../../components/blog/PullQuote.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
+import Sessions from '../../components/blog/Sessions.astro';
+import DriverChip from '../../components/blog/DriverChip.astro';
+
+There are 71 laps of the [Red Bull Ring](/circuits/red_bull_ring/) on Sunday,
+and the team whose name is painted on the grandstands will spend most of them
+looking at the wrong end of the timing screen. Seven rounds into 2026, Red
+Bull are fourth in the constructors', winless, and watching <DriverChip ref="max_verstappen" />
+sit seventh in a drivers' table led by a teenager in a Mercedes. The home
+race was supposed to be the highlight of their summer. It now looks more like
+an audit.
+
+Spielberg is a strange little circuit - barely over a minute a lap, ten
+corners, three uphill straights that each end in a heavy braking zone. It
+flatters cars that stop well and put power down out of slow corners, and it
+exposes the ones that don't. On current form, that is not good news for the
+hosts.
+
+## The championship
+
+<DriverChip ref="antonelli" /> arrives in Austria with a 41-point lead and
+five wins from seven. Here is the picture after Round 07 at Barcelona:
+
+<StandingsCard
+  title="Drivers' Championship · After Round 7"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 156 },
+    { driver: 'hamilton',       team: 'FER', value: 115 },
+    { driver: 'russell',        team: 'MER', value: 106 },
+    { driver: 'leclerc',        team: 'FER', value: 75 },
+    { driver: 'norris',         team: 'MCL', value: 73 },
+    { driver: 'piastri',        team: 'MCL', value: 68 },
+    { driver: 'max_verstappen', team: 'RBR', value: 55 },
+  ]}
+/>
+
+<StandingsCard
+  title="Constructors' Championship · After Round 7"
+  kind="constructor"
+  rows={[
+    { name: 'Mercedes', color: '#27F4D2', value: 262 },
+    { name: 'Ferrari',  color: '#E80020', value: 190 },
+    { name: 'McLaren',  color: '#FF8000', value: 141 },
+    { name: 'Red Bull', color: '#3671C6', value: 89 },
+  ]}
+/>
+
+The numbers tell two stories. Mercedes have turned a fast car into a runaway -
+72 points clear of Ferrari - while the team behind them is the one quietly
+building momentum. <DriverChip ref="hamilton" /> won at Barcelona from second
+on the grid, his first victory in red, and has hauled himself up to second in
+the championship. Ferrari leave Spain looking like the only team with the pace
+to ask Mercedes a question over the rest of the year.
+
+## What Spielberg asks of the cars
+
+The Red Bull Ring is a traction-and-braking circuit dressed up as a power
+track. **Braking stability:** turns 1, 3 and 4 are all big stops at the top
+of a climb, and a car that locks or squirms under braking loses the lap there.
+**Traction out of slow corners:** the exits of 3, 4 and 6 feed straight onto
+the next straight, so how cleanly the car deploys matters more than top speed.
+**Kerb tolerance:** the exit kerbs are punishing, and track limits at turns 9
+and 10 have decided results here before.
+
+<PullQuote>“The lap is so short that one tenth is three places. There is nowhere to hide a weak corner.”</PullQuote>
+
+The 2026 rules add a twist. Three DRS zones and the active-aero system make
+this one of the easiest tracks to follow and pass on - good for the racing,
+awkward for anyone hoping to defend track position. Qualifying matters, but
+unlike Imola or Monaco, a fast car starting out of position can still carve
+back through the field. That suits Ferrari, and it suits a Mercedes that has
+qualified on the front row at all but one round.
+
+## The storylines
+
+<Storylines>
+  <Storyline title="A home race with no host" driver="max_verstappen">
+    Red Bull are fourth and winless on the circuit that carries their name.
+    Verstappen has one podium all season and sits seventh; the pressure at
+    Spielberg will be on the team, not the rest of the grid.
+  </Storyline>
+  <Storyline title="Ferrari's surge" driver="hamilton">
+    Barcelona was Hamilton's first win in red and Ferrari's clearest sign of
+    pace. Back-to-back strong weekends would turn a one-off into a title-fight
+    storyline - and Spielberg's braking zones should suit the car.
+  </Storyline>
+  <Storyline title="Can anyone slow Antonelli?" driver="antonelli">
+    Five wins, a 41-point lead, and a second season already being measured
+    against the greats. The only question left in 2026 is whether anyone
+    outside his own garage can take points off him.
+  </Storyline>
+</Storylines>
+
+## Sessions · Track time
+
+<Sessions
+  rows={[
+    { day: 'Fri', name: 'Practice 1', time: '13:30' },
+    { day: 'Fri', name: 'Practice 2', time: '17:00' },
+    { day: 'Sat', name: 'Practice 3', time: '12:30' },
+    { day: 'Sat', name: 'Qualifying', time: '16:00' },
+    { day: 'Sun', name: 'Race', time: '15:00', race: true },
+  ]}
+  note="All times local (CEST, GMT+2). Red Bull Ring, 71 laps of 4.318 km."
+/>

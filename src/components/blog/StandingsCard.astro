@@ -39,16 +39,23 @@ interface Props {
   rows: Row[];
   /** Top-rule colour. Defaults to the leader row's colour. */
   accent?: string;
+  /**
+   * 'driver' (default) renders a headshot + team-code column. 'constructor'
+   * drops both — position · team-colour bar · name · points — for a clean
+   * constructors' card. Constructor rows pass { name, color, value }.
+   */
+  kind?: 'driver' | 'constructor';
 }
 
-const { title, rows, accent } = Astro.props;
+const { title, rows, accent, kind = 'driver' } = Astro.props;
+const isTeams = kind === 'constructor';
 
 const resolved = rows.map((r) => {
-  const d = r.driver ? getDriverEntry(r.driver) : null;
+  const d = !isTeams && r.driver ? getDriverEntry(r.driver) : null;
   return {
     driver: r.driver || null,
-    face: r.driver ? hasDriverFace(r.driver) : false,
-    href: r.driver ? `/drivers/${r.driver}/` : null,
+    face: !isTeams && r.driver ? hasDriverFace(r.driver) : false,
+    href: !isTeams && r.driver ? `/drivers/${r.driver}/` : null,
     name: r.name || (d ? d.surname : r.driver || '—'),
     team: r.team || d?.code || '',
     color: r.color || d?.teamColor || 'var(--accent)',
@@ -58,22 +65,22 @@ const resolved = rows.map((r) => {
 
 const lead = accent || resolved[0]?.color || 'var(--accent)';
 ---
-<aside class="blog-standings panel" style={`--lead: ${lead}`}>
+<aside class={`blog-standings panel${isTeams ? ' blog-standings--teams' : ''}`} style={`--lead: ${lead}`}>
   <div class="blog-standings-eyebrow">{title}</div>
   <ol class="blog-standings-list">
     {resolved.map((r, i) => (
       <li class="blog-standings-row" style={`--bar: ${r.color}`}>
         <span class="blog-standings-pos t-mono">{i + 1}</span>
         <span class="blog-standings-mark" aria-hidden="true"></span>
-        {r.face
+        {!isTeams && (r.face
           ? <img class="blog-standings-face" src={`/images/drivers/${r.driver}.webp`} alt="" width="26" height="26" loading="lazy" />
-          : <span class="blog-standings-face blog-standings-face--ph" aria-hidden="true"></span>}
+          : <span class="blog-standings-face blog-standings-face--ph" aria-hidden="true"></span>)}
         {r.href ? (
           <a class="blog-standings-name" href={r.href}>{r.name}</a>
         ) : (
           <span class="blog-standings-name">{r.name}</span>
         )}
-        <span class="blog-standings-team t-mono">{r.team}</span>
+        {!isTeams && <span class="blog-standings-team t-mono">{r.team}</span>}
         <span class="blog-standings-val t-mono">{r.value}</span>
       </li>
     ))}
