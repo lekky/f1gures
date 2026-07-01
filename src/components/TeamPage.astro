@@ -463,8 +463,12 @@ function hasFace(ref: string): boolean {
     z-index: 0;
     opacity: var(--wash-op);
     background-repeat: no-repeat;
-    background-position: right center;
-    background-size: cover;
+    background-position: center;
+    /* Stretch to fill (not `cover`): the hero strip is far wider than a 4:3
+       flag, and `cover` would crop horizontal-striped flags (NL, DE, AT…) down
+       to a single middle band — e.g. Red Bull's Austrian flag collapsing to
+       its white stripe. A horizontal stretch is invisible on striped flags. */
+    background-size: 100% 100%;
     mix-blend-mode: screen;
     pointer-events: none;
     -webkit-mask: linear-gradient(90deg, transparent 0%, #000 58%);

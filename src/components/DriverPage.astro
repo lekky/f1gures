@@ -605,8 +605,12 @@ function teamLogoPath(ref: string | null): string | null {
     z-index: 1;
     opacity: var(--wash-op);
     background-repeat: no-repeat;
-    background-position: right center;
-    background-size: cover;
+    background-position: center;
+    /* Stretch to fill the wash box (not `cover`): the hero strip is far wider
+       than a 4:3 flag, and `cover` would crop horizontal-striped flags (NL,
+       DE, AT…) down to a single middle band. A horizontal stretch is invisible
+       on striped flags and keeps every band visible. */
+    background-size: 100% 100%;
     /* Dark default: screen keeps the flag airy over a dark card.
        Light theme flips to multiply (see html.light override). */
     mix-blend-mode: screen;
