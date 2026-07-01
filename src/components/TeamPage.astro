@@ -4,7 +4,7 @@
 // seasons + notable drivers, best season, lineage and full season history.
 // No React island, no client JS shipped.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Flag from './Flag.astro';
 import LineageStrip from './LineageStrip.astro';
@@ -94,24 +94,33 @@ const hasCarImage = carImagePath ? existsSync(resolve(process.cwd(), 'public', c
 const logoImagePath = `images/teams/${team.constructorRef}.jpg`;
 const hasLogo = existsSync(resolve(process.cwd(), 'public', logoImagePath));
 
-// Flag wash: the team's licensed-nationality flag, right-pinned behind the
-// hero and dissolving toward the info on load (mirrors the driver-hero
-// treatment). Flag SVG (lipis 4:3) resolved from the constructor's
-// nationality demonym via src/lib/nationality.js, with an existsSync guard.
-// Inline the flag as a data-URI with preserveAspectRatio="none" so it stretches
-// edge-to-edge under `background-size: 100% 100%` instead of letterboxing into a
-// centred strip (the lipis SVGs ship `…meet`). See DriverPage.astro.
+// Tricolore wash (design handoff "Option A"): the team's national colours as
+// three vertical bands, pinned to the right of the hero and dissolving toward
+// the info. A simplified 3-band gradient (not the literal flag), mirroring the
+// driver hero. Unmapped nations render no wash.
+const NATIONAL_COLORS: Record<string, [string, string, string]> = {
+  IT: ['#008C45', '#F4F5F0', '#CD212A'], GB: ['#012169', '#FFFFFF', '#C8102E'],
+  NL: ['#AE1C28', '#FFFFFF', '#21468B'], FR: ['#0055A4', '#FFFFFF', '#EF4135'],
+  ES: ['#AA151B', '#F1BF00', '#AA151B'], DE: ['#111111', '#DD0000', '#FFCE00'],
+  BR: ['#009C3B', '#FFDF00', '#009C3B'], AU: ['#00247D', '#FFFFFF', '#E4002B'],
+  NZ: ['#00247D', '#FFFFFF', '#E4002B'], JP: ['#FFFFFF', '#BC002D', '#FFFFFF'],
+  CA: ['#D52B1E', '#FFFFFF', '#D52B1E'], MC: ['#CE1126', '#FFFFFF', '#CE1126'],
+  TH: ['#A51931', '#FFFFFF', '#2D2A4A'], US: ['#3C3B6E', '#FFFFFF', '#B22234'],
+  AT: ['#ED2939', '#FFFFFF', '#ED2939'], AR: ['#74ACDF', '#FFFFFF', '#74ACDF'],
+  BE: ['#000000', '#FAE042', '#ED2939'], FI: ['#FFFFFF', '#003580', '#FFFFFF'],
+  MX: ['#006847', '#FFFFFF', '#CE1126'], CH: ['#D52B1E', '#FFFFFF', '#D52B1E'],
+  SE: ['#006AA7', '#FECC00', '#006AA7'], DK: ['#C8102E', '#FFFFFF', '#C8102E'],
+  CO: ['#FCD116', '#003893', '#CE1126'], CL: ['#0039A6', '#FFFFFF', '#D52B1E'],
+  RU: ['#FFFFFF', '#0039A6', '#D52B1E'], PL: ['#FFFFFF', '#DC143C', '#FFFFFF'],
+  IE: ['#169B62', '#FFFFFF', '#FF883E'], ZA: ['#007749', '#FFB81C', '#DE3831'],
+  PT: ['#006600', '#FF0000', '#FFD700'], HU: ['#CD2A3E', '#FFFFFF', '#436F4D'],
+};
 const teamCountry = team.nationality ? (NATIONALITY[team.nationality]?.country ?? null) : null;
-const flagWashSrc = teamCountry
-  ? (() => {
-      const abs = resolve(process.cwd(), 'public', `images/flags/${teamCountry.toLowerCase()}.svg`);
-      if (!existsSync(abs)) return null;
-      let svg = readFileSync(abs, 'utf8');
-      svg = /preserveAspectRatio=/.test(svg)
-        ? svg.replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="none"')
-        : svg.replace(/<svg\b/, '<svg preserveAspectRatio="none"');
-      return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-    })()
+const washCols = teamCountry ? NATIONAL_COLORS[teamCountry] : null;
+const flagWashGradient = washCols
+  ? `linear-gradient(90deg, ${washCols
+      .map((c, i) => `${c} ${((i * 100) / washCols.length).toFixed(3)}% ${(((i + 1) * 100) / washCols.length).toFixed(3)}%`)
+      .join(', ')})`
   : null;
 
 const yearsLabel = team.career.firstYear === team.career.lastYear
@@ -177,8 +186,8 @@ function hasFace(ref: string): boolean {
 
   <div class="panel team-hero" style={`--team-color: ${team.color}; border-left: 3px solid ${team.color};`}>
     <span class="team-hero-watermark" aria-hidden="true">{team.short}</span>
-    {flagWashSrc && (
-      <div class="team-hero-flagwash" style={`background-image: url(${flagWashSrc})`} aria-hidden="true"></div>
+    {flagWashGradient && (
+      <div class="team-hero-flagwash" style={`background: ${flagWashGradient}`} aria-hidden="true"></div>
     )}
     <div class="team-hero-grid">
       <div class="team-hero-meta">
@@ -481,43 +490,35 @@ function hasFace(ref: string): boolean {
     pointer-events: none;
     z-index: 0;
   }
-  /* Flag wash — the team's national flag, right-pinned and dissolving toward
-     the info (mirrors the driver hero). --wash-op is themed so the entrance
-     animation's final opacity follows. Sits below the content grid (z-index 1). */
+  /* Reference "Option A" tricolore wash: three national-colour bands pinned to
+     the right 58% of the hero, dissolving toward the info via a left-fading
+     mask, at low opacity. Below the content grid (z-index 1). */
   .team-hero-flagwash {
-    --wash-op: 0.4;
+    --wash-op: 0.16;
     position: absolute;
-    inset: 0;
+    inset: 0 0 0 auto;
+    width: 58%;
     z-index: 0;
     opacity: var(--wash-op);
-    background-repeat: no-repeat;
-    background-position: center;
-    /* Stretch to fill (not `cover`): the hero is far wider than a 4:3 flag, and
-       `cover` would crop horizontal-striped flags (NL, DE, AT…) to one band. */
-    background-size: 100% 100%;
     mix-blend-mode: screen;
     pointer-events: none;
-    /* Edge-emphasis mask with SOLID colour bands at each edge (0-16% and
-       84-100%) fading to a clean centre — colour reads clearly at left + right
-       while the name/titles sit over an untinted middle (matches driver hero). */
-    -webkit-mask: linear-gradient(90deg, #000 0%, #000 16%, transparent 44%, transparent 74%, #000 84%, #000 100%);
-            mask: linear-gradient(90deg, #000 0%, #000 16%, transparent 44%, transparent 74%, #000 84%, #000 100%);
+    -webkit-mask: linear-gradient(90deg, transparent 0%, #000 78%);
+            mask: linear-gradient(90deg, transparent 0%, #000 78%);
   }
-  html.light .team-hero-flagwash { --wash-op: 0.38; mix-blend-mode: multiply; }
-  /* Entrance wipe as a progressive enhancement only — the resting state
-     (above) is visible on its own. A from-invisible animation with `both` fill
-     would trap the wash at its invisible first frame whenever the timeline is
-     frozen (backgrounded tab / embedded preview reporting the page hidden), so
-     the wipe lives in a run-once class toggled by the inline script only when
-     the page is actually visible. See DriverPage.astro for the shared script. */
+  html.light .team-hero-flagwash { --wash-op: 0.16; mix-blend-mode: multiply; }
+  /* Entrance wipe as a progressive enhancement only — the resting state above
+     is visible on its own; a from-invisible `both`-fill animation would trap
+     the wash invisible whenever the timeline is frozen (backgrounded tab /
+     embedded preview reporting the page hidden). Gated behind a run-once
+     `.is-wiping` class from the inline script. See DriverPage.astro. */
   @media (prefers-reduced-motion: no-preference) {
     .team-hero-flagwash.is-wiping {
       animation: teamWashIn 1.1s 0.05s both cubic-bezier(0.18, 0.7, 0.16, 1);
     }
   }
   @keyframes teamWashIn {
-    from { opacity: 0; clip-path: inset(0 0 0 100%); }
-    to   { opacity: var(--wash-op); clip-path: inset(0 0 0 0); }
+    from { opacity: 0; transform: translateX(70px); }
+    to   { opacity: var(--wash-op); transform: none; }
   }
 
   .team-hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }

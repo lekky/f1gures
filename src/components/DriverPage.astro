@@ -107,28 +107,35 @@ if (latestSeason?.year && teamRef) {
   }
 }
 
-// Flag wash: the driver's actual national flag, right-pinned behind the hero
-// info and dissolving toward the name/number on load (decorative, design
-// handoff "Option A"). The flag SVG (lipis 4:3, same set Flag.astro uses) is
-// resolved from the 2-letter country code derived from the driver's
-// nationality demonym (src/lib/nationality.js).
-// The lipis flag SVGs ship `preserveAspectRatio="xMidYMid meet"`, so a plain
-// `background-size: 100% 100%` letterboxes the flag into a centred strip
-// instead of stretching it edge-to-edge. Inline the SVG as a data-URI with
-// `preserveAspectRatio="none"` baked in so it genuinely fills the wash box
-// (green far-left · red far-right for a tricolore, all bands for a horizontal
-// flag) rather than bunching in the centre.
+// Tricolore wash (design handoff "Option A"): the driver's national colours as
+// three equal vertical bands, pinned to the right of the info panel and
+// dissolving toward the name/number on load. This is a simplified 3-band
+// gradient — NOT the literal flag — exactly as the reference specifies. Colours
+// come from the 2-letter country code (src/lib/nationality.js); unmapped
+// nations render no wash (better than a wrong fallback flag).
+const NATIONAL_COLORS: Record<string, [string, string, string]> = {
+  IT: ['#008C45', '#F4F5F0', '#CD212A'], GB: ['#012169', '#FFFFFF', '#C8102E'],
+  NL: ['#AE1C28', '#FFFFFF', '#21468B'], FR: ['#0055A4', '#FFFFFF', '#EF4135'],
+  ES: ['#AA151B', '#F1BF00', '#AA151B'], DE: ['#111111', '#DD0000', '#FFCE00'],
+  BR: ['#009C3B', '#FFDF00', '#009C3B'], AU: ['#00247D', '#FFFFFF', '#E4002B'],
+  NZ: ['#00247D', '#FFFFFF', '#E4002B'], JP: ['#FFFFFF', '#BC002D', '#FFFFFF'],
+  CA: ['#D52B1E', '#FFFFFF', '#D52B1E'], MC: ['#CE1126', '#FFFFFF', '#CE1126'],
+  TH: ['#A51931', '#FFFFFF', '#2D2A4A'], US: ['#3C3B6E', '#FFFFFF', '#B22234'],
+  AT: ['#ED2939', '#FFFFFF', '#ED2939'], AR: ['#74ACDF', '#FFFFFF', '#74ACDF'],
+  BE: ['#000000', '#FAE042', '#ED2939'], FI: ['#FFFFFF', '#003580', '#FFFFFF'],
+  MX: ['#006847', '#FFFFFF', '#CE1126'], CH: ['#D52B1E', '#FFFFFF', '#D52B1E'],
+  SE: ['#006AA7', '#FECC00', '#006AA7'], DK: ['#C8102E', '#FFFFFF', '#C8102E'],
+  CO: ['#FCD116', '#003893', '#CE1126'], CL: ['#0039A6', '#FFFFFF', '#D52B1E'],
+  RU: ['#FFFFFF', '#0039A6', '#D52B1E'], PL: ['#FFFFFF', '#DC143C', '#FFFFFF'],
+  IE: ['#169B62', '#FFFFFF', '#FF883E'], ZA: ['#007749', '#FFB81C', '#DE3831'],
+  PT: ['#006600', '#FF0000', '#FFD700'], HU: ['#CD2A3E', '#FFFFFF', '#436F4D'],
+};
 const countryCode = driver.nationality ? (NATIONALITY[driver.nationality]?.country ?? null) : null;
-const flagWashSrc = countryCode
-  ? (() => {
-      const abs = resolve(process.cwd(), 'public', `images/flags/${countryCode.toLowerCase()}.svg`);
-      if (!existsSync(abs)) return null;
-      let svg = readFileSync(abs, 'utf8');
-      svg = /preserveAspectRatio=/.test(svg)
-        ? svg.replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="none"')
-        : svg.replace(/<svg\b/, '<svg preserveAspectRatio="none"');
-      return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-    })()
+const washCols = countryCode ? NATIONAL_COLORS[countryCode] : null;
+const flagWashGradient = washCols
+  ? `linear-gradient(90deg, ${washCols
+      .map((c, i) => `${c} ${((i * 100) / washCols.length).toFixed(3)}% ${(((i + 1) * 100) / washCols.length).toFixed(3)}%`)
+      .join(', ')})`
   : null;
 
 // Show current-season treatment for drivers who raced this season or last
@@ -245,9 +252,6 @@ function teamLogoPath(ref: string | null): string | null {
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-drivers/">← Standings</a>
 
   <div class="panel driver-hero" style={`--team-color: ${teamColor}; border-left-color: ${teamColor}`}>
-    {flagWashSrc && (
-      <div class="driver-hero-flagwash" style={`background-image: url(${flagWashSrc})`} aria-hidden="true"></div>
-    )}
     <div class="driver-hero-grid">
       <div class="driver-hero-portrait">
         <span class="t-eyebrow driver-hero-portrait-lbl">Driver Portrait</span>
@@ -263,6 +267,9 @@ function teamLogoPath(ref: string | null): string | null {
         )}
       </div>
       <div class="driver-hero-body">
+        {flagWashGradient && (
+          <div class="driver-hero-flagwash" style={`background: ${flagWashGradient}`} aria-hidden="true"></div>
+        )}
         {showSeasonStat && (
           <div class="driver-hero-corner" aria-hidden="true">
             <span class="driver-hero-corner-year">{seasonYear}</span>
@@ -579,7 +586,7 @@ function teamLogoPath(ref: string | null): string | null {
 
 <style>
   /* ── Hero ───────────────────────────────────────────────────── */
-  .driver-hero { position: relative; display: block; padding: 0; margin-bottom: 24px; border-left: 4px solid var(--accent); overflow: hidden; }
+  .driver-hero { display: block; padding: 0; margin-bottom: 24px; border-left: 4px solid var(--accent); overflow: hidden; }
   .driver-hero-grid {
     display: grid;
     grid-template-columns: 280px 1fr;
@@ -633,52 +640,44 @@ function teamLogoPath(ref: string | null): string | null {
      out of the centre, so the name stays readable over a near-clean panel —
      e.g. Italy reads green (left) · clean (centre) · red (right).
      --wash-op is themed so the entrance animation's final opacity follows. */
+  /* Reference "Option A": three national-colour bands pinned to the right 58%
+     of the info panel, dissolving toward the name via a left-fading mask, at
+     low opacity. Sits above the ghost number but below all text (z-index 2). */
   .driver-hero-flagwash {
-    --wash-op: 0.4;
+    --wash-op: 0.16;
     position: absolute;
-    inset: 0;
+    inset: 0 0 0 auto;
+    width: 58%;
     z-index: 1;
     opacity: var(--wash-op);
-    background-repeat: no-repeat;
-    background-position: center;
-    /* Stretch to fill (not `cover`): the hero is far wider than a 4:3 flag, and
-       `cover` would crop horizontal-striped flags (NL, DE, AT…) to one band. */
-    background-size: 100% 100%;
-    /* Dark default: screen keeps the flag airy over a dark card.
-       Light theme flips to multiply (see html.light override). */
+    /* Light: multiply (reference). Dark: screen so the bands read over a dark
+       card rather than disappearing. */
     mix-blend-mode: screen;
     pointer-events: none;
-    /* Edge-emphasis mask with SOLID colour bands at each edge (0-16% and
-       84-100%) that fade toward a clean centre — so the national colour reads
-       clearly at left + right while the name sits over an untinted middle. */
-    -webkit-mask: linear-gradient(90deg, #000 0%, #000 16%, transparent 44%, transparent 74%, #000 84%, #000 100%);
-            mask: linear-gradient(90deg, #000 0%, #000 16%, transparent 44%, transparent 74%, #000 84%, #000 100%);
+    -webkit-mask: linear-gradient(90deg, transparent 0%, #000 78%);
+            mask: linear-gradient(90deg, transparent 0%, #000 78%);
   }
-  html.light .driver-hero-flagwash { --wash-op: 0.38; mix-blend-mode: multiply; }
-  /* Driver photo stays above the wash (z-index 2) so it isn't tinted; the
-     portrait texture + watermark (below) get the colour, matching the mock. */
+  html.light .driver-hero-flagwash { --wash-op: 0.16; mix-blend-mode: multiply; }
   .driver-hero-corner,
   .driver-hero-overline,
   .driver-hero-name,
   .driver-hero-sub,
   .driver-hero-headline { position: relative; z-index: 2; }
-  /* Entrance: a right-to-left wipe, but ONLY as a progressive enhancement and
-     ONLY while the page is actually visible. The wash's resting state (above)
-     is fully visible on its own — we must never depend on this animation to
-     reveal it. An entrance that starts from invisible + `both` fill would get
-     stuck at its invisible first frame whenever the animation timeline is
-     frozen (a backgrounded tab, or an embedded preview panel that reports the
-     page as hidden), hiding the wash entirely. So the clip-path wipe lives in
-     a run-once class toggled by the tiny inline script below, and even if that
-     never runs the wash still shows. */
+  /* Entrance: fade + slide in from the right (reference `washIn`), but ONLY as
+     a progressive enhancement while the page is visible. The resting state
+     above is already visible; a from-invisible `both`-fill animation would get
+     stuck at its invisible first frame whenever the timeline is frozen (a
+     backgrounded tab / embedded preview reporting the page hidden). So it lives
+     in a run-once `.is-wiping` class toggled by the inline script — if that
+     never runs, the wash still shows. */
   @media (prefers-reduced-motion: no-preference) {
     .driver-hero-flagwash.is-wiping {
       animation: driverWashIn 1.1s 0.05s both cubic-bezier(0.18, 0.7, 0.16, 1);
     }
   }
   @keyframes driverWashIn {
-    from { opacity: 0; clip-path: inset(0 0 0 100%); }
-    to   { opacity: var(--wash-op); clip-path: inset(0 0 0 0); }
+    from { opacity: 0; transform: translateX(70px); }
+    to   { opacity: var(--wash-op); transform: none; }
   }
 
   .driver-hero-corner { position: absolute; top: 18px; right: 24px; text-align: right; line-height: 1; }
