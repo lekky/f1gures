@@ -293,6 +293,28 @@ function teamLogoPath(ref: string | null): string | null {
     </div>
   </div>
 
+  {/* Trigger the flag-wash entrance wipe only when the page is actually
+      visible. The wash itself is CSS-visible without this; the script just
+      adds the run-once animation so a frozen/hidden preview never traps it at
+      its invisible first frame. Fires now if visible, else on first reveal. */}
+  <script is:inline>
+    (function () {
+      function wipe() {
+        var els = document.querySelectorAll('.driver-hero-flagwash, .team-hero-flagwash');
+        for (var i = 0; i < els.length; i++) els[i].classList.add('is-wiping');
+      }
+      if (document.visibilityState === 'visible') { wipe(); }
+      else {
+        document.addEventListener('visibilitychange', function onVis() {
+          if (document.visibilityState === 'visible') {
+            wipe();
+            document.removeEventListener('visibilitychange', onVis);
+          }
+        });
+      }
+    })();
+  </script>
+
   <TriviaBoard client:visible />
 
   <div class="section-head section-head-band">
@@ -626,12 +648,20 @@ function teamLogoPath(ref: string | null): string | null {
   .driver-hero-name,
   .driver-hero-sub,
   .driver-hero-headline { position: relative; z-index: 2; }
+  /* Entrance: a right-to-left wipe, but ONLY as a progressive enhancement and
+     ONLY while the page is actually visible. The wash's resting state (above)
+     is fully visible on its own — we must never depend on this animation to
+     reveal it. An entrance that starts from invisible + `both` fill would get
+     stuck at its invisible first frame whenever the animation timeline is
+     frozen (a backgrounded tab, or an embedded preview panel that reports the
+     page as hidden), hiding the wash entirely. So the clip-path wipe lives in
+     a run-once class toggled by the tiny inline script below, and even if that
+     never runs the wash still shows. */
   @media (prefers-reduced-motion: no-preference) {
-    .driver-hero-flagwash { animation: driverWashIn 1.1s 0.15s both cubic-bezier(0.18, 0.7, 0.16, 1); }
+    .driver-hero-flagwash.is-wiping {
+      animation: driverWashIn 1.1s 0.05s both cubic-bezier(0.18, 0.7, 0.16, 1);
+    }
   }
-  /* Wipe the flag in from the right edge, filling leftward (clip-path inset
-     shrinking from the left), plus an opacity fade. Reads as a clear
-     right-to-left fill rather than a subtle slide. */
   @keyframes driverWashIn {
     from { opacity: 0; clip-path: inset(0 0 0 100%); }
     to   { opacity: var(--wash-op); clip-path: inset(0 0 0 0); }
