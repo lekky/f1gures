@@ -51,7 +51,10 @@
 
   /* Semantic */
   --pos: #2ecc71;
-  --neg: #ff4444;
+  /* WCAG: lifted from #ff4444 — as small text on the .pill-dnf tint it was
+     4.12:1 (FAIL). #ff5c5c clears 4.5:1 there and raises .chg.down / DNF rows
+     everywhere. Light mode keeps the darker #dc2626 (already AA on white). */
+  --neg: #ff5c5c;
   --neutral: #75767b;
   --warn: #ffb020;
   --live: #ff1e1e;
@@ -475,7 +478,11 @@ button { font-family: inherit; }
 .champ-leader-blurb { margin: 14px 0 0; padding-left: 12px; border-left: 3px solid var(--tc, var(--accent)); font-size: 13.5px; line-height: 1.55; color: var(--fg-2); max-width: 460px; }
 .champ-figures { display: flex; align-items: flex-end; gap: 22px; margin-top: auto; padding-top: 18px; }
 .champ-pts { display: flex; align-items: baseline; gap: 6px; }
-.champ-pts-v { font-family: var(--f-display); font-weight: 800; font-size: 52px; line-height: 0.8; color: var(--tc, var(--accent)); }
+/* WCAG: team colour as large text FAILs on white for the cyan/green/light-blue
+   teams (mercedes 1.40:1). Mix 50% toward --fg-1 — theme-adaptive (lightens on
+   dark, darkens on light), lifting every team to >=4.5:1 in both themes while
+   keeping the hue. */
+.champ-pts-v { font-family: var(--f-display); font-weight: 800; font-size: 52px; line-height: 0.8; color: color-mix(in srgb, var(--tc, var(--accent)) 50%, var(--fg-1)); }
 .champ-pts-u { font-family: var(--f-display); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
 .champ-stat { display: flex; flex-direction: column; gap: 3px; }
 .champ-stat-v { font-family: var(--f-display); font-weight: 800; font-size: 22px; line-height: 0.9; color: var(--fg-1); }
@@ -525,7 +532,7 @@ button { font-family: inherit; }
 .champ-row-name { font-family: var(--f-display); font-weight: 800; font-size: 25px; line-height: 0.95; text-transform: uppercase; }
 .champ-row-meta { display: flex; align-items: center; gap: 7px; font-family: var(--f-display); font-weight: 700; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
 .champ-row-figs { display: flex; align-items: baseline; gap: 5px; margin-top: 10px; }
-.champ-row-pts { font-family: var(--f-display); font-weight: 800; font-size: 36px; line-height: 0.8; color: var(--tc, var(--accent)); }
+.champ-row-pts { font-family: var(--f-display); font-weight: 800; font-size: 36px; line-height: 0.8; color: color-mix(in srgb, var(--tc, var(--accent)) 50%, var(--fg-1)); }
 .champ-row-pts-u { font-family: var(--f-display); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
 .champ-row-sub { font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); margin-top: 4px; }
 
@@ -813,7 +820,11 @@ html.light .pos-3 { color: #8C5226; }
   height: 2px; background: var(--accent);
 }
 .tab.locked { color: var(--fg-4); cursor: not-allowed; }
-.tab.live { color: var(--live); }
+/* WCAG: raw --live (#ff1e1e) as tab text is 4.37:1 on cards / ~3.9 on white —
+   just under AA. Use a per-theme legible red here without touching --live,
+   which .pill-live (white text on live fill) depends on. */
+.tab.live { color: #ff4d4d; }
+html.light .tab.live { color: #c10021; }
 .tab .tab-status { font-size: 9px; opacity: 0.7; }
 
 /* ============================================================
@@ -2703,12 +2714,15 @@ html.light .circuit-track .circuit-track-light { display: block; }
 }
 .card-accent:hover .card-accent-arrow {
   border-color: var(--card-accent);
-  color: var(--card-accent);
+  color: color-mix(in srgb, var(--card-accent) 50%, var(--fg-1));
 }
 .card-accent-value {
   font-family: var(--f-display);
   font-weight: 800;
-  color: var(--card-accent);
+  /* WCAG: --card-accent is the leader's team colour; as text it FAILs on white
+     for light teams. Mix toward --fg-1 (theme-adaptive) for >=4.5:1. The bar
+     FILL below keeps the pure team colour. */
+  color: color-mix(in srgb, var(--card-accent) 50%, var(--fg-1));
   line-height: 1;
   display: flex;
   align-items: baseline;
@@ -2880,7 +2894,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   font-weight: 600;
   white-space: nowrap;
 }
-.card-bar-lead .card-bar-value { color: var(--card-accent); }
+.card-bar-lead .card-bar-value { color: color-mix(in srgb, var(--card-accent) 50%, var(--fg-1)); }
 .card-bar-unit { color: var(--fg-3); font-weight: 500; }
 .card-bar-sub {
   grid-column: 3 / 4;
