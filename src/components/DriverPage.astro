@@ -221,6 +221,47 @@ const seasonMaxPoints = Math.max(1, ...driver.perSeason.map(s => s.points ?? 0))
 const raceMaxPoints = Math.max(1, ...driver.perRace.map(r => r.points || 0));
 const posClass = (n: number | null) => (n != null && n >= 1 && n <= 3 ? `pos pos-${n}` : 'pos');
 
+// ── Career outcome waffle ────────────────────────────────────────
+// One tile per career race, bucketed by outcome and sorted best→worst so the
+// mosaic reads as a block of wins tapering to the cold corner of retirements.
+// Pure static markup - no client JS. Buckets mirror StatusIcon's status kinds.
+type WaffleKind = 'win' | 'podium' | 'points' | 'finished' | 'mech' | 'crash' | 'dsq';
+const WAFFLE_ORDER: WaffleKind[] = ['win', 'podium', 'points', 'finished', 'mech', 'crash', 'dsq'];
+const WAFFLE_LABEL: Record<WaffleKind, string> = {
+  win: 'Win', podium: 'Podium', points: 'Points', finished: 'Finished',
+  mech: 'DNF · mech', crash: 'DNF · crash', dsq: 'DSQ',
+};
+function waffleKind(r: Props['driver']['perRace'][number]): WaffleKind {
+  const t = (r.status || '').toLowerCase();
+  if (t.includes('disqualif')) return 'dsq';
+  // Classified finish: a real numeric position (Ergast marks retirements with a
+  // letter code in positionText - R, D, E, W, F, N).
+  const classified = r.position != null && (r.positionText == null || /^\d+$/.test(r.positionText));
+  if (classified) {
+    if (r.position === 1) return 'win';
+    if (r.position! <= 3) return 'podium';
+    if ((r.points || 0) > 0) return 'points';
+    return 'finished';
+  }
+  if (/(accident|collision|spun|crash|punctur|debris|contact|damage)/.test(t)) return 'crash';
+  return 'mech';
+}
+const waffleTiles = driver.perRace.map(r => {
+  const kind = waffleKind(r);
+  const finish = r.position != null ? `P${r.position}` : (r.positionText || 'DNF');
+  const title = `${(r.raceName || 'Race').replace(/ grand prix$/i, ' GP')} ${r.year} · ${finish}${r.status ? ` · ${r.status}` : ''}`;
+  return { kind, title };
+});
+const waffleRank: Record<WaffleKind, number> = Object.fromEntries(
+  WAFFLE_ORDER.map((k, i) => [k, i])
+) as Record<WaffleKind, number>;
+const waffleSorted = [...waffleTiles].sort((a, b) => waffleRank[a.kind] - waffleRank[b.kind]);
+const waffleCounts = WAFFLE_ORDER
+  .map(k => ({ kind: k, label: WAFFLE_LABEL[k], count: waffleTiles.filter(t => t.kind === k).length }))
+  .filter(c => c.count > 0);
+const waffleTotal = waffleSorted.length;
+const showWaffle = waffleTotal >= 3;
+
 // Team-logo lookup for the race-by-race team cells. Logo files are keyed by
 // the bundle short id (redbull.jpg, aston.jpg), so map the Ergast/bundle
 // constructorRef → logo basename. Only the ~11 current teams ship a logo.
@@ -466,6 +507,34 @@ function teamLogoPath(ref: string | null): string | null {
       <div class="stat-val">{fmtNum(driver.career.championships)}</div>
     </div>
   </div>
+
+  {showWaffle && (
+    <>
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Career Mosaic</h2><div class="section-rule"></div></div>
+      <div class="panel waffle-panel">
+        <div class="waffle-head">
+          <span class="waffle-head-mark" aria-hidden="true"></span>
+          <span class="waffle-head-title">Every start as a tile</span>
+          <span class="waffle-head-count t-mono">{waffleTotal} tiles</span>
+        </div>
+        <p class="waffle-blurb">One square per race across the whole career, sorted by outcome. The block of wins, the long tail of points, the small cold corner of retirements.</p>
+        <div class="waffle-grid" role="img" aria-label={`${fullName}'s ${waffleTotal} career races by outcome`}>
+          {waffleSorted.map(t => (
+            <span class={`waffle-tile w-${t.kind}`} title={t.title}></span>
+          ))}
+        </div>
+        <div class="waffle-legend">
+          {waffleCounts.map(c => (
+            <span class="waffle-key">
+              <span class={`waffle-swatch w-${c.kind}`} aria-hidden="true"></span>
+              <span class="waffle-key-lbl">{c.label}</span>
+              <span class="waffle-key-count t-mono">{c.count}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </>
+  )}
 
   {driver.perSeason.length > 0 && (
     <>
@@ -807,6 +876,62 @@ function teamLogoPath(ref: string | null): string | null {
   .team-logo-sm { width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: #fff; padding: 1px; flex-shrink: 0; }
   .status-cell { display: inline-flex; align-items: center; gap: 7px; }
 
+  /* ── Career outcome waffle ──────────────────────────────────── */
+  /* Outcome ramp defined as scoped custom properties so both themes stay in
+     parity (no hardcoded hex reaching the DOM) - remapped for light below.
+     Win reuses the F1 accent red; the rest are a legend-driven semantic ramp. */
+  .waffle-panel {
+    --w-win: var(--accent);
+    --w-podium: #f26d3d;
+    --w-points: var(--gold);
+    --w-finished: #63666f;
+    --w-mech: #5d9cd0;
+    --w-crash: #3e6da8;
+    --w-dsq: #a05a2c;
+    padding: 18px 20px 16px;
+  }
+  html.light .waffle-panel {
+    --w-podium: #e2571f;
+    --w-points: #c8891b;
+    --w-finished: #9698a1;
+    --w-mech: #3f83c0;
+    --w-crash: #2f5c96;
+    --w-dsq: #8a4a20;
+  }
+  .waffle-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .waffle-head-mark { width: 4px; height: 15px; background: var(--gold); border-radius: 1px; flex-shrink: 0; }
+  .waffle-head-title { font-family: var(--f-display); font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-1); }
+  .waffle-head-count { margin-left: auto; font-size: 12px; color: var(--fg-4); letter-spacing: 0.06em; }
+  .waffle-blurb { margin: 0 0 14px; color: var(--fg-3); font-size: 13px; line-height: 1.5; max-width: 62ch; text-wrap: pretty; }
+
+  .waffle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, var(--tile, 18px));
+    gap: 4px;
+  }
+  .waffle-tile {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    background: var(--fg-4);
+    transition: transform .1s ease, outline-color .1s ease;
+    outline: 1px solid transparent;
+    outline-offset: 1px;
+  }
+  .waffle-tile:hover { transform: scale(1.28); outline-color: var(--line-3); z-index: 1; }
+  .w-win { background: var(--w-win); }
+  .w-podium { background: var(--w-podium); }
+  .w-points { background: var(--w-points); }
+  .w-finished { background: var(--w-finished); }
+  .w-mech { background: var(--w-mech); }
+  .w-crash { background: var(--w-crash); }
+  .w-dsq { background: var(--w-dsq); }
+
+  .waffle-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 16px; }
+  .waffle-key { display: inline-flex; align-items: center; gap: 7px; }
+  .waffle-swatch { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; }
+  .waffle-key-lbl { font-size: 12px; color: var(--fg-2); }
+  .waffle-key-count { font-size: 12px; color: var(--fg-4); font-variant-numeric: tabular-nums; }
+
   /* Band section heads need breathing room above on these detail pages
      (the global .section-head-band resets margin-top for the home bands). */
   .page .section-head-band { margin-top: 30px; }
@@ -828,5 +953,6 @@ function teamLogoPath(ref: string | null): string | null {
     .driver-hero-watermark { font-size: 130px; bottom: -22px; }
     .driver-career-grid { grid-template-columns: repeat(2, 1fr); }
     .season-strip { grid-template-columns: repeat(2, 1fr); }
+    .waffle-grid { --tile: 15px; gap: 3px; }
   }
 </style>
