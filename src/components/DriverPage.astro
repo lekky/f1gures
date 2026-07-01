@@ -744,6 +744,11 @@ function teamLogoPath(ref: string | null): string | null {
   /* Flags stay vivid; each text run rides on its own solid-dark plate so it's
      legible over any flag in both themes without dimming the whole card. */
   .rr-tile.has-flag { color: #fff; }
+  /* A slight overall dim so the vivid flag sits back a touch behind the stats. */
+  .rr-tile.has-flag::before {
+    content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: rgba(6,8,12,0.24);
+  }
   .rr-tile.has-flag .rr-round,
   .rr-tile.has-flag .rr-race,
   .rr-tile.has-flag .rr-tile-bot,
