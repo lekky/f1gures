@@ -204,6 +204,27 @@ function hasFace(ref: string): boolean {
     </div>
   </div>
 
+  {/* Trigger the flag-wash entrance wipe only when the page is visible, so a
+      frozen/hidden preview never traps it at its invisible first frame. The
+      wash is CSS-visible without this. */}
+  <script is:inline>
+    (function () {
+      function wipe() {
+        var els = document.querySelectorAll('.driver-hero-flagwash, .team-hero-flagwash');
+        for (var i = 0; i < els.length; i++) els[i].classList.add('is-wiping');
+      }
+      if (document.visibilityState === 'visible') { wipe(); }
+      else {
+        document.addEventListener('visibilitychange', function onVis() {
+          if (document.visibilityState === 'visible') {
+            wipe();
+            document.removeEventListener('visibilitychange', onVis);
+          }
+        });
+      }
+    })();
+  </script>
+
   <TriviaBoard client:visible />
 
   {isCurrent && currentDriverPhotos.length > 0 && (
@@ -474,11 +495,17 @@ function hasFace(ref: string): boolean {
             mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
   }
   html.light .team-hero-flagwash { --wash-op: 0.42; mix-blend-mode: multiply; }
+  /* Entrance wipe as a progressive enhancement only — the resting state
+     (above) is visible on its own. A from-invisible animation with `both` fill
+     would trap the wash at its invisible first frame whenever the timeline is
+     frozen (backgrounded tab / embedded preview reporting the page hidden), so
+     the wipe lives in a run-once class toggled by the inline script only when
+     the page is actually visible. See DriverPage.astro for the shared script. */
   @media (prefers-reduced-motion: no-preference) {
-    .team-hero-flagwash { animation: teamWashIn 1.1s 0.15s both cubic-bezier(0.18, 0.7, 0.16, 1); }
+    .team-hero-flagwash.is-wiping {
+      animation: teamWashIn 1.1s 0.05s both cubic-bezier(0.18, 0.7, 0.16, 1);
+    }
   }
-  /* Wipe the flag in from the right edge, filling leftward (clip-path inset
-     shrinking from the left), plus an opacity fade — a clear right-to-left fill. */
   @keyframes teamWashIn {
     from { opacity: 0; clip-path: inset(0 0 0 100%); }
     to   { opacity: var(--wash-op); clip-path: inset(0 0 0 0); }
