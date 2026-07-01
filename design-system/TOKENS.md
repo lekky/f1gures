@@ -70,8 +70,18 @@ Every token below has a paired light-mode value in `html.light { ... }`.
 |----------|---------|----------|---------------------------------------|
 | `--fg-1` | #F5F5F5 | #0D0E12  | Primary — body, titles, numbers       |
 | `--fg-2` | #B8B9BD | #3D3E48  | Secondary — descriptions, prose       |
-| `--fg-3` | #9A9BA1 | #6A6B75  | Tertiary — eyebrows, labels, captions |
-| `--fg-4` | #636469 | #9A9BA6  | Quaternary — row chevron, hint glyphs |
+| `--fg-3` | #9A9BA1 | #646570  | Tertiary — eyebrows, labels, captions |
+| `--fg-4` | #8A8B91 | #7A7B82  | Quaternary — row chevron, hint glyphs |
+
+**Contrast contract (WCAG 2.1 AA — 4.5:1 normal text, 3:1 large).**
+`--fg-1`/`--fg-2` are AAA on every surface. `--fg-3` clears **AA** on
+`--bg-1/2/3` and hover in both themes — safe for small labels. `--fg-4`
+clears AA on cards in dark and ~AA-large in light — keep it for glyphs/hints,
+put real text on `--fg-3`. Use `--accent-text` (not `--accent`) whenever red
+colours *text*: brand `--accent` #E8002D is only 3.58:1 on dark cards, so it's
+for fills/borders/rules, while `--accent-text` (#FF3B57 dark / #E8002D light)
+clears 4.5:1. Team colours as text FAIL on white for the cyan/green/light-blue
+teams — keep team colour on strips/dots/bars, never text.
 
 ### Accent
 
