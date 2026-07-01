@@ -4,7 +4,7 @@
 // seasons + notable drivers, best season, lineage and full season history.
 // No React island, no client JS shipped.
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Flag from './Flag.astro';
 import LineageStrip from './LineageStrip.astro';
@@ -98,11 +98,19 @@ const hasLogo = existsSync(resolve(process.cwd(), 'public', logoImagePath));
 // hero and dissolving toward the info on load (mirrors the driver-hero
 // treatment). Flag SVG (lipis 4:3) resolved from the constructor's
 // nationality demonym via src/lib/nationality.js, with an existsSync guard.
+// Inline the flag as a data-URI with preserveAspectRatio="none" so it stretches
+// edge-to-edge under `background-size: 100% 100%` instead of letterboxing into a
+// centred strip (the lipis SVGs ship `…meet`). See DriverPage.astro.
 const teamCountry = team.nationality ? (NATIONALITY[team.nationality]?.country ?? null) : null;
 const flagWashSrc = teamCountry
   ? (() => {
-      const rel = `images/flags/${teamCountry.toLowerCase()}.svg`;
-      return existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null;
+      const abs = resolve(process.cwd(), 'public', `images/flags/${teamCountry.toLowerCase()}.svg`);
+      if (!existsSync(abs)) return null;
+      let svg = readFileSync(abs, 'utf8');
+      svg = /preserveAspectRatio=/.test(svg)
+        ? svg.replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="none"')
+        : svg.replace(/<svg\b/, '<svg preserveAspectRatio="none"');
+      return `data:image/svg+xml,${encodeURIComponent(svg)}`;
     })()
   : null;
 
@@ -477,7 +485,7 @@ function hasFace(ref: string): boolean {
      the info (mirrors the driver hero). --wash-op is themed so the entrance
      animation's final opacity follows. Sits below the content grid (z-index 1). */
   .team-hero-flagwash {
-    --wash-op: 0.5;
+    --wash-op: 0.4;
     position: absolute;
     inset: 0;
     z-index: 0;
@@ -489,12 +497,13 @@ function hasFace(ref: string): boolean {
     background-size: 100% 100%;
     mix-blend-mode: screen;
     pointer-events: none;
-    /* Edge-emphasis mask: colour on the left + right edges, dissolved out of
-       the centre so the name stays readable (matches the driver hero). */
-    -webkit-mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
-            mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
+    /* Edge-emphasis mask with SOLID colour bands at each edge (0-16% and
+       84-100%) fading to a clean centre — colour reads clearly at left + right
+       while the name/titles sit over an untinted middle (matches driver hero). */
+    -webkit-mask: linear-gradient(90deg, #000 0%, #000 16%, transparent 44%, transparent 74%, #000 84%, #000 100%);
+            mask: linear-gradient(90deg, #000 0%, #000 16%, transparent 44%, transparent 74%, #000 84%, #000 100%);
   }
-  html.light .team-hero-flagwash { --wash-op: 0.42; mix-blend-mode: multiply; }
+  html.light .team-hero-flagwash { --wash-op: 0.38; mix-blend-mode: multiply; }
   /* Entrance wipe as a progressive enhancement only — the resting state
      (above) is visible on its own. A from-invisible animation with `both` fill
      would trap the wash at its invisible first frame whenever the timeline is

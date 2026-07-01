@@ -112,11 +112,22 @@ if (latestSeason?.year && teamRef) {
 // handoff "Option A"). The flag SVG (lipis 4:3, same set Flag.astro uses) is
 // resolved from the 2-letter country code derived from the driver's
 // nationality demonym (src/lib/nationality.js).
+// The lipis flag SVGs ship `preserveAspectRatio="xMidYMid meet"`, so a plain
+// `background-size: 100% 100%` letterboxes the flag into a centred strip
+// instead of stretching it edge-to-edge. Inline the SVG as a data-URI with
+// `preserveAspectRatio="none"` baked in so it genuinely fills the wash box
+// (green far-left · red far-right for a tricolore, all bands for a horizontal
+// flag) rather than bunching in the centre.
 const countryCode = driver.nationality ? (NATIONALITY[driver.nationality]?.country ?? null) : null;
 const flagWashSrc = countryCode
   ? (() => {
-      const rel = `images/flags/${countryCode.toLowerCase()}.svg`;
-      return existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null;
+      const abs = resolve(process.cwd(), 'public', `images/flags/${countryCode.toLowerCase()}.svg`);
+      if (!existsSync(abs)) return null;
+      let svg = readFileSync(abs, 'utf8');
+      svg = /preserveAspectRatio=/.test(svg)
+        ? svg.replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="none"')
+        : svg.replace(/<svg\b/, '<svg preserveAspectRatio="none"');
+      return `data:image/svg+xml,${encodeURIComponent(svg)}`;
     })()
   : null;
 
@@ -623,7 +634,7 @@ function teamLogoPath(ref: string | null): string | null {
      e.g. Italy reads green (left) · clean (centre) · red (right).
      --wash-op is themed so the entrance animation's final opacity follows. */
   .driver-hero-flagwash {
-    --wash-op: 0.5;
+    --wash-op: 0.4;
     position: absolute;
     inset: 0;
     z-index: 1;
@@ -637,10 +648,13 @@ function teamLogoPath(ref: string | null): string | null {
        Light theme flips to multiply (see html.light override). */
     mix-blend-mode: screen;
     pointer-events: none;
-    -webkit-mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
-            mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
+    /* Edge-emphasis mask with SOLID colour bands at each edge (0-16% and
+       84-100%) that fade toward a clean centre — so the national colour reads
+       clearly at left + right while the name sits over an untinted middle. */
+    -webkit-mask: linear-gradient(90deg, #000 0%, #000 16%, transparent 44%, transparent 74%, #000 84%, #000 100%);
+            mask: linear-gradient(90deg, #000 0%, #000 16%, transparent 44%, transparent 74%, #000 84%, #000 100%);
   }
-  html.light .driver-hero-flagwash { --wash-op: 0.42; mix-blend-mode: multiply; }
+  html.light .driver-hero-flagwash { --wash-op: 0.38; mix-blend-mode: multiply; }
   /* Driver photo stays above the wash (z-index 2) so it isn't tinted; the
      portrait texture + watermark (below) get the colour, matching the mock. */
   .driver-hero-corner,
