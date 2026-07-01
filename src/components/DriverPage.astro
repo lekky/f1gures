@@ -154,38 +154,50 @@ const seasonStats = {
   fastestLaps: seasonRacesDesc.filter(r => r.fastestLapRank === 1).length,
 };
 
-// Cumulative-points line chart (FORM). Pure inline SVG, no client JS.
+// Finishing-position line chart (FORM). Y axis is inverted - P1 at the top,
+// worst finish at the bottom - so a rising line means better results. DNFs
+// (no classified position) sit on the bottom baseline as red markers, off the
+// line. Pure inline SVG, no client JS.
 const FORM_W = 460;
 const FORM_H = 210;
 const FORM_PAD = { t: 14, r: 16, b: 26, l: 40 };
 let formPath = '';
-let formArea = '';
-let formPoints: Array<{ x: number; y: number; round: number | null }> = [];
-let formTicks: Array<{ y: number; label: number }> = [];
+let formPoints: Array<{ x: number; y: number; round: number | null; pos: number; podium: boolean }> = [];
+let formDnf: Array<{ x: number; y: number; round: number | null; label: string }> = [];
+let formRoundLabels: Array<{ x: number; round: number | null }> = [];
+let formTicks: Array<{ y: number; label: string }> = [];
+let podiumBand: { y: number; h: number } | null = null;
 if (seasonRacesAsc.length > 0) {
-  let running = 0;
-  const cumulative = seasonRacesAsc.map(r => {
-    running += r.points || 0;
-    return { round: r.round, total: running };
-  });
-  const maxTotal = Math.max(running, 1);
   const innerW = FORM_W - FORM_PAD.l - FORM_PAD.r;
   const innerH = FORM_H - FORM_PAD.t - FORM_PAD.b;
-  const baseY = FORM_PAD.t + innerH;
-  const n = cumulative.length;
-  formPoints = cumulative.map((c, i) => ({
-    x: FORM_PAD.l + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW),
-    y: FORM_PAD.t + innerH - (c.total / maxTotal) * innerH,
-    round: c.round,
-  }));
+  const n = seasonRacesAsc.length;
+  const positions = seasonRacesAsc.map(r => r.position).filter((p): p is number => p != null);
+  const maxPos = Math.max(3, ...positions);
+  // When there are DNFs, reserve an extra row at the bottom ("NC") so a
+  // non-finish sits below the worst classified result, not on top of it.
+  const hasDnf = seasonRacesAsc.some(r => r.position == null);
+  const axisMax = maxPos + (hasDnf ? 1 : 0);
+  const xFor = (i: number) => FORM_PAD.l + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const yFor = (pos: number) => (axisMax <= 1 ? FORM_PAD.t : FORM_PAD.t + ((pos - 1) / (axisMax - 1)) * innerH);
+  seasonRacesAsc.forEach((r, i) => {
+    const x = xFor(i);
+    formRoundLabels.push({ x, round: r.round });
+    if (r.position != null) {
+      formPoints.push({ x, y: yFor(r.position), round: r.round, pos: r.position, podium: r.position <= 3 });
+    } else {
+      formDnf.push({ x, y: yFor(axisMax), round: r.round, label: r.positionText || 'DNF' });
+    }
+  });
   formPath = formPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
-  formArea = `${formPath} L${formPoints[formPoints.length - 1].x.toFixed(1)} ${baseY} L${formPoints[0].x.toFixed(1)} ${baseY} Z`;
-  // Y-axis ticks - 4 evenly-spaced point-value gridlines.
-  const TICKS = 4;
-  for (let i = 0; i <= TICKS; i++) {
-    const frac = i / TICKS;
-    formTicks.push({ y: FORM_PAD.t + innerH - frac * innerH, label: Math.round(frac * maxTotal) });
-  }
+  // Faint podium band across the top (P1-P3).
+  podiumBand = { y: yFor(1), h: yFor(Math.min(3, maxPos)) - yFor(1) };
+  // Y-axis ticks: every position when the field is shallow, else 4 spread out,
+  // plus a bottom "NC" row when any race was a non-finish.
+  const tickPositions = maxPos <= 5
+    ? Array.from({ length: maxPos }, (_, i) => i + 1)
+    : [...new Set([1, Math.round(maxPos / 3), Math.round((2 * maxPos) / 3), maxPos])];
+  formTicks = tickPositions.map(pos => ({ y: yFor(pos), label: `P${pos}` }));
+  if (hasDnf) formTicks.push({ y: yFor(axisMax), label: 'NC' });
 }
 
 // /races/<y>/<r>/ pages exist for Ergast (1950-2024) + 2025 full bundle +
@@ -371,28 +383,33 @@ function teamLogoPath(ref: string | null): string | null {
               const isPodium = r.position != null && r.position < 4;
               const finish = r.position != null ? `P${r.position}` : (r.positionText || '-');
               const Tile = raceHref ? 'a' : 'div';
+              const flagCc = (r.country || '').toLowerCase();
+              const flagBg = flagCc ? `/images/flags/${flagCc}.svg` : null;
               return (
                 <Tile
                   href={raceHref || undefined}
-                  class={`rr-tile ${isPodium ? 'is-podium' : ''} ${isWin ? 'is-win' : ''}`}
-                  style={`--team-color: ${teamColor}`}
+                  class={`rr-tile ${flagBg ? 'has-flag' : ''} ${isPodium ? 'is-podium' : ''} ${isWin ? 'is-win' : ''}`}
+                  style={`--team-color: ${teamColor}${flagBg ? `; background-image: url(${flagBg})` : ''}`}
                   aria-label={r.raceName ? `${r.raceName.replace(/ grand prix$/i, '')}: finished ${finish}` : undefined}
                 >
-                  <div class="rr-tile-top">
-                    <span class="rr-round t-mono">R{String(r.round ?? 0).padStart(2, '0')}</span>
-                    {(r.country || r.flag) && <span class="race-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
-                  </div>
-                  <div class="rr-race">{(r.raceName || '-').replace(/ grand prix$/i, '')}</div>
-                  <div class="rr-tile-bot">
-                    <span class={`rr-pos t-mono ${isWin ? 'is-win-cell' : ''}`}>{finish}</span>
-                    <span class="rr-pts t-mono">{r.points || 0}<span class="rr-pts-u"> pts</span></span>
-                  </div>
-                  {(isPole || isFl) && (
-                    <div class="rr-badges">
-                      {isPole && <span class="pill season-pill">Pole</span>}
-                      {isFl && <span class="pill season-pill">FL</span>}
+                  {isPodium && <span class="rr-sheen" aria-hidden="true"></span>}
+                  <div class="rr-body">
+                    <div class="rr-tile-top">
+                      <span class="rr-round t-mono">R{String(r.round ?? 0).padStart(2, '0')}</span>
+                      {!flagBg && (r.country || r.flag) && <span class="race-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
                     </div>
-                  )}
+                    <div class="rr-race">{(r.raceName || '-').replace(/ grand prix$/i, '')}</div>
+                    <div class="rr-tile-bot">
+                      <span class={`rr-pos t-mono ${isWin ? 'is-win-cell' : ''}`}>{finish}</span>
+                      <span class="rr-pts t-mono">{r.points || 0}<span class="rr-pts-u"> pts</span></span>
+                    </div>
+                    {(isPole || isFl) && (
+                      <div class="rr-badges">
+                        {isPole && <span class="pill season-pill">Pole</span>}
+                        {isFl && <span class="pill season-pill">FL</span>}
+                      </div>
+                    )}
+                  </div>
                 </Tile>
               );
             })}
@@ -401,26 +418,35 @@ function teamLogoPath(ref: string | null): string | null {
         <div>
           <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Form</h2><div class="section-rule"></div></div>
           <div class="panel form-panel">
-            <svg class="form-chart" viewBox={`0 0 ${FORM_W} ${FORM_H}`} width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Cumulative points across ${seasonYear}`}>
-              {/* horizontal gridlines + Y-axis point labels */}
+            <svg class="form-chart" viewBox={`0 0 ${FORM_W} ${FORM_H}`} width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Finishing position each round in ${seasonYear}`}>
+              {/* faint podium band (P1-P3) */}
+              {podiumBand && podiumBand.h > 0 && (
+                <rect x={FORM_PAD.l} y={podiumBand.y} width={FORM_W - FORM_PAD.l - FORM_PAD.r} height={podiumBand.h} fill={teamColor} opacity="0.09" />
+              )}
+              {/* horizontal gridlines + Y-axis position labels */}
               {formTicks.map(t => (
                 <>
-                  <line x1={FORM_PAD.l} y1={t.y} x2={FORM_W - FORM_PAD.r} y2={t.y} stroke="var(--line-1)" stroke-width="1" opacity={t.label === 0 ? 1 : 0.55} />
+                  <line x1={FORM_PAD.l} y1={t.y} x2={FORM_W - FORM_PAD.r} y2={t.y} stroke="var(--line-1)" stroke-width="1" opacity="0.55" />
                   <text x={FORM_PAD.l - 8} y={t.y + 3} text-anchor="end" class="form-axis-lbl">{t.label}</text>
                 </>
               ))}
               {/* Y axis */}
               <line x1={FORM_PAD.l} y1={FORM_PAD.t} x2={FORM_PAD.l} y2={FORM_H - FORM_PAD.b} stroke="var(--line-2)" stroke-width="1" />
-              <path d={formArea} fill={teamColor} opacity="0.08" stroke="none" />
               <path d={formPath} fill="none" stroke={teamColor} stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
-              {formPoints.length > 0 && (
-                <circle cx={formPoints[formPoints.length - 1].x} cy={formPoints[formPoints.length - 1].y} r="4" fill={teamColor} />
-              )}
+              {/* classified finishes: podiums filled, others hollow */}
               {formPoints.map(p => (
+                <circle cx={p.x} cy={p.y} r={p.podium ? 4 : 3} fill={p.podium ? teamColor : 'var(--bg-2)'} stroke={teamColor} stroke-width="2" />
+              ))}
+              {/* DNFs on the baseline */}
+              {formDnf.map(d => (
+                <circle cx={d.x} cy={d.y} r="3" fill="none" stroke="var(--neg)" stroke-width="1.5" />
+              ))}
+              {/* x-axis round labels */}
+              {formRoundLabels.map(p => (
                 <text x={p.x} y={FORM_H - FORM_PAD.b + 14} text-anchor="middle" class="form-axis-lbl">R{String(p.round ?? 0).padStart(2, '0')}</text>
               ))}
             </svg>
-            <div class="t-eyebrow form-caption">Cumulative points · {seasonYear}</div>
+            <div class="t-eyebrow form-caption">Finishing position · {seasonYear}</div>
           </div>
         </div>
       </div>
@@ -690,25 +716,72 @@ function teamLogoPath(ref: string | null): string | null {
   /* Race-by-race ribbon: wrapping tiles that grow sideways, not down. */
   .rr-ribbon { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
   .rr-tile {
-    display: flex; flex-direction: column; gap: 5px;
-    padding: 8px 9px; background: var(--bg-2);
+    position: relative; overflow: hidden; min-height: 84px;
+    background: var(--bg-2); background-size: cover; background-position: center;
     border: 1px solid var(--line-1); border-top: 2px solid var(--line-2);
-    color: inherit; text-decoration: none; transition: border-color .12s;
+    color: inherit; text-decoration: none; transition: border-color .12s, transform .12s;
   }
   a.rr-tile:hover { border-color: var(--line-2); }
   a.rr-tile:hover.is-podium { border-top-color: var(--team-color); }
   .rr-tile.is-podium { border-top-color: var(--team-color); }
   .rr-tile.is-win { border-top-width: 3px; }
+
+  /* Podium celebration: a light sheen sweeps across on a loop (gold for a win). */
+  .rr-sheen {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.4) 50%, transparent 62%);
+    background-size: 250% 100%; background-position: 175% 0;
+  }
+  .rr-tile.is-win .rr-sheen {
+    background-image: linear-gradient(115deg, transparent 36%, rgba(255,209,90,0.55) 50%, transparent 64%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rr-tile.is-podium .rr-sheen { animation: rrSheen 3.4s ease-in-out infinite; }
+    .rr-tile.is-win .rr-pos { animation: rrWinBounce 3.4s ease-in-out infinite; }
+    a.rr-tile.is-podium:hover { transform: translateY(-1px); }
+  }
+  @keyframes rrSheen {
+    0% { background-position: 175% 0; }
+    55%, 100% { background-position: -175% 0; }
+  }
+  @keyframes rrWinBounce {
+    0%, 62%, 100% { transform: translateY(0); }
+    72% { transform: translateY(-3px); }
+    82% { transform: translateY(0); }
+  }
+
+  .rr-body { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 5px; padding: 8px 9px; }
   .rr-tile-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
   .rr-round { font-size: 10px; color: var(--fg-4); letter-spacing: 0.05em; }
   .rr-race { font-size: 11px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .rr-tile-bot { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
-  .rr-pos { font-size: 18px; font-weight: 700; line-height: 1; }
+  .rr-pos { display: inline-block; font-size: 18px; font-weight: 700; line-height: 1; }
   .rr-pos.is-win-cell { color: var(--team-color); }
   .rr-pts { font-size: 10px; color: var(--fg-4); white-space: nowrap; }
   .rr-pts-u { color: var(--fg-4); }
   .rr-badges { display: flex; flex-wrap: wrap; gap: 4px; }
   .rr-badges .season-pill { margin-left: 0; }
+
+  /* Flags stay vivid; each text run rides on its own solid-dark plate so it's
+     legible over any flag in both themes without dimming the whole card. */
+  .rr-tile.has-flag { color: #fff; }
+  /* A slight overall dim so the vivid flag sits back a touch behind the stats. */
+  .rr-tile.has-flag::before {
+    content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: rgba(6,8,12,0.24);
+  }
+  .rr-tile.has-flag .rr-round,
+  .rr-tile.has-flag .rr-race,
+  .rr-tile.has-flag .rr-tile-bot,
+  .rr-tile.has-flag .season-pill { background: rgba(8,10,14,0.78); }
+  .rr-tile.has-flag .rr-round { color: #fff; padding: 2px 5px; }
+  .rr-tile.has-flag .rr-race { align-self: flex-start; max-width: 100%; color: #fff; padding: 2px 6px; }
+  .rr-tile.has-flag .rr-tile-bot { align-self: flex-start; gap: 8px; padding: 2px 7px; }
+  .rr-tile.has-flag .rr-pos { color: #fff; }
+  .rr-tile.has-flag .rr-pos.is-win-cell { color: #ffd75e; }
+  .rr-tile.has-flag .rr-pts,
+  .rr-tile.has-flag .rr-pts-u { color: rgba(255,255,255,0.9); }
+  .rr-tile.has-flag .season-pill { color: #fff; border-color: rgba(255,255,255,0.4); }
 
   .form-panel { padding: 16px 16px 12px; display: flex; flex-direction: column; }
   .form-chart { display: block; width: 100%; height: auto; }
