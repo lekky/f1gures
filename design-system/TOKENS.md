@@ -182,6 +182,14 @@ inline pixel values in places; follow-up PRs are migrating consumers.
   - Nav dropdown — `0 12px 32px rgba(0,0,0,.5)`
   - Search palette — `0 24px 64px rgba(0,0,0,.45)`
   - `.race-card.is-next` — `0 8px 32px rgba(232,0,45,.14)` (accent halo)
+- **Canvas gradient exception** — the flat/border-only rule is for
+  *surfaces* (cards, panels, tables). The page canvas (`.f1-app`) is the
+  one place a gradient/texture is allowed: it carries a carbon-fibre weave
+  (a two-direction `repeating-linear-gradient` — visible white+shadow twill
+  in dark, a fainter dark paper-grain in light). It's safe because all
+  content sits on solid `--bg-2` panels, so the weave never touches text
+  contrast — it only textures the space *around* the panels. Don't extend
+  gradients onto the panels themselves.
 
 ---
 
