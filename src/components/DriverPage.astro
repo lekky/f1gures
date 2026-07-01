@@ -52,6 +52,20 @@ interface Props {
       fastestLapRank: number | null;
       status: string | null;
     }>;
+    teammates?: {
+      quali: { wins: number; losses: number };
+      race: { wins: number; losses: number };
+      byMate: Array<{
+        driverRef: string;
+        name: string;
+        surname: string;
+        firstYear: number;
+        lastYear: number;
+        weekends: number;
+        quali: { wins: number; losses: number };
+        race: { wins: number; losses: number };
+      }>;
+    } | null;
   };
 }
 
@@ -282,6 +296,24 @@ function teamLogoPath(ref: string | null): string | null {
   }
   return logoCache.get(ref)!;
 }
+
+// ── Teammate duels (Career Duel Meter) ───────────────────────────
+// Roll every teammate battle into two verdict bars (qualifying + race), then
+// break it down per rival. Data comes from build-archive's teammate index; the
+// section only shows when there's a decided sample. Cap the per-rival list so a
+// long career (Schumacher: 11 teammates) doesn't run away vertically.
+const DUEL_MATE_CAP = 8;
+const tm = driver.teammates ?? null;
+const duelPct = (w: number, l: number) => {
+  const n = w + l;
+  return n > 0 ? Math.round((w / n) * 100) : 0;
+};
+const qualiTotal = tm ? tm.quali.wins + tm.quali.losses : 0;
+const raceTotal = tm ? tm.race.wins + tm.race.losses : 0;
+const showDuels = !!tm && (qualiTotal + raceTotal) >= 6;
+const duelMates = tm ? tm.byMate.slice(0, DUEL_MATE_CAP) : [];
+const duelMatesRest = tm ? tm.byMate.length - duelMates.length : 0;
+const duelSurname = driver.surname;
 ---
 
 <div class="page">
@@ -508,6 +540,87 @@ function teamLogoPath(ref: string | null): string | null {
       <div class="stat-val">{fmtNum(driver.career.championships)}</div>
     </div>
   </div>
+
+  {showDuels && (
+    <>
+      <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Teammate Duels</h2><div class="section-rule"></div><span class="t-eyebrow section-head-aside">{fullName}</span></div>
+      <div class="panel duel-panel" style={`--team-color: ${teamColor}`}>
+        <div class="duel-head">
+          <span class="duel-head-mark" aria-hidden="true"></span>
+          <span class="duel-head-title">Career vs all teammates</span>
+          <span class="duel-head-sub t-mono">qualifying + race</span>
+        </div>
+
+        {qualiTotal > 0 && (
+          <div class="duel-bar-block">
+            <div class="duel-labels">
+              <span class="duel-name">{duelSurname} <span class="n">{tm!.quali.wins}</span></span>
+              <span class="duel-mode t-mono">Qualifying</span>
+              <span class="duel-them"><span class="n">{tm!.quali.losses}</span> Teammate</span>
+            </div>
+            <div class="duel-bar">
+              <div class="duel-bar-me" style={`width: ${duelPct(tm!.quali.wins, tm!.quali.losses)}%`}>
+                <span class="pct">{duelPct(tm!.quali.wins, tm!.quali.losses)}%</span>
+              </div>
+              <div class="duel-bar-them"><span class="pct">{100 - duelPct(tm!.quali.wins, tm!.quali.losses)}%</span></div>
+            </div>
+            <div class="duel-foot t-mono">{tm!.quali.wins}–{tm!.quali.losses} across {qualiTotal} weekends</div>
+          </div>
+        )}
+
+        {raceTotal > 0 && (
+          <div class="duel-bar-block">
+            <div class="duel-labels">
+              <span class="duel-name">{duelSurname} <span class="n">{tm!.race.wins}</span></span>
+              <span class="duel-mode t-mono">Race</span>
+              <span class="duel-them"><span class="n">{tm!.race.losses}</span> Teammate</span>
+            </div>
+            <div class="duel-bar">
+              <div class="duel-bar-me" style={`width: ${duelPct(tm!.race.wins, tm!.race.losses)}%`}>
+                <span class="pct">{duelPct(tm!.race.wins, tm!.race.losses)}%</span>
+              </div>
+              <div class="duel-bar-them"><span class="pct">{100 - duelPct(tm!.race.wins, tm!.race.losses)}%</span></div>
+            </div>
+            <div class="duel-foot t-mono">{tm!.race.wins}–{tm!.race.losses} across {raceTotal} weekends</div>
+          </div>
+        )}
+
+        <div class="duel-break-lbl t-mono">By teammate</div>
+        {duelMates.map(m => {
+          const qN = m.quali.wins + m.quali.losses;
+          const rN = m.race.wins + m.race.losses;
+          const qWin = m.quali.wins >= m.quali.losses;
+          const rWin = m.race.wins >= m.race.losses;
+          return (
+            <div class="duel-mate">
+              <div class="duel-mate-name">
+                <span class="v">v</span><a href={`/drivers/${m.driverRef}/`} class="inline-link">{m.name}</a>
+                <span class="duel-mate-yrs t-mono">{m.firstYear === m.lastYear ? m.firstYear : `${m.firstYear}–${m.lastYear}`}</span>
+              </div>
+              {qN > 0 && (
+                <div class="duel-row">
+                  <span class="duel-row-tag t-mono">Q</span>
+                  <div class={`duel-mini ${qWin ? '' : 'lose'}`}><div class="duel-mini-fill" style={`width: ${duelPct(m.quali.wins, m.quali.losses)}%`}></div></div>
+                  <span class={`duel-rec t-mono ${qWin ? '' : 'lose'}`}>{qWin ? <><span class="w">{m.quali.wins}</span>–{m.quali.losses}</> : <>{m.quali.wins}–<span class="w">{m.quali.losses}</span></>}</span>
+                </div>
+              )}
+              {rN > 0 && (
+                <div class="duel-row">
+                  <span class="duel-row-tag t-mono">R</span>
+                  <div class={`duel-mini ${rWin ? '' : 'lose'}`}><div class="duel-mini-fill" style={`width: ${duelPct(m.race.wins, m.race.losses)}%`}></div></div>
+                  <span class={`duel-rec t-mono ${rWin ? '' : 'lose'}`}>{rWin ? <><span class="w">{m.race.wins}</span>–{m.race.losses}</> : <>{m.race.wins}–<span class="w">{m.race.losses}</span></>}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {duelMatesRest > 0 && (
+          <div class="duel-more t-mono">+{duelMatesRest} earlier teammate{duelMatesRest > 1 ? 's' : ''}</div>
+        )}
+        <p class="duel-note">Qualifying head-to-head by grid slot; race by classified finish. Only weekends where both cars were classified count.</p>
+      </div>
+    </>
+  )}
 
   {showWaffle && (
     <>
@@ -932,6 +1045,51 @@ function teamLogoPath(ref: string | null): string | null {
   .waffle-swatch { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; }
   .waffle-key-lbl { font-size: 12px; color: var(--fg-2); }
   .waffle-key-count { font-size: 12px; color: var(--fg-4); font-variant-numeric: tabular-nums; }
+
+  /* ── Teammate duels (Career Duel Meter) ─────────────────────────
+     Team colour lands on the "me" bar fill; the teammate side is a neutral
+     slate (--line-3), never a second bright hue. Text on the bright fill uses
+     the constant near-black ink token so it clears contrast on every team
+     colour in both themes; text on the slate uses --fg-1 (flips per theme). */
+  .duel-panel { --duel-them: var(--line-3); padding: 20px 22px 18px; }
+  .duel-head { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--line-1); }
+  .duel-head-mark { width: 4px; height: 15px; background: var(--team-color); flex-shrink: 0; }
+  .duel-head-title { font-family: var(--f-display); font-weight: 800; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-1); }
+  .duel-head-sub { margin-left: auto; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-4); }
+
+  .duel-bar-block { margin-bottom: 20px; }
+  .duel-labels { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .duel-name { font-family: var(--f-display); font-weight: 800; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-2); }
+  /* Team-tinted *text* mixed toward the theme's fg so it clears AA on white
+     (pure team hex as text fails for orange/cyan/green teams) — keeps the hue.
+     Bar fills below stay pure team colour, which is allowed. */
+  .duel-name .n { color: color-mix(in srgb, var(--team-color) 55%, var(--fg-1)); }
+  .duel-mode { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-3); }
+  .duel-them { font-family: var(--f-display); font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-3); }
+  .duel-them .n { color: var(--fg-1); font-weight: 800; }
+  .duel-bar { display: flex; height: 44px; border: 1px solid var(--line-2); overflow: hidden; }
+  .duel-bar-me { background: var(--team-color); display: flex; align-items: center; padding: 0 12px; min-width: 46px; }
+  .duel-bar-me .pct { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-height: 1; color: var(--band-ink); font-variant-numeric: tabular-nums; }
+  .duel-bar-them { background: var(--duel-them); flex: 1; display: flex; align-items: center; justify-content: flex-end; padding: 0 12px; min-width: 46px; }
+  .duel-bar-them .pct { font-family: var(--f-display); font-weight: 800; font-size: 26px; line-height: 1; color: var(--fg-1); font-variant-numeric: tabular-nums; }
+  .duel-foot { font-size: 11px; letter-spacing: 0.04em; color: var(--fg-4); margin-top: 6px; }
+
+  .duel-break-lbl { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); margin: 22px 0 12px; }
+  .duel-mate { margin-bottom: 14px; }
+  .duel-mate:last-of-type { margin-bottom: 0; }
+  .duel-mate-name { font-family: var(--f-display); font-weight: 700; font-size: 14.5px; letter-spacing: 0.02em; margin-bottom: 6px; display: flex; align-items: baseline; gap: 7px; }
+  .duel-mate-name .v { color: var(--fg-4); font-weight: 600; }
+  .duel-mate-yrs { margin-left: auto; font-size: 10.5px; letter-spacing: 0.04em; color: var(--fg-4); }
+  .duel-row { display: grid; grid-template-columns: 14px 1fr 66px; align-items: center; gap: 9px; margin-bottom: 4px; }
+  .duel-row-tag { font-size: 11px; color: var(--fg-4); }
+  .duel-mini { height: 10px; background: var(--bg-3); position: relative; overflow: hidden; border: 1px solid var(--line-1); }
+  .duel-mini-fill { position: absolute; inset: 0 auto 0 0; background: var(--team-color); }
+  .duel-mini.lose .duel-mini-fill { background: var(--duel-them); }
+  .duel-rec { font-size: 12px; color: var(--fg-2); text-align: right; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+  .duel-rec .w { color: color-mix(in srgb, var(--team-color) 55%, var(--fg-1)); font-weight: 600; }
+  .duel-rec.lose .w { color: var(--fg-1); font-weight: 600; }
+  .duel-more { font-size: 11px; letter-spacing: 0.04em; color: var(--fg-4); margin-top: 12px; }
+  .duel-note { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--line-1); color: var(--fg-4); font-size: 12px; line-height: 1.5; max-width: 68ch; text-wrap: pretty; }
 
   /* Band section heads need breathing room above on these detail pages
      (the global .section-head-band resets margin-top for the home bands). */

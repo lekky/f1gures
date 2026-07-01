@@ -199,6 +199,89 @@ function driverFinalPosForYear(driverId, year) {
   return null;
 }
 
+// ─── Teammate head-to-head index ─────────────────────────────────────────
+// The "Career Duel Meter" on driver pages rolls every teammate battle into
+// two verdicts (qualifying + race). We compare a driver against whoever shared
+// their constructor in the same race:
+//   · Qualifying duel — lower grid wins; counted only when BOTH have a real
+//     grid slot (>= 1), so pit-lane/no-time starts (grid 0/null) don't skew it.
+//   · Race duel — lower classified finishing position wins; counted only when
+//     BOTH were classified with a numeric finish. Era-consistent and easy to
+//     caption (a "decided" weekend), at the cost of ignoring DNF-vs-DNF order.
+// The index is keyed `year::round::constructorRef` so the same helper works
+// for Ergast rows (built here) and post-2024 bundle rows (appended later).
+const driverRefById = new Map(drivers.map(d => [d.driverId, d.driverRef]));
+const driverMetaByRef = new Map(
+  drivers.map(d => [d.driverRef, { name: `${d.forename} ${d.surname}`, surname: d.surname }])
+);
+const raceTeamIndex = new Map(); // `${year}::${round}::${constructorRef}` -> [{ driverRef, grid, position }]
+function indexRaceTeamEntry(year, round, constructorRef, driverRef, grid, position) {
+  if (year == null || round == null || !constructorRef || !driverRef) return;
+  const key = `${year}::${round}::${constructorRef}`;
+  let arr = raceTeamIndex.get(key);
+  if (!arr) { arr = []; raceTeamIndex.set(key, arr); }
+  arr.push({ driverRef, grid, position });
+}
+for (const r of results) {
+  const race = racesById.get(r.raceId);
+  if (!race) continue;
+  const constructor = constructorsById.get(r.constructorId);
+  indexRaceTeamEntry(
+    toInt(race.year), toInt(race.round),
+    constructor ? constructor.constructorRef : null,
+    driverRefById.get(r.driverId) || null,
+    toInt(r.grid), toInt(r.position)
+  );
+}
+
+// Roll a driver's per-race rows into teammate head-to-head verdicts. `rows`
+// need year / round / constructorRef / grid / position; each is matched against
+// co-entrants in `raceTeamIndex`. Returns null when no decided duel exists.
+function computeTeammates(rows, ownRef) {
+  const agg = new Map(); // mateRef -> { qW, qL, rW, rL, firstYear, lastYear, weekends }
+  for (const row of rows) {
+    if (row.year == null || row.round == null || !row.constructorRef) continue;
+    const co = raceTeamIndex.get(`${row.year}::${row.round}::${row.constructorRef}`);
+    if (!co) continue;
+    for (const mate of co) {
+      if (!mate.driverRef || mate.driverRef === ownRef) continue;
+      let a = agg.get(mate.driverRef);
+      if (!a) { a = { qW: 0, qL: 0, rW: 0, rL: 0, firstYear: row.year, lastYear: row.year, weekends: 0 }; agg.set(mate.driverRef, a); }
+      a.weekends += 1;
+      if (row.year < a.firstYear) a.firstYear = row.year;
+      if (row.year > a.lastYear) a.lastYear = row.year;
+      const gA = row.grid, gB = mate.grid;
+      if (gA != null && gA >= 1 && gB != null && gB >= 1) { if (gA < gB) a.qW += 1; else if (gA > gB) a.qL += 1; }
+      const pA = row.position, pB = mate.position;
+      if (pA != null && pB != null) { if (pA < pB) a.rW += 1; else if (pA > pB) a.rL += 1; }
+    }
+  }
+  const byMate = [...agg.entries()]
+    .map(([ref, a]) => {
+      const meta = driverMetaByRef.get(ref);
+      return {
+        driverRef: ref,
+        name: meta ? meta.name : ref,
+        surname: meta ? meta.surname : ref,
+        firstYear: a.firstYear,
+        lastYear: a.lastYear,
+        weekends: a.weekends,
+        quali: { wins: a.qW, losses: a.qL },
+        race: { wins: a.rW, losses: a.rL },
+      };
+    })
+    .filter(m => (m.quali.wins + m.quali.losses + m.race.wins + m.race.losses) > 0)
+    .sort((a, b) => (b.lastYear - a.lastYear) || (b.weekends - a.weekends) || a.name.localeCompare(b.name));
+  if (byMate.length === 0) return null;
+  const quali = { wins: 0, losses: 0 };
+  const race = { wins: 0, losses: 0 };
+  for (const m of byMate) {
+    quali.wins += m.quali.wins; quali.losses += m.quali.losses;
+    race.wins += m.race.wins; race.losses += m.race.losses;
+  }
+  return { quali, race, byMate };
+}
+
 if (existsSync(OUT)) rmSync(OUT, { recursive: true, force: true });
 mkdirSync(join(OUT, 'drivers'), { recursive: true });
 
@@ -325,6 +408,7 @@ for (const d of drivers) {
     },
     perSeason,
     perRace: driverResults,
+    teammates: computeTeammates(driverResults, d.driverRef),
   };
 
   writeFileSync(join(OUT, 'drivers', `${d.driverRef}.json`), JSON.stringify(driverDoc));
@@ -1585,6 +1669,16 @@ for (const [year, posMap] of bundleStandings) {
 const driverIndexByRef = new Map();
 for (const entry of index) driverIndexByRef.set(entry.driverRef, entry);
 
+// Extend the teammate index with post-2024 bundle rows so the recompute below
+// captures current-season duels (e.g. Norris vs Piastri in 2025/26). Every
+// bundle participant has a doc in the cache with per-race constructorRef/grid/
+// position, so this covers each race's full field.
+for (const [driverRef, doc] of driverDocCache) {
+  for (const row of doc.perRace) {
+    if (row.year > 2024) indexRaceTeamEntry(row.year, row.round, row.constructorRef, driverRef, row.grid, row.position);
+  }
+}
+
 for (const [driverRef, doc] of driverDocCache) {
   doc.perRace.sort((a, b) => (a.year - b.year) || ((a.round || 0) - (b.round || 0)));
 
@@ -1602,6 +1696,10 @@ for (const [driverRef, doc] of driverDocCache) {
     wins, podiums, poles, fastestLaps,
     championships: doc.career.championships + (bundleChampionships.get(driverRef) || 0),
   };
+
+  // Recompute teammate duels now that bundle races are merged and indexed, so
+  // active drivers' current-season battles are included.
+  doc.teammates = computeTeammates(doc.perRace, driverRef);
 
   // perSeason rebuild: keep Ergast's final-standing position+points for
   // years that already had them; derive new years from perRace sums.
