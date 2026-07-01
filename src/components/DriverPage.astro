@@ -154,38 +154,50 @@ const seasonStats = {
   fastestLaps: seasonRacesDesc.filter(r => r.fastestLapRank === 1).length,
 };
 
-// Cumulative-points line chart (FORM). Pure inline SVG, no client JS.
+// Finishing-position line chart (FORM). Y axis is inverted - P1 at the top,
+// worst finish at the bottom - so a rising line means better results. DNFs
+// (no classified position) sit on the bottom baseline as red markers, off the
+// line. Pure inline SVG, no client JS.
 const FORM_W = 460;
 const FORM_H = 210;
 const FORM_PAD = { t: 14, r: 16, b: 26, l: 40 };
 let formPath = '';
-let formArea = '';
-let formPoints: Array<{ x: number; y: number; round: number | null }> = [];
-let formTicks: Array<{ y: number; label: number }> = [];
+let formPoints: Array<{ x: number; y: number; round: number | null; pos: number; podium: boolean }> = [];
+let formDnf: Array<{ x: number; y: number; round: number | null; label: string }> = [];
+let formRoundLabels: Array<{ x: number; round: number | null }> = [];
+let formTicks: Array<{ y: number; label: string }> = [];
+let podiumBand: { y: number; h: number } | null = null;
 if (seasonRacesAsc.length > 0) {
-  let running = 0;
-  const cumulative = seasonRacesAsc.map(r => {
-    running += r.points || 0;
-    return { round: r.round, total: running };
-  });
-  const maxTotal = Math.max(running, 1);
   const innerW = FORM_W - FORM_PAD.l - FORM_PAD.r;
   const innerH = FORM_H - FORM_PAD.t - FORM_PAD.b;
-  const baseY = FORM_PAD.t + innerH;
-  const n = cumulative.length;
-  formPoints = cumulative.map((c, i) => ({
-    x: FORM_PAD.l + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW),
-    y: FORM_PAD.t + innerH - (c.total / maxTotal) * innerH,
-    round: c.round,
-  }));
+  const n = seasonRacesAsc.length;
+  const positions = seasonRacesAsc.map(r => r.position).filter((p): p is number => p != null);
+  const maxPos = Math.max(3, ...positions);
+  // When there are DNFs, reserve an extra row at the bottom ("NC") so a
+  // non-finish sits below the worst classified result, not on top of it.
+  const hasDnf = seasonRacesAsc.some(r => r.position == null);
+  const axisMax = maxPos + (hasDnf ? 1 : 0);
+  const xFor = (i: number) => FORM_PAD.l + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const yFor = (pos: number) => (axisMax <= 1 ? FORM_PAD.t : FORM_PAD.t + ((pos - 1) / (axisMax - 1)) * innerH);
+  seasonRacesAsc.forEach((r, i) => {
+    const x = xFor(i);
+    formRoundLabels.push({ x, round: r.round });
+    if (r.position != null) {
+      formPoints.push({ x, y: yFor(r.position), round: r.round, pos: r.position, podium: r.position <= 3 });
+    } else {
+      formDnf.push({ x, y: yFor(axisMax), round: r.round, label: r.positionText || 'DNF' });
+    }
+  });
   formPath = formPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
-  formArea = `${formPath} L${formPoints[formPoints.length - 1].x.toFixed(1)} ${baseY} L${formPoints[0].x.toFixed(1)} ${baseY} Z`;
-  // Y-axis ticks - 4 evenly-spaced point-value gridlines.
-  const TICKS = 4;
-  for (let i = 0; i <= TICKS; i++) {
-    const frac = i / TICKS;
-    formTicks.push({ y: FORM_PAD.t + innerH - frac * innerH, label: Math.round(frac * maxTotal) });
-  }
+  // Faint podium band across the top (P1-P3).
+  podiumBand = { y: yFor(1), h: yFor(Math.min(3, maxPos)) - yFor(1) };
+  // Y-axis ticks: every position when the field is shallow, else 4 spread out,
+  // plus a bottom "NC" row when any race was a non-finish.
+  const tickPositions = maxPos <= 5
+    ? Array.from({ length: maxPos }, (_, i) => i + 1)
+    : [...new Set([1, Math.round(maxPos / 3), Math.round((2 * maxPos) / 3), maxPos])];
+  formTicks = tickPositions.map(pos => ({ y: yFor(pos), label: `P${pos}` }));
+  if (hasDnf) formTicks.push({ y: yFor(axisMax), label: 'NC' });
 }
 
 // /races/<y>/<r>/ pages exist for Ergast (1950-2024) + 2025 full bundle +
@@ -406,26 +418,35 @@ function teamLogoPath(ref: string | null): string | null {
         <div>
           <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Form</h2><div class="section-rule"></div></div>
           <div class="panel form-panel">
-            <svg class="form-chart" viewBox={`0 0 ${FORM_W} ${FORM_H}`} width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Cumulative points across ${seasonYear}`}>
-              {/* horizontal gridlines + Y-axis point labels */}
+            <svg class="form-chart" viewBox={`0 0 ${FORM_W} ${FORM_H}`} width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Finishing position each round in ${seasonYear}`}>
+              {/* faint podium band (P1-P3) */}
+              {podiumBand && podiumBand.h > 0 && (
+                <rect x={FORM_PAD.l} y={podiumBand.y} width={FORM_W - FORM_PAD.l - FORM_PAD.r} height={podiumBand.h} fill={teamColor} opacity="0.09" />
+              )}
+              {/* horizontal gridlines + Y-axis position labels */}
               {formTicks.map(t => (
                 <>
-                  <line x1={FORM_PAD.l} y1={t.y} x2={FORM_W - FORM_PAD.r} y2={t.y} stroke="var(--line-1)" stroke-width="1" opacity={t.label === 0 ? 1 : 0.55} />
+                  <line x1={FORM_PAD.l} y1={t.y} x2={FORM_W - FORM_PAD.r} y2={t.y} stroke="var(--line-1)" stroke-width="1" opacity="0.55" />
                   <text x={FORM_PAD.l - 8} y={t.y + 3} text-anchor="end" class="form-axis-lbl">{t.label}</text>
                 </>
               ))}
               {/* Y axis */}
               <line x1={FORM_PAD.l} y1={FORM_PAD.t} x2={FORM_PAD.l} y2={FORM_H - FORM_PAD.b} stroke="var(--line-2)" stroke-width="1" />
-              <path d={formArea} fill={teamColor} opacity="0.08" stroke="none" />
               <path d={formPath} fill="none" stroke={teamColor} stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
-              {formPoints.length > 0 && (
-                <circle cx={formPoints[formPoints.length - 1].x} cy={formPoints[formPoints.length - 1].y} r="4" fill={teamColor} />
-              )}
+              {/* classified finishes: podiums filled, others hollow */}
               {formPoints.map(p => (
+                <circle cx={p.x} cy={p.y} r={p.podium ? 4 : 3} fill={p.podium ? teamColor : 'var(--bg-2)'} stroke={teamColor} stroke-width="2" />
+              ))}
+              {/* DNFs on the baseline */}
+              {formDnf.map(d => (
+                <circle cx={d.x} cy={d.y} r="3" fill="none" stroke="var(--neg)" stroke-width="1.5" />
+              ))}
+              {/* x-axis round labels */}
+              {formRoundLabels.map(p => (
                 <text x={p.x} y={FORM_H - FORM_PAD.b + 14} text-anchor="middle" class="form-axis-lbl">R{String(p.round ?? 0).padStart(2, '0')}</text>
               ))}
             </svg>
-            <div class="t-eyebrow form-caption">Cumulative points · {seasonYear}</div>
+            <div class="t-eyebrow form-caption">Finishing position · {seasonYear}</div>
           </div>
         </div>
       </div>
