@@ -63,6 +63,7 @@ import { NATIONALITY } from '../lib/nationality.js';
 import Flag from './Flag.astro';
 import StatusIcon from './StatusIcon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
+import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 
 const { driver } = Astro.props;
 const fullName = `${driver.forename} ${driver.surname}`;
@@ -203,8 +204,8 @@ if (seasonRacesAsc.length > 0) {
 // /races/<y>/<r>/ pages exist for Ergast (1950-2024) + 2025 full bundle +
 // 2026 completed AND upcoming rounds (via holding pages). build-archive.mjs
 // emits all of these and adds them to _races-index.json. Future years without
-// bundles still fall through to /race.html → /calendar/.
-const ARCHIVE_MAX_YEAR = 2026;
+// bundles still fall through to /race.html → /calendar/. ARCHIVE_MAX_YEAR is
+// generated from the races index by build-archive.mjs (src/data/archiveMeta.js).
 function raceUrl(year: number | null, round: number | null): string | null {
   if (year == null || round == null) return null;
   if (year <= ARCHIVE_MAX_YEAR) return `/races/${year}/${round}/`;
