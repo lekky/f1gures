@@ -615,10 +615,10 @@ function teamLogoPath(ref: string | null): string | null {
        Light theme flips to multiply (see html.light override). */
     mix-blend-mode: screen;
     pointer-events: none;
-    -webkit-mask: linear-gradient(90deg, #000 0%, transparent 44%, transparent 56%, #000 100%);
-            mask: linear-gradient(90deg, #000 0%, transparent 44%, transparent 56%, #000 100%);
+    -webkit-mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
+            mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
   }
-  html.light .driver-hero-flagwash { --wash-op: 0.34; mix-blend-mode: multiply; }
+  html.light .driver-hero-flagwash { --wash-op: 0.42; mix-blend-mode: multiply; }
   /* Driver photo stays above the wash (z-index 2) so it isn't tinted; the
      portrait texture + watermark (below) get the colour, matching the mock. */
   .driver-hero-corner,

@@ -470,10 +470,10 @@ function hasFace(ref: string): boolean {
     pointer-events: none;
     /* Edge-emphasis mask: colour on the left + right edges, dissolved out of
        the centre so the name stays readable (matches the driver hero). */
-    -webkit-mask: linear-gradient(90deg, #000 0%, transparent 44%, transparent 56%, #000 100%);
-            mask: linear-gradient(90deg, #000 0%, transparent 44%, transparent 56%, #000 100%);
+    -webkit-mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
+            mask: linear-gradient(90deg, #000 0%, transparent 40%, transparent 82%, #000 100%);
   }
-  html.light .team-hero-flagwash { --wash-op: 0.34; mix-blend-mode: multiply; }
+  html.light .team-hero-flagwash { --wash-op: 0.42; mix-blend-mode: multiply; }
   @media (prefers-reduced-motion: no-preference) {
     .team-hero-flagwash { animation: teamWashIn 1.1s 0.15s both cubic-bezier(0.18, 0.7, 0.16, 1); }
   }
