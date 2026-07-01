@@ -59,6 +59,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildDriverSummary } from '../lib/buildDriverSummary.js';
 import { getDriverBio } from '../data/driverBios.js';
+import { NATIONALITY } from '../lib/nationality.js';
 import Flag from './Flag.astro';
 import StatusIcon from './StatusIcon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
@@ -105,6 +106,19 @@ if (latestSeason?.year && teamRef) {
     // leave teamColor as accent fallback
   }
 }
+
+// Flag wash: the driver's actual national flag, right-pinned behind the hero
+// info and dissolving toward the name/number on load (decorative, design
+// handoff "Option A"). The flag SVG (lipis 4:3, same set Flag.astro uses) is
+// resolved from the 2-letter country code derived from the driver's
+// nationality demonym (src/lib/nationality.js).
+const countryCode = driver.nationality ? (NATIONALITY[driver.nationality]?.country ?? null) : null;
+const flagWashSrc = countryCode
+  ? (() => {
+      const rel = `images/flags/${countryCode.toLowerCase()}.svg`;
+      return existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null;
+    })()
+  : null;
 
 // Show current-season treatment for drivers who raced this season or last
 // (early-season builds run before everyone has a current-year row); show the
@@ -235,6 +249,9 @@ function teamLogoPath(ref: string | null): string | null {
         )}
       </div>
       <div class="driver-hero-body">
+        {flagWashSrc && (
+          <div class="driver-hero-flagwash" style={`background-image: url(${flagWashSrc})`} aria-hidden="true"></div>
+        )}
         {showSeasonStat && (
           <div class="driver-hero-corner" aria-hidden="true">
             <span class="driver-hero-corner-year">{seasonYear}</span>
@@ -575,7 +592,43 @@ function teamLogoPath(ref: string | null): string | null {
   }
   .driver-hero-photo.silhouette svg { width: 150px; height: 200px; opacity: 0.45; }
 
-  .driver-hero-body { position: relative; padding: 24px 28px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  .driver-hero-body { position: relative; padding: 24px 28px; display: flex; flex-direction: column; justify-content: center; min-width: 0; overflow: hidden; }
+
+  /* Flag wash — the driver's national flag, right-pinned and dissolving
+     toward the name/number. Decorative; readable over both themes.
+     --wash-op is themed so the entrance animation's final opacity follows. */
+  .driver-hero-flagwash {
+    --wash-op: 0.5;
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 64%;
+    z-index: 1;
+    opacity: var(--wash-op);
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: cover;
+    /* Dark default: screen keeps the flag airy over a dark card.
+       Light theme flips to multiply (see html.light override). */
+    mix-blend-mode: screen;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(90deg, transparent 0%, #000 58%);
+            mask: linear-gradient(90deg, transparent 0%, #000 58%);
+  }
+  html.light .driver-hero-flagwash { --wash-op: 0.32; mix-blend-mode: multiply; }
+  /* Content sits above the wash; the corner badge stays absolute. */
+  .driver-hero-corner,
+  .driver-hero-overline,
+  .driver-hero-name,
+  .driver-hero-sub,
+  .driver-hero-headline { position: relative; z-index: 2; }
+  @media (prefers-reduced-motion: no-preference) {
+    .driver-hero-flagwash { animation: driverWashIn 1.1s 0.15s both cubic-bezier(0.18, 0.7, 0.16, 1); }
+  }
+  @keyframes driverWashIn {
+    from { opacity: 0; transform: translateX(70px); }
+    to   { opacity: var(--wash-op); transform: none; }
+  }
+
   .driver-hero-corner { position: absolute; top: 18px; right: 24px; text-align: right; line-height: 1; }
   .driver-hero-corner-year { display: block; font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.18em; color: var(--fg-4); }
   .driver-hero-corner-pos { display: block; font-family: var(--f-display); font-weight: 800; font-size: 52px; color: var(--team-color); opacity: 0.85; }
