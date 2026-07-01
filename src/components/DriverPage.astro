@@ -229,7 +229,7 @@ type WaffleKind = 'win' | 'podium' | 'points' | 'finished' | 'mech' | 'crash' | 
 const WAFFLE_ORDER: WaffleKind[] = ['win', 'podium', 'points', 'finished', 'mech', 'crash', 'dsq'];
 const WAFFLE_LABEL: Record<WaffleKind, string> = {
   win: 'Win', podium: 'Podium', points: 'Points', finished: 'Finished',
-  mech: 'DNF — mech', crash: 'DNF — crash', dsq: 'DSQ',
+  mech: 'DNF · mech', crash: 'DNF · crash', dsq: 'DSQ',
 };
 function waffleKind(r: Props['driver']['perRace'][number]): WaffleKind {
   const t = (r.status || '').toLowerCase();
@@ -517,7 +517,7 @@ function teamLogoPath(ref: string | null): string | null {
           <span class="waffle-head-title">Every start as a tile</span>
           <span class="waffle-head-count t-mono">{waffleTotal} tiles</span>
         </div>
-        <p class="waffle-blurb">One square per race across the whole career, sorted by outcome — the block of wins, the long tail of points, the small cold corner of retirements.</p>
+        <p class="waffle-blurb">One square per race across the whole career, sorted by outcome. The block of wins, the long tail of points, the small cold corner of retirements.</p>
         <div class="waffle-grid" role="img" aria-label={`${fullName}'s ${waffleTotal} career races by outcome`}>
           {waffleSorted.map(t => (
             <span class={`waffle-tile w-${t.kind}`} title={t.title}></span>
