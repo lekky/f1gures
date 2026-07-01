@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { roundPointsMap } from './seasonStats.mjs';
+import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 
 // ─── URL helpers ──────────────────────────────────────────────
 // Listing pages use clean Astro paths. Detail pages (driver/race/circuit/team)
@@ -22,7 +23,7 @@ export function urlFor(target) {
       // (2025 full, 2026 completed AND upcoming rounds via holding pages emitted
       // by build-archive.mjs). All entries land in _races-index.json. Future years
       // without bundles still fall through to /race.html → /calendar/.
-      const ARCHIVE_MAX_YEAR = 2026;
+      // ARCHIVE_MAX_YEAR is generated from the races index by build-archive.mjs.
       const y = target.year ? Number(target.year) : null;
       if (y && target.round && y <= ARCHIVE_MAX_YEAR) {
         return `/races/${target.year}/${target.round}/`;
