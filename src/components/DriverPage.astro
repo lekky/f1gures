@@ -380,7 +380,6 @@ function teamLogoPath(ref: string | null): string | null {
                   style={`--team-color: ${teamColor}${flagBg ? `; background-image: url(${flagBg})` : ''}`}
                   aria-label={r.raceName ? `${r.raceName.replace(/ grand prix$/i, '')}: finished ${finish}` : undefined}
                 >
-                  {flagBg && <span class="rr-scrim" aria-hidden="true"></span>}
                   {isPodium && <span class="rr-sheen" aria-hidden="true"></span>}
                   <div class="rr-body">
                     <div class="rr-tile-top">
@@ -706,11 +705,6 @@ function teamLogoPath(ref: string | null): string | null {
   .rr-tile.is-podium { border-top-color: var(--team-color); }
   .rr-tile.is-win { border-top-width: 3px; }
 
-  /* Full-bleed flag background: a dark scrim keeps text legible over any flag. */
-  .rr-scrim {
-    position: absolute; inset: 0; z-index: 0; pointer-events: none;
-    background: linear-gradient(180deg, rgba(4,6,10,0.82) 0%, rgba(4,6,10,0.68) 45%, rgba(4,6,10,0.9) 100%);
-  }
   /* Podium celebration: a light sheen sweeps across on a loop (gold for a win). */
   .rr-sheen {
     position: absolute; inset: 0; z-index: 1; pointer-events: none;
@@ -747,17 +741,21 @@ function teamLogoPath(ref: string | null): string | null {
   .rr-badges { display: flex; flex-wrap: wrap; gap: 4px; }
   .rr-badges .season-pill { margin-left: 0; }
 
-  /* Over a flag, force light text in BOTH themes + shadow for guaranteed contrast. */
-  .rr-tile.has-flag { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.9); }
-  .rr-tile.has-flag .rr-round { color: rgba(255,255,255,0.92); }
+  /* Flags stay vivid; each text run rides on its own solid-dark plate so it's
+     legible over any flag in both themes without dimming the whole card. */
+  .rr-tile.has-flag { color: #fff; }
+  .rr-tile.has-flag .rr-round,
   .rr-tile.has-flag .rr-race,
+  .rr-tile.has-flag .rr-tile-bot,
+  .rr-tile.has-flag .season-pill { background: rgba(8,10,14,0.78); }
+  .rr-tile.has-flag .rr-round { color: #fff; padding: 2px 5px; }
+  .rr-tile.has-flag .rr-race { align-self: flex-start; max-width: 100%; color: #fff; padding: 2px 6px; }
+  .rr-tile.has-flag .rr-tile-bot { align-self: flex-start; gap: 8px; padding: 2px 7px; }
   .rr-tile.has-flag .rr-pos { color: #fff; }
   .rr-tile.has-flag .rr-pos.is-win-cell { color: #ffd75e; }
   .rr-tile.has-flag .rr-pts,
-  .rr-tile.has-flag .rr-pts-u { color: rgba(255,255,255,0.95); }
-  .rr-tile.has-flag .season-pill {
-    color: #fff; border-color: rgba(255,255,255,0.5); background: rgba(0,0,0,0.32); text-shadow: none;
-  }
+  .rr-tile.has-flag .rr-pts-u { color: rgba(255,255,255,0.9); }
+  .rr-tile.has-flag .season-pill { color: #fff; border-color: rgba(255,255,255,0.4); }
 
   .form-panel { padding: 16px 16px 12px; display: flex; flex-direction: column; }
   .form-chart { display: block; width: 100%; height: auto; }
