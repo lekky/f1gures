@@ -107,35 +107,25 @@ if (latestSeason?.year && teamRef) {
   }
 }
 
-// Tricolore wash (design handoff "Option A"): the driver's national colours as
-// three equal vertical bands, pinned to the right of the info panel and
-// dissolving toward the name/number on load. This is a simplified 3-band
-// gradient — NOT the literal flag — exactly as the reference specifies. Colours
-// come from the 2-letter country code (src/lib/nationality.js); unmapped
-// nations render no wash (better than a wrong fallback flag).
-const NATIONAL_COLORS: Record<string, [string, string, string]> = {
-  IT: ['#008C45', '#F4F5F0', '#CD212A'], GB: ['#012169', '#FFFFFF', '#C8102E'],
-  NL: ['#AE1C28', '#FFFFFF', '#21468B'], FR: ['#0055A4', '#FFFFFF', '#EF4135'],
-  ES: ['#AA151B', '#F1BF00', '#AA151B'], DE: ['#111111', '#DD0000', '#FFCE00'],
-  BR: ['#009C3B', '#FFDF00', '#009C3B'], AU: ['#00247D', '#FFFFFF', '#E4002B'],
-  NZ: ['#00247D', '#FFFFFF', '#E4002B'], JP: ['#FFFFFF', '#BC002D', '#FFFFFF'],
-  CA: ['#D52B1E', '#FFFFFF', '#D52B1E'], MC: ['#CE1126', '#FFFFFF', '#CE1126'],
-  TH: ['#A51931', '#FFFFFF', '#2D2A4A'], US: ['#3C3B6E', '#FFFFFF', '#B22234'],
-  AT: ['#ED2939', '#FFFFFF', '#ED2939'], AR: ['#74ACDF', '#FFFFFF', '#74ACDF'],
-  BE: ['#000000', '#FAE042', '#ED2939'], FI: ['#FFFFFF', '#003580', '#FFFFFF'],
-  MX: ['#006847', '#FFFFFF', '#CE1126'], CH: ['#D52B1E', '#FFFFFF', '#D52B1E'],
-  SE: ['#006AA7', '#FECC00', '#006AA7'], DK: ['#C8102E', '#FFFFFF', '#C8102E'],
-  CO: ['#FCD116', '#003893', '#CE1126'], CL: ['#0039A6', '#FFFFFF', '#D52B1E'],
-  RU: ['#FFFFFF', '#0039A6', '#D52B1E'], PL: ['#FFFFFF', '#DC143C', '#FFFFFF'],
-  IE: ['#169B62', '#FFFFFF', '#FF883E'], ZA: ['#007749', '#FFB81C', '#DE3831'],
-  PT: ['#006600', '#FF0000', '#FFD700'], HU: ['#CD2A3E', '#FFFFFF', '#436F4D'],
-};
+// Flag wash (design handoff "Option A" layout, real flag): the driver's actual
+// national flag, pinned to the right of the info panel and dissolving toward the
+// name via a left-fading mask, at low opacity. Resolved from the 2-letter
+// country code (src/lib/nationality.js) → the lipis SVG set (public/images/
+// flags/), which covers essentially every F1 nationality. Those SVGs ship
+// `preserveAspectRatio="xMidYMid meet"`, so a plain `background-size: 100% 100%`
+// would letterbox the flag into a centred strip — inline it as a data-URI with
+// `preserveAspectRatio="none"` baked in so it fills the wash box.
 const countryCode = driver.nationality ? (NATIONALITY[driver.nationality]?.country ?? null) : null;
-const washCols = countryCode ? NATIONAL_COLORS[countryCode] : null;
-const flagWashGradient = washCols
-  ? `linear-gradient(90deg, ${washCols
-      .map((c, i) => `${c} ${((i * 100) / washCols.length).toFixed(3)}% ${(((i + 1) * 100) / washCols.length).toFixed(3)}%`)
-      .join(', ')})`
+const flagWashSrc = countryCode
+  ? (() => {
+      const abs = resolve(process.cwd(), 'public', `images/flags/${countryCode.toLowerCase()}.svg`);
+      if (!existsSync(abs)) return null;
+      let svg = readFileSync(abs, 'utf8');
+      svg = /preserveAspectRatio=/.test(svg)
+        ? svg.replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="none"')
+        : svg.replace(/<svg\b/, '<svg preserveAspectRatio="none"');
+      return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    })()
   : null;
 
 // Show current-season treatment for drivers who raced this season or last
@@ -267,8 +257,8 @@ function teamLogoPath(ref: string | null): string | null {
         )}
       </div>
       <div class="driver-hero-body">
-        {flagWashGradient && (
-          <div class="driver-hero-flagwash" style={`background: ${flagWashGradient}`} aria-hidden="true"></div>
+        {flagWashSrc && (
+          <div class="driver-hero-flagwash" style={`background-image: url(${flagWashSrc})`} aria-hidden="true"></div>
         )}
         {showSeasonStat && (
           <div class="driver-hero-corner" aria-hidden="true">
@@ -644,20 +634,22 @@ function teamLogoPath(ref: string | null): string | null {
      of the info panel, dissolving toward the name via a left-fading mask, at
      low opacity. Sits above the ghost number but below all text (z-index 2). */
   .driver-hero-flagwash {
-    --wash-op: 0.16;
+    --wash-op: 0.3;
     position: absolute;
     inset: 0 0 0 auto;
     width: 58%;
     z-index: 1;
     opacity: var(--wash-op);
-    /* Light: multiply (reference). Dark: screen so the bands read over a dark
-       card rather than disappearing. */
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+    /* Light: multiply. Dark: screen so the flag reads over a dark card. */
     mix-blend-mode: screen;
     pointer-events: none;
     -webkit-mask: linear-gradient(90deg, transparent 0%, #000 78%);
             mask: linear-gradient(90deg, transparent 0%, #000 78%);
   }
-  html.light .driver-hero-flagwash { --wash-op: 0.16; mix-blend-mode: multiply; }
+  html.light .driver-hero-flagwash { --wash-op: 0.24; mix-blend-mode: multiply; }
   .driver-hero-corner,
   .driver-hero-overline,
   .driver-hero-name,
