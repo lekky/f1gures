@@ -234,6 +234,9 @@ function teamLogoPath(ref: string | null): string | null {
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-drivers/">← Standings</a>
 
   <div class="panel driver-hero" style={`--team-color: ${teamColor}; border-left-color: ${teamColor}`}>
+    {flagWashSrc && (
+      <div class="driver-hero-flagwash" style={`background-image: url(${flagWashSrc})`} aria-hidden="true"></div>
+    )}
     <div class="driver-hero-grid">
       <div class="driver-hero-portrait">
         <span class="t-eyebrow driver-hero-portrait-lbl">Driver Portrait</span>
@@ -249,9 +252,6 @@ function teamLogoPath(ref: string | null): string | null {
         )}
       </div>
       <div class="driver-hero-body">
-        {flagWashSrc && (
-          <div class="driver-hero-flagwash" style={`background-image: url(${flagWashSrc})`} aria-hidden="true"></div>
-        )}
         {showSeasonStat && (
           <div class="driver-hero-corner" aria-hidden="true">
             <span class="driver-hero-corner-year">{seasonYear}</span>
@@ -546,7 +546,7 @@ function teamLogoPath(ref: string | null): string | null {
 
 <style>
   /* ── Hero ───────────────────────────────────────────────────── */
-  .driver-hero { display: block; padding: 0; margin-bottom: 24px; border-left: 4px solid var(--accent); overflow: hidden; }
+  .driver-hero { position: relative; display: block; padding: 0; margin-bottom: 24px; border-left: 4px solid var(--accent); overflow: hidden; }
   .driver-hero-grid {
     display: grid;
     grid-template-columns: 280px 1fr;
@@ -594,32 +594,33 @@ function teamLogoPath(ref: string | null): string | null {
 
   .driver-hero-body { position: relative; padding: 24px 28px; display: flex; flex-direction: column; justify-content: center; min-width: 0; overflow: hidden; }
 
-  /* Flag wash — the driver's national flag, right-pinned and dissolving
-     toward the name/number. Decorative; readable over both themes.
+  /* Flag wash — the driver's national flag stretched across the WHOLE hero,
+     tinting everything (portrait texture + panel) via blend. An edge-emphasis
+     mask pushes the flag's colour to the left and right edges and dissolves it
+     out of the centre, so the name stays readable over a near-clean panel —
+     e.g. Italy reads green (left) · clean (centre) · red (right).
      --wash-op is themed so the entrance animation's final opacity follows. */
   .driver-hero-flagwash {
     --wash-op: 0.5;
     position: absolute;
-    inset: 0 0 0 auto;
-    width: 64%;
+    inset: 0;
     z-index: 1;
     opacity: var(--wash-op);
     background-repeat: no-repeat;
     background-position: center;
-    /* Stretch to fill the wash box (not `cover`): the hero strip is far wider
-       than a 4:3 flag, and `cover` would crop horizontal-striped flags (NL,
-       DE, AT…) down to a single middle band. A horizontal stretch is invisible
-       on striped flags and keeps every band visible. */
+    /* Stretch to fill (not `cover`): the hero is far wider than a 4:3 flag, and
+       `cover` would crop horizontal-striped flags (NL, DE, AT…) to one band. */
     background-size: 100% 100%;
     /* Dark default: screen keeps the flag airy over a dark card.
        Light theme flips to multiply (see html.light override). */
     mix-blend-mode: screen;
     pointer-events: none;
-    -webkit-mask: linear-gradient(90deg, transparent 0%, #000 58%);
-            mask: linear-gradient(90deg, transparent 0%, #000 58%);
+    -webkit-mask: linear-gradient(90deg, #000 0%, transparent 44%, transparent 56%, #000 100%);
+            mask: linear-gradient(90deg, #000 0%, transparent 44%, transparent 56%, #000 100%);
   }
-  html.light .driver-hero-flagwash { --wash-op: 0.32; mix-blend-mode: multiply; }
-  /* Content sits above the wash; the corner badge stays absolute. */
+  html.light .driver-hero-flagwash { --wash-op: 0.34; mix-blend-mode: multiply; }
+  /* Driver photo stays above the wash (z-index 2) so it isn't tinted; the
+     portrait texture + watermark (below) get the colour, matching the mock. */
   .driver-hero-corner,
   .driver-hero-overline,
   .driver-hero-name,
