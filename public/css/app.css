@@ -29,12 +29,20 @@
   --fg-1: #f5f5f5;
   --fg-2: #b8b9bd;
   --fg-3: #9a9ba1;
-  --fg-4: #636469;
+  /* WCAG: lifted from #636469 (2.85:1 on cards, FAIL) to clear AA 4.5:1 on
+     --bg-2/--bg-3 for the small text that uses it (.chg.flat, .tab.locked,
+     silhouette label, .blog-standings-team). */
+  --fg-4: #8a8b91;
 
   /* Accent - F1 red */
   --accent: #E8002D;
   --accent-dim: #b8002a;
   --accent-glow: rgba(232, 0, 45, 0.18);
+  /* Accent for TEXT only. Brand red (#E8002D) is 3.58:1 on cards — fine for
+     fills/borders/rules but FAILs WCAG AA for the small uppercase labels that
+     colour their text with it. This lifted red clears 4.5:1 on dark surfaces;
+     light mode remaps it back to the brand red (already AA on white). */
+  --accent-text: #FF3B57;
 
   /* Medal colours (constant across themes) */
   --gold: #E0A82E;
@@ -103,9 +111,16 @@ html.light {
   --rule: #c3c5cb;
   --fg-1: #0d0e12;
   --fg-2: #3d3e48;
-  --fg-3: #84857f;
-  --fg-4: #ada99e;
+  /* WCAG: darkened from #84857f (3.72:1 on white, FAIL) to clear AA 4.5:1
+     across cards/page/tables/hover — this token drives ~73 eyebrow/label/
+     caption sites, so it was the single biggest light-mode failure. */
+  --fg-3: #646570;
+  /* WCAG: darkened from #ada99e (2.35:1, FAIL). Reaches ~4.2:1 (AA-large);
+     real text should sit on --fg-3, this stays for glyphs/hints. */
+  --fg-4: #7a7b82;
   --accent-glow: rgba(232, 0, 45, 0.10);
+  /* Brand red is already 4.70:1 on white — AA for text. */
+  --accent-text: #E8002D;
   --pos: #15803d;
   --neg: #dc2626;
   --warn: #b45309;
@@ -402,7 +417,7 @@ button { font-family: inherit; }
 .tkitem .tk-strip { width: 16px; height: 3px; }
 .tkitem .tk-wl { font-family: var(--f-display); font-weight: 600; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--band-ink-fg-dim); }
 .tkitem .tk-wn { font-family: var(--f-display); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--band-ink-fg); }
-.tkitem .tk-spr { font-family: var(--f-mono); font-size: 9px; color: var(--accent); border: 1px solid var(--accent); padding: 1px 4px; }
+.tkitem .tk-spr { font-family: var(--f-mono); font-size: 9px; color: var(--accent-text); border: 1px solid var(--accent); padding: 1px 4px; }
 @media (prefers-reduced-motion: reduce) {
   .ticker .tktrack { animation: none; }
   .ticker .tkmask { overflow-x: auto; }
@@ -633,7 +648,7 @@ button { font-family: inherit; }
 }
 .tbl thead th.sortable { cursor: pointer; }
 .tbl thead th.sortable:hover { color: var(--fg-1); }
-.tbl thead th .sort-ind { color: var(--accent); margin-left: 4px; font-size: 9px; }
+.tbl thead th .sort-ind { color: var(--accent-text); margin-left: 4px; font-size: 9px; }
 .tbl thead th.right { text-align: right; }
 .tbl thead th.center { text-align: center; }
 
@@ -731,6 +746,13 @@ button { font-family: inherit; }
 .pos-1 { color: #FFD700; }
 .pos-2 { color: #C0C0C0; }
 .pos-3 { color: #CD7F32; }
+/* WCAG: the bright dark-mode medal hexes fail on white (gold 2.14:1,
+   silver 2.60:1, bronze 3.34:1). Darkened medal tones for light mode clear
+   AA — the .pos cell is 800-weight condensed so these read as podium colour
+   without the illegibility. */
+html.light .pos-1 { color: #A67C00; }
+html.light .pos-2 { color: #6E7178; }
+html.light .pos-3 { color: #8C5226; }
 
 /* Change indicator */
 .chg {
@@ -755,7 +777,7 @@ button { font-family: inherit; }
 .pill-dnf { color: var(--neg); border-color: rgba(255,68,68,0.3); background: rgba(255,68,68,0.08); }
 .pill-dsq { color: var(--warn); border-color: rgba(255,176,32,0.3); background: rgba(255,176,32,0.08); }
 .pill-completed { color: var(--fg-3); }
-.pill-next { color: var(--accent); border-color: var(--accent); background: rgba(232,0,45,0.08); }
+.pill-next { color: var(--accent-text); border-color: var(--accent); background: rgba(232,0,45,0.08); }
 .pill-upcoming { color: var(--fg-3); }
 .pill-sprint {
   color: #fff; background: linear-gradient(90deg, var(--accent) 0%, #FF4500 100%);
@@ -861,7 +883,7 @@ button { font-family: inherit; }
 .callout-lbl {
   font-family: var(--f-display); font-weight: 600;
   font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 4px;
+  color: var(--accent-text); margin-bottom: 4px;
 }
 .callout-driver { font-family: var(--f-display); font-weight: 700; font-size: 18px; }
 .callout-time { font-family: var(--f-mono); font-size: 14px; color: var(--fg-2); margin-top: 2px; }
@@ -1240,7 +1262,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .tbl.tbl-static tbody tr.clickable td:last-child::after { content: none; }
 
 .tbl .is-champ-cell,
-.tbl .is-win-cell { color: var(--accent); font-weight: 700; }
+.tbl .is-win-cell { color: var(--accent-text); font-weight: 700; }
 
 /* Mobile: soften the .tbl default 12 px cell padding for static tables;
    detail pages carry dense per-season / per-race data and the global
