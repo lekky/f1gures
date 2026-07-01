@@ -458,23 +458,22 @@ function hasFace(ref: string): boolean {
   .team-hero-flagwash {
     --wash-op: 0.5;
     position: absolute;
-    inset: 0 0 0 auto;
-    width: 60%;
+    inset: 0;
     z-index: 0;
     opacity: var(--wash-op);
     background-repeat: no-repeat;
     background-position: center;
-    /* Stretch to fill (not `cover`): the hero strip is far wider than a 4:3
-       flag, and `cover` would crop horizontal-striped flags (NL, DE, AT…) down
-       to a single middle band — e.g. Red Bull's Austrian flag collapsing to
-       its white stripe. A horizontal stretch is invisible on striped flags. */
+    /* Stretch to fill (not `cover`): the hero is far wider than a 4:3 flag, and
+       `cover` would crop horizontal-striped flags (NL, DE, AT…) to one band. */
     background-size: 100% 100%;
     mix-blend-mode: screen;
     pointer-events: none;
-    -webkit-mask: linear-gradient(90deg, transparent 0%, #000 58%);
-            mask: linear-gradient(90deg, transparent 0%, #000 58%);
+    /* Edge-emphasis mask: colour on the left + right edges, dissolved out of
+       the centre so the name stays readable (matches the driver hero). */
+    -webkit-mask: linear-gradient(90deg, #000 0%, transparent 44%, transparent 56%, #000 100%);
+            mask: linear-gradient(90deg, #000 0%, transparent 44%, transparent 56%, #000 100%);
   }
-  html.light .team-hero-flagwash { --wash-op: 0.32; mix-blend-mode: multiply; }
+  html.light .team-hero-flagwash { --wash-op: 0.34; mix-blend-mode: multiply; }
   @media (prefers-reduced-motion: no-preference) {
     .team-hero-flagwash { animation: teamWashIn 1.1s 0.15s both cubic-bezier(0.18, 0.7, 0.16, 1); }
   }
