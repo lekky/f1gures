@@ -113,7 +113,10 @@ html.light {
   --shadow-card-hover: 0 2px 6px rgba(12, 16, 24, 0.10), 0 12px 30px rgba(12, 16, 24, 0.12);
 }
 html.light .f1-app {
-  background: var(--bg-1);
+  background-color: var(--bg-1);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(13,14,18,.028) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(13,14,18,.028) 0 1px, transparent 1px 4px);
 }
 html.light .nav {
   background: rgba(232, 234, 238, 0.92);
@@ -179,12 +182,15 @@ html, body {
 
 button { font-family: inherit; }
 
-/* Carbon fibre undertone via subtle SVG noise */
+/* Carbon fibre weave on the page canvas. Content sits on solid --bg-2
+   panels, so this never touches text contrast — it only textures the
+   space around the panels. Light mode gets a fainter paper-grain twin
+   (see html.light .f1-app above). */
 .f1-app {
-  background:
-    linear-gradient(180deg, #060709 0%, #060709 100%),
-    repeating-linear-gradient(45deg, rgba(255,255,255,.008) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(-45deg, rgba(255,255,255,.008) 0 1px, transparent 1px 3px);
+  background-color: #070709;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.4) 0 1px, transparent 1px 5px);
   min-height: 100%;
   color: var(--fg-1);
 }
