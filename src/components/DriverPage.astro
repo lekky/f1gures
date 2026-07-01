@@ -199,14 +199,6 @@ function raceUrl(year: number | null, round: number | null): string | null {
   return `/race.html?round=${round}&year=${year}`;
 }
 
-// Two-letter race code for the RACE BY RACE table (country prefix on the
-// race name, e.g. "Miami Grand Prix" → MI). Falls back to first two letters.
-function raceTag(name: string | null): string {
-  if (!name) return '--';
-  const cleaned = name.replace(/grand prix|gp/gi, '').trim();
-  return cleaned.slice(0, 2).toUpperCase();
-}
-
 // Show races newest-first
 const racesDesc = [...driver.perRace].sort((a, b) =>
   (b.year - a.year) || ((b.round ?? 0) - (a.round ?? 0))
@@ -370,52 +362,40 @@ function teamLogoPath(ref: string | null): string | null {
       <div class="season-detail-grid">
         <div>
           <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Race by Race</h2><div class="section-rule"></div></div>
-          <div class="panel" style="padding: 0; overflow-x: auto;">
-            <table class="tbl tbl-static">
-              <thead>
-                <tr>
-                  <th>Round</th>
-                  <th>Race</th>
-                  <th class="right">Grid</th>
-                  <th class="right">Finish</th>
-                  <th class="right">Pts</th>
-                  <th class="right">Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {seasonRacesDesc.map(r => {
-                  const raceHref = raceUrl(r.year, r.round);
-                  const isPole = r.grid === 1;
-                  const isFl = r.fastestLapRank === 1;
-                  return (
-                    <tr>
-                      <td class="t-mono season-round">RD {String(r.round ?? 0).padStart(2, '0')}</td>
-                      <td>
-                        <span class="race-cell">
-                          {(r.country || r.flag) ? (
-                            <span class="race-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>
-                          ) : (
-                            <span class="season-race-tag t-mono">{raceTag(r.raceName)}</span>
-                          )}
-                          {r.raceName && raceHref ? (
-                            <a href={raceHref} class="inline-link season-race-name">{(r.raceName || '').replace(/ grand prix$/i, '')}</a>
-                          ) : (
-                            <span class="season-race-name">{(r.raceName || '-').replace(/ grand prix$/i, '')}</span>
-                          )}
-                        </span>
-                      </td>
-                      <td class="right t-mono">{fmtNum(r.grid)}</td>
-                      <td class={`right t-mono season-finish ${r.position === 1 ? 'is-win-cell' : ''}`}>{r.positionText || ord(r.position)}</td>
-                      <td class="right t-mono">{r.points || 0}</td>
-                      <td class="right season-note">
-                        {isPole && <span class="pill season-pill">Pole</span>}
-                        {isFl && <span class="pill season-pill">FL</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div class="rr-ribbon">
+            {seasonRacesAsc.map(r => {
+              const raceHref = raceUrl(r.year, r.round);
+              const isPole = r.grid === 1;
+              const isFl = r.fastestLapRank === 1;
+              const isWin = r.position === 1;
+              const isPodium = r.position != null && r.position < 4;
+              const finish = r.position != null ? `P${r.position}` : (r.positionText || '-');
+              const Tile = raceHref ? 'a' : 'div';
+              return (
+                <Tile
+                  href={raceHref || undefined}
+                  class={`rr-tile ${isPodium ? 'is-podium' : ''} ${isWin ? 'is-win' : ''}`}
+                  style={`--team-color: ${teamColor}`}
+                  aria-label={r.raceName ? `${r.raceName.replace(/ grand prix$/i, '')}: finished ${finish}` : undefined}
+                >
+                  <div class="rr-tile-top">
+                    <span class="rr-round t-mono">R{String(r.round ?? 0).padStart(2, '0')}</span>
+                    {(r.country || r.flag) && <span class="race-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
+                  </div>
+                  <div class="rr-race">{(r.raceName || '-').replace(/ grand prix$/i, '')}</div>
+                  <div class="rr-tile-bot">
+                    <span class={`rr-pos t-mono ${isWin ? 'is-win-cell' : ''}`}>{finish}</span>
+                    <span class="rr-pts t-mono">{r.points || 0}<span class="rr-pts-u"> pts</span></span>
+                  </div>
+                  {(isPole || isFl) && (
+                    <div class="rr-badges">
+                      {isPole && <span class="pill season-pill">Pole</span>}
+                      {isFl && <span class="pill season-pill">FL</span>}
+                    </div>
+                  )}
+                </Tile>
+              );
+            })}
           </div>
         </div>
         <div>
@@ -705,12 +685,30 @@ function teamLogoPath(ref: string | null): string | null {
   /* ── 2026 Season strip + detail ─────────────────────────────── */
   .season-strip { grid-template-columns: repeat(6, 1fr); }
   .season-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-  .season-round { color: var(--fg-3); white-space: nowrap; }
-  .season-race-tag { display: inline-block; min-width: 22px; color: var(--fg-4); margin-right: 8px; font-size: 11px; }
-  .season-race-name { font-weight: 600; }
-  .season-finish { font-weight: 700; }
-  .season-note { white-space: nowrap; }
   .season-pill { margin-left: 4px; }
+
+  /* Race-by-race ribbon: wrapping tiles that grow sideways, not down. */
+  .rr-ribbon { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .rr-tile {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 8px 9px; background: var(--bg-2);
+    border: 1px solid var(--line-1); border-top: 2px solid var(--line-2);
+    color: inherit; text-decoration: none; transition: border-color .12s;
+  }
+  a.rr-tile:hover { border-color: var(--line-2); }
+  a.rr-tile:hover.is-podium { border-top-color: var(--team-color); }
+  .rr-tile.is-podium { border-top-color: var(--team-color); }
+  .rr-tile.is-win { border-top-width: 3px; }
+  .rr-tile-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .rr-round { font-size: 10px; color: var(--fg-4); letter-spacing: 0.05em; }
+  .rr-race { font-size: 11px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rr-tile-bot { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .rr-pos { font-size: 18px; font-weight: 700; line-height: 1; }
+  .rr-pos.is-win-cell { color: var(--team-color); }
+  .rr-pts { font-size: 10px; color: var(--fg-4); white-space: nowrap; }
+  .rr-pts-u { color: var(--fg-4); }
+  .rr-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+  .rr-badges .season-pill { margin-left: 0; }
 
   .form-panel { padding: 16px 16px 12px; display: flex; flex-direction: column; }
   .form-chart { display: block; width: 100%; height: auto; }
