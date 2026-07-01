@@ -53,7 +53,9 @@ function FeatureCard({ team }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <TeamLogo team={team} size={64} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="t-eyebrow" style={{ color: teamColor, marginBottom: 2 }}>
+          {/* WCAG: team colour as small text FAILs on white (and ferrari/red-bull
+              on dark). Mix 50% toward --fg-1 (theme-adaptive) for >=4.5:1. */}
+          <div className="t-eyebrow" style={{ color: `color-mix(in srgb, ${teamColor} 50%, var(--fg-1))`, marginBottom: 2 }}>
             {team.nationality}
           </div>
           <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 22, letterSpacing: '0.02em', textTransform: 'uppercase', lineHeight: 1.05, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

@@ -80,8 +80,12 @@ clears AA on cards in dark and ~AA-large in light — keep it for glyphs/hints,
 put real text on `--fg-3`. Use `--accent-text` (not `--accent`) whenever red
 colours *text*: brand `--accent` #E8002D is only 3.58:1 on dark cards, so it's
 for fills/borders/rules, while `--accent-text` (#FF3B57 dark / #E8002D light)
-clears 4.5:1. Team colours as text FAIL on white for the cyan/green/light-blue
-teams — keep team colour on strips/dots/bars, never text.
+clears 4.5:1. Team colours as raw text FAIL on white for the cyan/green/
+light-blue teams — prefer team colour on strips/dots/bars. Where a value/label
+*must* be team-tinted (champ points, records hero value, team-index eyebrow),
+wrap it in `color-mix(in srgb, <team> 50%, var(--fg-1))` — mixing toward the
+theme's text colour lifts every team to ≥4.5:1 in both themes while keeping the
+hue. Never colour text with the pure team hex.
 
 ### Accent
 
