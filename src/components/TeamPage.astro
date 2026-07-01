@@ -478,9 +478,11 @@ function hasFace(ref: string): boolean {
   @media (prefers-reduced-motion: no-preference) {
     .team-hero-flagwash { animation: teamWashIn 1.1s 0.15s both cubic-bezier(0.18, 0.7, 0.16, 1); }
   }
+  /* Wipe the flag in from the right edge, filling leftward (clip-path inset
+     shrinking from the left), plus an opacity fade — a clear right-to-left fill. */
   @keyframes teamWashIn {
-    from { opacity: 0; transform: translateX(70px); }
-    to   { opacity: var(--wash-op); transform: none; }
+    from { opacity: 0; clip-path: inset(0 0 0 100%); }
+    to   { opacity: var(--wash-op); clip-path: inset(0 0 0 0); }
   }
 
   .team-hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
