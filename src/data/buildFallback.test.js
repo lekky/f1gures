@@ -9,58 +9,80 @@ import { buildFromYearJson } from './buildFallback.js';
 // (race FL +1 bonus that the FIA dropped in 2025; sprint points derived
 // from main race finishing order rather than the actual sprint result).
 //
-// The numbers below are the real 2026 World Championship standings after
-// 7 rounds, taken from the official F1 standings table. If these drift,
-// the bundle has been refreshed and the expectations need updating - but
-// the home page Top 3 and the standings page MUST always agree, so any
-// change here should be matched by re-checking both screens.
+// The 2026 bundle is the live current season - the nightly refresh grows it
+// race by race, so hardcoded totals would drift and rot. Instead of pinning
+// magic numbers, we independently re-derive the canonical totals straight from
+// the same `detail` maps computeStandings is supposed to read, and assert the
+// two agree. That never drifts, and it's a STRONGER regression test: any
+// reversion to an approximation (the old +1 FL bonus, or sprint points from
+// race order) makes at least one canonical total diverge.
 
 const bundle = JSON.parse(
   readFileSync(resolve(process.cwd(), 'public/data/2026.json'), 'utf8')
 );
 
+// Sum the bundle's own canonical per-round detail points: race points from
+// results[r].detail[code].points, sprint points from
+// results[r].sprintResults.detail[code].points. Constructor points are
+// attributed per round via each row's `team`, so a mid-season team switch is
+// still counted correctly.
+function canonicalTotals(b) {
+  const driverPts = {}, driverWins = {}, teamPts = {};
+  for (const round of Object.keys(b.results || {})) {
+    const r = b.results[round];
+    const teamByCode = {};
+    for (const [code, d] of Object.entries(r.detail || {})) {
+      driverPts[code] = (driverPts[code] || 0) + (d.points || 0);
+      if (String(d.position) === '1') driverWins[code] = (driverWins[code] || 0) + 1;
+      if (d.team) { teamByCode[code] = d.team; teamPts[d.team] = (teamPts[d.team] || 0) + (d.points || 0); }
+    }
+    for (const [code, d] of Object.entries(r.sprintResults?.detail || {})) {
+      driverPts[code] = (driverPts[code] || 0) + (d.points || 0);
+      const t = d.team || teamByCode[code];
+      if (t) teamPts[t] = (teamPts[t] || 0) + (d.points || 0);
+    }
+  }
+  return { driverPts, driverWins, teamPts };
+}
+
 describe('buildFromYearJson computeStandings (2026 bundle)', () => {
   const D = buildFromYearJson(bundle);
   const { drivers, teams } = D.computeStandings();
-  const byCode = Object.fromEntries(drivers.map(r => [r.driver.id, r]));
-  const byTeam = Object.fromEntries(teams.map(r => [r.team.id, r]));
+  const canon = canonicalTotals(bundle);
 
-  it('uses canonical race points from results[r].detail.<code>.points', () => {
-    // ANT was P1 in 5 of 6 rounds. Without the canonical-points fix the
-    // old code paid an extra +1 FL bonus on rounds where ANT had the
-    // fastest lap, inflating the total.
-    expect(byCode.ANT.points).toBe(156);
-    expect(byCode.ANT.wins).toBe(5);
+  it('has a populated table (the live bundle actually loaded)', () => {
+    expect(drivers.length).toBeGreaterThan(0);
+    expect(teams.length).toBeGreaterThan(0);
   });
 
-  it('uses canonical sprint points from sprintResults.detail.<code>.points', () => {
-    // RUS's total includes sprint points that live only in
-    // sprintResults.detail.<code>.points. The old code derived sprint
-    // points from the main-race finishing order instead, so it miscounted
-    // anyone whose sprint result diverged from their race result.
-    expect(byCode.RUS.points).toBe(106);
-    expect(byCode.HAM.points).toBe(115);
-    expect(byCode.LEC.points).toBe(75);
+  it('driver points equal the canonical detail totals (race + sprint, no FL-bonus / sprint approximation)', () => {
+    for (const row of drivers) {
+      expect(row.points).toBe(canon.driverPts[row.driver.id] ?? 0);
+    }
   });
 
-  it('constructor standings = sum of each constructor\'s driver points', () => {
-    // The site cross-checks visually: the Top 3 panel on / and the
-    // /standings-constructors/ page both read computeStandings, so
-    // these have to add up correctly.
-    expect(byTeam.mercedes.points).toBe(byCode.ANT.points + byCode.RUS.points);
-    expect(byTeam.mercedes.points).toBe(262);
-    expect(byTeam.ferrari.points).toBe(byCode.LEC.points + byCode.HAM.points);
-    expect(byTeam.ferrari.points).toBe(190);
+  it('driver wins equal the canonical count of P1 finishes', () => {
+    for (const row of drivers) {
+      expect(row.wins).toBe(canon.driverWins[row.driver.id] ?? 0);
+    }
   });
 
-  it('ranks drivers in the order the official standings show', () => {
-    const top5 = drivers.slice(0, 5).map(r => r.driver.id);
-    expect(top5).toEqual(['ANT', 'HAM', 'RUS', 'LEC', 'NOR']);
+  it('constructor points equal the canonical per-team totals (Top-3 panel and standings page agree)', () => {
+    for (const row of teams) {
+      expect(row.points).toBe(canon.teamPts[row.team.id] ?? 0);
+    }
   });
 
-  it('ranks constructors in the order the official standings show', () => {
-    const top3 = teams.slice(0, 3).map(r => r.team.id);
-    expect(top3).toEqual(['mercedes', 'ferrari', 'mclaren']);
+  it('ranks drivers by points, highest first', () => {
+    for (let i = 1; i < drivers.length; i++) {
+      expect(drivers[i - 1].points).toBeGreaterThanOrEqual(drivers[i].points);
+    }
+  });
+
+  it('ranks constructors by points, highest first', () => {
+    for (let i = 1; i < teams.length; i++) {
+      expect(teams[i - 1].points).toBeGreaterThanOrEqual(teams[i].points);
+    }
   });
 });
 
