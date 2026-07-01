@@ -70,6 +70,8 @@ interface Props {
   };
 }
 
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import RaceResultsBody from './RaceResultsBody.astro';
 import RaceUpcomingBody from './RaceUpcomingBody.astro';
 import Flag from './Flag.astro';
@@ -82,12 +84,32 @@ const isSprintWeekend = race.sprint === true || (Array.isArray(race.sprint) && r
 // Big hero treatment: uppercase short name (strip "Grand Prix") + a red period,
 // matching the calendar's next-race hero. Full name stays in <title>/breadcrumb.
 const displayName = race.name.replace(/ Grand Prix$/i, '');
+
+// Flag wash (mirrors the driver/team heroes): the host country's flag pinned to
+// the right of the hero, dissolving toward the name. race.circuit.country is an
+// ISO alpha-2 code → the lipis SVG set, inlined as a data-URI with
+// preserveAspectRatio="none" so it fills the wash box instead of letterboxing.
+const washCc = race.circuit?.country ? race.circuit.country.toLowerCase() : null;
+const flagWashSrc = washCc
+  ? (() => {
+      const abs = resolve(process.cwd(), 'public', `images/flags/${washCc}.svg`);
+      if (!existsSync(abs)) return null;
+      let svg = readFileSync(abs, 'utf8');
+      svg = /preserveAspectRatio=/.test(svg)
+        ? svg.replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="none"')
+        : svg.replace(/<svg\b/, '<svg preserveAspectRatio="none"');
+      return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    })()
+  : null;
 ---
 
 <div class="page race-detail">
   <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/calendar/">← Calendar</a>
 
   <div class="panel race-hero">
+    {flagWashSrc && (
+      <div class="race-hero-flagwash" style={`background-image: url(${flagWashSrc})`} aria-hidden="true"></div>
+    )}
     <div class="race-hero-meta">
       <div class="t-eyebrow race-hero-round">
         Round {String(race.round).padStart(2, '0')} · {race.year}{isSprintWeekend ? ' · Sprint Weekend' : ''}
@@ -104,6 +126,27 @@ const displayName = race.name.replace(/ Grand Prix$/i, '');
       </div>
     </div>
   </div>
+
+  {/* Trigger the flag-wash entrance wipe only when the page is visible, so a
+      frozen/hidden preview never traps it at its invisible first frame. The
+      wash is CSS-visible without this. */}
+  <script is:inline>
+    (function () {
+      function wipe() {
+        var els = document.querySelectorAll('.race-hero-flagwash');
+        for (var i = 0; i < els.length; i++) els[i].classList.add('is-wiping');
+      }
+      if (document.visibilityState === 'visible') { wipe(); }
+      else {
+        document.addEventListener('visibilitychange', function onVis() {
+          if (document.visibilityState === 'visible') {
+            wipe();
+            document.removeEventListener('visibilitychange', onVis);
+          }
+        });
+      }
+    })();
+  </script>
 
   <TriviaBoard client:visible />
 
@@ -134,7 +177,33 @@ const displayName = race.name.replace(/ Grand Prix$/i, '');
      so global scope doesn't conflict with other pages. */
   race-countdown { display: block; }
 
-  .race-hero { padding: 28px 24px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
+  .race-hero { position: relative; overflow: hidden; padding: 28px 24px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
+  .race-hero-meta { position: relative; z-index: 1; }
+  /* Flag wash: host-country flag pinned to the right, dissolving toward the
+     name (mirrors the driver/team heroes). Below the meta content (z-index 1). */
+  .race-hero-flagwash {
+    --wash-op: 0.3;
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 58%;
+    z-index: 0;
+    opacity: var(--wash-op);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+    mix-blend-mode: screen;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(90deg, transparent 0%, #000 78%);
+            mask: linear-gradient(90deg, transparent 0%, #000 78%);
+  }
+  html.light .race-hero-flagwash { --wash-op: 0.24; mix-blend-mode: multiply; }
+  @media (prefers-reduced-motion: no-preference) {
+    .race-hero-flagwash.is-wiping { animation: raceWashIn 1.1s 0.05s both cubic-bezier(0.18, 0.7, 0.16, 1); }
+  }
+  @keyframes raceWashIn {
+    from { opacity: 0; transform: translateX(70px); }
+    to   { opacity: var(--wash-op); transform: none; }
+  }
   .race-hero-round { color: var(--accent); margin-bottom: 8px; }
   .race-hero-name { margin: 0 0 10px 0; font-size: 84px; line-height: 0.92; text-transform: uppercase; letter-spacing: -0.01em; }
   .race-hero-dot { color: var(--accent); }
