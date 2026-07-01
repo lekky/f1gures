@@ -635,7 +635,15 @@ const recordCards: CircuitRecordCard[] = [
     font-family: var(--f-display); font-weight: 800; font-size: 30px; line-height: 1;
     color: var(--fg-3); opacity: 0.6;
   }
-  .ct-svg { flex: 1; width: 100%; min-height: 0; display: block; }
+  /* Pin the track layer absolutely so its intrinsic size (a tall SVG viewBox
+     like Monaco's × width:100%) can't stretch the hero. The hero height then
+     follows the info column, and preserveAspectRatio scales the track to fit. */
+  .circuit-hero-map .ct-svg,
+  .circuit-hero-map .circuit-track {
+    position: absolute;
+    left: 14px; right: 14px; top: 44px; bottom: 12px;
+    width: auto; height: auto; min-height: 0; flex: none; display: block;
+  }
 
   .ct-glow { fill: none; stroke: var(--accent); stroke-width: 16; stroke-linejoin: round; stroke-linecap: round; opacity: 0.16; }
   .ct-line { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
