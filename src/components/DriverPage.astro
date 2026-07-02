@@ -265,7 +265,7 @@ const waffleTiles = driver.perRace.map(r => {
   const kind = waffleKind(r);
   const finish = r.position != null ? `P${r.position}` : (r.positionText || 'DNF');
   const title = `${(r.raceName || 'Race').replace(/ grand prix$/i, ' GP')} ${r.year} · ${finish}${r.status ? ` · ${r.status}` : ''}`;
-  return { kind, title };
+  return { kind, title, href: raceUrl(r.year, r.round) };
 });
 const waffleRank: Record<WaffleKind, number> = Object.fromEntries(
   WAFFLE_ORDER.map((k, i) => [k, i])
@@ -289,12 +289,23 @@ for (const r of driver.perRace) {
   }
   outcomeByYear.get(r.year)![k] += 1;
 }
+// Primary constructor per season, for the row label between year and bar.
+// A driver can switch teams mid-year (Schumacher 1991: Jordan → Benetton);
+// keep the team they raced most that season.
+const teamByYear = new Map<number, { ref: string | null; name: string | null; races: number }>();
+for (const s of driver.perSeason) {
+  const prev = teamByYear.get(s.year);
+  if (!prev || (s.races ?? 0) > prev.races) {
+    teamByYear.set(s.year, { ref: s.constructorRef, name: s.constructorName, races: s.races ?? 0 });
+  }
+}
 const outcomeSeasons = [...outcomeByYear.entries()]
   .map(([year, counts]) => {
     const total = WAFFLE_ORDER.reduce((s, k) => s + counts[k], 0);
     return {
       year,
       total,
+      team: teamByYear.get(year) ?? null,
       segments: WAFFLE_ORDER
         .map(k => ({ kind: k, count: counts[k], pct: total ? (counts[k] / total) * 100 : 0 }))
         .filter(seg => seg.count > 0),
@@ -666,7 +677,7 @@ const duelSurname = driver.surname;
           <span class="waffle-head-title">Every start as a tile</span>
           <span class="waffle-head-count t-mono">{waffleTotal} tiles</span>
         </div>
-        <p class="waffle-blurb">One square per race across the whole career, sorted by outcome. The block of wins, the long tail of points, the small cold corner of retirements.</p>
+        <p class="waffle-blurb">One square per race across the whole career, sorted by outcome — tap a tile to open that race. The block of gold wins, the long tail of points, the small red corner of retirements.</p>
         <div class="waffle-legend">
           {waffleCounts.map(c => (
             <span class="waffle-key">
@@ -678,7 +689,9 @@ const duelSurname = driver.surname;
         </div>
         <div class="waffle-grid" role="img" aria-label={`${fullName}'s ${waffleTotal} career races by outcome`}>
           {waffleSorted.map(t => (
-            <span class={`waffle-tile w-${t.kind}`} title={t.title}></span>
+            t.href
+              ? <a class={`waffle-tile w-${t.kind}`} href={t.href} title={t.title} aria-label={t.title}></a>
+              : <span class={`waffle-tile w-${t.kind}`} title={t.title}></span>
           ))}
         </div>
       </div>
@@ -694,7 +707,7 @@ const duelSurname = driver.surname;
           <span class="outcome-head-title">Outcome mix by season</span>
           <span class="outcome-head-aside t-mono">100% stacked</span>
         </div>
-        <p class="waffle-blurb">Every season's races stacked into one bar, split by outcome. Watch the hot bands swell as the car improves and the cold blue of retirements creep in.</p>
+        <p class="waffle-blurb">Every season's races stacked into one bar, split by outcome. Watch the gold and silver swell as the car improves and the red of retirements creep in.</p>
         <div class="waffle-legend">
           {waffleCounts.map(c => (
             <span class="waffle-key">
@@ -708,7 +721,16 @@ const duelSurname = driver.surname;
           {outcomeSeasons.map(s => (
             <div class="outcome-row">
               <span class="outcome-year t-mono">{s.year}</span>
-              <div class="outcome-bar" role="img" aria-label={`${s.year}: ${s.segments.map(seg => `${seg.count} ${WAFFLE_LABEL[seg.kind]}`).join(', ')}`}>
+              <span class="outcome-team race-cell" title={s.team?.name ?? undefined}>
+                {(() => {
+                  const logo = teamLogoPath(s.team?.ref ?? null);
+                  return logo && <img class="team-logo-sm" src={logo} alt="" width="20" height="20" loading="lazy" />;
+                })()}
+                {s.team?.ref && s.team?.name
+                  ? <a href={`/teams/${s.team.ref}/`} class="inline-link outcome-team-name">{s.team.name}</a>
+                  : <span class="outcome-team-name">{s.team?.name ?? '—'}</span>}
+              </span>
+              <div class="outcome-bar" role="img" aria-label={`${s.year}${s.team?.name ? `, ${s.team.name}` : ''}: ${s.segments.map(seg => `${seg.count} ${WAFFLE_LABEL[seg.kind]}`).join(', ')}`}>
                 {s.segments.map(seg => (
                   <span class={`outcome-seg w-${seg.kind}`} style={`width: ${seg.pct}%`} title={`${WAFFLE_LABEL[seg.kind]}: ${seg.count}`}></span>
                 ))}
@@ -1067,21 +1089,21 @@ const duelSurname = driver.surname;
      Win reuses the F1 accent red; the rest are a legend-driven semantic ramp.
      Shared by the Career Mosaic tiles and the Season Outcomes stacked bars. */
   .outcome-ramp {
-    --w-win: var(--accent);
-    --w-podium: #f26d3d;
-    --w-points: var(--gold);
-    --w-finished: #63666f;
-    --w-mech: #5d9cd0;
-    --w-crash: #3e6da8;
-    --w-dsq: #a05a2c;
+    --w-win: var(--gold);        /* gold */
+    --w-podium: #c9cdd6;         /* silver */
+    --w-points: #e8722e;         /* orange */
+    --w-finished: #62656e;       /* grey */
+    --w-mech: var(--accent);     /* red — DNF (mechanical) */
+    --w-crash: #a8102a;          /* deep red — DNF (crash) */
+    --w-dsq: #6e1420;            /* maroon — DSQ */
   }
   html.light .outcome-ramp {
-    --w-podium: #e2571f;
-    --w-points: #c8891b;
-    --w-finished: #9698a1;
-    --w-mech: #3f83c0;
-    --w-crash: #2f5c96;
-    --w-dsq: #8a4a20;
+    --w-win: #cf9a1f;            /* deeper gold for contrast on light */
+    --w-podium: #aab0bb;         /* silver */
+    --w-points: #d8611f;         /* orange */
+    --w-finished: #797c85;       /* grey */
+    --w-crash: #9e0f26;          /* deep red */
+    --w-dsq: #6e1420;            /* maroon */
   }
   .waffle-panel { padding: 18px 20px 16px; }
   .waffle-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
@@ -1096,14 +1118,18 @@ const duelSurname = driver.surname;
     gap: 4px;
   }
   .waffle-tile {
+    display: block;
     aspect-ratio: 1;
     border-radius: 2px;
     background: var(--fg-4);
+    text-decoration: none;
     transition: transform .1s ease, outline-color .1s ease;
     outline: 1px solid transparent;
     outline-offset: 1px;
   }
+  a.waffle-tile { cursor: pointer; }
   .waffle-tile:hover { transform: scale(1.28); outline-color: var(--line-3); z-index: 1; }
+  a.waffle-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
   .w-win { background: var(--w-win); }
   .w-podium { background: var(--w-podium); }
   .w-points { background: var(--w-points); }
@@ -1112,7 +1138,7 @@ const duelSurname = driver.surname;
   .w-crash { background: var(--w-crash); }
   .w-dsq { background: var(--w-dsq); }
 
-  .waffle-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 16px; }
+  .waffle-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 16px; margin-bottom: 16px; }
   .waffle-key { display: inline-flex; align-items: center; gap: 7px; }
   .waffle-swatch { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; }
   .waffle-key-lbl { font-size: 12px; color: var(--fg-2); }
@@ -1128,9 +1154,15 @@ const duelSurname = driver.surname;
   .outcome-head-mark { width: 4px; height: 15px; background: var(--gold); border-radius: 1px; flex-shrink: 0; }
   .outcome-head-title { font-family: var(--f-display); font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-1); }
   .outcome-head-aside { margin-left: auto; font-size: 12px; color: var(--fg-4); letter-spacing: 0.06em; }
-  .outcome-grid { display: flex; flex-direction: column; gap: 8px; }
-  .outcome-row { display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 14px; }
+  /* One shared grid (rows use display:contents) so the team column is a single
+     track sized to the widest team name across every season — every bar then
+     starts at the same x, regardless of a row having a logo or a short name. */
+  .outcome-grid { display: grid; grid-template-columns: 40px max-content 1fr; align-items: center; column-gap: 10px; row-gap: 8px; }
+  .outcome-row { display: contents; }
   .outcome-year { font-size: 13px; color: var(--fg-3); text-align: right; letter-spacing: 0.02em; }
+  .outcome-team { min-width: 0; gap: 7px; font-size: 12px; }
+  .outcome-team .team-logo-sm { width: 18px; height: 18px; }
+  .outcome-team-name { min-width: 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-2); }
   .outcome-bar { display: flex; height: 24px; border: 1px solid var(--line-1); overflow: hidden; background: var(--bg-3); }
   .outcome-seg { height: 100%; min-width: 0; transition: filter .12s ease; }
   .outcome-row:hover .outcome-seg { filter: brightness(1.08); }
