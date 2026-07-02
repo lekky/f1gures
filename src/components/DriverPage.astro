@@ -496,28 +496,27 @@ const duelSurname = driver.surname;
               const raceHref = raceUrl(r.year, r.round);
               const isPole = r.grid === 1;
               const isFl = r.fastestLapRank === 1;
-              const isWin = r.position === 1;
-              const isPodium = r.position != null && r.position < 4;
-              const finish = r.position != null ? `P${r.position}` : (r.positionText || '-');
+              const isDnf = r.position == null;
+              const podium = r.position != null && r.position < 4 ? r.position : 0;
+              const finish = r.position != null ? `P${r.position}` : (r.positionText || 'DNF');
               const Tile = raceHref ? 'a' : 'div';
               const flagCc = (r.country || '').toLowerCase();
               const flagBg = flagCc ? `/images/flags/${flagCc}.svg` : null;
+              const gpName = (r.raceName || '-').replace(/ grand prix$/i, '');
               return (
                 <Tile
                   href={raceHref || undefined}
-                  class={`rr-tile ${flagBg ? 'has-flag' : ''} ${isPodium ? 'is-podium' : ''} ${isWin ? 'is-win' : ''}`}
-                  style={`--team-color: ${teamColor}${flagBg ? `; background-image: url(${flagBg})` : ''}`}
-                  aria-label={r.raceName ? `${r.raceName.replace(/ grand prix$/i, '')}: finished ${finish}` : undefined}
+                  class={`rr-card ${podium ? `is-p${podium}` : ''} ${isDnf ? 'is-dnf' : ''}`}
+                  style={`--team-color: ${teamColor}`}
+                  aria-label={r.raceName ? `${gpName}: finished ${finish}` : undefined}
                 >
-                  {isPodium && <span class="rr-sheen" aria-hidden="true"></span>}
+                  <div class="rr-head"><span class="rr-round t-mono">R{String(r.round ?? 0).padStart(2, '0')}</span></div>
+                  <div class="rr-flag" style={flagBg ? `background-image: url(${flagBg})` : undefined}>
+                    <span class="rr-name">{gpName}</span>
+                  </div>
                   <div class="rr-body">
-                    <div class="rr-tile-top">
-                      <span class="rr-round t-mono">R{String(r.round ?? 0).padStart(2, '0')}</span>
-                      {!flagBg && (r.country || r.flag) && <span class="race-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
-                    </div>
-                    <div class="rr-race">{(r.raceName || '-').replace(/ grand prix$/i, '')}</div>
-                    <div class="rr-tile-bot">
-                      <span class={`rr-pos t-mono ${isWin ? 'is-win-cell' : ''}`}>{finish}</span>
+                    <div class="rr-line">
+                      <span class="rr-pos t-mono">{finish}</span>
                       <span class="rr-pts t-mono">{r.points || 0}<span class="rr-pts-u"> pts</span></span>
                     </div>
                     {(isPole || isFl) && (
@@ -989,75 +988,58 @@ const duelSurname = driver.surname;
   .season-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
   .season-pill { margin-left: 4px; }
 
-  /* Race-by-race ribbon: wrapping tiles that grow sideways, not down. */
-  .rr-ribbon { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
-  .rr-tile {
-    position: relative; overflow: hidden; min-height: 84px;
-    background: var(--bg-2); background-size: cover; background-position: center;
-    border: 1px solid var(--line-1); border-top: 2px solid var(--line-2);
-    color: inherit; text-decoration: none; transition: border-color .12s, transform .12s;
+  /* Race-by-race cards: round header · flag band · body. Cards grow
+     sideways, not down. Flag is contained to a band (not a full-bleed
+     panel background), keeping the surface calm and on-system. */
+  .rr-ribbon { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .rr-card {
+    position: relative; display: flex; flex-direction: column; overflow: hidden;
+    background: var(--bg-2); border: 1px solid var(--line-1);
+    color: inherit; text-decoration: none; transition: border-color var(--mo);
   }
-  a.rr-tile:hover { border-color: var(--line-2); }
-  a.rr-tile:hover.is-podium { border-top-color: var(--team-color); }
-  .rr-tile.is-podium { border-top-color: var(--team-color); }
-  .rr-tile.is-win { border-top-width: 3px; }
+  a.rr-card:hover { border-color: var(--line-3); }
+  a.rr-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  /* Podium celebration: a light sheen sweeps across on a loop (gold for a win). */
-  .rr-sheen {
-    position: absolute; inset: 0; z-index: 1; pointer-events: none;
-    background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.4) 50%, transparent 62%);
-    background-size: 250% 100%; background-position: 175% 0;
+  .rr-head { display: flex; align-items: center; padding: 5px 8px 4px; }
+  /* --fg-3 (not --fg-4) so the round label clears WCAG AA on the card in both themes. */
+  .rr-round { font-size: 10px; color: var(--fg-3); letter-spacing: 0.06em; line-height: 1; }
+
+  /* Flag band. The GP name rides a bottom-weighted scrim so white text clears
+     WCAG AA (>=4.5:1) even over an all-white flag, in both themes. A theme-safe
+     --bg-3 fills the band when a race has no flag asset. */
+  .rr-flag {
+    position: relative; height: 34px; padding: 4px 7px;
+    background-color: var(--bg-3); background-size: cover; background-position: center;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    border-bottom: 2px solid var(--team-color);
   }
-  .rr-tile.is-win .rr-sheen {
-    background-image: linear-gradient(115deg, transparent 36%, rgba(255,209,90,0.55) 50%, transparent 64%);
+  .rr-card.is-p1 .rr-flag { border-bottom-color: var(--gold); }
+  .rr-card.is-p2 .rr-flag { border-bottom-color: var(--silver); }
+  .rr-card.is-p3 .rr-flag { border-bottom-color: var(--bronze); }
+  .rr-flag::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(6,8,12,0) 0%, rgba(6,8,12,0.55) 38%, rgba(6,8,12,0.92) 100%);
   }
-  @media (prefers-reduced-motion: no-preference) {
-    .rr-tile.is-podium .rr-sheen { animation: rrSheen 3.4s ease-in-out infinite; }
-    .rr-tile.is-win .rr-pos { animation: rrWinBounce 3.4s ease-in-out infinite; }
-    a.rr-tile.is-podium:hover { transform: translateY(-1px); }
-  }
-  @keyframes rrSheen {
-    0% { background-position: 175% 0; }
-    55%, 100% { background-position: -175% 0; }
-  }
-  @keyframes rrWinBounce {
-    0%, 62%, 100% { transform: translateY(0); }
-    72% { transform: translateY(-3px); }
-    82% { transform: translateY(0); }
+  .rr-name {
+    position: relative; z-index: 1; font-size: 12px; font-weight: 700; line-height: 1.05;
+    color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  .rr-body { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 5px; padding: 8px 9px; }
-  .rr-tile-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-  .rr-round { font-size: 10px; color: var(--fg-4); letter-spacing: 0.05em; }
-  .rr-race { font-size: 11px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .rr-tile-bot { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
-  .rr-pos { display: inline-block; font-size: 18px; font-weight: 700; line-height: 1; }
-  .rr-pos.is-win-cell { color: var(--team-color); }
-  .rr-pts { font-size: 10px; color: var(--fg-4); white-space: nowrap; }
-  .rr-pts-u { color: var(--fg-4); }
+  .rr-body { display: flex; flex-direction: column; gap: 4px; padding: 7px 8px; }
+  .rr-line { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .rr-pos { font-size: 20px; font-weight: 700; line-height: 1; color: var(--fg-1); }
+  /* Podium tint via color-mix toward --fg-1 keeps the medal hue while lifting
+     every finish to AA in both themes (raw medal hex fails as text on white).
+     The pure medal colour still reads on the band rule above. */
+  .rr-card.is-p1 .rr-pos { color: color-mix(in srgb, var(--gold) 60%, var(--fg-1)); }
+  .rr-card.is-p2 .rr-pos { color: color-mix(in srgb, var(--silver) 60%, var(--fg-1)); }
+  .rr-card.is-p3 .rr-pos { color: color-mix(in srgb, var(--bronze) 60%, var(--fg-1)); }
+  .rr-card.is-dnf .rr-pos { color: var(--neg); font-size: 13px; }
+  .rr-pts { font-size: 10px; color: var(--fg-3); white-space: nowrap; }
+  .rr-pts-u { color: var(--fg-3); }
   .rr-badges { display: flex; flex-wrap: wrap; gap: 4px; }
   .rr-badges .season-pill { margin-left: 0; }
-
-  /* Flags stay vivid; each text run rides on its own solid-dark plate so it's
-     legible over any flag in both themes without dimming the whole card. */
-  .rr-tile.has-flag { color: #fff; }
-  /* A slight overall dim so the vivid flag sits back a touch behind the stats. */
-  .rr-tile.has-flag::before {
-    content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-    background: rgba(6,8,12,0.24);
-  }
-  .rr-tile.has-flag .rr-round,
-  .rr-tile.has-flag .rr-race,
-  .rr-tile.has-flag .rr-tile-bot,
-  .rr-tile.has-flag .season-pill { background: rgba(8,10,14,0.78); }
-  .rr-tile.has-flag .rr-round { color: #fff; padding: 2px 5px; }
-  .rr-tile.has-flag .rr-race { align-self: flex-start; max-width: 100%; color: #fff; padding: 2px 6px; }
-  .rr-tile.has-flag .rr-tile-bot { align-self: flex-start; gap: 8px; padding: 2px 7px; }
-  .rr-tile.has-flag .rr-pos { color: #fff; }
-  .rr-tile.has-flag .rr-pos.is-win-cell { color: #ffd75e; }
-  .rr-tile.has-flag .rr-pts,
-  .rr-tile.has-flag .rr-pts-u { color: rgba(255,255,255,0.9); }
-  .rr-tile.has-flag .season-pill { color: #fff; border-color: rgba(255,255,255,0.4); }
 
   .form-panel { padding: 16px 16px 12px; display: flex; flex-direction: column; }
   .form-chart { display: block; width: 100%; height: auto; }
