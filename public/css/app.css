@@ -2073,6 +2073,8 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .blog-filter-tab {
   appearance: none;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
   padding: 7px 13px;
   border: 1px solid var(--line-1);
   background: var(--bg-3);
@@ -2082,6 +2084,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  text-decoration: none;
   line-height: 1;
   transition: border-color 120ms, color 120ms, background 120ms;
 }
@@ -2107,6 +2110,72 @@ html.light .circuit-track .circuit-track-light { display: block; }
 }
 .blog-filter-rss:hover { color: var(--fg-1); border-color: var(--accent); }
 .blog-filter-empty { color: var(--fg-3); padding: 28px 0; }
+
+/* Blog pagination (index + category pages) */
+.blog-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 32px 0 8px;
+}
+.blog-pager-edge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--line-1);
+  background: var(--bg-3);
+  color: var(--fg-2);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1;
+  transition: border-color 120ms, color 120ms;
+}
+.blog-pager-edge:hover { border-color: var(--accent); color: var(--fg-1); }
+.blog-pager-edge.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.blog-pager-nums {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.blog-pager-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--line-1);
+  background: var(--bg-3);
+  color: var(--fg-2);
+  font-family: var(--f-mono);
+  font-size: 13px;
+  text-decoration: none;
+  transition: border-color 120ms, color 120ms, background 120ms;
+}
+.blog-pager-num:hover { border-color: var(--accent); color: var(--fg-1); }
+.blog-pager-num.is-current {
+  background: var(--fg-1);
+  color: var(--bg-1);
+  border-color: var(--fg-1);
+}
+.blog-pager-gap {
+  color: var(--fg-3);
+  padding: 0 4px;
+  font-family: var(--f-mono);
+}
 
 /* ---- Blog index: two-post lede (major + minor), image cards ---- */
 .blog-lede {
