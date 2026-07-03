@@ -1,0 +1,56 @@
+---
+// Shared blog pagination control (index + category pages).
+// Page 1 lives at `basePath` (e.g. "/blog/"); page N at `${basePath}${n}/`.
+interface Props {
+  currentPage: number;
+  lastPage: number;
+  basePath: string;
+}
+
+const { currentPage, lastPage, basePath } = Astro.props;
+
+const hrefFor = (n: number) => (n === 1 ? basePath : `${basePath}${n}/`);
+
+// Compact window of page numbers around the current page, always including
+// the first and last, with ellipses for the gaps.
+const pages: (number | 'gap')[] = [];
+if (lastPage <= 7) {
+  for (let n = 1; n <= lastPage; n++) pages.push(n);
+} else {
+  const window = new Set([1, lastPage, currentPage, currentPage - 1, currentPage + 1]);
+  let prev = 0;
+  for (let n = 1; n <= lastPage; n++) {
+    if (!window.has(n)) continue;
+    if (n - prev > 1) pages.push('gap');
+    pages.push(n);
+    prev = n;
+  }
+}
+---
+{lastPage > 1 && (
+  <nav class="blog-pager" aria-label="Blog pagination">
+    {currentPage > 1 ? (
+      <a class="blog-pager-edge" href={hrefFor(currentPage - 1)} rel="prev">← Newer</a>
+    ) : (
+      <span class="blog-pager-edge is-disabled" aria-disabled="true">← Newer</span>
+    )}
+
+    <ol class="blog-pager-nums">
+      {pages.map((n) =>
+        n === 'gap' ? (
+          <li class="blog-pager-gap" aria-hidden="true">…</li>
+        ) : n === currentPage ? (
+          <li><span class="blog-pager-num is-current" aria-current="page">{n}</span></li>
+        ) : (
+          <li><a class="blog-pager-num" href={hrefFor(n)} aria-label={`Page ${n}`}>{n}</a></li>
+        )
+      )}
+    </ol>
+
+    {currentPage < lastPage ? (
+      <a class="blog-pager-edge" href={hrefFor(currentPage + 1)} rel="next">Older →</a>
+    ) : (
+      <span class="blog-pager-edge is-disabled" aria-disabled="true">Older →</span>
+    )}
+  </nav>
+)}

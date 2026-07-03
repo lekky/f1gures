@@ -1,0 +1,170 @@
+---
+import { getCollection } from 'astro:content';
+import type { GetStaticPaths, Page } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { BLOG_CATEGORY_LABELS } from '../../content/config';
+import { sortPosts, isPublic, fmtPostDate } from '../../lib/blog';
+import BlogPager from '../../components/blog/BlogPager.astro';
+import TriviaBoard from '../../components/islands/screens/TriviaBoard.jsx';
+
+// 14 posts/page: on page 1 the first two become the hero lede, leaving a
+// 12-card grid; later pages show all 14 as grid cards. Category filtering is
+// no longer client-side - the tabs link to the prerendered category pages.
+// NB: getStaticPaths is hoisted above module scope, so pageSize is inlined.
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = sortPosts((await getCollection('blog')).filter(isPublic));
+  return paginate(posts, { pageSize: 14 });
+}) satisfies GetStaticPaths;
+
+type Post = Awaited<ReturnType<typeof getCollection<'blog'>>>[number];
+const { page } = Astro.props as { page: Page<Post> };
+
+const isFirst = page.currentPage === 1;
+const ledePosts = isFirst ? page.data.slice(0, 2) : [];
+const gridPosts = isFirst ? page.data.slice(2) : page.data;
+
+const pageHref = (n: number) => (n === 1 ? '/blog/' : `/blog/${n}/`);
+const canonicalPath = pageHref(page.currentPage);
+
+const baseTitle =
+  'Blog - F1 Race Recaps, History & Analysis | f1gures';
+const title = isFirst ? baseTitle : `Blog (Page ${page.currentPage}) - F1 Race Recaps, History & Analysis | f1gures`;
+const description = isFirst
+  ? 'Race recaps, technical explainers, driver focus pieces and historic season retrospectives from f1gures.'
+  : `Race recaps, technical explainers and historic deep-dives from f1gures - page ${page.currentPage} of ${page.lastPage}.`;
+
+const jsonLd = isFirst
+  ? {
+      '@type': 'Blog',
+      '@id': 'https://f1gures.app/blog/#blog',
+      url: 'https://f1gures.app/blog/',
+      name: 'f1gures Blog',
+      description,
+      inLanguage: 'en-GB',
+      publisher: {
+        '@type': 'Organization',
+        name: 'f1gures',
+        url: 'https://f1gures.app/',
+      },
+      blogPost: page.data.map((p) => ({
+        '@type': 'BlogPosting',
+        headline: p.data.title,
+        description: p.data.description,
+        datePublished: p.data.publishedAt.toISOString(),
+        url: `https://f1gures.app/blog/${p.slug}/`,
+      })),
+    }
+  : {
+      '@type': 'CollectionPage',
+      url: `https://f1gures.app${canonicalPath}`,
+      name: `f1gures Blog - Page ${page.currentPage}`,
+      description,
+      inLanguage: 'en-GB',
+      isPartOf: { '@type': 'Blog', '@id': 'https://f1gures.app/blog/#blog' },
+    };
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Blog', path: '/blog/' },
+  ...(isFirst ? [] : [{ name: `Page ${page.currentPage}`, path: canonicalPath }]),
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page">
+    <div class="page-head blog-index-head">
+      <div>
+        <div class="t-eyebrow">f1gures</div>
+        <h1 class="page-title blog-index-title">The Blog</h1>
+        <p class="page-sub">Race recaps, technical explainers and historic deep-dives.</p>
+      </div>
+    </div>
+
+    {isFirst && <TriviaBoard client:visible />}
+
+    <div class="blog-filter" aria-label="Browse posts by category">
+      <a class="blog-filter-tab is-active" href="/blog/" aria-current="page">All</a>
+      {Object.entries(BLOG_CATEGORY_LABELS).map(([slug, label]) => (
+        <a class="blog-filter-tab" href={`/blog/category/${slug}/`}>{label}</a>
+      ))}
+      <a class="blog-filter-rss" href="/blog/rss.xml">RSS</a>
+    </div>
+
+    {/* Two-post lede on page 1 only: a larger "major" card beside a smaller
+        "minor" one. Text-forward, so it never depends on a hero image. */}
+    {ledePosts.length > 0 && (
+      <div class="blog-lede">
+        {ledePosts.map((post, i) => (
+          <article class={`panel blog-card blog-lede-card ${i === 0 ? 'blog-lede-card--major' : 'blog-lede-card--minor'}`}>
+            {post.data.heroImage ? (
+              <div class="blog-card-img blog-lede-img">
+                <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
+                  <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} />
+                </a>
+                <div class="blog-card-over blog-lede-over">
+                  <div class="blog-card-meta">
+                    <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                    <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                  </div>
+                  <h2 class="blog-card-title blog-lede-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+                  {i === 0 && <p class="blog-lede-desc">{post.data.description}</p>}
+                </div>
+              </div>
+            ) : (
+              <div class="blog-card-body blog-lede-text">
+                <div class="blog-card-meta">
+                  <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                  <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                </div>
+                <h2 class="blog-card-title blog-lede-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+                {i === 0 && <p class="blog-card-desc">{post.data.description}</p>}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    )}
+
+    <ul class="blog-list">
+      {gridPosts.map((post) => (
+        <li class="blog-list-item">
+          <div class="panel blog-card">
+            {post.data.heroImage ? (
+              <div class="blog-card-img">
+                <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
+                  <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} loading="lazy" />
+                </a>
+                <div class="blog-card-over">
+                  <div class="blog-card-meta">
+                    <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                    <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                  </div>
+                  <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+                </div>
+              </div>
+            ) : (
+              <div class="blog-card-body">
+                <div class="blog-card-meta">
+                  <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                  <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                </div>
+                <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+              </div>
+            )}
+            <div class="blog-card-body">
+              <p class="blog-card-desc">{post.data.description}</p>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    <BlogPager currentPage={page.currentPage} lastPage={page.lastPage} basePath="/blog/" />
+  </div>
+</BaseLayout>

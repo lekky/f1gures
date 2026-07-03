@@ -1,40 +1,46 @@
 ---
 import { getCollection } from 'astro:content';
-import BaseLayout from '../../../layouts/BaseLayout.astro';
+import type { GetStaticPaths, Page } from 'astro';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
 import {
   BLOG_CATEGORIES,
   BLOG_CATEGORY_LABELS,
   BLOG_CATEGORY_DESCRIPTIONS,
-} from '../../../content/config';
-import { isPublic, sortPosts, fmtPostDate } from '../../../lib/blog';
+} from '../../../../content/config';
+import { isPublic, sortPosts, fmtPostDate } from '../../../../lib/blog';
+import BlogPager from '../../../../components/blog/BlogPager.astro';
 
-export async function getStaticPaths() {
-  return BLOG_CATEGORIES.map((category) => ({
-    params: { category },
-    props: { category },
-  }));
-}
+// getStaticPaths is hoisted above module scope, so pageSize is inlined here.
+export const getStaticPaths = (async ({ paginate }) => {
+  const all = sortPosts((await getCollection('blog')).filter(isPublic));
+  return BLOG_CATEGORIES.flatMap((category) =>
+    paginate(all.filter((p) => p.data.category === category), {
+      params: { category },
+      props: { category },
+      pageSize: 14,
+    }),
+  );
+}) satisfies GetStaticPaths;
 
-interface Props {
-  category: (typeof BLOG_CATEGORIES)[number];
-}
+type Post = Awaited<ReturnType<typeof getCollection<'blog'>>>[number];
+const { category } = Astro.props as { category: (typeof BLOG_CATEGORIES)[number] };
+const { page } = Astro.props as { page: Page<Post> };
 
-const { category } = Astro.props;
 const label = BLOG_CATEGORY_LABELS[category];
 const categoryDescription = BLOG_CATEGORY_DESCRIPTIONS[category];
 
-const posts = sortPosts(
-  (await getCollection('blog'))
-    .filter(isPublic)
-    .filter((p) => p.data.category === category),
-);
+const basePath = `/blog/category/${category}/`;
+const isFirst = page.currentPage === 1;
+const canonicalPath = isFirst ? basePath : `${basePath}${page.currentPage}/`;
 
-const canonicalPath = `/blog/category/${category}/`;
-const title = `${label} - F1 Blog | f1gures`;
-const description = `${categoryDescription} Read every ${label.toLowerCase()} post on f1gures.`;
+const title = isFirst
+  ? `${label} - F1 Blog | f1gures`
+  : `${label} (Page ${page.currentPage}) - F1 Blog | f1gures`;
+const description = isFirst
+  ? `${categoryDescription} Read every ${label.toLowerCase()} post on f1gures.`
+  : `${categoryDescription} Page ${page.currentPage} of ${page.lastPage}.`;
 
 const jsonLd = {
-  '@context': 'https://schema.org',
   '@type': 'CollectionPage',
   url: `https://f1gures.app${canonicalPath}`,
   name: `${label} - f1gures Blog`,
@@ -46,7 +52,8 @@ const jsonLd = {
 const breadcrumb = [
   { name: 'Home', path: '/' },
   { name: 'Blog', path: '/blog/' },
-  { name: label, path: canonicalPath },
+  { name: label, path: basePath },
+  ...(isFirst ? [] : [{ name: `Page ${page.currentPage}`, path: canonicalPath }]),
 ];
 ---
 <BaseLayout
@@ -68,7 +75,7 @@ const breadcrumb = [
       </div>
     </div>
 
-    {posts.length === 0 ? (
+    {page.data.length === 0 ? (
       <div class="panel">
         <div class="panel-body">
           <p>No posts in this category yet.</p>
@@ -76,7 +83,7 @@ const breadcrumb = [
       </div>
     ) : (
       <ul class="blog-list">
-        {posts.map((post) => (
+        {page.data.map((post) => (
           <li class="blog-list-item">
             <div class="panel blog-card">
               {post.data.heroImage ? (
@@ -86,7 +93,7 @@ const breadcrumb = [
                   </a>
                   <div class="blog-card-over">
                     <div class="blog-card-meta">
-                      <a class="t-eyebrow blog-card-cat" href={`/blog/category/${category}/`}>{label}</a>
+                      <a class="t-eyebrow blog-card-cat" href={basePath}>{label}</a>
                       <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
                     </div>
                     <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
@@ -95,7 +102,7 @@ const breadcrumb = [
               ) : (
                 <div class="blog-card-body">
                   <div class="blog-card-meta">
-                    <a class="t-eyebrow blog-card-cat" href={`/blog/category/${category}/`}>{label}</a>
+                    <a class="t-eyebrow blog-card-cat" href={basePath}>{label}</a>
                     <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
                   </div>
                   <h2 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
@@ -109,5 +116,7 @@ const breadcrumb = [
         ))}
       </ul>
     )}
+
+    <BlogPager currentPage={page.currentPage} lastPage={page.lastPage} basePath={basePath} />
   </div>
 </BaseLayout>
