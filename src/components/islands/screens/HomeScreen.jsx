@@ -102,25 +102,16 @@ function EmptyHome({ mob }) {
 function NextRacePanel({ data, cal, next, mob }) {
   const D = data;
 
-  const userZone = useMemo(() => {
-    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
-    catch { return 'UTC'; }
-  }, []);
-
-  // Initial render is always 'track' so the prerendered HTML matches what
-  // hydration shows for users with no saved preference. localStorage is
-  // read in an effect after hydration to switch to 'user' when needed.
-  const [tzMode, setTzMode] = useState('track');
+  // Resolve the visitor's zone after mount only. The prerendered HTML (and the
+  // first client render) fall back to track time, so SSR and hydration agree;
+  // once known, the visitor's local time becomes the prominent column. Reading
+  // it during the initial render would bake the build machine's zone into the
+  // static HTML and mismatch on hydration.
+  const [userZone, setUserZone] = useState(null);
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('f1-tz');
-      if (saved === 'user' || saved === 'track') setTzMode(saved);
-    } catch { /* localStorage unavailable */ }
+    try { setUserZone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'); }
+    catch { setUserZone('UTC'); }
   }, []);
-  useEffect(() => {
-    try { localStorage.setItem('f1-tz', tzMode); }
-    catch { /* localStorage unavailable */ }
-  }, [tzMode]);
 
   const [expandedSessionId, setExpandedSessionId] = useState(null);
   const unit = useTempUnit();
@@ -128,7 +119,6 @@ function NextRacePanel({ data, cal, next, mob }) {
   const toggleExpand = (id) => setExpandedSessionId(curr => curr === id ? null : id);
 
   const trackZone = circuitTz(next.circuitId);
-  const activeZone = tzMode === 'user' ? userZone : trackZone;
 
   const raceDt = useMemo(() => {
     return next.date
@@ -142,7 +132,18 @@ function NextRacePanel({ data, cal, next, mob }) {
   // countdown reads 0). Recomputed when `sessions` changes (zone toggle
   // doesn't affect ordering - `dt` is the same Date - but `useMemo`
   // keeps this stable across renders).
-  const sessions = buildSessions(next, activeZone);
+  // Show the visitor's local time (primary) and the circuit's local time
+  // (secondary) side by side, so nobody mistakes a track-time schedule for
+  // their own clock. Both columns show even when the zones match this weekend
+  // - seeing them line up confirms it rather than leaving the reader guessing.
+  // Until the visitor's zone is known (pre-mount / SSR) we fall back to a
+  // single track-time column. Countdown/next-session picking is zone-agnostic
+  // (dt is the same instant either way), so it runs off `sessions`.
+  const effUserZone = userZone || trackZone;
+  const twoTz = !!userZone;
+  const userSessions = buildSessions(next, effUserZone);
+  const trackSessions = buildSessions(next, trackZone);
+  const sessions = userSessions;
 
   const nextSession = useMemo(() => {
     const nowMs = Date.now();
@@ -211,59 +212,64 @@ function NextRacePanel({ data, cal, next, mob }) {
               letterSpacing: '0.04em',
               marginBottom: 6,
             }}>
-              {nextSession.name} starts {nextSession.day} · {nextSession.time} {zoneShort(activeZone, nextSession.dt)}
+              {nextSession.name} starts {nextSession.day} · {nextSession.time} {zoneShort(effUserZone, nextSession.dt)}
             </div>
           )}
           <Countdown target={target} />
         </div>
 
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          {(() => {
+            // Grid template shared by the column header and every row. Time
+            // columns use fixed widths (not `auto`) so the header and each row -
+            // separate grid containers - resolve identical tracks and line up.
+            // Order: num, name, weather, your time[, track] - the time columns
+            // sit last so they're flush to the right edge (weather tucks in
+            // before them rather than pushing them left). Two time columns once
+            // the visitor's zone is known; a single one before that (SSR).
+            const cols = twoTz
+              ? (mob ? '26px minmax(0,1fr) 22px 78px 70px' : '44px minmax(0,1fr) 52px 100px 92px')
+              : (mob ? '28px minmax(0,1fr) 22px 78px' : '46px minmax(0,1fr) 56px 100px');
+            return (
+          <div style={{ minWidth: 0 }}>
+          <div style={{ marginBottom: 8 }}>
             <span className="t-eyebrow">Session Schedule</span>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <span className="t-mono" style={{
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--fg-3)',
-              }}>Show times in</span>
-              <div role="tablist" aria-label="Time zone"
-                   style={{ display: 'inline-flex', border: '1px solid var(--line-1)' }}>
-              {[['track', 'Track'], ['user', 'You']].map(([val, lbl]) => (
-                <button key={val} role="tab" aria-selected={tzMode === val}
-                  onClick={(e) => { e.stopPropagation(); setTzMode(val); }}
-                  style={{
-                    padding: '4px 10px',
-                    fontFamily: 'var(--f-mono)',
-                    fontSize: 11,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    cursor: 'pointer',
-                    background: tzMode === val ? 'var(--accent)' : 'transparent',
-                    color: tzMode === val ? '#fff' : 'var(--fg-2)',
-                    border: 'none',
-                  }}>{lbl}</button>
-              ))}
-              </div>
-            </div>
           </div>
-          <div style={{ border: '1px solid var(--line-1)', background: 'var(--bg-2)', minWidth: 0 }} className="next-race-sessions">
+          <div style={{ border: '1px solid var(--line-1)', background: 'var(--bg-2)', minWidth: 0 }} className={`next-race-sessions${twoTz ? '' : ' single-tz'}`}>
+            <div style={{
+              display: 'grid', gridTemplateColumns: cols,
+              gap: mob ? 8 : 12, padding: mob ? '7px 12px' : '7px 14px', alignItems: 'center',
+              borderBottom: '1px solid var(--line-1)', background: 'var(--bg-1)',
+            }}>
+              <span></span>
+              <span className="t-mono" style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}></span>
+              <span></span>
+              <span className="t-mono" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: 10, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.25 }}>
+                <span>{twoTz ? 'Your time' : 'Local'}</span>
+                <span style={{ color: 'var(--fg-4)', fontWeight: 400 }}>({zoneShort(effUserZone, raceDt)})</span>
+              </span>
+              {twoTz && (
+                <span className="t-mono" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.25 }}>
+                  <span>Track</span>
+                  <span style={{ color: 'var(--fg-4)', fontWeight: 400 }}>({zoneShort(trackZone, raceDt)})</span>
+                </span>
+              )}
+            </div>
             {sessions.map((s, i) => {
+              const ts = trackSessions[i];
               const { forecast, isClimate } = sessionWeather(D, next, s.id);
               const isExpanded = expandedSessionId === s.id;
               return (
                 <div key={s.id} style={{ minWidth: 0 }}>
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: mob ? '32px minmax(0, 1fr) auto auto 24px' : '50px minmax(0, 1fr) auto auto 56px',
+                    gridTemplateColumns: cols,
                     gap: mob ? 8 : 12, padding: mob ? '10px 12px' : '10px 14px', alignItems: 'center',
                     borderBottom: (isExpanded || i < sessions.length - 1) ? '1px solid var(--line-1)' : '0',
                     background: nextSession && s.id === nextSession.id ? 'rgba(232,0,45,0.04)' : 'transparent',
                   }}>
                     <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{String(i + 1).padStart(2, '0')}</span>
                     <span style={{ fontFamily: 'var(--f-display)', fontWeight: 600, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{s.name}</span>
-                    <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{s.day}</span>
-                    <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{s.time}</span>
                     <SessionWeatherCell
                       forecast={forecast}
                       isClimate={isClimate}
@@ -272,9 +278,20 @@ function NextRacePanel({ data, cal, next, mob }) {
                       mob={mob}
                       onClick={() => toggleExpand(s.id)}
                     />
+                    {/* Your local time - the prominent column */}
+                    <span className="t-mono" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 11, color: 'var(--fg-3)', marginRight: 6 }}>{s.day}</span>
+                      <span style={{ fontSize: 14, color: 'var(--fg-1)', fontWeight: 700 }}>{s.time}</span>
+                    </span>
+                    {/* Track local time - secondary, dimmed */}
+                    {twoTz && (
+                      <span className="t-mono" style={{ textAlign: 'right', whiteSpace: 'nowrap', fontSize: 11, color: 'var(--fg-3)' }}>
+                        <span style={{ marginRight: 5 }}>{ts.day}</span>{ts.time}
+                      </span>
+                    )}
                   </div>
                   {isExpanded && forecast && (
-                    <SessionWeatherExpand forecast={forecast} isClimate={isClimate} useFahrenheit={useF} timeZone={activeZone} />
+                    <SessionWeatherExpand forecast={forecast} isClimate={isClimate} useFahrenheit={useF} timeZone={effUserZone} />
                   )}
                 </div>
               );
@@ -286,10 +303,13 @@ function NextRacePanel({ data, cal, next, mob }) {
             marginTop: 8,
             letterSpacing: '0.04em',
           }}>
-            Track: {(D.circuits[next.circuit] && D.circuits[next.circuit].city) || '-'} ({zoneShort(trackZone, raceDt)})
-            {' · '}
-            You: {userZone} ({zoneShort(userZone, raceDt)})
+            {twoTz
+              ? <>Your time: {userZone} ({zoneShort(effUserZone, raceDt)}) · Track: {(D.circuits[next.circuit] && D.circuits[next.circuit].city) || 'circuit'} ({zoneShort(trackZone, raceDt)})</>
+              : <>Times in track local time ({zoneShort(trackZone, raceDt)})</>}
           </div>
+          </div>
+            );
+          })()}
           {lapRec && (
             <div style={{
               marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line-1)',

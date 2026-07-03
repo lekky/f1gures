@@ -311,66 +311,57 @@ const flagWashSrc = washCc
     color: var(--fg-1);
   }
 
-  .tz-toggle-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-  .tz-toggle-caption {
-    font-family: var(--f-mono);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--fg-3);
-  }
-  .tz-toggle {
-    display: inline-flex;
-    border: 1px solid var(--line-1);
-    border-radius: 999px;
-    padding: 2px;
-    background: var(--bg-2);
-  }
-  .tz-btn {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    color: var(--fg-3);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 4px 12px;
-    border-radius: 999px;
-    cursor: pointer;
-  }
-  .tz-btn.is-active {
-    background: var(--bg-1);
-    color: var(--fg-1);
-    box-shadow: 0 0 0 1px var(--line-1);
-  }
-
   .session-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
   }
+  .session-table th {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: right;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--line-1);
+    white-space: nowrap;
+  }
+  .session-table th.session-you-head { color: var(--accent); font-weight: 700; }
+  .session-table th.session-track-head { color: var(--fg-3); font-weight: 400; }
   .session-table td {
     padding: 8px 0;
     border-bottom: 1px solid var(--line-1);
   }
   .session-table tr:last-child td { border-bottom: 0; }
   .session-table .session-label { color: var(--fg-2); }
-  .session-table .session-day { color: var(--fg-3); width: 96px; }
-  .session-table .session-time { text-align: right; width: 90px; }
-  .session-table tr.is-next .session-label,
-  .session-table tr.is-next .session-time {
-    color: var(--accent);
+  /* Your local time - the prominent column. */
+  .session-table .session-you {
+    text-align: right;
+    color: var(--fg-1);
     font-weight: 700;
+    width: 108px;
+    white-space: nowrap;
+  }
+  /* Track local time - secondary, dimmed. */
+  .session-table .session-track {
+    text-align: right;
+    color: var(--fg-3);
+    width: 96px;
+    white-space: nowrap;
+  }
+  .session-table tr.is-next .session-label,
+  .session-table tr.is-next .session-you {
+    color: var(--accent);
   }
   .session-table tr.is-next td { border-left: 3px solid var(--accent); padding-left: 8px; }
   .session-table tr.is-next td:not(:first-child) { border-left: 0; padding-left: 0; }
+  .tz-foot {
+    margin: 10px 0 0;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    color: var(--fg-3);
+  }
 
   @media (max-width: 720px) {
     .race-upcoming-grid { grid-template-columns: 1fr; }

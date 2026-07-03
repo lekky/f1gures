@@ -78,14 +78,14 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
         </span>
         <span class="next-session-countdown" data-next-countdown>-</span>
       </div>
-      <div class="tz-toggle-row">
-        <span class="tz-toggle-caption">Show times in</span>
-        <div class="tz-toggle" role="tablist" aria-label="Time zone">
-          <button type="button" class="tz-btn is-active" data-tz="track" role="tab" aria-selected="true">Track</button>
-          <button type="button" class="tz-btn" data-tz="user" role="tab" aria-selected="false">You</button>
-        </div>
-      </div>
-      <table class="session-table">
+      <table class="session-table" data-tz-table>
+        <thead>
+          <tr>
+            <th></th>
+            <th class="session-you-head" data-you-head>Your time</th>
+            <th class="session-track-head" data-track-head>Track</th>
+          </tr>
+        </thead>
         <tbody>
           {sessionRows.map(row => (
             <tr
@@ -94,12 +94,13 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
               data-session-iso={row.iso}
             >
               <td class="session-label">{row.label}</td>
-              <td class="session-day t-mono" data-session-day>-</td>
-              <td class="session-time t-mono" data-session-time>-</td>
+              <td class="session-you t-mono" data-session-you>-</td>
+              <td class="session-track t-mono" data-session-track>-</td>
             </tr>
           ))}
         </tbody>
       </table>
+      <p class="tz-foot" data-tz-foot></p>
     </race-countdown>
   </div>
 
