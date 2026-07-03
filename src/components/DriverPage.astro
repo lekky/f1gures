@@ -313,7 +313,8 @@ const outcomeSeasons = [...outcomeByYear.entries()]
     };
   })
   .filter(s => s.total > 0)
-  .sort((a, b) => a.year - b.year);
+  // Newest season first, matching the Season by Season table below.
+  .sort((a, b) => b.year - a.year);
 const showOutcomeMix = outcomeSeasons.length >= 2;
 // Pair the Career Mosaic and Season Outcomes side by side for shorter careers
 // (both panels stay close in height); longer careers keep them full-width
@@ -690,7 +691,7 @@ const duelSurname = driver.surname;
           <span class="outcome-head-title">Outcome mix by season</span>
           <span class="outcome-head-aside t-mono">100% stacked</span>
         </div>
-        <p class="waffle-blurb">Every season's races stacked into one bar, split by outcome. Watch the gold and silver swell as the car improves and the red of retirements creep in.</p>
+        <p class="waffle-blurb">Every season's races stacked into one bar, split by outcome — newest first. Gold and silver mark the strong years; red flags the retirements.</p>
         <div class="waffle-legend">
           {waffleCounts.map(c => (
             <span class="waffle-key">
