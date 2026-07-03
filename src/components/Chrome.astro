@@ -27,10 +27,11 @@ const route = {
   teams:       isRoute('/teams') || isRoute('/team.html'),
   blog:        isRoute('/blog'),
   guide:       isRoute('/guide'),
+  feedback:    isRoute('/feedback'),
 };
 const inMore =
   route.circuits || route.drivers || route.teams || route.blog || route.guide ||
-  isRoute('/records');
+  route.feedback || isRoute('/records');
 const botActive =
   route.home       ? 'home' :
   route.standings  ? 'standings' :
@@ -54,6 +55,7 @@ const botActive =
       <a class:list={['nav-item', { active: route.teams }]} href="/teams/">Teams</a>
       <a class:list={['nav-item', { active: route.blog }]} href="/blog/">Blog</a>
       <a class:list={['nav-item', { active: route.guide }]} href="/guide/">Guide</a>
+      <a class:list={['nav-item', { active: route.feedback }]} href="/feedback/">Feedback</a>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-controls">
@@ -122,6 +124,7 @@ const botActive =
       <a class="more-sheet-link" href="/teams/">Teams</a>
       <a class="more-sheet-link" href="/records/">Records</a>
       <a class="more-sheet-link" href="/blog/">Blog</a>
+      <a class="more-sheet-link" href="/feedback/">Feedback</a>
     </nav>
   </div>
   <SearchPalette client:load />

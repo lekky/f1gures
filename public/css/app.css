@@ -631,6 +631,93 @@ button { font-family: inherit; }
 .btn-ghost:hover { color: var(--fg-1); background: var(--bg-2); }
 .btn-sm { padding: 6px 10px; font-size: 11px; }
 .btn .arrow { font-size: 14px; line-height: 0.5; }
+.btn:disabled { opacity: 0.55; cursor: default; }
+
+/* ============================================================
+   FEEDBACK PAGE (/feedback/)
+   ============================================================ */
+/* Narrow the whole page so the heading + card read as one centred column
+   instead of a lone card floating against a wide empty page. */
+.fbk-page { max-width: 760px; }
+.fbk-wrap {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  box-shadow: var(--shadow-card);
+  padding: 28px 26px;
+}
+.fbk-form { display: flex; flex-direction: column; gap: 22px; }
+.fbk-field { border: 0; margin: 0; padding: 0; min-width: 0; }
+
+.fbk-label {
+  display: block; font-family: var(--f-display); font-weight: 700;
+  font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--fg-2); margin-bottom: 8px; padding: 0;
+}
+.fbk-optional { color: var(--fg-3); font-weight: 500; letter-spacing: 0.04em; text-transform: none; }
+
+/* Category segmented picker */
+.fbk-cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.fbk-cat {
+  display: flex; flex-direction: column; gap: 2px; text-align: left;
+  padding: 10px 12px; cursor: pointer;
+  background: var(--bg-2); border: 1px solid var(--line-1);
+  color: var(--fg-2); transition: border-color .12s, background .12s, color .12s;
+}
+.fbk-cat:hover { border-color: var(--line-3); background: var(--bg-hover); }
+.fbk-cat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fbk-cat.is-active {
+  border-color: var(--accent); color: var(--fg-1);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
+}
+.fbk-cat-label { font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: 0.01em; }
+.fbk-cat-hint { font-size: 11.5px; color: var(--fg-3); }
+.fbk-cat.is-active .fbk-cat-hint { color: var(--fg-3); }
+
+/* Text inputs */
+.fbk-input, .fbk-textarea {
+  width: 100%; box-sizing: border-box;
+  background: var(--bg-2); border: 1px solid var(--line-2); color: var(--fg-1);
+  font-family: var(--f-body); font-size: 14px; line-height: 1.5;
+  padding: 10px 12px; transition: border-color .12s, box-shadow .12s;
+}
+.fbk-textarea { resize: vertical; min-height: 120px; }
+.fbk-input::placeholder, .fbk-textarea::placeholder { color: var(--fg-3); }
+.fbk-input:focus, .fbk-textarea:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.fbk-count { text-align: right; font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); margin-top: 4px; }
+
+/* Honeypot — pulled off-screen, never shown to humans */
+.fbk-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+.fbk-turnstile { min-height: 65px; }
+
+.fbk-error {
+  font-size: 13px; color: var(--neg);
+  border-left: 3px solid var(--neg); padding: 6px 0 6px 10px;
+  background: color-mix(in srgb, var(--neg) 6%, transparent);
+}
+
+.fbk-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.fbk-privacy { font-size: 11.5px; color: var(--fg-3); }
+
+/* Success + not-configured states — sit inside the .fbk-wrap card already */
+.fbk-success, .fbk-notice { padding: 4px; }
+.fbk-success-mark {
+  width: 40px; height: 40px; display: grid; place-items: center;
+  background: var(--pos); color: #fff; font-size: 22px; font-weight: 800; margin-bottom: 14px;
+}
+.fbk-success-title { font-family: var(--f-display); font-weight: 800; font-size: 24px; text-transform: uppercase; }
+.fbk-success-sub { color: var(--fg-2); font-size: 14px; margin: 6px 0 18px; }
+.fbk-success-sub a { color: var(--accent-text); }
+.fbk-notice-title { font-family: var(--f-display); font-weight: 700; font-size: 18px; text-transform: uppercase; color: var(--warn); margin-bottom: 8px; }
+.fbk-notice p { color: var(--fg-2); font-size: 13.5px; line-height: 1.6; }
+.fbk-notice code { font-family: var(--f-mono); font-size: 12px; background: var(--bg-3); padding: 1px 5px; color: var(--fg-1); }
+
+@media (max-width: 560px) {
+  .fbk-cats { grid-template-columns: 1fr; }
+}
 
 /* ============================================================
    TABLE

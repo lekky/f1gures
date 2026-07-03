@@ -1,0 +1,9 @@
+name = "f1gures-feedback"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Public, non-secret config. Secrets (GITHUB_TOKEN, TURNSTILE_SECRET) are set
+# separately with `wrangler secret put` — never put them here.
+[vars]
+ALLOWED_ORIGINS = "https://f1gures.app,http://localhost:4321"
+GITHUB_REPO = "lekky/f1gures"
