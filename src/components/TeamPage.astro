@@ -91,7 +91,14 @@ const carFile = CAR_IMAGE_FOR_REF[team.constructorRef];
 const carImagePath = carFile ? `images/cars/${carFile}` : null;
 const hasCarImage = carImagePath ? existsSync(resolve(process.cwd(), 'public', carImagePath)) : false;
 
-const logoImagePath = `images/teams/${team.constructorRef}.jpg`;
+// Logo files use the buildFallback team id, not the Ergast constructorRef
+// (keep in sync with TEAM_LOGO_ALIAS in shared.jsx).
+const TEAM_LOGO_ALIAS: Record<string, string> = {
+  red_bull: 'redbull',
+  aston_martin: 'aston',
+};
+const logoSlug = TEAM_LOGO_ALIAS[team.constructorRef] ?? team.constructorRef;
+const logoImagePath = `images/teams/${logoSlug}.jpg`;
 const hasLogo = existsSync(resolve(process.cwd(), 'public', logoImagePath));
 
 // Flag wash (design handoff "Option A" layout, real flag): the team's national

@@ -78,6 +78,7 @@ import Flag from './Flag.astro';
 import StatusIcon from './StatusIcon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
+import { teamLogoPath } from '../lib/teamLogo.js';
 
 const { driver } = Astro.props;
 const fullName = `${driver.forename} ${driver.surname}`;
@@ -320,25 +321,8 @@ const showOutcomeMix = outcomeSeasons.length >= 2;
 // mosaic.
 const mosaicOutcomesSideBySide = showWaffle && showOutcomeMix && outcomeSeasons.length <= 10;
 
-// Team-logo lookup for the race-by-race team cells. Logo files are keyed by
-// the bundle short id (redbull.jpg, aston.jpg), so map the Ergast/bundle
-// constructorRef → logo basename. Only the ~11 current teams ship a logo.
-const LOGO_FOR_REF: Record<string, string> = {
-  alpine: 'alpine', aston: 'aston', aston_martin: 'aston', audi: 'audi',
-  cadillac: 'cadillac', ferrari: 'ferrari', haas: 'haas', mclaren: 'mclaren',
-  mercedes: 'mercedes', rb: 'rb', redbull: 'redbull', red_bull: 'redbull',
-  williams: 'williams',
-};
-const logoCache = new Map<string, string | null>();
-function teamLogoPath(ref: string | null): string | null {
-  if (!ref) return null;
-  if (!logoCache.has(ref)) {
-    const base = LOGO_FOR_REF[ref];
-    const rel = base ? `images/teams/${base}.jpg` : null;
-    logoCache.set(ref, rel && existsSync(resolve(process.cwd(), 'public', rel)) ? `/${rel}` : null);
-  }
-  return logoCache.get(ref)!;
-}
+// Team-logo lookup for the race-by-race team cells uses the shared
+// teamLogoPath (resolves any logo present in public/images/teams/).
 
 // ── Teammate duels (Career Duel Meter) ───────────────────────────
 // Roll every teammate battle into two verdict bars (qualifying + race), then
