@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import FeedbackForm from '../components/islands/FeedbackForm.jsx';
+
+const title = 'Feedback | f1gures';
+const description = 'Found a bug, spotted a wrong stat, or have an idea for f1gures? Send it here — it goes straight to the project’s issue tracker.';
+const canonicalPath = '/feedback/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Feedback', path: '/feedback/' },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  breadcrumb={breadcrumb}
+>
+  <div class="page fbk-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">Get in touch</div>
+        <h1 class="page-title">Feedback</h1>
+        <p class="page-sub">Spotted a bug, a wrong result, or have an idea to make f1gures better? Send it below — it lands straight in the project’s issue tracker, so nothing gets lost.</p>
+      </div>
+    </div>
+
+    <div class="fbk-wrap">
+      <FeedbackForm client:load />
+    </div>
+  </div>
+</BaseLayout>
