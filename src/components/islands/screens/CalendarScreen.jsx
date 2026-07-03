@@ -15,9 +15,9 @@ const SESSION_LABELS = {
 };
 
 // Build the next session whose start is in the future, plus a short
-// schedule strip for the hero. Mirrors HomeScreen.buildSessions but
-// keeps everything in track-local time (the calendar page doesn't
-// expose a TZ toggle - users tweak it on the home dashboard).
+// schedule strip for the hero. Mirrors HomeScreen.buildSessions; called
+// once per zone (the visitor's and the circuit's) so the hero can show
+// both times together.
 function buildSessionStrip(race, zone) {
   const order = race.sprint
     ? ['fp1', 'sprintQuali', 'sprint', 'q', 'race']
@@ -43,7 +43,26 @@ function NextRaceHero({ F, race, mob }) {
   const raceHref = urlFor({ name: 'race', year: F.seasonYear, round: race.round });
   const circuitHref = urlFor({ name: 'circuit', id: race.circuit });
   const trackZone = circuitTz(race.circuitId);
-  const sessions = useMemo(() => buildSessionStrip(race, trackZone), [race, trackZone]);
+
+  // Resolve the visitor's own zone after mount only, so SSR and the first
+  // client render agree (both fall back to track time). Once known, each
+  // session shows the visitor's local time (prominent) with the circuit's
+  // time beside it in parens - shown even when the zones match, so the reader
+  // can see they line up rather than guess.
+  const [userZone, setUserZone] = useState(null);
+  useEffect(() => {
+    try { setUserZone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'); }
+    catch { setUserZone('UTC'); }
+  }, []);
+  const effUserZone = userZone || trackZone;
+  const twoTz = !!userZone;
+
+  const sessions = useMemo(() => buildSessionStrip(race, effUserZone), [race, effUserZone]);
+  const trackSessions = useMemo(() => buildSessionStrip(race, trackZone), [race, trackZone]);
+  const trackById = useMemo(
+    () => Object.fromEntries(trackSessions.map(s => [s.id, s])),
+    [trackSessions],
+  );
 
   const raceDt = race.date
     ? new Date(`${race.date}T${race.time || '14:00:00Z'}`)
@@ -122,6 +141,7 @@ function NextRaceHero({ F, race, mob }) {
         }}>
           {sessions.map(s => {
             const isNext = nextSession && s.id === nextSession.id;
+            const ts = trackById[s.id];
             return (
               <div key={s.id} className="t-mono" style={{
                 fontSize: 11,
@@ -135,7 +155,10 @@ function NextRaceHero({ F, race, mob }) {
                   marginRight: 6,
                   color: isNext ? 'var(--accent)' : 'var(--fg-2)',
                 }}>{s.name}</span>
-                {s.day} {s.time}
+                <span style={{ fontWeight: 700, color: isNext ? 'var(--fg-1)' : 'var(--fg-2)' }}>{s.day} {s.time}</span>
+                {twoTz && ts && (
+                  <span style={{ color: 'var(--fg-4)', marginLeft: 5 }}>({ts.time})</span>
+                )}
               </div>
             );
           })}
@@ -143,7 +166,9 @@ function NextRaceHero({ F, race, mob }) {
             <div className="t-mono" style={{
               fontSize: 11, color: 'var(--fg-3)', marginLeft: 'auto',
             }}>
-              {zoneShort(trackZone, nextSession.dt)} · track time
+              {twoTz
+                ? <>Your time ({zoneShort(effUserZone, nextSession.dt)}) · ( ) = track ({zoneShort(trackZone, nextSession.dt)})</>
+                : <>{zoneShort(trackZone, nextSession.dt)} · track time</>}
             </div>
           )}
         </div>
