@@ -636,7 +636,13 @@ button { font-family: inherit; }
 /* ============================================================
    FEEDBACK PAGE (/feedback/)
    ============================================================ */
-.fbk-wrap { max-width: 620px; }
+.fbk-wrap {
+  max-width: 640px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  box-shadow: var(--shadow-card);
+  padding: 28px 26px;
+}
 .fbk-form { display: flex; flex-direction: column; gap: 22px; }
 .fbk-field { border: 0; margin: 0; padding: 0; min-width: 0; }
 
@@ -693,8 +699,8 @@ button { font-family: inherit; }
 .fbk-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .fbk-privacy { font-size: 11.5px; color: var(--fg-4); }
 
-/* Success + not-configured states */
-.fbk-success, .fbk-notice { max-width: 620px; border: 1px solid var(--line-2); background: var(--bg-2); padding: 28px; }
+/* Success + not-configured states — sit inside the .fbk-wrap card already */
+.fbk-success, .fbk-notice { padding: 4px; }
 .fbk-success-mark {
   width: 40px; height: 40px; display: grid; place-items: center;
   background: var(--pos); color: #fff; font-size: 22px; font-weight: 800; margin-bottom: 14px;

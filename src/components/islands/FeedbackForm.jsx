@@ -149,7 +149,7 @@ export default function FeedbackForm() {
     return (
       <div className="fbk-success">
         <div className="fbk-success-mark" aria-hidden="true">✓</div>
-        <div className="fbk-success-title">Thanks — that’s in.</div>
+        <div className="fbk-success-title">Thanks, that’s in.</div>
         <p className="fbk-success-sub">
           {result?.url ? (
             <>Your feedback opened issue <a href={result.url} target="_blank" rel="noopener noreferrer">#{result.number}</a>.</>
@@ -200,7 +200,7 @@ export default function FeedbackForm() {
           onChange={(e) => setMessage(e.target.value)}
           rows={6}
           maxLength={4000}
-          placeholder="Tell me what you found, what you’d like, or what looks wrong…"
+          placeholder="Tell us what you found, what you’d like, or what looks wrong…"
           required
         />
         <div className="fbk-count">{message.length}/4000</div>
@@ -208,7 +208,7 @@ export default function FeedbackForm() {
 
       <div className="fbk-field">
         <label className="fbk-label" htmlFor="fbk-email">
-          Email <span className="fbk-optional">(optional — only if you want a reply)</span>
+          Email <span className="fbk-optional">(optional, only if you want a reply)</span>
         </label>
         <input
           id="fbk-email"
