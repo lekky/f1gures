@@ -636,8 +636,10 @@ button { font-family: inherit; }
 /* ============================================================
    FEEDBACK PAGE (/feedback/)
    ============================================================ */
+/* Narrow the whole page so the heading + card read as one centred column
+   instead of a lone card floating against a wide empty page. */
+.fbk-page { max-width: 760px; }
 .fbk-wrap {
-  max-width: 640px;
   background: var(--bg-2);
   border: 1px solid var(--line-1);
   box-shadow: var(--shadow-card);
@@ -651,7 +653,7 @@ button { font-family: inherit; }
   font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--fg-2); margin-bottom: 8px; padding: 0;
 }
-.fbk-optional { color: var(--fg-4); font-weight: 500; letter-spacing: 0.04em; text-transform: none; }
+.fbk-optional { color: var(--fg-3); font-weight: 500; letter-spacing: 0.04em; text-transform: none; }
 
 /* Category segmented picker */
 .fbk-cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -662,12 +664,13 @@ button { font-family: inherit; }
   color: var(--fg-2); transition: border-color .12s, background .12s, color .12s;
 }
 .fbk-cat:hover { border-color: var(--line-3); background: var(--bg-hover); }
+.fbk-cat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .fbk-cat.is-active {
   border-color: var(--accent); color: var(--fg-1);
   background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
 }
 .fbk-cat-label { font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: 0.01em; }
-.fbk-cat-hint { font-size: 11.5px; color: var(--fg-4); }
+.fbk-cat-hint { font-size: 11.5px; color: var(--fg-3); }
 .fbk-cat.is-active .fbk-cat-hint { color: var(--fg-3); }
 
 /* Text inputs */
@@ -678,12 +681,12 @@ button { font-family: inherit; }
   padding: 10px 12px; transition: border-color .12s, box-shadow .12s;
 }
 .fbk-textarea { resize: vertical; min-height: 120px; }
-.fbk-input::placeholder, .fbk-textarea::placeholder { color: var(--fg-4); }
+.fbk-input::placeholder, .fbk-textarea::placeholder { color: var(--fg-3); }
 .fbk-input:focus, .fbk-textarea:focus {
   outline: none; border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
-.fbk-count { text-align: right; font-family: var(--f-mono); font-size: 11px; color: var(--fg-4); margin-top: 4px; }
+.fbk-count { text-align: right; font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); margin-top: 4px; }
 
 /* Honeypot — pulled off-screen, never shown to humans */
 .fbk-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
@@ -697,7 +700,7 @@ button { font-family: inherit; }
 }
 
 .fbk-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.fbk-privacy { font-size: 11.5px; color: var(--fg-4); }
+.fbk-privacy { font-size: 11.5px; color: var(--fg-3); }
 
 /* Success + not-configured states — sit inside the .fbk-wrap card already */
 .fbk-success, .fbk-notice { padding: 4px; }
