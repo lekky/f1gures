@@ -8,10 +8,10 @@
 // "not configured yet" notice instead of a live form, so the build never breaks.
 
 // The deployed Worker URL, e.g. 'https://f1gures-feedback.yourname.workers.dev'
-export const FEEDBACK_WORKER_URL = '';
+export const FEEDBACK_WORKER_URL = 'https://f1gures-feedback.f1gures-feedback.workers.dev';
 
 // The Turnstile *site* key (the public one), e.g. '0x4AAAAAAA...'
-export const TURNSTILE_SITE_KEY = '';
+export const TURNSTILE_SITE_KEY = '0x4AAAAAADvIJ3da70nbMddf';
 
 export const feedbackConfigured = () =>
   Boolean(FEEDBACK_WORKER_URL) && Boolean(TURNSTILE_SITE_KEY);
