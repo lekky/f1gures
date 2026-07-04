@@ -126,6 +126,30 @@ describe('computeStandings sprint awareness', () => {
     expect(st.drivers[1].points).toBe(43);
     expect(st.drivers.length).toBe(2);
   });
+
+  it('breaks points ties by countback when wins are equal (best 2nd place)', () => {
+    // Lando/Leclerc case: same points, neither has a win. NOR has a P2 as
+    // his best result, LEC only a P3, so countback ranks NOR ahead.
+    const tied = {
+      drivers: [
+        { id: 'LEC', team: 't1' },
+        { id: 'NOR', team: 't2' },
+      ],
+      teams: [{ id: 't1' }, { id: 't2' }],
+      results: {
+        // NOR P2 (18), LEC P3 (15)
+        1: { order: ['XXX', 'NOR', 'LEC'],
+             detail: { XXX: { points: 25 }, NOR: { points: 18 }, LEC: { points: 15 } } },
+        // LEC P3 (15), NOR P4 (12) - levels both on 30 points, 0 wins each
+        2: { order: ['XXX', 'YYY', 'LEC', 'NOR'],
+             detail: { XXX: { points: 25 }, YYY: { points: 18 }, LEC: { points: 15 }, NOR: { points: 12 } } },
+      },
+    };
+    const st = computeStandings(tied);
+    expect(st.drivers[0].driver.id).toBe('NOR'); // best finish P2 > LEC's P3
+    expect(st.drivers[1].driver.id).toBe('LEC');
+    expect(st.drivers[0].points).toBe(st.drivers[1].points);
+  });
 });
 
 // Regression against the real committed bundle: 2025 championship totals
