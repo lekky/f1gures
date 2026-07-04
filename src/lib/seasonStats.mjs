@@ -19,6 +19,20 @@
 const POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 const SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1];
 
+// Countback tiebreak (FIA sporting regs): when points are equal, the driver
+// (or team) with more 1st places ranks higher; if still tied, more 2nd
+// places, then 3rd, and so on down the finishing order until it breaks.
+// `fa`/`fb` are per-position finish tallies (index p-1 = count of pth places).
+function countback(fa, fb) {
+  const a = fa || [], b = fb || [];
+  const n = Math.max(a.length, b.length);
+  for (let i = 0; i < n; i++) {
+    const diff = (b[i] || 0) - (a[i] || 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+
 // Race points earned per driver code in one round. Canonical detail points
 // when the bundle ships them; otherwise the modern 25-18-... approximation
 // plus the legacy fastest-lap +1 (canonical points already encode the
@@ -95,9 +109,13 @@ export function computeStandings(season) {
   const results = (season && season.results) || {};
 
   const driverPts = {}, driverWins = {}, driverPodiums = {}, driverFastest = {}, driverPoles = {}, driverDnfs = {};
+  // driverFinishes[code][p-1] = number of times this driver finished pth.
+  // Drives the countback tiebreak (most 1sts, then 2nds, then 3rds, ...).
+  const driverFinishes = {};
   drivers.forEach(d => {
     driverPts[d.id] = 0; driverWins[d.id] = 0; driverPodiums[d.id] = 0;
     driverFastest[d.id] = 0; driverPoles[d.id] = 0; driverDnfs[d.id] = 0;
+    driverFinishes[d.id] = [];
   });
   const completedRounds = Object.keys(results).map(Number).sort((a, b) => a - b);
   const lastRound = completedRounds[completedRounds.length - 1];
@@ -110,6 +128,7 @@ export function computeStandings(season) {
       if (driverPts[code] === undefined) {
         driverPts[code] = 0; driverWins[code] = 0; driverPodiums[code] = 0;
         driverFastest[code] = 0; driverPoles[code] = 0; driverDnfs[code] = 0;
+        driverFinishes[code] = [];
       }
     };
 
@@ -121,6 +140,7 @@ export function computeStandings(season) {
       ensure(code);
       if (i === 0) driverWins[code] += 1;
       if (i < 3) driverPodiums[code] += 1;
+      driverFinishes[code][i] = (driverFinishes[code][i] || 0) + 1;
     });
     if (res.fastest) { ensure(res.fastest); driverFastest[res.fastest] += 1; }
     if (res.pole) { ensure(res.pole); driverPoles[res.pole] += 1; }
@@ -154,8 +174,9 @@ export function computeStandings(season) {
       fastestLaps: driverFastest[d.id] || 0,
       poles: driverPoles[d.id] || 0,
       dnfs: driverDnfs[d.id] || 0,
+      finishes: driverFinishes[d.id] || [],
     };
-  }).sort((a, b) => b.points - a.points || b.wins - a.wins);
+  }).sort((a, b) => b.points - a.points || countback(a.finishes, b.finishes));
 
   // Position-change indicator: compare each driver's current rank to
   // their rank after the previous round. Prefer the championship
@@ -185,12 +206,15 @@ export function computeStandings(season) {
   const lastRoundCSnap = lastRound != null && results[lastRound] && results[lastRound].constructorStandings
     ? results[lastRound].constructorStandings
     : null;
-  const teamPts = {}, teamWins = {}, teamPodiums = {};
-  teams.forEach(t => { teamPts[t.id] = 0; teamWins[t.id] = 0; teamPodiums[t.id] = 0; });
+  const teamPts = {}, teamWins = {}, teamPodiums = {}, teamFinishes = {};
+  teams.forEach(t => { teamPts[t.id] = 0; teamWins[t.id] = 0; teamPodiums[t.id] = 0; teamFinishes[t.id] = []; });
   ranked.forEach(r => {
-    teamPts[r.driver.team] = (teamPts[r.driver.team] || 0) + r.points;
-    teamWins[r.driver.team] = (teamWins[r.driver.team] || 0) + r.wins;
-    teamPodiums[r.driver.team] = (teamPodiums[r.driver.team] || 0) + r.podiums;
+    const tid = r.driver.team;
+    teamPts[tid] = (teamPts[tid] || 0) + r.points;
+    teamWins[tid] = (teamWins[tid] || 0) + r.wins;
+    teamPodiums[tid] = (teamPodiums[tid] || 0) + r.podiums;
+    const tf = teamFinishes[tid] || (teamFinishes[tid] = []);
+    (r.finishes || []).forEach((c, i) => { tf[i] = (tf[i] || 0) + (c || 0); });
   });
   const teamRanked = teams.map(t => {
     const snap = lastRoundCSnap && lastRoundCSnap[t.id];
@@ -199,9 +223,10 @@ export function computeStandings(season) {
       points: snap ? snap.points : (teamPts[t.id] || 0),
       wins: snap ? snap.wins : (teamWins[t.id] || 0),
       podiums: teamPodiums[t.id] || 0,
+      finishes: teamFinishes[t.id] || [],
       drivers: drivers.filter(d => d.team === t.id),
     };
-  }).sort((a, b) => b.points - a.points || b.wins - a.wins);
+  }).sort((a, b) => b.points - a.points || countback(a.finishes, b.finishes));
   teamRanked.forEach((t, i) => t.position = i + 1);
 
   // Per-round championship progression. Use the FIA snapshot per
