@@ -3,8 +3,8 @@
 //   manifest.json        tiny index the apps poll first (schemaVersion, per-file
 //                        sha256 hashes, latestSeason, minAppVersion, notice)
 //   seasons/<year>.json  one file per season, 2020..current — the app data
-//                        contract (see f1gures-app/docs/data-contract.md and
-//                        f1gures-app/design/season-2026.js for the reference
+//                        contract (see figures-app/docs/data-contract.md and
+//                        figures-app/design/season-2026.js for the reference
 //                        shape). Standings/stats are PRECOMPUTED here so the
 //                        apps ship no scoring rules.
 //   content.json         guide chapters, blog index, records, trivia facts —
