@@ -1,0 +1,146 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// Stats hub — the "numbers" bucket. Fronts the 17 records leaderboards and
+// signposts the upcoming head-to-head Compare tool. Reads the prerendered
+// records index (same source as /records/) so the counts are always real.
+const indexPath = resolve(process.cwd(), 'public/data/archive/_records-index.json');
+const records = JSON.parse(readFileSync(indexPath, 'utf8'));
+const groups = records.groups || [];
+const totalRecords = groups.reduce((n: number, g: any) => n + (g.records?.length || 0), 0);
+
+const title = 'F1 Stats — Records, Leaderboards & Comparisons | f1gures';
+const description = 'The numbers behind Formula 1: 17 all-time and modern-era leaderboards, from wins and poles to streaks and title margins — plus head-to-head comparisons.';
+const canonicalPath = '/stats/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Stats', path: '/stats/' },
+];
+
+const ORIGIN = 'https://f1gures.app';
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'F1 Stats',
+  url: ORIGIN + canonicalPath,
+  description,
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page hub-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">The numbers</div>
+        <h1 class="page-title">Stats</h1>
+        <p class="page-sub">Every Formula 1 leaderboard worth knowing, plus the tools to settle an argument — records, milestones and head-to-head comparisons, computed from 1950 to the last completed race.</p>
+      </div>
+    </div>
+
+    <div class="hub-pillars">
+      <a class="hub-pillar" href="/records/">
+        <div class="hub-pillar-head">
+          <span class="hub-pillar-eyebrow">Leaderboards</span>
+          <span class="hub-pillar-count">{totalRecords}</span>
+        </div>
+        <h2 class="hub-pillar-title">Records &amp; Milestones</h2>
+        <p class="hub-pillar-desc">All-time and modern-era rankings — race wins, poles, podiums, championships, streaks and more.</p>
+        <span class="hub-pillar-go">Explore records <span class="arrow" aria-hidden="true">›</span></span>
+      </a>
+
+      <div class="hub-pillar is-soon" aria-disabled="true">
+        <div class="hub-pillar-head">
+          <span class="hub-pillar-eyebrow">Head to head</span>
+          <span class="hub-pillar-pill">Soon</span>
+        </div>
+        <h2 class="hub-pillar-title">Compare</h2>
+        <p class="hub-pillar-desc">Line up any two drivers or teams side by side — points, wins, poles and season-by-season form.</p>
+        <span class="hub-pillar-go hub-pillar-go--muted">Coming soon</span>
+      </div>
+    </div>
+
+    <div class="hub-cats">
+      {groups.map((g: any) => (
+        <a class="hub-cat" href="/records/">
+          <span class="hub-cat-title">{g.label}</span>
+          <span class="hub-cat-meta">{g.records.length} {g.records.length === 1 ? 'leaderboard' : 'leaderboards'} <span class="arrow" aria-hidden="true">›</span></span>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .hub-pillars {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+    margin-bottom: 28px;
+  }
+  .hub-pillar {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 22px; text-decoration: none;
+    border: 1px solid var(--line-2); background: var(--bg-2);
+    transition: border-color var(--mo, 0.15s) ease, transform var(--mo, 0.15s) ease;
+  }
+  a.hub-pillar:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .hub-pillar.is-soon { opacity: 0.7; }
+  .hub-pillar-head {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .hub-pillar-eyebrow {
+    font-family: var(--f-display); font-weight: 600; font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .hub-pillar-count {
+    font-family: var(--f-mono, monospace); font-weight: 700; font-size: 28px;
+    line-height: 1; color: var(--accent);
+  }
+  .hub-pillar-pill {
+    font-family: var(--f-display); font-weight: 700; font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3);
+    border: 1px solid var(--line-2); padding: 3px 8px;
+  }
+  .hub-pillar-title {
+    font-family: var(--f-display); font-weight: 800; font-size: 24px;
+    letter-spacing: 0; text-transform: uppercase; color: var(--fg-1); line-height: 1.05;
+  }
+  .hub-pillar-desc { color: var(--fg-2); font-size: 14px; line-height: 1.5; }
+  .hub-pillar-go {
+    margin-top: auto; font-family: var(--f-display); font-weight: 700;
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-1);
+  }
+  .hub-pillar-go--muted { color: var(--fg-3); }
+  .hub-pillar-go .arrow { color: var(--accent); }
+
+  .hub-cats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  }
+  .hub-cat {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 16px 18px; text-decoration: none;
+    border: 1px solid var(--line-1); background: var(--bg-1);
+    transition: border-color var(--mo, 0.15s) ease;
+  }
+  .hub-cat:hover { border-color: var(--line-3); }
+  .hub-cat-title {
+    font-family: var(--f-display); font-weight: 700; font-size: 15px;
+    text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-1);
+  }
+  .hub-cat-meta {
+    font-family: var(--f-display); font-weight: 600; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .hub-cat-meta .arrow { color: var(--accent); }
+
+  @media (max-width: 720px) {
+    .hub-pillars { grid-template-columns: 1fr; }
+    .hub-cats { grid-template-columns: 1fr; }
+  }
+</style>
