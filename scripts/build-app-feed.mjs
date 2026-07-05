@@ -2,7 +2,7 @@
 //
 //   manifest.json        tiny index the apps poll first (schemaVersion, per-file
 //                        sha256 hashes, latestSeason, minAppVersion, notice)
-//   seasons/<year>.json  one file per season, 2020..current — the app data
+//   seasons/<year>.json  one file per season, 1950..current — the app data
 //                        contract (see figures-app/docs/data-contract.md and
 //                        figures-app/design/season-2026.js for the reference
 //                        shape). Standings/stats are PRECOMPUTED here so the
@@ -40,7 +40,10 @@ const OUT = join(DATA, 'app', 'v1');
 const SITE = 'https://f1gures.app';
 
 const SCHEMA_VERSION = 1;
-const FIRST_APP_SEASON = 2020; // season picker range per PRD
+// Full history: emit every season bundle we have (1950..current). The apps'
+// season picker is manifest-driven and extends automatically. Seasons that fail
+// validation (sparse pre-war-era data) are skipped with a warning, not fatal.
+const FIRST_APP_SEASON = 1950;
 
 // ---------------------------------------------------------------------------
 // small helpers
