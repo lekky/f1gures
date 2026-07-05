@@ -136,6 +136,8 @@ function buildSeason(year, bundle) {
       team: teamName(d.team), teamId: d.team, teamShort: teamsById[d.team]?.short || '',
       color: teamColor(d.team), pts: r.points, wins: r.wins, podiums: r.podiums,
       poles: r.poles, fastLaps: r.fastestLaps, img: driverImg(d.jolpicaId),
+      // archive ref (jolpica) — links a season driver to its career doc / Compare
+      ref: d.jolpicaId || null,
     };
   });
 
@@ -175,8 +177,12 @@ function buildSeason(year, bundle) {
       flag: c.flag || '', length: p.length, laps: p.laps, corners: p.corners,
       firstYear: p.firstYear, races: p.races, tyreDeg: p.tyreDeg, overtaking: p.overtaking,
       weather: p.weather,
+      // track characteristics (were website-only): permanent/street, straight, DRS
+      type: p.type || '', longestStraight: p.longestStraight ?? null, drsZones: p.drsZones ?? null,
       record: p.lapRecord ? { driver: p.lapRecord.driver, time: p.lapRecord.time, year: p.lapRecord.year } : null,
       blurb: p.blurb || '', map: circuitMap(c.circuit), round: c.round, sprint: !!c.sprint,
+      // links to the circuit's all-time history in archive.json (keyed by circuitId)
+      histId: c.circuitId || null,
     });
   }
 
@@ -498,9 +504,27 @@ function buildArchiveTeam(t) {
   };
 }
 
+function buildArchiveCircuit(c) {
+  const winners = (c.races || [])
+    .map(r => ({
+      year: r.year, name: gpShort(r.name || ''),
+      winnerRef: r.winnerRef || null, winner: r.winnerName || null,
+      team: r.winnerTeam || null, teamRef: r.winnerTeamRef || null,
+      poleRef: r.poleRef || null, pole: r.poleName || null,
+    }))
+    .sort((a, b) => b.year - a.year);
+  const topN = (arr) => (arr || []).slice(0, 5).map(m => ({ ref: m.driverRef, name: m.name, count: n0(m.count) }));
+  return {
+    id: c.circuitRef, name: c.name, races: n0(c.raceCount) || winners.length,
+    firstYear: c.firstYear ?? null, lastYear: c.lastYear ?? null,
+    mostWins: topN(c.mostWins), mostPoles: topN(c.mostPoles), winners,
+  };
+}
+
 function buildArchive() {
   const dDir = join(DATA, 'archive', 'drivers');
   const tDir = join(DATA, 'archive', 'teams');
+  const cDir = join(DATA, 'archive', 'circuits');
   if (!existsSync(dDir) || !existsSync(tDir)) {
     console.warn('::warning::app-feed: no archive/ docs — skipping archive.json');
     return null;
@@ -515,8 +539,14 @@ function buildArchive() {
     .filter(Boolean)
     .filter(t => t.races > 0)
     .sort((a, b) => b.titles - a.titles || b.wins - a.wins || (b.points - a.points));
+  const circuits = existsSync(cDir)
+    ? readdirSync(cDir).filter(f => f.endsWith('.json'))
+      .map(f => { try { return buildArchiveCircuit(JSON.parse(readFileSync(join(cDir, f), 'utf8'))); } catch { return null; } })
+      .filter(Boolean)
+      .filter(c => c.winners.length)
+    : [];
   if (!drivers.length || !teams.length) throw new Error('archive: no drivers or teams built');
-  return { drivers, teams };
+  return { drivers, teams, circuits };
 }
 
 // ---------------------------------------------------------------------------
