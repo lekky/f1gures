@@ -455,6 +455,9 @@ function buildArchiveDriver(d) {
   const classified = pr.filter(isClassifiedRace);
   const avgFinish = classified.length ? +(classified.reduce((a, r) => a + r.position, 0) / classified.length).toFixed(1) : null;
   const dnfPct = pr.length ? +(((pr.length - classified.length) / pr.length) * 100).toFixed(1) : null;
+  // compact per-race outcome for the career mosaic + season-outcomes bars:
+  // [year, pos] where pos is the classified finish, or 0 for a DNF/DNS.
+  const raceLog = pr.map(r => [r.year, isClassifiedRace(r) ? r.position : 0]);
   const teams = new Set(perSeason.map(s => s.teamRef).filter(Boolean)).size;
   const latest = perSeason[0] || null;
   const mates = (d.teammates?.byMate || []).map(m => ({
@@ -472,7 +475,7 @@ function buildArchiveDriver(d) {
     poles: n0(c.poles), fastLaps: n0(c.fastestLaps), titles: n0(c.championships),
     points, avgFinish, dnfPct, teamsCount: teams,
     team: latest?.team || null, teamRef: latest?.teamRef || null,
-    perSeason, mates,
+    perSeason, mates, raceLog,
   };
 }
 
