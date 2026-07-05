@@ -1,15 +1,24 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import RecordHeroCard from '../components/RecordHeroCard.astro';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// Stats hub — the "numbers" bucket. Fronts the 17 records leaderboards and
-// signposts the upcoming head-to-head Compare tool. Reads the prerendered
-// records index (same source as /records/) so the counts are always real.
+// Stats hub — the "numbers" bucket. Leads with the marquee records leaderboards
+// (reusing RecordHeroCard, the design-system's colourful leaderboard pattern:
+// driver faces, flags, team-colour bars), then signposts the full 17-board set
+// and the upcoming head-to-head Compare tool. Reads the prerendered records
+// index (same source as /records/) so everything is real.
 const indexPath = resolve(process.cwd(), 'public/data/archive/_records-index.json');
 const records = JSON.parse(readFileSync(indexPath, 'utf8'));
 const groups = records.groups || [];
 const totalRecords = groups.reduce((n: number, g: any) => n + (g.records?.length || 0), 0);
+
+// Flat lookup by id so we can hand-pick the marquee cards.
+const byId: Record<string, any> = {};
+for (const g of groups) for (const r of g.records) byId[r.id] = r;
+const FEATURED = ['wins', 'championships', 'poles', 'wins-in-season', 'team-titles', 'podiums'];
+const featured = FEATURED.map((id) => byId[id]).filter(Boolean);
 
 const title = 'F1 Stats — Records, Leaderboards & Comparisons | f1gures';
 const description = 'The numbers behind Formula 1: 17 all-time and modern-era leaderboards, from wins and poles to streaks and title margins — plus head-to-head comparisons.';
@@ -45,73 +54,77 @@ const jsonLd = {
       </div>
     </div>
 
-    <div class="hub-pillars">
-      <a class="hub-pillar" href="/records/">
-        <div class="hub-pillar-head">
-          <span class="hub-pillar-eyebrow">Leaderboards</span>
-          <span class="hub-pillar-count">{totalRecords}</span>
-        </div>
-        <h2 class="hub-pillar-title">Records &amp; Milestones</h2>
-        <p class="hub-pillar-desc">All-time and modern-era rankings — race wins, poles, podiums, championships, streaks and more.</p>
-        <span class="hub-pillar-go">Explore records <span class="arrow" aria-hidden="true">›</span></span>
+    <section class="records-section hub-featured">
+      <div class="section-head records-section-head">
+        <h2>Featured records</h2>
+        <span class="records-section-count">{totalRecords} leaderboards</span>
+      </div>
+      <div class="records-section-rule"></div>
+      <div class="records-grid">
+        {featured.map((r: any) => <RecordHeroCard record={r} />)}
+      </div>
+    </section>
+
+    <div class="hub-tools">
+      <a class="hub-tool" href="/records/">
+        <span class="hub-tool-eyebrow">All leaderboards</span>
+        <span class="hub-tool-title">Records &amp; Milestones</span>
+        <p class="hub-tool-desc">Every board — career, single-season, streaks, milestones, teams and tracks — all-time and modern-era.</p>
+        <span class="hub-pillar-go">Browse all {totalRecords} <span class="arrow" aria-hidden="true">›</span></span>
       </a>
 
-      <div class="hub-pillar is-soon" aria-disabled="true">
-        <div class="hub-pillar-head">
-          <span class="hub-pillar-eyebrow">Head to head</span>
+      <div class="hub-tool is-soon" aria-disabled="true">
+        <div class="hub-tool-head">
+          <span class="hub-tool-eyebrow">Head to head</span>
           <span class="hub-pillar-pill">Soon</span>
         </div>
-        <h2 class="hub-pillar-title">Compare</h2>
-        <p class="hub-pillar-desc">Line up any two drivers or teams side by side — points, wins, poles and season-by-season form.</p>
+        <span class="hub-tool-title">Compare</span>
+        <p class="hub-tool-desc">Line up any two drivers or teams side by side — points, wins, poles and season-by-season form.</p>
         <span class="hub-pillar-go hub-pillar-go--muted">Coming soon</span>
       </div>
     </div>
 
-    <div class="hub-cats">
+    <nav class="hub-cats" aria-label="All record categories">
       {groups.map((g: any) => (
         <a class="hub-cat" href="/records/">
           <span class="hub-cat-title">{g.label}</span>
           <span class="hub-cat-meta">{g.records.length} {g.records.length === 1 ? 'leaderboard' : 'leaderboards'} <span class="arrow" aria-hidden="true">›</span></span>
         </a>
       ))}
-    </div>
+    </nav>
   </div>
 </BaseLayout>
 
 <style>
-  .hub-pillars {
+  .hub-featured { margin-bottom: 28px; }
+
+  .hub-tools {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
   }
-  .hub-pillar {
-    display: flex; flex-direction: column; gap: 10px;
-    padding: 22px; text-decoration: none;
+  .hub-tool {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 20px; text-decoration: none;
     border: 1px solid var(--line-2); background: var(--bg-2);
     transition: border-color var(--mo, 0.15s) ease, transform var(--mo, 0.15s) ease;
   }
-  a.hub-pillar:hover { border-color: var(--accent); transform: translateY(-2px); }
-  .hub-pillar.is-soon { opacity: 0.7; }
-  .hub-pillar-head {
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .hub-pillar-eyebrow {
+  a.hub-tool:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .hub-tool.is-soon { opacity: 0.7; }
+  .hub-tool-head { display: flex; align-items: center; justify-content: space-between; }
+  .hub-tool-eyebrow {
     font-family: var(--f-display); font-weight: 600; font-size: 10px;
     letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3);
   }
-  .hub-pillar-count {
-    font-family: var(--f-mono, monospace); font-weight: 700; font-size: 28px;
-    line-height: 1; color: var(--accent);
+  .hub-tool-title {
+    font-family: var(--f-display); font-weight: 800; font-size: 22px;
+    letter-spacing: 0; text-transform: uppercase; color: var(--fg-1); line-height: 1.05;
   }
+  .hub-tool-desc { color: var(--fg-2); font-size: 14px; line-height: 1.5; }
   .hub-pillar-pill {
     font-family: var(--f-display); font-weight: 700; font-size: 10px;
     letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3);
     border: 1px solid var(--line-2); padding: 3px 8px;
   }
-  .hub-pillar-title {
-    font-family: var(--f-display); font-weight: 800; font-size: 24px;
-    letter-spacing: 0; text-transform: uppercase; color: var(--fg-1); line-height: 1.05;
-  }
-  .hub-pillar-desc { color: var(--fg-2); font-size: 14px; line-height: 1.5; }
   .hub-pillar-go {
     margin-top: auto; font-family: var(--f-display); font-weight: 700;
     font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-1);
@@ -140,7 +153,7 @@ const jsonLd = {
   .hub-cat-meta .arrow { color: var(--accent); }
 
   @media (max-width: 720px) {
-    .hub-pillars { grid-template-columns: 1fr; }
+    .hub-tools { grid-template-columns: 1fr; }
     .hub-cats { grid-template-columns: 1fr; }
   }
 </style>
