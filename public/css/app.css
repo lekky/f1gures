@@ -3838,15 +3838,34 @@ html.light .cmp-back { background: rgba(20, 22, 30, 0.4); }
 .cmp-foot-hint { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--fg-4); }
 
 @media (max-width: 640px) {
-  .cmp-mrow { grid-template-columns: 1fr 84px 1fr; gap: 7px; padding: 8px 12px; }
-  .cmp-fighter { min-height: auto; padding: 16px; }
-  .cmp-f-face, .cmp-f-flagwash { display: none; }
-  .cmp-left .cmp-f-text { padding-right: 0; }
-  .cmp-right .cmp-f-text { padding-left: 0; padding-right: 30px; }
-  .cmp-f-name { font-size: 21px; }
-  .cmp-vscol { min-width: 72px; }
-  .cmp-track { display: none; }
-  .cmp-extra-k { min-width: 96px; }
+  .cmp-back { padding: 3vh 8px 18px; }
+
+  /* Fighter cells stack the headshot above the text so the image stays the
+     hero on mobile too — no more display:none. */
+  .cmp-fighter { flex-direction: column; align-items: stretch; justify-content: flex-start; min-height: auto; padding: 12px 0 14px; }
+  .cmp-f-text { padding: 0 10px; text-align: center; }
+  .cmp-left .cmp-f-text, .cmp-right .cmp-f-text { padding: 0 10px; text-align: center; }
+  .cmp-f-team, .cmp-right .cmp-f-team { justify-content: center; }
+  /* Surname fills the cell; if the fallback font is mid-swap it truncates
+     cleanly rather than slicing a glyph at the cell's overflow:hidden edge. */
+  .cmp-f-name { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cmp-f-sub { font-size: 10px; }
+  .cmp-f-strip, .cmp-right .cmp-f-strip { margin: 9px auto 0; }
+  .cmp-vscol { min-width: 58px; padding: 0 6px; }
+  .cmp-vsbig { font-size: 22px; }
+  .cmp-verdict { font-size: 9px; }
+  .cmp-verdict-n { font-size: 13px; }
+
+  /* Keep the mirrored comparison bars — they are the signature of the view. */
+  .cmp-mrow { grid-template-columns: 1fr 72px 1fr; gap: 8px; padding: 7px 10px; }
+  .cmp-lbar, .cmp-rbar { gap: 7px; }
+  .cmp-mval { font-size: 13px; }
+  .cmp-mlabel { font-size: 10px; }
+  .cmp-group-head { padding: 12px 12px 6px; }
+  .cmp-ctx { padding: 12px; }
+  .cmp-extras { padding: 6px 12px 4px; }
+  .cmp-extra-k { min-width: 92px; }
+  .cmp-panel-foot { padding: 12px; }
 }
 
 /* Compare CTA now sits in its own full-width bar under the hero (see .cmp-cta
@@ -3869,6 +3888,33 @@ html.light .cmp-back { background: rgba(20, 22, 30, 0.4); }
 .cmp-left .cmp-f-flagwash { left: 0; -webkit-mask-image: linear-gradient(to right, #000, transparent 86%); mask-image: linear-gradient(to right, #000, transparent 86%); }
 .cmp-right .cmp-f-flagwash { right: 0; -webkit-mask-image: linear-gradient(to left, #000, transparent 86%); mask-image: linear-gradient(to left, #000, transparent 86%); }
 html.light .cmp-f-flagwash { opacity: 0.1; }
+
+/* Mobile: the headshot is a full-width banner across the top of each fighter
+   cell (bleeds to the top edge, fades into the panel at the bottom) instead of
+   the desktop inner side-bleed. Placed after the desktop face rules so these
+   equal-specificity overrides win at ≤640px. */
+@media (max-width: 640px) {
+  .cmp-left .cmp-f-face:not(.is-team),
+  .cmp-right .cmp-f-face:not(.is-team) {
+    position: relative; z-index: 2;
+    top: auto; bottom: auto; left: auto; right: auto;
+    width: 100%; height: 120px; margin: -12px 0 8px;
+    object-position: top center;
+    -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent);
+    mask-image: linear-gradient(to bottom, #000 58%, transparent);
+  }
+  .cmp-left .cmp-f-face.is-team,
+  .cmp-right .cmp-f-face.is-team {
+    position: relative; top: auto; bottom: auto; left: auto; right: auto;
+    transform: none; width: 82px; height: 82px; margin: 2px auto 8px;
+  }
+  .cmp-left .cmp-f-flagwash,
+  .cmp-right .cmp-f-flagwash {
+    width: 100%; left: 0; right: 0; opacity: 0.13;
+    -webkit-mask-image: linear-gradient(to bottom, #000, transparent 90%);
+    mask-image: linear-gradient(to bottom, #000, transparent 90%);
+  }
+}
 
 .cmp-share-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .cmp-foot-btn:disabled { opacity: 0.55; cursor: default; }
