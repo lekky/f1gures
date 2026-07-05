@@ -3401,6 +3401,13 @@ a.guide-pg:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-ho
   padding: var(--sp-1) var(--sp-1) var(--sp-2);
 }
 .more-sheet-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+.more-sheet-group {
+  grid-column: 1 / -1;
+  font-family: var(--f-display); font-weight: 600; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3);
+  padding: var(--sp-2) var(--sp-1) 0;
+}
+.more-sheet-group:first-child { padding-top: 0; }
 .more-sheet-link {
   display: flex; align-items: center; padding: var(--sp-4);
   text-decoration: none; color: var(--fg-1);

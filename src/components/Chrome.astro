@@ -9,6 +9,7 @@
 import ThemeToggle from './islands/ThemeToggle.jsx';
 import YearPicker from './islands/YearPicker.jsx';
 import StandingsDropdown from './islands/StandingsDropdown.jsx';
+import GridDropdown from './islands/GridDropdown.jsx';
 import SearchPalette from './islands/SearchPalette.jsx';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
@@ -20,7 +21,7 @@ const route = {
   home:        isRoute('/'),
   standingsD:  isRoute('/standings-drivers'),
   standingsC:  isRoute('/standings-constructors'),
-  standings:   isRoute('/standings-drivers') || isRoute('/standings-constructors') || isRoute('/records'),
+  standings:   isRoute('/standings-drivers') || isRoute('/standings-constructors'),
   calendar:    isRoute('/calendar') || isRoute('/races') || isRoute('/race.html'),
   circuits:    isRoute('/circuits') || isRoute('/circuit.html'),
   drivers:     isRoute('/drivers') || isRoute('/driver.html'),
@@ -29,13 +30,19 @@ const route = {
   guide:       isRoute('/guide'),
   feedback:    isRoute('/feedback'),
 };
-const inMore =
-  route.circuits || route.drivers || route.teams || route.blog || route.guide ||
-  route.feedback || isRoute('/records');
+// Consolidated top-level buckets:
+//  - Grid  = the field: drivers, teams, circuits
+//  - Stats = the numbers: records leaderboards (+ compare, coming soon)
+//  - Read  = the words: guide + blog
+route.grid  = route.drivers || route.teams || route.circuits;
+route.stats = isRoute('/stats') || isRoute('/records');
+route.read  = isRoute('/read') || route.blog || route.guide;
+const inMore = route.grid || route.read || route.feedback;
 const botActive =
   route.home       ? 'home' :
   route.standings  ? 'standings' :
   route.calendar   ? 'calendar' :
+  route.stats      ? 'stats' :
   inMore           ? 'more' : null;
 ---
 <div class="f1-app">
@@ -50,12 +57,11 @@ const botActive =
       <StandingsDropdown client:load active={route.standings} />
 
       <a class:list={['nav-item', { active: route.calendar }]} href="/calendar/">Calendar</a>
-      <a class:list={['nav-item', { active: route.circuits }]} href="/circuits/">Circuits</a>
-      <a class:list={['nav-item', { active: route.drivers }]} href="/drivers/">Drivers</a>
-      <a class:list={['nav-item', { active: route.teams }]} href="/teams/">Teams</a>
-      <a class:list={['nav-item', { active: route.blog }]} href="/blog/">Blog</a>
-      <a class:list={['nav-item', { active: route.guide }]} href="/guide/">Guide</a>
-      <a class:list={['nav-item', { active: route.feedback }]} href="/feedback/">Feedback</a>
+
+      <GridDropdown client:load active={route.grid} />
+
+      <a class:list={['nav-item', { active: route.stats }]} href="/stats/">Stats</a>
+      <a class:list={['nav-item', { active: route.read }]} href="/read/">Read</a>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-controls">
@@ -101,6 +107,9 @@ const botActive =
     <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/">
       <span class="botnav-icon">▦</span><span>Calendar</span>
     </a>
+    <a class:list={['botnav-item', { active: botActive === 'stats' }]} href="/stats/">
+      <span class="botnav-icon">◆</span><span>Stats</span>
+    </a>
     <button
       type="button"
       class:list={['botnav-item', { active: botActive === 'more' }]}
@@ -118,12 +127,14 @@ const botActive =
   <div id="more-sheet" class="more-sheet" data-more-sheet role="dialog" aria-modal="false" aria-label="More sections" hidden>
     <div class="more-sheet-title" aria-hidden="true">More</div>
     <nav class="more-sheet-links">
-      <a class="more-sheet-link" href="/guide/">Guide</a>
-      <a class="more-sheet-link" href="/circuits/">Circuits</a>
+      <div class="more-sheet-group" aria-hidden="true">Grid</div>
       <a class="more-sheet-link" href="/drivers/">Drivers</a>
       <a class="more-sheet-link" href="/teams/">Teams</a>
-      <a class="more-sheet-link" href="/records/">Records</a>
+      <a class="more-sheet-link" href="/circuits/">Circuits</a>
+      <div class="more-sheet-group" aria-hidden="true">Read</div>
+      <a class="more-sheet-link" href="/guide/">Guide</a>
       <a class="more-sheet-link" href="/blog/">Blog</a>
+      <div class="more-sheet-group" aria-hidden="true">More</div>
       <a class="more-sheet-link" href="/feedback/">Feedback</a>
     </nav>
   </div>

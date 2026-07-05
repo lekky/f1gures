@@ -1,10 +1,11 @@
-// Standings dropdown - React island for the click-driven Drivers/Constructors
-// menu in the desktop top nav. Replaces the inline TopNav dropdown logic from
-// shell.jsx.
+// Grid dropdown - React island for the click-driven Drivers / Teams / Circuits
+// menu in the desktop top nav. Mirrors StandingsDropdown: the "Grid" bucket
+// groups the competitor + track roster (people, machines, the places they
+// race) under one top-level item.
 
 import { useEffect, useRef, useState } from 'react';
 
-export default function StandingsDropdown({ active = false }) {
+export default function GridDropdown({ active = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -20,12 +21,13 @@ export default function StandingsDropdown({ active = false }) {
     <div ref={ref} style={{ position: 'relative', height: '100%' }}>
       <button className={`nav-item ${active ? 'active' : ''}`}
               onClick={() => setOpen(o => !o)}>
-        Standings<span className="caret">▼</span>
+        Grid<span className="caret">▼</span>
       </button>
       {open && (
         <div className="nav-dropdown" style={{ top: 'calc(100% - 1px)' }}>
-          <a href="/standings-drivers/">Drivers</a>
-          <a href="/standings-constructors/">Constructors</a>
+          <a href="/drivers/">Drivers</a>
+          <a href="/teams/">Teams</a>
+          <a href="/circuits/">Circuits</a>
         </div>
       )}
     </div>

@@ -1,0 +1,203 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { publishedGuidesSorted } from '../lib/guide';
+import { sortPosts, isPublic, fmtPostDate } from '../lib/blog';
+import { BLOG_CATEGORY_LABELS } from '../content/config';
+
+// Read hub — the "words" bucket. Fronts the beginner's Guide and the Blog,
+// surfacing a start point for each plus the latest posts with their hero
+// imagery (reusing the blog card pattern) so the landing page is a real,
+// visual destination rather than a menu of two links.
+const guides = publishedGuidesSorted(await getCollection('guide'));
+const firstGuide = guides[0];
+const posts = sortPosts((await getCollection('blog')).filter(isPublic));
+const latest = posts[0];
+const recent = posts.slice(1, 7);
+
+const title = 'Read — F1 Beginner’s Guide & Blog | f1gures';
+const description = 'Learn Formula 1 from scratch with the beginner’s guide, then keep up with race recaps, technical explainers and historic deep-dives on the blog.';
+const canonicalPath = '/read/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Read', path: '/read/' },
+];
+
+const ORIGIN = 'https://f1gures.app';
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Read — Guide & Blog',
+  url: ORIGIN + canonicalPath,
+  description,
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page hub-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">The words</div>
+        <h1 class="page-title">Read</h1>
+        <p class="page-sub">Start from zero with the beginner’s guide, then follow along with race recaps, technical explainers and historic deep-dives.</p>
+      </div>
+    </div>
+
+    <div class="hub-pillars">
+      <a class="hub-pillar" href="/guide/">
+        <div class="hub-pillar-head">
+          <span class="hub-pillar-eyebrow">Beginner’s Guide</span>
+          <span class="hub-pillar-count">{guides.length}</span>
+        </div>
+        <h2 class="hub-pillar-title">Learn F1</h2>
+        <p class="hub-pillar-desc">{guides.length} short reads that build on each other — the race weekend, points, tyres, DRS, strategy and the rules.</p>
+        {firstGuide && (
+          <span class="hub-pillar-go">Start with {firstGuide.data.title} <span class="arrow" aria-hidden="true">›</span></span>
+        )}
+      </a>
+
+      <a class="hub-pillar" href="/blog/">
+        <div class="hub-pillar-head">
+          <span class="hub-pillar-eyebrow">The Blog</span>
+          <span class="hub-pillar-count">{posts.length}</span>
+        </div>
+        <h2 class="hub-pillar-title">Read the Blog</h2>
+        <p class="hub-pillar-desc">Race recaps, technical explainers, driver focus pieces and historic season retrospectives.</p>
+        <span class="hub-pillar-go">Browse all posts <span class="arrow" aria-hidden="true">›</span></span>
+      </a>
+    </div>
+
+    {latest && (
+      <section class="hub-latest">
+        <div class="section-head">
+          <h2>Latest from the blog</h2>
+          <span class="section-rule"></span>
+          <a class="hub-latest-all" href="/blog/">All posts <span class="arrow" aria-hidden="true">›</span></a>
+        </div>
+
+        <article class="panel blog-card blog-lede-card blog-lede-card--major hub-feature-card">
+          {latest.data.heroImage ? (
+            <div class="blog-card-img blog-lede-img">
+              <a class="blog-card-img-link" href={`/blog/${latest.slug}/`} aria-hidden="true" tabindex="-1">
+                <img src={latest.data.heroImage} alt={latest.data.heroImageAlt || latest.data.title} />
+              </a>
+              <div class="blog-card-over blog-lede-over">
+                <div class="blog-card-meta">
+                  <a class="t-eyebrow blog-card-cat" href={`/blog/category/${latest.data.category}/`}>{BLOG_CATEGORY_LABELS[latest.data.category]}</a>
+                  <span class="t-mono blog-card-date">{fmtPostDate(latest.data.publishedAt)}</span>
+                </div>
+                <h3 class="blog-card-title blog-lede-title"><a class="blog-card-title-link" href={`/blog/${latest.slug}/`}>{latest.data.title}</a></h3>
+                <p class="blog-lede-desc">{latest.data.description}</p>
+              </div>
+            </div>
+          ) : (
+            <div class="blog-card-body blog-lede-text">
+              <div class="blog-card-meta">
+                <a class="t-eyebrow blog-card-cat" href={`/blog/category/${latest.data.category}/`}>{BLOG_CATEGORY_LABELS[latest.data.category]}</a>
+                <span class="t-mono blog-card-date">{fmtPostDate(latest.data.publishedAt)}</span>
+              </div>
+              <h3 class="blog-card-title blog-lede-title"><a class="blog-card-title-link" href={`/blog/${latest.slug}/`}>{latest.data.title}</a></h3>
+              <p class="blog-card-desc">{latest.data.description}</p>
+            </div>
+          )}
+        </article>
+
+        {recent.length > 0 && (
+          <ul class="blog-list hub-recent-list">
+            {recent.map((post) => (
+              <li class="blog-list-item">
+                <div class="panel blog-card">
+                  {post.data.heroImage ? (
+                    <div class="blog-card-img">
+                      <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
+                        <img src={post.data.heroImage} alt={post.data.heroImageAlt || post.data.title} loading="lazy" />
+                      </a>
+                      <div class="blog-card-over">
+                        <div class="blog-card-meta">
+                          <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                          <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                        </div>
+                        <h3 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h3>
+                      </div>
+                    </div>
+                  ) : (
+                    <div class="blog-card-body">
+                      <div class="blog-card-meta">
+                        <a class="t-eyebrow blog-card-cat" href={`/blog/category/${post.data.category}/`}>{BLOG_CATEGORY_LABELS[post.data.category]}</a>
+                        <span class="t-mono blog-card-date">{fmtPostDate(post.data.publishedAt)}</span>
+                      </div>
+                      <h3 class="blog-card-title"><a class="blog-card-title-link" href={`/blog/${post.slug}/`}>{post.data.title}</a></h3>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .hub-pillars {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+    margin-bottom: 28px;
+  }
+  .hub-pillar {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 22px; text-decoration: none;
+    border: 1px solid var(--line-2); background: var(--bg-2);
+    transition: border-color var(--mo, 0.15s) ease, transform var(--mo, 0.15s) ease;
+  }
+  a.hub-pillar:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .hub-pillar-head { display: flex; align-items: center; justify-content: space-between; }
+  .hub-pillar-eyebrow {
+    font-family: var(--f-display); font-weight: 600; font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .hub-pillar-count {
+    font-family: var(--f-mono, monospace); font-weight: 700; font-size: 28px;
+    line-height: 1; color: var(--accent);
+  }
+  .hub-pillar-title {
+    font-family: var(--f-display); font-weight: 800; font-size: 24px;
+    letter-spacing: 0; text-transform: uppercase; color: var(--fg-1); line-height: 1.05;
+  }
+  .hub-pillar-desc { color: var(--fg-2); font-size: 14px; line-height: 1.5; }
+  .hub-pillar-go {
+    margin-top: auto; font-family: var(--f-display); font-weight: 700;
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-1);
+  }
+  .hub-pillar-go .arrow { color: var(--accent); }
+
+  .hub-latest { margin-top: 8px; }
+  .hub-latest .section-head { align-items: center; }
+  .hub-latest-all {
+    font-family: var(--f-display); font-weight: 700; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2);
+    text-decoration: none; white-space: nowrap;
+  }
+  .hub-latest-all:hover { color: var(--fg-1); }
+  .hub-latest-all .arrow { color: var(--accent); }
+  .hub-feature-card { margin: 14px 0 18px; }
+
+  /* Recent posts: a denser 3-up image grid below the featured post. */
+  .hub-recent-list {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    list-style: none; margin: 0; padding: 0;
+  }
+  @media (max-width: 900px) {
+    .hub-recent-list { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .hub-pillars { grid-template-columns: 1fr; }
+    .hub-recent-list { grid-template-columns: 1fr; }
+  }
+</style>
