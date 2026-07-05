@@ -431,6 +431,98 @@ function buildContent() {
 }
 
 // ---------------------------------------------------------------------------
+// archive.json: compact all-time career data for Compare Mode + career views.
+// Reads the full archive docs (public/data/archive/{drivers,teams}) that the
+// website's pages consume, and ships a SLIMMED shape — no per-race logs (those
+// are 80%+ of each doc). Career avg-finish and DNF-rate are precomputed here
+// from perRace so the apps don't need it. Additive within v1.
+
+const n0 = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
+const isClassifiedRace = (r) =>
+  r && r.position != null && (r.positionText == null || /^\d+$/.test(String(r.positionText)));
+
+function buildArchiveDriver(d) {
+  const c = d.career || {};
+  const perSeason = (d.perSeason || []).map(s => ({
+    year: s.year, teamRef: s.constructorRef || '', team: s.constructorName || '',
+    pos: s.position ?? null, pts: n0(s.points), wins: n0(s.wins), races: n0(s.races), best: s.bestFinish ?? null,
+  }));
+  const points = perSeason.reduce((a, s) => a + s.pts, 0);
+  const pr = d.perRace || [];
+  const classified = pr.filter(isClassifiedRace);
+  const avgFinish = classified.length ? +(classified.reduce((a, r) => a + r.position, 0) / classified.length).toFixed(1) : null;
+  const dnfPct = pr.length ? +(((pr.length - classified.length) / pr.length) * 100).toFixed(1) : null;
+  const teams = new Set(perSeason.map(s => s.teamRef).filter(Boolean)).size;
+  const latest = perSeason[0] || null;
+  const mates = (d.teammates?.byMate || []).map(m => ({
+    ref: m.driverRef, name: m.surname || m.name,
+    years: m.firstYear === m.lastYear ? `${m.firstYear}` : `${m.firstYear}–${m.lastYear}`,
+    weekends: n0(m.weekends),
+    q: [n0(m.quali?.wins), n0(m.quali?.losses)],
+    r: [n0(m.race?.wins), n0(m.race?.losses)],
+  }));
+  return {
+    ref: d.driverRef, name: `${d.forename} ${d.surname}`, last: d.surname,
+    code: d.code || null, nat: d.nationality || '', dob: d.dob || null,
+    from: c.firstYear ?? null, to: c.lastYear ?? null,
+    seasons: n0(c.seasons), races: n0(c.races), wins: n0(c.wins), podiums: n0(c.podiums),
+    poles: n0(c.poles), fastLaps: n0(c.fastestLaps), titles: n0(c.championships),
+    points, avgFinish, dnfPct, teamsCount: teams,
+    team: latest?.team || null, teamRef: latest?.teamRef || null,
+    perSeason, mates,
+  };
+}
+
+function buildArchiveTeam(t) {
+  const c = t.career || {};
+  const perSeason = (t.perSeason || []).map(s => ({
+    year: s.year, pos: s.position ?? null, pts: n0(s.points), wins: n0(s.wins), races: n0(s.races),
+    drivers: (s.drivers || []).map(dr => ({ ref: dr.driverRef, name: dr.name, code: dr.code || '', flag: dr.flag || '', pos: dr.position ?? null })),
+  }));
+  const points = perSeason.reduce((a, s) => a + s.pts, 0);
+  const positions = perSeason.map(s => s.pos).filter(p => p != null);
+  const bestFinish = positions.length ? Math.min(...positions) : null;
+  const bs = t.bestSeason ? {
+    year: t.bestSeason.year, pos: t.bestSeason.position ?? null, pts: n0(t.bestSeason.points),
+    wins: n0(t.bestSeason.wins), races: n0(t.bestSeason.races),
+    winRate: t.bestSeason.winRate != null ? +(t.bestSeason.winRate * 100).toFixed(0) : null,
+    tagline: t.bestSeason.tagline || '',
+    drivers: (t.bestSeason.drivers || []).map(dr => ({ ref: dr.driverRef, name: dr.name })),
+  } : null;
+  const topDrivers = (t.topDrivers || []).slice(0, 6).map(dr => ({
+    ref: dr.driverRef, name: dr.name, flag: dr.flag || '', races: n0(dr.races), wins: n0(dr.wins),
+  }));
+  return {
+    ref: t.constructorRef, name: t.name, short: t.short || '', color: t.color || '#9B9B9B', nat: t.nationality || '',
+    from: c.firstYear ?? null, to: c.lastYear ?? null,
+    seasons: n0(c.seasons), races: n0(c.races), wins: n0(c.wins), podiums: n0(c.podiums),
+    titles: n0(c.championships), driverCount: n0(c.driverCount),
+    points, bestFinish, bestSeason: bs, topDrivers, perSeason,
+  };
+}
+
+function buildArchive() {
+  const dDir = join(DATA, 'archive', 'drivers');
+  const tDir = join(DATA, 'archive', 'teams');
+  if (!existsSync(dDir) || !existsSync(tDir)) {
+    console.warn('::warning::app-feed: no archive/ docs — skipping archive.json');
+    return null;
+  }
+  const drivers = readdirSync(dDir).filter(f => f.endsWith('.json'))
+    .map(f => { try { return buildArchiveDriver(JSON.parse(readFileSync(join(dDir, f), 'utf8'))); } catch { return null; } })
+    .filter(Boolean)
+    .filter(d => d.races > 0)
+    .sort((a, b) => b.titles - a.titles || b.wins - a.wins || (b.points - a.points));
+  const teams = readdirSync(tDir).filter(f => f.endsWith('.json'))
+    .map(f => { try { return buildArchiveTeam(JSON.parse(readFileSync(join(tDir, f), 'utf8'))); } catch { return null; } })
+    .filter(Boolean)
+    .filter(t => t.races > 0)
+    .sort((a, b) => b.titles - a.titles || b.wins - a.wins || (b.points - a.points));
+  if (!drivers.length || !teams.length) throw new Error('archive: no drivers or teams built');
+  return { drivers, teams };
+}
+
+// ---------------------------------------------------------------------------
 // main
 
 function main() {
@@ -460,12 +552,27 @@ function main() {
   const contentJson = writeJson(join(OUT, 'content.json'), content);
   console.log(`app-feed: content.json (${(contentJson.length / 1024).toFixed(0)} KB, ${content.guide.length} guide / ${content.blog.length} blog / ${content.facts.length} facts)`);
 
+  // archive.json — optional (Compare Mode / career views). A build failure here
+  // is non-fatal: the apps degrade to per-season data if it's absent.
+  let archiveEntry = null;
+  try {
+    const archive = buildArchive();
+    if (archive) {
+      const archiveJson = writeJson(join(OUT, 'archive.json'), archive);
+      archiveEntry = { path: 'archive.json', sha256: sha256(archiveJson) };
+      console.log(`app-feed: archive.json (${(archiveJson.length / 1024).toFixed(0)} KB, ${archive.drivers.length} drivers / ${archive.teams.length} teams)`);
+    }
+  } catch (err) {
+    console.warn(`::warning::app-feed: skipping archive.json: ${err.message}`);
+  }
+
   const manifest = {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
     latestSeason: seasonEntries[seasonEntries.length - 1].year,
     seasons: seasonEntries,
     content: { path: 'content.json', sha256: sha256(contentJson) },
+    archive: archiveEntry,
     imagesBase: SITE,
     minAppVersion: { android: 1, ios: 1 },
     notice: null,
