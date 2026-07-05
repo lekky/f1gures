@@ -77,6 +77,7 @@ import { NATIONALITY } from '../lib/nationality.js';
 import Flag from './Flag.astro';
 import StatusIcon from './StatusIcon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
+import CompareCta from './islands/CompareCta.jsx';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 import { teamLogoPath } from '../lib/teamLogo.js';
 
@@ -406,6 +407,8 @@ const duelSurname = driver.surname;
       </div>
     </div>
   </div>
+
+  <CompareCta client:idle kind="driver" refId={driver.driverRef} name={fullName} teamColor={teamColor} />
 
   {/* Trigger the flag-wash entrance wipe only when the page is actually
       visible. The wash itself is CSS-visible without this; the script just

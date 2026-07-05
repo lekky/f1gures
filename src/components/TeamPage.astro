@@ -10,6 +10,7 @@ import Flag from './Flag.astro';
 import LineageStrip from './LineageStrip.astro';
 import { NATIONALITY } from '../lib/nationality.js';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
+import CompareCta from './islands/CompareCta.jsx';
 
 interface Props {
   currentYear: number | null;
@@ -217,6 +218,8 @@ function hasFace(ref: string): boolean {
       </div>
     </div>
   </div>
+
+  <CompareCta client:idle kind="team" refId={team.constructorRef} name={team.name} teamColor={team.color} />
 
   {/* Trigger the flag-wash entrance wipe only when the page is visible, so a
       frozen/hidden preview never traps it at its invisible first frame. The
