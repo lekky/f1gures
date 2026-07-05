@@ -3760,13 +3760,19 @@ html.light .cmp-back { background: rgba(20, 22, 30, 0.4); }
 
 /* fighters + verdict */
 .cmp-tape-top { display: grid; grid-template-columns: 1fr auto 1fr; border-bottom: 1px solid var(--line-1); }
-.cmp-fighter { padding: 18px 20px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.cmp-left { align-items: flex-start; }
-.cmp-right { align-items: flex-end; text-align: right; padding-right: 42px; }
-.cmp-f-team { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.cmp-f-name { font-family: var(--f-display); font-weight: 800; text-transform: uppercase; font-size: 23px; line-height: 0.96; color: var(--fg-1); }
-.cmp-f-sub { font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); letter-spacing: 0.04em; }
-.cmp-f-strip { height: 3px; width: 52px; margin-top: 3px; }
+.cmp-fighter { position: relative; min-height: 178px; padding: 22px; overflow: hidden; display: flex; align-items: center; min-width: 0; }
+.cmp-right { justify-content: flex-end; }
+.cmp-f-text { position: relative; z-index: 3; box-sizing: border-box; width: 100%; min-width: 0; }
+.cmp-left .cmp-f-text { padding-right: 148px; }
+.cmp-right .cmp-f-text { padding-left: 148px; padding-right: 30px; text-align: right; }
+.cmp-f-team { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.cmp-right .cmp-f-team { flex-direction: row-reverse; }
+.cmp-f-team span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cmp-f-tlogo { width: 22px; height: 22px; object-fit: contain; background: #fff; border: 1px solid var(--line-2); flex: none; padding: 1px; }
+.cmp-f-name { font-family: var(--f-display); font-weight: 800; text-transform: uppercase; font-size: 30px; line-height: 0.94; color: var(--fg-1); }
+.cmp-f-sub { font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); letter-spacing: 0.04em; margin-top: 4px; }
+.cmp-f-strip { height: 3px; width: 52px; margin-top: 9px; }
+.cmp-right .cmp-f-strip { margin-left: auto; }
 .cmp-vscol {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 0 10px; background: var(--bg-1);
@@ -3833,7 +3839,11 @@ html.light .cmp-back { background: rgba(20, 22, 30, 0.4); }
 
 @media (max-width: 640px) {
   .cmp-mrow { grid-template-columns: 1fr 84px 1fr; gap: 7px; padding: 8px 12px; }
-  .cmp-f-name { font-size: 18px; }
+  .cmp-fighter { min-height: auto; padding: 16px; }
+  .cmp-f-face, .cmp-f-flagwash { display: none; }
+  .cmp-left .cmp-f-text { padding-right: 0; }
+  .cmp-right .cmp-f-text { padding-left: 0; padding-right: 30px; }
+  .cmp-f-name { font-size: 21px; }
   .cmp-vscol { min-width: 72px; }
   .cmp-track { display: none; }
   .cmp-extra-k { min-width: 96px; }
@@ -3842,23 +3852,23 @@ html.light .cmp-back { background: rgba(20, 22, 30, 0.4); }
 /* Compare CTA now sits in its own full-width bar under the hero (see .cmp-cta
    above); no per-page placement overrides needed. */
 
-/* Compare Mode — fighter avatars (face / badge) + flag/logo marks + share */
-/* Driver headshot fades into the panel at the bottom (mobile-app style); team
-   badges stay a crisp bordered white tile. Team colour identity is carried by
-   the .cmp-f-strip below, so the avatar itself needs no rule. */
-.cmp-f-avatar { width: 76px; height: 88px; position: relative; overflow: hidden; margin-bottom: 4px; flex-shrink: 0; }
-.cmp-f-avatar:not(.is-team) {
-  -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 96%);
-          mask-image: linear-gradient(to bottom, #000 52%, transparent 96%);
-}
-.cmp-f-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-.cmp-f-avatar.is-team { width: 64px; height: 64px; border: 1px solid var(--line-2); background: #fff; margin-bottom: 8px; }
-.cmp-f-avatar.is-team img { object-fit: contain; padding: 6px; }
-.cmp-f-mono { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--f-display); font-weight: 800; font-size: 20px; letter-spacing: 0.02em; color: color-mix(in srgb, var(--cmp-av, var(--fg-1)) 45%, var(--fg-1)); background: color-mix(in srgb, var(--cmp-av, var(--line-2)) 18%, var(--bg-3)); }
-.cmp-f-marks { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
-.cmp-right .cmp-f-marks { flex-direction: row-reverse; }
-.cmp-f-flag { width: 24px; height: 16px; object-fit: cover; border: 1px solid var(--line-2); display: block; }
-.cmp-f-logo { width: 22px; height: 22px; object-fit: contain; background: #fff; padding: 2px; border: 1px solid var(--line-2); display: block; }
+/* Compare Mode — Direction 1 "hero split": the driver headshot is large and
+   sits INNER (toward the VS), dissolving into the panel toward the text; the
+   national flag is a faded wash behind the name; team comparisons show a crisp
+   team-badge tile instead of a face. Works across the two headshot vintages
+   (modern hi-res cutouts + older low-res photos) via object-fit cover + a
+   generous fade that hides any hard photo edge on the text side. */
+.cmp-f-face { position: absolute; z-index: 2; top: 0; bottom: 0; width: 200px; object-fit: cover; object-position: top center; }
+.cmp-left .cmp-f-face:not(.is-team) { right: -6px; -webkit-mask-image: linear-gradient(to right, transparent, #000 56%); mask-image: linear-gradient(to right, transparent, #000 56%); }
+.cmp-right .cmp-f-face:not(.is-team) { left: -6px; -webkit-mask-image: linear-gradient(to left, transparent, #000 56%); mask-image: linear-gradient(to left, transparent, #000 56%); }
+.cmp-f-face.is-team { width: 112px; height: 112px; top: 50%; bottom: auto; transform: translateY(-50%); object-fit: contain; background: #fff; border: 1px solid var(--line-2); padding: 9px; }
+.cmp-left .cmp-f-face.is-team { right: 22px; }
+.cmp-right .cmp-f-face.is-team { left: 22px; }
+.cmp-f-face.is-mono { display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-weight: 800; font-size: 32px; letter-spacing: 0.02em; color: color-mix(in srgb, var(--cmp-av, var(--fg-1)) 45%, var(--fg-1)); background: color-mix(in srgb, var(--cmp-av, var(--line-2)) 16%, var(--bg-3)); }
+.cmp-f-flagwash { position: absolute; z-index: 1; top: 0; bottom: 0; width: 62%; background-size: cover; background-position: center; opacity: 0.15; pointer-events: none; }
+.cmp-left .cmp-f-flagwash { left: 0; -webkit-mask-image: linear-gradient(to right, #000, transparent 86%); mask-image: linear-gradient(to right, #000, transparent 86%); }
+.cmp-right .cmp-f-flagwash { right: 0; -webkit-mask-image: linear-gradient(to left, #000, transparent 86%); mask-image: linear-gradient(to left, #000, transparent 86%); }
+html.light .cmp-f-flagwash { opacity: 0.1; }
 
 .cmp-share-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .cmp-foot-btn:disabled { opacity: 0.55; cursor: default; }

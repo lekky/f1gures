@@ -467,18 +467,24 @@ function CompareOverlay({ cmp, status, name, teamColor, kind, onClose, onChange 
   );
 }
 
-function Avatar({ kind, id, color }) {
+// The big inner image: driver headshot (fades toward the text) or, for team
+// comparisons, a crisp team-badge tile. Driver with no headshot renders nothing
+// (the flag wash + text carry the card); a team with no badge shows a monogram.
+function FaceImg({ kind, id, color }) {
   const [ok, setOk] = useState(true);
   const src = kind === 'team'
     ? `/images/teams/${LOGO_ALIAS[id.ref] || id.ref}.jpg`
     : `/images/drivers/${id.ref}.webp`;
-  const mono = (id.code || id.short || id.surname || id.name || '?').slice(0, 3).toUpperCase();
+  if (!ok) {
+    if (kind === 'team') {
+      const mono = (id.short || id.name || '?').slice(0, 3).toUpperCase();
+      return <span className="cmp-f-face is-team is-mono" style={{ '--cmp-av': color }} aria-hidden="true">{mono}</span>;
+    }
+    return null;
+  }
   return (
-    <div className={`cmp-f-avatar ${kind === 'team' ? 'is-team' : ''}`} style={{ '--cmp-av': color }} aria-hidden="true">
-      {ok
-        ? <img src={src} alt="" loading="eager" onError={() => setOk(false)} />
-        : <span className="cmp-f-mono">{mono}</span>}
-    </div>
+    <img className={`cmp-f-face ${kind === 'team' ? 'is-team' : ''}`} src={src}
+         alt="" loading="eager" onError={() => setOk(false)} />
   );
 }
 
@@ -486,7 +492,7 @@ function TeamLogoMark({ refId }) {
   const [ok, setOk] = useState(true);
   if (!ok || !refId) return null;
   return (
-    <img className="cmp-f-logo" src={`/images/teams/${LOGO_ALIAS[refId] || refId}.jpg`}
+    <img className="cmp-f-tlogo" src={`/images/teams/${LOGO_ALIAS[refId] || refId}.jpg`}
          alt="" loading="eager" onError={() => setOk(false)} />
   );
 }
@@ -494,19 +500,20 @@ function TeamLogoMark({ refId }) {
 function Fighter({ side, id, kind, color }) {
   const cc = flagCc(id.nationality);
   const logoRef = kind === 'team' ? null : id.teamRef;
+  const teamLabel = kind === 'team' ? (id.nationality || '') : (id.team || id.nationality || '');
   return (
     <div className={`cmp-fighter cmp-${side}`}>
-      <Avatar kind={kind} id={id} color={color} />
-      <div className="cmp-f-team" style={{ color: teamTint(color) }}>
-        {kind === 'team' ? (id.nationality || '') : (id.team || id.nationality || '')}
+      {cc && <span className="cmp-f-flagwash" style={{ backgroundImage: `url(/images/flags/${cc}.svg)` }} aria-hidden="true" />}
+      <FaceImg kind={kind} id={id} color={color} />
+      <div className="cmp-f-text">
+        <div className="cmp-f-team" style={{ color: teamTint(color) }}>
+          {logoRef && <TeamLogoMark refId={logoRef} />}
+          <span>{teamLabel}</span>
+        </div>
+        <div className="cmp-f-name">{id.surname || id.name}</div>
+        <div className="cmp-f-sub">{id.code ? `${id.code} · ` : ''}{id.span || ''}</div>
+        <div className="cmp-f-strip" style={{ background: color }} />
       </div>
-      <div className="cmp-f-name">{id.surname || id.name}</div>
-      <div className="cmp-f-sub">{id.code ? `${id.code} · ` : ''}{id.span || ''}</div>
-      <div className="cmp-f-marks">
-        {cc && <img className="cmp-f-flag" src={`/images/flags/${cc}.svg`} alt="" loading="eager" />}
-        <TeamLogoMark refId={logoRef} />
-      </div>
-      <div className="cmp-f-strip" style={{ background: color }} />
     </div>
   );
 }
