@@ -1,0 +1,128 @@
+---
+title: "Britain 2026 Recap: Leclerc Wins the Photo Finish, Antonelli Scores Nothing from Pole"
+description: "Charles Leclerc won a frantic British GP by 0.4s from Russell and Hamilton - his first win of 2026. Antonelli took pole and fastest lap but finished 15th, and his title lead is down to 25."
+category: race-recap
+publishedAt: 2026-07-05
+author: "f1gures"
+heroImage: /images/blog/2026-r9-silverstone-recap.jpg
+heroImageAlt: "Painted illustration of a Ferrari heading a nose-to-tail queue of cars through Silverstone's Maggotts and Becketts sweeps after a late safety-car restart"
+---
+import DriverChip from '../../components/blog/DriverChip.astro';
+import RaceResult from '../../components/blog/RaceResult.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+
+The sprint recap ended with Antonelli looking to turn a perfect Saturday into
+a perfect weekend. Silverstone had other ideas. <DriverChip ref="antonelli" />
+took [pole](/races/2026/9/) by 0.175s on Saturday afternoon, set the fastest
+lap of the race on Sunday - and finished fifteenth in a damaged car. Into the
+vacuum stepped
+<DriverChip ref="leclerc" />, who won the British Grand Prix by 0.427s from
+<DriverChip ref="russell" /> in a finish that put the top four within 1.2
+seconds of each other. His first victory of 2026, Ferrari's second in three
+rounds, and the first real dent in the championship leader's season since
+Barcelona.
+
+## The race
+
+The grid promised a fight: <DriverChip ref="antonelli" /> on pole at 1:28.111,
+<DriverChip ref="leclerc" /> alongside, <DriverChip ref="hamilton" /> and
+<DriverChip ref="russell" /> on row two. For 52 laps [Silverstone](/circuits/silverstone/)
+delivered one - just not the one the polesitter was part of.
+
+The polesitter's afternoon was over almost before it began. <DriverChip ref="antonelli" />
+picked up damage that blunted the car, and with it went the places: the
+championship leader slid out of the lead group and down through the field,
+spent the rest of the race buried in the midfield, and crossed the line
+fifteenth, eight seconds behind the winner. The fastest lap of the race -
+a 1:31.777 on lap 37, three tenths quicker than anyone else managed - reads
+like a protest. Pole, fastest lap, zero points. It is only the second Sunday
+this season he has left empty-handed, after his P16 at Barcelona, and the
+first time it has happened from the front of the grid.
+
+At the front, <DriverChip ref="leclerc" /> did what Ferrari have been
+threatening since Barcelona - and then had to do it twice, because a safety
+car erased every gap he had built and parked the field on his gearbox for
+the run to the flag. He held them all off: <DriverChip ref="russell" />
+0.427s back, <DriverChip ref="hamilton" /> at 0.772s, <DriverChip ref="norris" />
+at 1.149s, <DriverChip ref="hadjar" /> at 1.598s. Eight cars finished within
+two and a half seconds of the winner - the closest top of the field 2026 has
+produced - and none of them could find a way past a Ferrari that had been
+second-best all day on Saturday.
+
+The home crowd got a podium, if not the win - and it stings, because it
+should have been second. <DriverChip ref="hamilton" /> was running ahead of
+Russell when the safety car came out, pitted, and gave the place away: he
+rejoined behind the sister Mercedes and crossed the line third, 0.345s from
+the position the stop had cost him. A home podium in Ferrari red all the
+same, and another 15 points in his pursuit of the man who profited.
+<DriverChip ref="russell" /> was the biggest winner of the
+day he didn't win: second place and 18 points while his team-mate scored
+nothing cuts the championship gap from 43 to 25. <DriverChip ref="norris" />
+took fourth from sixth on the grid, best of a McLaren pair that split badly -
+<DriverChip ref="piastri" /> went from eighth to eleventh and left his home
+race with nothing.
+
+Behind the leaders the RB team had their best Sunday of the season:
+<DriverChip ref="lawson" /> sixth from tenth, second-season
+<DriverChip ref="arvid_lindblad" /> seventh from ninth, fourteen points in one
+afternoon. <DriverChip ref="bortoleto" /> took eighth for Audi, and Alpine
+scored with both cars - <DriverChip ref="colapinto" /> driving from nineteenth
+on the grid to ninth, <DriverChip ref="gasly" /> tenth.
+
+<DriverChip ref="max_verstappen" /> never got that far. Seventh on the grid,
+he retired with six laps to go and was classified twentieth - another Sunday
+that promised more than it paid on a weekend where the sister Red Bull of
+Hadjar finished fifth. <DriverChip ref="sainz" />, <DriverChip ref="alonso" />
+and <DriverChip ref="stroll" /> came home a lap down.
+
+## The DNFs
+
+- <DriverChip ref="hulkenberg" /> - lap 36, Audi
+- <DriverChip ref="albon" /> - lap 43, Williams
+
+<RaceResult year={2026} round={9} />
+
+## The championship
+
+<StandingsCard
+  title="Drivers' Championship · After Round 9"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 179 },
+    { driver: 'russell',        team: 'MER', value: 154 },
+    { driver: 'hamilton',       team: 'FER', value: 147 },
+    { driver: 'leclerc',        team: 'FER', value: 108 },
+    { driver: 'norris',         team: 'MCL', value: 97 },
+    { driver: 'piastri',        team: 'MCL', value: 82 },
+    { driver: 'max_verstappen', team: 'RBR', value: 76 },
+  ]}
+/>
+
+<StandingsCard
+  title="Constructors' Championship · After Round 9"
+  kind="constructor"
+  rows={[
+    { name: 'Mercedes', color: '#27F4D2', value: 333 },
+    { name: 'Ferrari',  color: '#E80020', value: 255 },
+    { name: 'McLaren',  color: '#FF8000', value: 179 },
+    { name: 'Red Bull', color: '#3671C6', value: 128 },
+  ]}
+/>
+
+<DriverChip ref="antonelli" /> still leads on 179 - every one of those points
+scored before Sunday's race - but the shape of the table has changed. Russell's
+second place brings him to 154, just 25 behind - the smallest the lead has
+been since the start of May - and <DriverChip ref="hamilton" /> is seven
+further back on 147. The 25 points for the win lift <DriverChip ref="leclerc" /> from
+the midfield knot to fourth outright on 108, clear of Norris (97), Piastri
+(82) and Verstappen (76).
+
+In the constructors' fight Ferrari's 40-point Sunday against Mercedes' 18 cuts
+the gap from 100 to 78 - still a wall, but a lower one, and Ferrari have
+outscored Mercedes 79-76 across the last three rounds. Further back, RB's
+double score pulls them to 59, a single point behind Alpine for fifth.
+
+[Spa](/races/2026/10/) is next on 19 July, two weeks out. Antonelli has led
+the championship since March and still holds a race-win-sized cushion, but for
+the first time all year the cars behind him are the ones with momentum - and
+the Ardennes has a habit of punishing teams whose weekends have started coming
+apart on Sundays.
