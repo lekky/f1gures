@@ -21,7 +21,7 @@ const FEATURED = ['wins', 'championships', 'poles', 'wins-in-season', 'team-titl
 const featured = FEATURED.map((id) => byId[id]).filter(Boolean);
 
 const title = 'F1 Stats — Records, Leaderboards & Comparisons | f1gures';
-const description = 'The numbers behind Formula 1: 17 all-time and modern-era leaderboards, from wins and poles to streaks and title margins — plus head-to-head comparisons.';
+const description = 'The numbers behind Formula 1: 17 all-time and modern-era leaderboards, from wins and poles to streaks and title margins, plus head-to-head comparisons.';
 const canonicalPath = '/stats/';
 const breadcrumb = [
   { name: 'Home', path: '/' },
@@ -50,7 +50,7 @@ const jsonLd = {
       <div>
         <div class="t-eyebrow">The numbers</div>
         <h1 class="page-title">Stats</h1>
-        <p class="page-sub">Every Formula 1 leaderboard worth knowing, plus the tools to settle an argument — records, milestones and head-to-head comparisons, computed from 1950 to the last completed race.</p>
+        <p class="page-sub">Every Formula 1 leaderboard worth knowing, plus the tools to settle an argument: records, milestones and head-to-head comparisons, computed from 1950 to the last completed race.</p>
       </div>
     </div>
 
@@ -62,15 +62,12 @@ const jsonLd = {
         <span class="hub-pillar-go">Browse all {totalRecords} <span class="arrow" aria-hidden="true">›</span></span>
       </a>
 
-      <div class="hub-tool is-soon" aria-disabled="true">
-        <div class="hub-tool-head">
-          <span class="hub-tool-eyebrow">Head to head</span>
-          <span class="hub-pillar-pill">Soon</span>
-        </div>
+      <a class="hub-tool" href="/compare/">
+        <span class="hub-tool-eyebrow">Head to head</span>
         <span class="hub-tool-title">Compare</span>
-        <p class="hub-tool-desc">Line up any two drivers or teams side by side — points, wins, poles and season-by-season form.</p>
-        <span class="hub-pillar-go hub-pillar-go--muted">Coming soon</span>
-      </div>
+        <p class="hub-tool-desc">Line up any two drivers or teams side by side: points, wins, poles, win rates, season-by-season form and the rivalry between them.</p>
+        <span class="hub-pillar-go">Start a comparison <span class="arrow" aria-hidden="true">›</span></span>
+      </a>
     </div>
 
     <section class="records-section hub-featured">

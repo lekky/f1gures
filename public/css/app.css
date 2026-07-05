@@ -3876,3 +3876,35 @@ html.light .cmp-f-flagwash { opacity: 0.1; }
 .cmp-foot-btn-primary:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
 .cmp-toast { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--pos); padding: 5px 9px; border: 1px solid color-mix(in srgb, var(--pos) 45%, var(--line-2)); white-space: nowrap; }
 .cmp-panel-foot { flex-wrap: wrap; }
+
+/* Compare Mode — standalone /compare/ launcher (CompareLauncher.jsx) */
+.cmp-launch { display: flex; flex-direction: column; gap: 16px; }
+.cmp-launch .cmp-panel { max-width: none; }
+.cmp-seg { display: inline-flex; border: 1px solid var(--line-2); align-self: flex-start; }
+.cmp-seg-btn { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; padding: 8px 16px; background: transparent; color: var(--fg-3); border: none; border-right: 1px solid var(--line-2); cursor: pointer; }
+.cmp-seg-btn:last-child { border-right: none; }
+.cmp-seg-btn:hover:not(.is-on) { color: var(--fg-1); background: var(--bg-hover); }
+.cmp-seg-btn.is-on { background: var(--accent); color: #fff; }
+
+.cmp-launch-slots { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch; }
+.cmp-launch-vs { display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-weight: 800; font-size: 22px; color: var(--accent); padding: 0 4px; }
+.cmp-slot { position: relative; display: flex; align-items: center; min-height: 66px; background: var(--bg-2); border: 1px solid var(--line-2); }
+.cmp-slot.is-empty { justify-content: center; gap: 10px; cursor: pointer; color: var(--fg-3); border-style: dashed; transition: border-color var(--mo, 120ms) ease, color var(--mo, 120ms) ease; }
+.cmp-slot.is-empty:hover { border-color: var(--accent); color: var(--fg-1); }
+.cmp-slot-plus { font-family: var(--f-display); font-weight: 800; font-size: 22px; line-height: 1; }
+.cmp-slot-hint { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 13px; }
+.cmp-slot-strip { width: 4px; align-self: stretch; flex: none; }
+.cmp-slot-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 14px; background: transparent; border: none; cursor: pointer; text-align: left; }
+.cmp-slot-name { font-family: var(--f-display); font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; font-size: 18px; color: var(--fg-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.cmp-slot-change { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-4); }
+.cmp-slot-main:hover .cmp-slot-change { color: var(--accent-text); }
+.cmp-slot-x { flex: none; width: 34px; align-self: stretch; background: transparent; border: none; border-left: 1px solid var(--line-1); color: var(--fg-4); cursor: pointer; font-size: 12px; }
+.cmp-slot-x:hover { color: var(--neg); background: var(--bg-hover); }
+.cmp-launch-hint { color: var(--fg-3); font-size: 14px; line-height: 1.6; padding: 26px 24px; border: 1px dashed var(--line-2); background: var(--bg-2); text-align: center; }
+
+@media (max-width: 520px) {
+  .cmp-launch-slots { grid-template-columns: 1fr auto 1fr; gap: 8px; }
+  .cmp-slot-name { font-size: 15px; }
+  .cmp-slot-x { width: 28px; }
+  .cmp-launch-vs { font-size: 18px; }
+}

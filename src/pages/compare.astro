@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CompareLauncher from '../components/islands/CompareLauncher.jsx';
+
+// Standalone head-to-head tool. The launcher island does all the work
+// client-side (grid-seeded pickers, joins, share card); this page is the SEO
+// shell + hero. Linked from the Stats hub.
+const title = 'Compare F1 Drivers & Teams Head-to-Head | f1gures';
+const description = 'Line up any two Formula 1 drivers or constructors side by side — championships, wins, poles, win rates, the rivalry between them and a shareable card. 1950 to today.';
+const canonicalPath = '/compare/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Stats', path: '/stats/' },
+  { name: 'Compare', path: '/compare/' },
+];
+
+const ORIGIN = 'https://f1gures.app';
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'F1gures Compare',
+  applicationCategory: 'SportsApplication',
+  operatingSystem: 'Web',
+  url: ORIGIN + canonicalPath,
+  description,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page compare-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">Head to head</div>
+        <h1 class="page-title">Compare</h1>
+        <p class="page-sub">Line up any two drivers or teams side by side and see every number that settles the argument, plus the rivalry only a head-to-head can show. Pick a side to start.</p>
+      </div>
+    </div>
+
+    <CompareLauncher client:load />
+  </div>
+</BaseLayout>
+
+<style>
+  .compare-page { max-width: 820px; }
+  .compare-page .page-sub { max-width: 62ch; }
+</style>
