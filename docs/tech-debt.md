@@ -22,15 +22,27 @@ not anchors.
 
 ## P1 — correctness / safety
 
-### 1. No CI test gate — nothing runs on PRs, deploys are ungated
-- Neither workflow runs `npm test`, `astro check`, or any linter.
-  `deploy.yml` triggers on every push to `main` and FTPs straight to
-  production; there is no `pull_request` workflow at all.
-- **Why it's debt:** the repo has 10+ vitest suites guarding the points
-  math, records, lineages and compare logic — and a broken commit ships
-  to the live site without any of them running.
-- **Fix:** add a `ci.yml` with `on: pull_request` (and `push: main`
-  before deploy) running `npm ci && npm test`, ideally + `astro check`.
+### 1. CI test gate is advisory, not enforced (plan-gated)
+- **Done:** `.github/workflows/ci.yml` runs `npm ci && npm test` on every
+  PR and on pushes to `main`, so the vitest suite (points math, records,
+  lineages, compare) runs automatically and shows a green/red `test`
+  check on every PR.
+- **Enforcement is blocked by the GitHub plan, not a missing toggle.**
+  This repo is **private on a personal/Free plan**, where GitHub does
+  *not* enforce branch protection rules or rulesets (the ruleset editor
+  shows "won't be enforced on this private repository until you move to a
+  GitHub Team organization account"). So the gate cannot be made a
+  *required* status check as-is — a red suite can still be merged, and
+  `deploy.yml` FTPs `main` straight to production. To get real
+  enforcement: make the repo public (free), or move to GitHub Pro/Team.
+  Until then the gate is advisory — look at the check before merging.
+  Note: adding enforcement would also require a bypass for
+  `github-actions[bot]`, because `refresh-current-season.yml` pushes the
+  season bundle directly to `main` (would otherwise be blocked).
+- **Also still open (optional):** `ci.yml` runs only the tests. It does
+  not run `astro check` (a typecheck) or any linter — the repo has no
+  eslint/prettier config and no `astro check` has ever run, so adding it
+  may surface a backlog of type issues to triage first.
 
 ### 2. Team standings for post-Ergast years bypass `seasonStats.mjs`
 - `scripts/build-archive.mjs` (post-Ergast team merge, ~L2092–2106) sums
