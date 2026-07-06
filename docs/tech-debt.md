@@ -22,15 +22,23 @@ not anchors.
 
 ## P1 — correctness / safety
 
-### 1. CI test gate is advisory, not enforced (partially done)
-- **Done:** `.github/workflows/ci.yml` now runs `npm ci && npm test` on
-  every PR and on pushes to `main`, so the vitest suite (points math,
-  records, lineages, compare) runs automatically.
-- **Still open — the enforcing half:** the check is advisory until it's
-  made a *required status check* in GitHub branch protection (Settings →
-  Branches → `main` → Require status checks to pass → select `test`).
-  Until someone flips that toggle, a red suite can still be merged, and
-  `deploy.yml` FTPs `main` straight to production.
+### 1. CI test gate is advisory, not enforced (plan-gated)
+- **Done:** `.github/workflows/ci.yml` runs `npm ci && npm test` on every
+  PR and on pushes to `main`, so the vitest suite (points math, records,
+  lineages, compare) runs automatically and shows a green/red `test`
+  check on every PR.
+- **Enforcement is blocked by the GitHub plan, not a missing toggle.**
+  This repo is **private on a personal/Free plan**, where GitHub does
+  *not* enforce branch protection rules or rulesets (the ruleset editor
+  shows "won't be enforced on this private repository until you move to a
+  GitHub Team organization account"). So the gate cannot be made a
+  *required* status check as-is — a red suite can still be merged, and
+  `deploy.yml` FTPs `main` straight to production. To get real
+  enforcement: make the repo public (free), or move to GitHub Pro/Team.
+  Until then the gate is advisory — look at the check before merging.
+  Note: adding enforcement would also require a bypass for
+  `github-actions[bot]`, because `refresh-current-season.yml` pushes the
+  season bundle directly to `main` (would otherwise be blocked).
 - **Also still open (optional):** `ci.yml` runs only the tests. It does
   not run `astro check` (a typecheck) or any linter — the repo has no
   eslint/prettier config and no `astro check` has ever run, so adding it
