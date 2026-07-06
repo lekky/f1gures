@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { compareDrivers, compareTeams } from '../../lib/compareStats.js';
 import {
-  loadDoc, loadIndex, entryRef, entryName, entryColor, PickerBody, CompareView,
+  loadDoc, loadIndex, entryRef, entryName, entryColor, PickerBody, CompareView, SuggestedMatchups,
 } from './compareShared.jsx';
 
 export default function CompareLauncher() {
@@ -79,6 +79,8 @@ export default function CompareLauncher() {
     if (picking === 'a') setA(chosen); else setB(chosen);
     setPicking(null);
   }
+  // a featured matchup drops straight into both slots (the compute effect fires)
+  function pickMatchup(sa, sb) { setA(sa); setB(sb); }
 
   const excludeRef = picking === 'a' ? (b && b.ref) : (a && a.ref);
   const noun = type === 'team' ? 'constructor' : 'driver';
@@ -107,7 +109,10 @@ export default function CompareLauncher() {
           footerLeft={<button className="cmp-foot-btn" onClick={() => { setA(null); setB(null); }}>↺ New comparison</button>} />
       )}
       {status === '' && !cmp && (
-        <div className="cmp-launch-hint">Pick two {noun}s to see the head-to-head: points, wins, poles, rates, season-by-season form and the rivalry between them.</div>
+        <>
+          <SuggestedMatchups kind={type} onPick={pickMatchup} />
+          <div className="cmp-launch-hint">Or pick any two {noun}s above to see the head-to-head: points, wins, poles, rates, season-by-season form and the rivalry between them.</div>
+        </>
       )}
 
       {picking && createPortal(

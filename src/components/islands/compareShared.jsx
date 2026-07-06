@@ -36,6 +36,17 @@ export function loadIndex(kind) {
   return _indexPromise[kind];
 }
 
+let _suggPromise = null;
+/** The pre-built rotating matchup pool ({ driver: [...], team: [...] }),
+ *  generated deterministically at build time by scripts/compareSuggestions.mjs. */
+export function loadSuggestions() {
+  if (_suggPromise) return _suggPromise;
+  _suggPromise = fetch('/data/archive/_compare-suggestions.json')
+    .then((r) => { if (!r.ok) throw new Error('no suggestions'); return r.json(); })
+    .catch((err) => { _suggPromise = null; throw err; });
+  return _suggPromise;
+}
+
 export function loadDoc(kind, ref) {
   const key = `${kind}:${ref}`;
   if (_docCache[key]) return Promise.resolve(_docCache[key]);
@@ -185,6 +196,88 @@ export function PickerBody({ kind, excludeRef = null, onPick, autoFocus = true, 
         )}
       </div>
     </>
+  );
+}
+
+// ── suggested matchups (rotating featured head-to-heads) ─────────
+// Fisher–Yates on a copy — client-only (called from an effect), so Math.random
+// never runs during SSR/hydration and every reload gives a fresh order.
+function shuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function SuggFace({ kind, refId, color, side }) {
+  const [ok, setOk] = useState(true);
+  const src = kind === 'team'
+    ? `/images/teams/${LOGO_ALIAS[refId] || refId}.jpg`
+    : `/images/drivers/${refId}.webp`;
+  const cls = `cmp-sugg-face cmp-sugg-face-${side} ${kind === 'team' ? 'is-team' : ''}`;
+  if (!ok) {
+    const mono = (refId || '?').slice(0, 2).toUpperCase();
+    return <span className={`${cls} is-mono`} style={{ '--sc': color }} aria-hidden="true">{mono}</span>;
+  }
+  return <img className={cls} style={{ '--sc': color }} src={src} alt="" loading="lazy" onError={() => setOk(false)} />;
+}
+
+/** A grid of clickable, rotating featured head-to-heads. Reads the pre-built
+ *  pool (hundreds of data-derived + curated pairings) and shuffles it on every
+ *  load / Shuffle press, so visitors keep seeing different matchups. `onPick`
+ *  receives two { ref, name, color } objects ready to drop into the slots. */
+export function SuggestedMatchups({ kind, onPick, count = 4 }) {
+  const [pool, setPool] = useState(null);   // full { driver, team } pool
+  const [seed, setSeed] = useState(0);
+
+  useEffect(() => { loadSuggestions().then(setPool).catch(() => setPool({})); }, []);
+
+  const picks = useMemo(() => {
+    const list = (pool && pool[kind]) || [];
+    if (!list.length) return [];
+    return shuffled(list).slice(0, count);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pool, kind, count, seed]);
+
+  if (!pool) return null;                 // don't flash before the pool lands
+  if (!picks.length) return null;
+
+  const side = (m, s) => ({ ref: m[`${s}`], name: m[`${s}Name`], color: m[`${s}Color`] });
+
+  return (
+    <div className="cmp-sugg">
+      <div className="cmp-sugg-head">
+        <span className="cmp-sugg-eyebrow">Try a head-to-head</span>
+        <button className="cmp-sugg-shuffle" onClick={() => setSeed((s) => s + 1)} type="button">
+          <span aria-hidden="true">↻</span> Shuffle
+        </button>
+      </div>
+      <div className="cmp-sugg-grid">
+        {picks.map((m) => (
+          <button
+            key={`${m.a}-${m.b}`}
+            className="cmp-sugg-card"
+            style={{ '--sa': m.aColor, '--sb': m.bColor }}
+            onClick={() => onPick(side(m, 'a'), side(m, 'b'))}
+            type="button"
+          >
+            <span className="cmp-sugg-tag">{m.tag}</span>
+            <span className="cmp-sugg-faces">
+              <SuggFace kind={kind} refId={m.a} color={m.aColor} side="l" />
+              <span className="cmp-sugg-vs" aria-hidden="true">VS</span>
+              <SuggFace kind={kind} refId={m.b} color={m.bColor} side="r" />
+            </span>
+            <span className="cmp-sugg-names">
+              <b>{m.aLabel}</b><i>vs</i><b>{m.bLabel}</b>
+            </span>
+            <span className="cmp-sugg-reason">{m.reason}</span>
+            <span className="cmp-sugg-go" aria-hidden="true">Compare <span className="cmp-sugg-arrow">→</span></span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
