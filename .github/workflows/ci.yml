@@ -1,0 +1,35 @@
+name: CI
+
+# Test gate. Runs the vitest suite on every PR and on pushes to main.
+# deploy.yml FTPs main straight to production, so this is the only automated
+# check standing between a merge and the live site — it must pass before merge
+# (enforce via a required status check in branch protection: Settings →
+# Branches → main → Require status checks → "test").
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# One in-flight run per ref; a new push supersedes the previous run.
+# (Safe to cancel here, unlike the deploy workflow.)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
