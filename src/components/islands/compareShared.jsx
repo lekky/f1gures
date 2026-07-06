@@ -9,7 +9,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { fmtVal } from '../../lib/compareStats.js';
 import { buildShareBlob } from '../../lib/compareShareCard.js';
 import { NATIONALITY } from '../../lib/nationality.js';
-import { DRIVER_MATCHUPS, TEAM_MATCHUPS } from '../../data/compareMatchups.js';
 
 // team-logo files use the buildFallback id, not the Ergast constructorRef.
 export const LOGO_ALIAS = { red_bull: 'redbull', aston_martin: 'aston' };
@@ -35,6 +34,17 @@ export function loadIndex(kind) {
     .then((list) => { _index[kind] = list; return list; })
     .catch((err) => { _indexPromise[kind] = null; throw err; });
   return _indexPromise[kind];
+}
+
+let _suggPromise = null;
+/** The pre-built rotating matchup pool ({ driver: [...], team: [...] }),
+ *  generated deterministically at build time by scripts/compareSuggestions.mjs. */
+export function loadSuggestions() {
+  if (_suggPromise) return _suggPromise;
+  _suggPromise = fetch('/data/archive/_compare-suggestions.json')
+    .then((r) => { if (!r.ok) throw new Error('no suggestions'); return r.json(); })
+    .catch((err) => { _suggPromise = null; throw err; });
+  return _suggPromise;
 }
 
 export function loadDoc(kind, ref) {
@@ -190,8 +200,6 @@ export function PickerBody({ kind, excludeRef = null, onPick, autoFocus = true, 
 }
 
 // ── suggested matchups (rotating featured head-to-heads) ─────────
-const shortName = (kind, e) => (kind === 'team' ? e.name : e.surname);
-
 // Fisher–Yates on a copy — client-only (called from an effect), so Math.random
 // never runs during SSR/hydration and every reload gives a fresh order.
 function shuffled(arr) {
@@ -216,37 +224,32 @@ function SuggFace({ kind, refId, color, side }) {
   return <img className={cls} style={{ '--sc': color }} src={src} alt="" loading="lazy" onError={() => setOk(false)} />;
 }
 
-/** A grid of clickable, rotating featured head-to-heads. `onPick(a, b)` receives
- *  two { ref, name, color } objects ready to drop into the launcher slots. */
+/** A grid of clickable, rotating featured head-to-heads. Reads the pre-built
+ *  pool (hundreds of data-derived + curated pairings) and shuffles it on every
+ *  load / Shuffle press, so visitors keep seeing different matchups. `onPick`
+ *  receives two { ref, name, color } objects ready to drop into the slots. */
 export function SuggestedMatchups({ kind, onPick, count = 4 }) {
-  const [list, setList] = useState(null);
+  const [pool, setPool] = useState(null);   // full { driver, team } pool
   const [seed, setSeed] = useState(0);
 
-  useEffect(() => { setList(null); loadIndex(kind).then(setList).catch(() => setList([])); }, [kind]);
+  useEffect(() => { loadSuggestions().then(setPool).catch(() => setPool({})); }, []);
 
   const picks = useMemo(() => {
-    if (!list || !list.length) return [];
-    const byRef = new Map(list.map((e) => [entryRef(kind, e), e]));
-    const pool = kind === 'team' ? TEAM_MATCHUPS : DRIVER_MATCHUPS;
-    const resolved = pool
-      .map((m) => {
-        const ea = byRef.get(m.a), eb = byRef.get(m.b);
-        if (!ea || !eb) return null;
-        const side = (e) => ({ ref: entryRef(kind, e), name: entryName(kind, e), color: entryColor(kind, e) });
-        return { ...m, ea, eb, sa: side(ea), sb: side(eb) };
-      })
-      .filter(Boolean);
-    return shuffled(resolved).slice(0, count);
+    const list = (pool && pool[kind]) || [];
+    if (!list.length) return [];
+    return shuffled(list).slice(0, count);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list, kind, count, seed]);
+  }, [pool, kind, count, seed]);
 
-  if (!list) return null;                 // don't flash before the index lands
+  if (!pool) return null;                 // don't flash before the pool lands
   if (!picks.length) return null;
+
+  const side = (m, s) => ({ ref: m[`${s}`], name: m[`${s}Name`], color: m[`${s}Color`] });
 
   return (
     <div className="cmp-sugg">
       <div className="cmp-sugg-head">
-        <span className="cmp-sugg-eyebrow">Try a classic head-to-head</span>
+        <span className="cmp-sugg-eyebrow">Try a head-to-head</span>
         <button className="cmp-sugg-shuffle" onClick={() => setSeed((s) => s + 1)} type="button">
           <span aria-hidden="true">↻</span> Shuffle
         </button>
@@ -256,18 +259,18 @@ export function SuggestedMatchups({ kind, onPick, count = 4 }) {
           <button
             key={`${m.a}-${m.b}`}
             className="cmp-sugg-card"
-            style={{ '--sa': m.sa.color, '--sb': m.sb.color }}
-            onClick={() => onPick(m.sa, m.sb)}
+            style={{ '--sa': m.aColor, '--sb': m.bColor }}
+            onClick={() => onPick(side(m, 'a'), side(m, 'b'))}
             type="button"
           >
             <span className="cmp-sugg-tag">{m.tag}</span>
             <span className="cmp-sugg-faces">
-              <SuggFace kind={kind} refId={m.sa.ref} color={m.sa.color} side="l" />
+              <SuggFace kind={kind} refId={m.a} color={m.aColor} side="l" />
               <span className="cmp-sugg-vs" aria-hidden="true">VS</span>
-              <SuggFace kind={kind} refId={m.sb.ref} color={m.sb.color} side="r" />
+              <SuggFace kind={kind} refId={m.b} color={m.bColor} side="r" />
             </span>
             <span className="cmp-sugg-names">
-              <b>{shortName(kind, m.ea)}</b><i>vs</i><b>{shortName(kind, m.eb)}</b>
+              <b>{m.aLabel}</b><i>vs</i><b>{m.bLabel}</b>
             </span>
             <span className="cmp-sugg-reason">{m.reason}</span>
             <span className="cmp-sugg-go" aria-hidden="true">Compare <span className="cmp-sugg-arrow">→</span></span>

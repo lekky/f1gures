@@ -139,6 +139,7 @@ per screen as a signal of "now / active / leader".
   - `_circuits-index.json`, `circuits/<circuitRef>.json`
   - `_teams-index.json`, `teams/<constructorRef>.json` (team docs carry a `lineage` chain when in a curated lineage)
   - `_records-index.json`, `records/<topic>.json` - 17 curated leaderboards (top-5 for hub, top-50 for sub-pages, all-time + modern era). Computed by the records pass in `build-archive.mjs` from already-merged driver/team docs.
+  - `_compare-suggestions.json` - `{ driver: [...], team: [...] }` rotating head-to-head pool for the `/compare/` launcher. Generated deterministically by the final pass of `build-archive.mjs` (see `scripts/compareSuggestions.mjs`): a hand-curated seed (`src/data/compareMatchups.js`) folded in first, then five data-driven strategies (teammate duels, title twins, same-nation greats, win-list neighbours, cross-era champions). Only entities with a face/logo are included; the launcher shuffles the pool client-side so featured picks differ on every load.
   - `_driver-codes.json` - code→driverRef map for the `/driver.html?id=NOR` redirect + `.htaccess` rules
 - `data/history/*.csv` - Ergast Database CSV dump (1950–2024, ~22 MB). Build-time only, never served. Excluded from `dist/` because it's at repo root, not in `public/`.
 

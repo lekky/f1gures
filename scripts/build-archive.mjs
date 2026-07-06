@@ -15,6 +15,10 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse/sync';
 import { computeStandings as computeBundleSeasonStandings, sprintPointsMap } from '../src/lib/seasonStats.mjs';
 import { NATIONALITY, natInfo } from '../src/lib/nationality.js';
+import { hasDriverFace } from '../src/lib/driverFaceExists.js';
+import { teamLogoPath } from '../src/lib/teamLogo.js';
+import { buildCompareSuggestions } from './compareSuggestions.mjs';
+import { DRIVER_MATCHUPS as CURATED_DRIVER_MATCHUPS, TEAM_MATCHUPS as CURATED_TEAM_MATCHUPS } from '../src/data/compareMatchups.js';
 
 // ─── Static lookups ───────────────────────────────────────────────────
 // Hand-curated mappings that the Ergast CSVs don't carry - keep small.
@@ -2499,4 +2503,22 @@ if (postArchiveTeamYears > 0) {
     writeFileSync(join(OUT, 'records', `${id}.json`), JSON.stringify(payload));
   }
   console.log(`[archive] wrote records index + ${Object.keys(byTopic).length} topic files`);
+
+  // ── Compare suggestions pool ────────────────────────────────────
+  // A large, deterministic set of driver + constructor head-to-heads (curated
+  // seed folded in first, then five data-driven strategies). The /compare/
+  // launcher fetches this and shuffles it client-side so featured picks rotate.
+  const suggestions = buildCompareSuggestions({
+    // read the finished indexes from disk — inside this block `index` is the
+    // records leaderboard index, not the drivers index.
+    driverIndex: JSON.parse(readFileSync(join(OUT, '_drivers-index.json'), 'utf8')),
+    teamsIndex: JSON.parse(readFileSync(join(OUT, '_teams-index.json'), 'utf8')),
+    driverDocs,
+    hasDriverFace,
+    hasTeamLogo: (ref) => teamLogoPath(ref) != null,
+    curatedDrivers: CURATED_DRIVER_MATCHUPS,
+    curatedTeams: CURATED_TEAM_MATCHUPS,
+  });
+  writeFileSync(join(OUT, '_compare-suggestions.json'), JSON.stringify(suggestions));
+  console.log(`[archive] wrote compare suggestions (${suggestions.driver.length} driver, ${suggestions.team.length} team)`);
 }
