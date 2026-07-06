@@ -8,11 +8,12 @@ The native mobile apps ([github.com/lekky/figures-app](https://github.com/lekky/
 
 | File | Contents | Size |
 |---|---|---|
-| `manifest.json` | schemaVersion, generatedAt, latestSeason, per-file sha256 hashes, minAppVersion, notice | ~1 KB |
-| `seasons/<year>.json` (2020…current) | Per-season app contract: `meta`, `drivers[]`, `teams[]`, `calendar[]`, `circuits[]`, `chart[]`, `results{}`, `driverRounds{}`, `driverStats{}`, `roundCodes[]` — standings and stats **precomputed** via `src/lib/seasonStats.mjs` | 60–120 KB |
+| `manifest.json` | schemaVersion, generatedAt, latestSeason, per-file sha256 hashes (`seasons[]`, `content`, `archive`), minAppVersion, notice, `imagesBase` (site origin for resolving image URLs) | ~1 KB |
+| `seasons/<year>.json` | Per-season app contract: `meta`, `drivers[]`, `teams[]`, `calendar[]`, `circuits[]`, `chart[]`, `results{}`, `driverRounds{}`, `driverStats{}`, `roundCodes[]` — standings and stats **precomputed** via `src/lib/seasonStats.mjs`. Emitted for every available bundle from `FIRST_APP_SEASON` (1950) up to the current year — in practice 2020…current today, because only those bundles exist in `public/data/` | 60–120 KB |
 | `content.json` | Guide chapters, blog index+bodies (MDX stripped), records leaderboards (from the archive build), trivia facts | ~190 KB |
+| `archive.json` | Slimmed all-time career/team/circuit dataset for the apps' Compare Mode and career views (cross-linked from season files via `drivers[].ref` / `circuits[].histId`). Optional: generated best-effort, and `manifest.archive` is `null` when unavailable | sizable |
 
-The apps poll `manifest.json` (cheap, `Cache-Control: max-age=60` via `public/data/app/.htaccess` — that file is static and committed) and re-fetch a season/content file only when its sha256 in the manifest changes. Because the refresh workflow (`refresh-current-season.yml`) rebuilds and deploys the site whenever the current-season bundle changes, **the apps update within minutes of race results landing — no app release needed**.
+The apps poll `manifest.json` (cheap, `Cache-Control: max-age=60` via `public/data/app/.htaccess` — that file is static and committed; it also applies `max-age=300, stale-while-revalidate` plus `Access-Control-Allow-Origin: *` to the other feed JSONs) and re-fetch a season/content file only when its sha256 in the manifest changes. Because the refresh workflow (`refresh-current-season.yml`) rebuilds and deploys the site whenever the current-season bundle changes, **the apps update within minutes of race results landing — no app release needed**.
 
 ## Rules — read before changing anything
 

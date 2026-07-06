@@ -1,6 +1,8 @@
 # f1gures
 
-Multi-page F1 stats site. **Astro 4 SSG with React 18 islands.** Every page is prerendered at build time (~2,300+ HTMLs covering listing pages plus per-driver/race/circuit/team detail pages from the Ergast 1950–2024 archive plus hand-curated 2025/2026 bundles, plus a records hub, an MDX blog, and a beginner's guide). React only hydrates the interactive bits (theme toggle, year picker, sortable standings, charts, search palette). FTP-deployed from `dist/`.
+Multi-page F1 stats site. **Astro 4 SSG with React 18 islands.** Every page is prerendered at build time (~2,300+ HTMLs covering listing pages plus per-driver/race/circuit/team detail pages from the Ergast 1950–2024 archive plus hand-curated 2025/2026 bundles, plus a records hub, a head-to-head Compare tool, an MDX blog, a beginner's guide, and stats/read hub pages). React only hydrates the interactive bits (theme toggle, year picker, sortable standings, charts, search palette, Compare Mode, feedback form). FTP-deployed from `dist/`. The build also emits a versioned JSON feed for the native mobile apps (see `docs/app-data-feed.md`).
+
+Higher-level docs live in `docs/` (see `docs/README.md`). The known tech-debt / refactoring register is **`docs/tech-debt.md`** — check it before large refactors, and update it when you pay an item down or add new debt knowingly.
 
 ## Build pipeline
 
@@ -12,13 +14,13 @@ npm run dev         # dev server with HMR at http://localhost:4321/ (predev runs
 npm test            # vitest - covers src/lib/ and scripts/
 ```
 
-`prebuild` runs five scripts in order:
+`prebuild` runs six scripts in order:
 1. `scripts/build-archive.mjs` - parses `data/history/*.csv` (Ergast dump) and writes per-entity JSONs into `public/data/archive/` (gitignored). Then does a second pass over every `public/data/<year>.json` bundle with year > 2024: emits race archive JSONs for completed rounds (those with results), appends them to `_races-index.json` so `getStaticPaths` prerenders them, and merges race entries + championship standings into driver docs. A final pass attaches constructor `lineage` chains to team docs (see `scripts/lineages.mjs`) and computes the 17 record leaderboards (see Records library). The Astro routes' `getStaticPaths` read those at build time.
-2. `scripts/generate-og-images.mjs` - renders per-page Open Graph PNGs into `public/images/og/<type>/<slug>.png` using satori + resvg. Cached: only regenerates images whose source data has changed. CI restores the directory from a content-hashed cache.
+2. `scripts/generate-og-images.mjs` - renders per-page Open Graph PNGs into `public/images/og/<type>/<slug>.png` using satori + resvg. Cached: skips any image that already exists on disk (`OG_FORCE=1` to regenerate); freshness comes from CI restoring the directory from a content-hashed cache whose key covers the source data + scripts.
 3. `scripts/sync-current-season.mjs` - copies the highest-numbered `public/data/<year>.json` to `src/data/currentSeason.json` (gitignored). The listing-page islands import that JSON via [src/data/currentSeason.js](src/data/currentSeason.js) so the prerendered HTML reflects real current standings (with no bundle, screens get an empty `_empty: true` shape and render placeholders).
 4. `scripts/fetch-weather.mjs` - pulls next-race weather from Open-Meteo into `src/data/weather-next.json` (gitignored). Non-fatal if the API is down (existing data is reused).
 5. `scripts/build-htaccess.mjs` - emits `public/.htaccess` (gitignored): Apache `mod_rewrite` 301s that turn legacy `?id=`/`?round=` query-string URLs into server-side redirects to the prerendered routes (better link-equity consolidation than the JS fallback). Silently ignored on non-Apache hosts, where the JS redirect docs still run.
-6. `scripts/build-app-feed.mjs` - writes the **mobile-app data feed** to `public/data/app/v1/` (gitignored): manifest + per-season contract files (standings precomputed via `seasonStats.mjs`) + `content.json` (guide/blog/records/facts). The native apps in github.com/lekky/figures-app depend on this shape - **read `docs/app-data-feed.md` before touching it**. Additive-only within v1; deterministic output (no timestamps outside the manifest); a hard failure fails the build on purpose (the FTP sync would otherwise delete the feed from production and strand shipped apps).
+6. `scripts/build-app-feed.mjs` - writes the **mobile-app data feed** to `public/data/app/v1/` (gitignored): manifest + per-season contract files (standings precomputed via `seasonStats.mjs`) + `content.json` (guide/blog/records/facts) + `archive.json` (slimmed all-time data for the apps' Compare Mode / career views). The native apps in github.com/lekky/figures-app depend on this shape - **read `docs/app-data-feed.md` before touching it**. Additive-only within v1; deterministic output (no timestamps outside the manifest); a hard failure fails the build on purpose (the FTP sync would otherwise delete the feed from production and strand shipped apps).
 
 All steps are idempotent - safe to run repeatedly.
 
@@ -65,15 +67,17 @@ per screen as a signal of "now / active / leader".
 
 ### Astro shell
 - `src/layouts/BaseLayout.astro` - shared `<head>` (SEO meta, OG/Twitter, canonical, JSON-LD, theme pre-hydration script, content-hashed CSS cache-bust, GA4 tag `G-17WG173FST`, Buy Me a Coffee loader). Every page renders inside it.
-- `src/components/Chrome.astro` - desktop top nav + mobile top bar + mobile bottom nav + mobile "More" bottom sheet. Active-route detection runs at build time from `Astro.url.pathname`. Static markup; islands slot in for interactivity (theme toggle, year picker, standings dropdown, search). Nav now has Home / Standings / Calendar / Circuits / Drivers / Teams / Blog / Guide.
+- `src/components/Chrome.astro` - desktop top nav + mobile top bar + mobile bottom nav + mobile "More" bottom sheet. Active-route detection runs at build time from `Astro.url.pathname`. Static markup; islands slot in for interactivity (theme toggle, year picker, standings + grid dropdowns, search). Desktop nav is bucketed: Home / Standings (dropdown) / Calendar / **Grid** (dropdown → Drivers, Teams, Circuits) / **Stats** (`/stats/`, covers records + compare) / **Read** (`/read/`, covers guide + blog). Mobile bottom nav: Home / Standings / Calendar / Stats / More; the "More" sheet (vanilla `is:inline` script, not an island) holds Drivers, Teams, Circuits, Guide, Blog, Feedback.
 - `src/lib/shared.jsx` - React helpers + components used inside islands: `Panel`, `SectionHead`, `ChangeIndicator`, `StatusPill`, `SprintBadge`, `DriverCell`, `Countdown`, `DriverSilhouette`, `Flag`, `TeamLogo`, `MiniChart`, plus `urlFor`, `navigate`, `getParam`, `useIsMobile`, `circuitTz`, `zoneShort`, `fmtDate`, `fmtDateLong`. **`urlFor` holds the team/circuit alias maps and the `ARCHIVE_MAX_YEAR` guard** - see Conventions.
 - `src/lib/assetHash.js` - content-hashes a public asset at build time for `?v=<hash>` cache-busts; the URL only changes when the file changes, so HTML stays byte-identical across PRs that don't touch CSS.
 - `src/lib/yearAwareData.js` - `useYearAwareData(fallback)` hook. SSR/initial render uses the current-season fallback (the prerendered HTML, for SEO); on hydration it reads `?year=` / `localStorage.f1-year` and swaps `data` for the matching `/data/<year>.json`.
 
 ### React islands
-- `src/components/islands/{ThemeToggle,YearPicker,StandingsDropdown}.jsx` - chrome interactivity.
+- `src/components/islands/{ThemeToggle,YearPicker,StandingsDropdown,GridDropdown}.jsx` - chrome interactivity (`GridDropdown` is the desktop-nav Drivers/Teams/Circuits dropdown).
 - `src/components/islands/SearchPalette.jsx` - global Cmd/Ctrl+K (or `/`) command palette, mounted once in Chrome. Lazy-fetches the four `_*-index.json` files on first open and ranks substring matches across drivers, teams, circuits, races; navigates via the shared `urlFor()` so alias maps + the `ARCHIVE_MAX_YEAR` guard stay in one place. Any `data-search-trigger` element opens it.
-- `src/components/islands/RaceCountdown.jsx` - live countdown to the next session, mounted on detail pages (race/driver/team/circuit).
+- `src/components/islands/RaceCountdown.jsx` - live countdown to the next session, mounted on detail pages (race/driver/team/circuit). Renders no React tree of its own - it mutates the SSR markup via `data-session-iso` / `data-circuit-id` attributes.
+- **Compare Mode** - `src/components/islands/CompareLauncher.jsx` (the standalone `/compare/` experience: A-vs-B slots, Drivers/Teams toggle, state mirrored to `?type=&a=&b=`), `src/components/islands/CompareCta.jsx` (the "Compare Mode" CTA on driver/team detail pages, pre-seeded rival picker + VS overlay), and `src/components/islands/compareShared.jsx` (shared guts: archive index/doc loaders, picker, CompareView + share actions). Math lives in `src/lib/compareStats.js` (tested); `src/lib/compareShareCard.js` renders a result to a 1080×1080 share-card PNG on `<canvas>`.
+- `src/components/islands/FeedbackForm.jsx` - the `/feedback/` form island (category/message/email + honeypot + Cloudflare Turnstile). POSTs to the Cloudflare Worker configured in `src/data/feedbackConfig.js`; renders a "not configured" notice when that config is empty. See "Feedback worker" below.
 - `src/components/islands/{Home,Calendar,CircuitsIndex,DriverStandings,ConstructorStandings}Island.jsx` - **year-aware** thin wrappers; each calls `useYearAwareData(currentSeason)` (from `src/data/currentSeason.js`) and passes `data` to the matching screen.
 - `src/components/islands/{DriversIndex,TeamsIndex}Island.jsx` - the `/drivers/` and `/teams/` listing islands. These are **not** year-aware: they `fetch('/data/archive/_drivers-index.json')` / `_teams-index.json` client-side (the all-time roster) and render with filters. Don't wrap them in `useYearAwareData` - they're a deliberately different, archive-backed pattern from the 5 season islands above.
 - `src/components/islands/screens/*.jsx` - the actual screens. Take `data` (full F1_DATA shape) as a prop. **Never read `window.F1_DATA`** - that pattern is gone. Notable screens: `HomeScreen`, `CalendarScreen`, `DriverStandingsScreen`, `ConstructorStandingsScreen`, `CircuitsIndexScreen`, `DriversIndexScreen`, `TeamsIndexScreen`, `ChampPodium` (top-3 podium block), `TriviaBoard` (rotating facts from `src/data/trivia.json`), `SessionWeatherCell` / `SessionWeatherExpand` / `WeatherIcon` (per-session weather + climate normals).
@@ -93,8 +97,14 @@ per screen as a signal of "now / active / leader".
 - `src/pages/records/index.astro` + `src/pages/records/[topic].astro` - hub + 17 sub-pages (one per leaderboard). Uses `RecordHeroCard.astro`, `RecordsTable.astro`, `RecordsTopHero.astro`, `RecordsTimeline.astro`. Era toggle on sub-pages is a ~15-line inline `<script is:inline>` - no island.
 - `src/pages/404.astro`
 
+**Hubs & tools**:
+- `src/pages/stats.astro` - `/stats/` hub for the "numbers" bucket: featured record leaderboards (reads `_records-index.json` at build time) + links to `/records/` and `/compare/`. Static Astro, no island.
+- `src/pages/read.astro` - `/read/` hub for the "words" bucket: guide pillars + latest blog posts from the content collections. Static Astro, no island.
+- `src/pages/compare.astro` - `/compare/` head-to-head tool; static hero + the `CompareLauncher` island (all comparison work happens client-side against the archive JSONs).
+- `src/pages/feedback.astro` - `/feedback/` page mounting the `FeedbackForm` island.
+
 **Content collections** (MDX, via `@astrojs/mdx`):
-- `src/pages/blog/{index,[...slug]}.astro` + `src/pages/blog/category/[category].astro` + `src/pages/blog/rss.xml.ts` - the blog: index, per-post pages, category pages, and an RSS feed. Posts live in `src/content/blog/*.mdx`; in-post React-ish bits render via `src/components/blog/{DriverChip,RaceResult,SeasonChart}.astro`.
+- `src/pages/blog/[...page].astro` (paginated index, 14/page) + `src/pages/blog/[...slug].astro` (posts) + `src/pages/blog/category/[category]/[...page].astro` (paginated category pages) + `src/pages/blog/rss.xml.ts` (RSS). Posts live in `src/content/blog/*.mdx`; in-post components render via `src/components/blog/` (`DriverChip`, `RaceResult`, `SeasonChart`, `Sessions`, `StandingsCard`, `Storyline`/`Storylines`, `PullQuote`, `BlogPager`).
 - `src/pages/guide/{index,[slug]}.astro` - a beginner's F1 guide hub + per-topic pages. Topics live in `src/content/guide/*.mdx`.
 - Collection schemas live in `src/content/config.ts` (Zod). Blog has `title`/`description`/`category`/`publishedAt`/`updatedAt`/`draft`; guide has `title`/`order`/`summary`/`related`/`draft`. Categories + labels are exported from the same file. Drafts and future-dated posts are hidden in PROD by `isPublic()` in `src/lib/blog.ts`.
 
@@ -108,13 +118,18 @@ per screen as a signal of "now / active / leader".
 - `src/lib/listingUtils.js` - `filterItems()` search/nationality filter for the drivers/teams index screens. Tested.
 - `src/lib/{buildDriverSummary,buildRaceSummary}.js` - build human-readable summary strings for driver/race pages.
 - `src/lib/driverFaceExists.js` - build-time memoized check for `public/images/drivers/<ref>.webp`. Server-only (imported by Astro frontmatter, never shipped).
-- `src/lib/{blog,guide,blogData}.ts` - content-collection helpers (sorting, public filter, date formatting, per-topic accent colours). Tested (`guide.test.js`).
+- `src/lib/{blog,guide,blogData,guideCategories}.ts` - content-collection helpers (sorting, public filter, date formatting, per-topic accent colours; `blogData.ts` gives the blog MDX components build-time access to the archive JSONs; `guideCategories.ts` keeps the category list importable by vitest without `astro:content`). Tested (`guide.test.js`).
+- `src/lib/compareStats.js` - pure comparison logic for Compare Mode (grouped metric rows, rivalry context, verdict tally). Tested (`compareStats.test.js`).
+- `src/lib/compareShareCard.js` - draws a Compare result onto a 1080×1080 `<canvas>` share-card PNG (client-only).
+- `src/lib/teamLogo.js` - build-time memoized team-logo existence lookup for `public/images/teams/` (server-only, like `driverFaceExists.js`), incl. logo alias + engine-suffix fallbacks.
+- `src/lib/weather.js` - WMO weather-code → glyph/description maps + session-hour summarisers + `useTempUnit`. Tested (`weather.test.js`). `scripts/build-climate.mjs` keeps a copy of `wmoFromMeans` - keep in sync (see docs/tech-debt.md).
+- `src/data/feedbackConfig.js` - public feedback config: deployed Worker URL + Turnstile site key. Empty values = feedback page renders a "not configured" notice, so builds never break.
 - `src/data/buildFallback.js` - `buildFromYearJson(json, circuitProfiles?)` factory: turns a season bundle into the data object screens consume. There is deliberately **no speculative grid**; with no bundle, `buildFromYearJson({})` yields an empty-but-valid shape and screens render explicit placeholders. Tested.
 - `src/data/currentSeason.js` - imports `currentSeason.json`, builds it via `buildFromYearJson(..., circuitProfiles)`, then attaches `weather` (from `weather-next.json`) and `climate` (from `climate/*.json`) using `import.meta.glob` so missing files don't break the build. Exposes `_empty: true` when the synced bundle has no drivers. This is what the 5 year-aware listing islands import as their SSR data.
 - `src/data/circuitProfiles.js` - per-circuit static metadata merged into the current-season object.
 - `src/data/driverBios.js` - hand-written short bios surfaced on driver pages.
 - `src/data/trivia.json` - fact pool for `TriviaBoard`, race pages, and circuit pages.
-- `src/data/currentSeason.json` (**gitignored, generated by prebuild**) - copy of the highest-numbered `public/data/<year>.json`. Refreshed nightly by `.github/workflows/refresh-current-season.yml`.
+- `src/data/currentSeason.json` (**gitignored, generated by prebuild**) - copy of the highest-numbered `public/data/<year>.json`. Refreshed by `.github/workflows/refresh-current-season.yml` (nightly + every 10 min on race weekends).
 - `src/data/weather-next.json` (**gitignored, generated by prebuild**) - next-race forecast from Open-Meteo.
 - `src/data/climate/<circuitRef>.json` (**gitignored, generated by `build:climate`**) - per-circuit climate normals.
 - `public/data/<year>.json` - season bundles. Hand-curated for 2020–2025 (rich session/circuit metadata). 1950–2019 generated by `build-archive.mjs` from the CSVs (gitignored). The current calendar year (2026) is fetched nightly from Jolpica and committed by the refresh workflow. Bundles for years > 2024 are also consumed by `build-archive.mjs` to generate race archive JSONs and driver standings for post-Ergast seasons. A round only lands in `results` once its **race** has run (so standings/win-count passes treat "in `results`" as "race completed"); a round whose qualifying (and, on a sprint weekend, sprint) has run but whose race hasn't goes into separate `pendingQuali` / `pendingSprint` maps keyed by round, which `build-archive.mjs` maps onto the holding page's `qualifying` / `sprint_results` so those tables show before the race.
@@ -127,6 +142,10 @@ per screen as a signal of "now / active / leader".
   - `_driver-codes.json` - code→driverRef map for the `/driver.html?id=NOR` redirect + `.htaccess` rules
 - `data/history/*.csv` - Ergast Database CSV dump (1950–2024, ~22 MB). Build-time only, never served. Excluded from `dist/` because it's at repo root, not in `public/`.
 
+### Server-side helper components
+- `src/components/Flag.astro` - server-rendered country-flag SVG (lipis flag-icons) with emoji/cc fallback; the islands use the React `Flag` in `shared.jsx` instead.
+- `src/components/StatusIcon.astro` - inline-SVG status glyph for race-result tables (buckets ~140 Ergast status strings into a few visual kinds).
+
 ### Records library
 - `scripts/records/{configs,helpers,generators,index}.mjs` - pure-function records computation: 17 record configs (in 5 groups: career / season-streaks / milestones / teams / circuit), era filter / rank-with-ties / formatters, generators (one per record type), and an orchestrator. Called as the final pass of `build-archive.mjs`. Has vitest unit tests in `scripts/records/*.test.js`.
 
@@ -135,6 +154,9 @@ per screen as a signal of "now / active / leader".
 
 ### Sitemap
 - `scripts/sitemap-lastmod.mjs` - `buildLastmodMap()` reads the archive indexes + blog frontmatter and returns a URL→lastmod map. Loaded from `astro.config.mjs` and applied in the `@astrojs/sitemap` `serialize` hook so every URL signals real freshness. The config also injects team URLs via `customPages` to work around a sitemap-integration bug that drops the last dynamic route group.
+
+### Feedback worker
+- `feedback-worker/` - a standalone **Cloudflare Worker** (`src/index.js`, `wrangler.toml`, own `package.json`) that receives `/feedback/` form submissions and opens labelled GitHub issues in `lekky/f1gures`, keeping the GitHub PAT out of browser code. Spam protection: CORS origin allow-list (`ALLOWED_ORIGINS` in `wrangler.toml`), a honeypot field (bots get a faked success), and server-side Cloudflare Turnstile verification. Secrets (`GITHUB_TOKEN`, `TURNSTILE_SECRET`) are set via `wrangler secret put` - never committed. **Deployed manually** with `npx wrangler deploy` from `feedback-worker/` - no CI workflow touches it, so committed worker changes are NOT live until someone deploys them by hand. See `feedback-worker/README.md` for setup. The site-side config (Worker URL + Turnstile site key, both public-by-design) lives in `src/data/feedbackConfig.js`.
 
 ### Assets
 - `public/css/{app,site}.css` - design tokens + global styles. Linked from BaseLayout with content-hashed `?v=<hash>`. CSS is bundled into one file (`vite.build.cssCodeSplit: false`).
@@ -183,8 +205,10 @@ Drop an `.mdx` file into `src/content/blog/` or `src/content/guide/` with frontm
 
 Two GitHub Actions workflows write to the live server, sharing a `concurrency: deploy` group so they can't overlap:
 
-- **`deploy.yml`** - push to `main`. `npm ci && npm run build` (prebuild → Astro build), then FTP sync.
-- **`refresh-current-season.yml`** - nightly cron at 04:00 UTC (also `workflow_dispatch`-able). Runs `node scripts/fetch-season.mjs $(date +%Y)` to pull the current year from Jolpica into `public/data/<year>.json`, commits the bundle if it changed (so future builds have it cached), then build + FTP. The fetch step is non-fatal - if Jolpica is down or the year hasn't started, the existing bundle is reused and the deploy proceeds.
+- **`deploy.yml`** - push to `main`. Node 22 + npm cache, restores `public/images/og` from a content-hashed cache, `npm ci && npm run build` (prebuild → Astro build), then FTP sync.
+- **`refresh-current-season.yml`** - two crons: nightly at 04:00 UTC **and every 10 minutes Fri–Mon UTC** (race weekends), plus `workflow_dispatch`. Runs `node scripts/fetch-season.mjs $(date +%Y)` to pull the current year from Jolpica into `public/data/<year>.json`, commits the bundle if it changed (so future builds have it cached), then build + FTP. The fetch step is non-fatal - if Jolpica is down or the year hasn't started, the existing bundle is reused and the deploy proceeds. Because prebuild regenerates the mobile-app feed, the native apps pick up new results within minutes of this workflow deploying.
+
+Note: neither workflow runs `npm test` - there is currently **no CI test gate** (tracked in docs/tech-debt.md). The feedback worker is deployed separately by hand (see Feedback worker above).
 
 The first deploy after a heavy PR (lots of new routes, or a CSS edit that re-hashes every HTML's `?v=` cache-bust) can take 20+ minutes and occasionally fails with `ECONNRESET` mid-upload - `gh run rerun <id> --failed` is idempotent and usually clears it.
 
@@ -197,5 +221,3 @@ The user has Node on one machine, not the other. The no-Node box can serve a pre
 
 ## Post-Ergast data notes
 - **Championships**: Ergast CSVs cover 1950–2024 only. `build-archive.mjs` computes `bundleStandings` (year → Map<driverRef, champPosition>) from race-result points in hand-curated bundles. Championships for completed bundle years (`year < new Date().getFullYear()`) are credited via `bundleChampionships` in the driver-doc recompute pass. Anything touching post-Ergast career stats should use `bundleStandings` rather than rebuilding the logic.
-</content>
-</invoke>

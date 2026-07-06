@@ -1,45 +1,113 @@
 # Features
 
-The app is eight HTML pages, each loading a single screen component. There is no router - navigation is plain `<a href>` to another `.html` file, with query strings for parameters like `?id=NOR` or `?round=7`.
+f1gures is an Astro 4 static site: every route below is prerendered to HTML at
+build time. Navigation is plain `<a href>` links between prerendered pages
+(trailing slash always, e.g. `/drivers/norris/`). Interactivity comes from
+React islands hydrated with explicit `client:*` directives; pages without an
+island ship no React at all.
 
-URL helpers (`urlFor`, `navigate`, `getParam`) live in [js/shell.jsx](../js/shell.jsx).
+URL helpers (`urlFor`, `navigate`, `getParam`) live in
+[src/lib/shared.jsx](../src/lib/shared.jsx).
+
+## Chrome (every page)
+
+[src/components/Chrome.astro](../src/components/Chrome.astro) renders static
+markup; active-route highlighting is computed at build time from
+`Astro.url.pathname`. Routes are grouped into buckets: **Grid** =
+drivers/teams/circuits, **Stats** = /stats + /records + /compare, **Read** =
+/read + /guide + /blog.
+
+- **Desktop top nav**: Home · Standings (dropdown island) · Calendar · Grid
+  (dropdown island → Drivers / Teams / Circuits) · Stats · Read, plus a
+  search trigger, `ThemeToggle` island and `YearPicker` island on the right.
+- **Mobile top bar**: logo, search trigger, theme toggle, compact year picker.
+- **Mobile bottom nav** (5 items): Home · Standings · Calendar · Stats ·
+  More.
+- **"More" bottom sheet** (vanilla `is:inline` script, not an island):
+  Grid (Drivers, Teams, Circuits) · Read (Guide, Blog) · More (Feedback).
+- **SearchPalette island** mounted once: Cmd/Ctrl+K or `/` opens a command
+  palette that lazy-fetches the four archive index JSONs on first open and
+  ranks substring matches across drivers, teams, circuits and races. Any
+  `[data-search-trigger]` element opens it.
 
 ## Pages
 
-| HTML | Screen | What it shows |
+### Year-aware listing pages (React island bodies)
+
+These five wrap their screen in `useYearAwareData(currentSeason)`: the
+prerendered HTML shows the current season (for SEO), and after hydration the
+year picker / `?year=YYYY` / `localStorage.f1-year` can swap in any season
+bundle from 1950 onwards.
+
+| URL | File | What it shows |
 |---|---|---|
-| [index.html](../index.html) | [home.jsx](../js/screens/home.jsx) | Hero panel + Season Summary trio + top-5 driver cards |
-| [standings-drivers.html](../standings-drivers.html) | [standings.jsx](../js/screens/standings.jsx) `DriverStandingsScreen` | Sortable driver standings table + Recharts points-progression chart + head-to-head |
-| [standings-constructors.html](../standings-constructors.html) | [standings.jsx](../js/screens/standings.jsx) `ConstructorStandingsScreen` | Constructor standings table + team progression chart |
-| [calendar.html](../calendar.html) | [calendar.jsx](../js/screens/calendar.jsx) | All rounds as race cards (date, circuit, status, winner if completed) |
-| [race.html](../race.html) | [race.jsx](../js/screens/race.jsx) | Per-race detail; round from `?round=N`. Tabs for FP1/FP2/FP3/Q/Race (or Sprint variant) |
-| [circuits.html](../circuits.html) | [circuits.jsx](../js/screens/circuits.jsx) `CircuitsIndexScreen` | Grid of all circuits in the season |
-| [circuit.html](../circuit.html) | [circuits.jsx](../js/screens/circuits.jsx) `CircuitDetailScreen` | Per-circuit profile; id from `?id=...`. Track Characteristics + Historical Winners |
-| [driver.html](../driver.html) | [driver.jsx](../js/screens/driver.jsx) | Per-driver profile; id from `?id=...`. Career stats (live from Jolpica) + season stats + Round by Round |
+| `/` | `src/pages/index.astro` → `HomeIsland` | Next-race hero with session schedule + weather (or a season-at-a-glance panel for historic years), form guide, title race chart, season progress, trivia |
+| `/standings-drivers/` | `standings-drivers.astro` → `DriverStandingsIsland` | Sortable driver standings, podium block, points-progression chart, head-to-head |
+| `/standings-constructors/` | `standings-constructors.astro` → `ConstructorStandingsIsland` | Constructor standings + team progression chart |
+| `/calendar/` | `calendar.astro` → `CalendarIsland` | All rounds as race cards (completed rounds link to race pages) |
+| `/circuits/` | `circuits.astro` → `CircuitsIndexIsland` | Grid of the selected season's circuits |
 
-## Hero panel on home
+### All-time listing pages (archive-backed islands, not year-aware)
 
-The leading panel on `index.html` flips between two layouts depending on whether the selected season is in progress or finished:
+| URL | File | What it shows |
+|---|---|---|
+| `/drivers/` | `drivers.astro` → `DriversIndexIsland` | Every driver 1950–now; fetches `/data/archive/_drivers-index.json` client-side, with search + nationality filters |
+| `/teams/` | `teams.astro` → `TeamsIndexIsland` | Every constructor, same pattern via `_teams-index.json` |
 
-- **Current season** → `NextRacePanel`. Eyebrow "Next Race", country/circuit name, days/hours/mins/secs countdown, Session Schedule (FP1/FP2/FP3/Q/Race, or Sprint-variant when applicable). Click goes to that race's detail page.
-- **Historic season** → `SeasonAtGlance`. Eyebrow "YYYY Season", world champion's surname styled as the headline, team accent, points + gap to runner-up, Constructors' champion below. Right column lists Most Wins / Most Poles / Most Fastest Laps / Total DNFs. Click goes to driver standings.
+### Prerendered detail pages (static Astro bodies)
 
-The flip is data-driven, not based on the year picker - see [data-flow.md](data-flow.md).
+Generated by `getStaticPaths` from the archive JSONs; no React island for the
+body (upcoming race pages mount the small `RaceCountdown` island).
+
+| URL | Body component | Notes |
+|---|---|---|
+| `/drivers/[driverRef]/` | `DriverPage.astro` | Bio, career stats, form chart, career-outcome mosaic, teammate duels, season-by-season table, Compare CTA |
+| `/teams/[constructorRef]/` | `TeamPage.astro` | Team profile, lineage strip, current car, drivers, season history, Compare CTA |
+| `/circuits/[circuitRef]/` | `CircuitPage.astro` | Animated track map, characteristics, historic winners, did-you-know trivia |
+| `/races/[year]/[round]/` | `RacePage.astro` | Podium, results/qualifying/sprint tables with gap bars; upcoming rounds get a holding page with countdown + any pending quali/sprint results |
+
+### Hubs and tools
+
+| URL | File | What it shows |
+|---|---|---|
+| `/stats/` | `stats.astro` | Static hub for the "numbers" bucket: featured record leaderboards + links to `/records/` and `/compare/` |
+| `/records/` | `records/index.astro` | Records hub: most-decorated hero, timeline, 17 leaderboard cards in 5 groups |
+| `/records/[topic]/` | `records/[topic].astro` | One page per leaderboard (top 50); All-time / Modern / Classic era toggle is a small `is:inline` script over prerendered tables |
+| `/compare/` | `compare.astro` → `CompareLauncher` island | Head-to-head Compare Mode for any two drivers or teams (all-time archive data); state deep-links via `?type=&a=&b=`; results can be exported as a 1080×1080 share-card PNG. A `CompareCta` island on driver/team pages opens the same experience pre-seeded |
+| `/read/` | `read.astro` | Static hub for the "words" bucket: guide pillars + latest blog posts |
+| `/feedback/` | `feedback.astro` → `FeedbackForm` island | Feedback form (category, message, optional email) with Cloudflare Turnstile; submits to the `feedback-worker/` Cloudflare Worker, which opens a GitHub issue. Renders a "not configured" notice if `src/data/feedbackConfig.js` is empty |
+
+### Content collections (MDX)
+
+| URL | File | What it shows |
+|---|---|---|
+| `/blog/` (+ `/blog/2/` …) | `blog/[...page].astro` | Paginated index (14/page); page 1 gets a two-post lede + `TriviaBoard` island |
+| `/blog/[slug]/` | `blog/[...slug].astro` | Post body (MDX with embedded blog components), read time, newer/older nav |
+| `/blog/category/[category]/` | `blog/category/[category]/[...page].astro` | Paginated category pages |
+| `/blog/rss.xml` | `blog/rss.xml.ts` | RSS feed |
+| `/guide/` | `guide/index.astro` | Beginner's guide hub, grouped by category |
+| `/guide/[slug]/` | `guide/[slug].astro` | Guide topic with TOC scroll-spy (`is:inline` IntersectionObserver), prev/next + related |
+
+### Everything else
+
+- `/404` — static, noindex, link list.
+- Legacy redirect shims in `public/` (`driver.html`, `race.html`, …) keep old
+  query-string URLs working — see [data-flow.md](data-flow.md#legacy-urls).
 
 ## Shell widgets
 
-In every page's chrome ([js/shell.jsx](../js/shell.jsx)):
-
-- **Year picker** - dropdown with "Current Season" plus every year back to 1950. Selection writes to `localStorage.f1-year` and reloads `index.html`.
-- **Theme switcher** - Light / Dark segmented control. Persists to `localStorage.f1-theme` and toggles `html.light`. Defaults to light.
-- **Top nav** (desktop) - Home, Standings (dropdown → Drivers / Constructors), Calendar, Circuits. Active state from `currentRouteName()`.
-- **Bottom nav** (mobile, ≤720px) - same four destinations as icons.
-- **Version chip** - shows `v{APP_VERSION}` next to the logo so a deploy is visible at a glance. Bump on every PR (see CLAUDE.md).
+- **Year picker** — "Current Season" plus every year back to 1950. Writes
+  `localStorage.f1-year`; year-aware islands react without a reload.
+- **Theme toggle** — light/dark, persists `localStorage.f1-theme`, toggles
+  `html.light`. A pre-hydration inline script in `BaseLayout.astro` applies
+  the stored theme before first paint.
+- **Search palette** — see Chrome above.
 
 ## URL flags
 
-Documented in CLAUDE.md too, repeated here for findability:
-
-- `?year=YYYY` - load a specific season (e.g. `index.html?year=2019`). Persists into `localStorage.f1-year` via the picker.
-- `?offline=1` - skip the Jolpica fetch entirely. The bundled fallback in [js/data.js](../js/data.js) is shown as-is. Useful for debugging or for working without network.
-- `<body data-api="https://your-proxy.example.com/ergast/f1">` or `window.F1_API_BASE` - override the Jolpica base URL (e.g. for a local proxy).
+- `?year=YYYY` — overrides `localStorage.f1-year` on the five year-aware
+  listing pages (e.g. `/calendar/?year=1990`). Not applicable to `/drivers/`
+  and `/teams/`, which are all-time listings.
+- Legacy `?id=` / `?round=` params on the `public/*.html` shims resolve to
+  the prerendered routes (client-side JS, plus server-side `.htaccess` 301s
+  on Apache).

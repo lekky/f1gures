@@ -1,119 +1,146 @@
 # Data flow
 
-Every page boots through the same sequence:
+There is no runtime API layer. All third-party data (Ergast CSVs, Jolpica,
+Open-Meteo) is fetched or parsed **at build time**; the browser only ever
+fetches the site's own prerendered JSON. The old `window.F1_DATA` /
+`F1_READY` / Babel-in-browser architecture is gone.
 
-1. **Vendor scripts** - React, ReactDOM, Babel-standalone, prop-types, Recharts.
-2. **[js/data.js](../js/data.js)** runs synchronously and assigns `window.F1_DATA` to a hardcoded 2026 fallback (20 drivers, 10 teams, 24-round calendar, circuit metadata). This means screens always have *something* to read at first paint, even before the network resolves.
-3. **[js/api.js](../js/api.js)** runs and immediately defines `window.F1_READY` as a Promise. It then kicks off the live load (or skips it; see decision tree below). Whatever the outcome, when it finishes it **replaces** `window.F1_DATA` with the loaded payload and resolves `F1_READY`.
-4. **[js/shell.jsx](../js/shell.jsx)** and the **screen** file are loaded as `text/babel` and compiled in-browser.
-5. The page's inline boot script awaits `F1_READY` and then calls `ReactDOM.render(<Chrome><Screen /></Chrome>, root)`.
+## Build-time pipeline
 
-> Babel evaluates module-level code before `F1_READY` resolves. So **never read `window.F1_DATA` at module scope** - always inside the component body, otherwise you capture the static fallback.
+`npm run build` triggers `prebuild` (six scripts, in order — see
+[CLAUDE.md](../CLAUDE.md#build-pipeline)) and then `astro build`.
 
-## When does the API get hit?
-
-The decision is in `load()` near the bottom of [js/api.js](../js/api.js):
+### 1. All-time archive → detail pages
 
 ```
-?offline=1                        → static fallback only (zero requests)
-SELECTED_YEAR === 'current'       → loadFromAPI()         (Jolpica)
-SELECTED_YEAR is "1950".."2025"   → loadFromLocal()       (data/<year>.json)
-                                  → on 404, falls through to loadFromAPI()
+data/history/*.csv (Ergast 1950–2024)
+        │
+        ▼
+scripts/build-archive.mjs
+        │  + second pass over public/data/<year>.json bundles (years > 2024)
+        │  + lineage attach (scripts/lineages.mjs)
+        │  + records pass (scripts/records/) → 17 leaderboards
+        ▼
+public/data/archive/          (gitignored)
+  _drivers-index.json          drivers/<ref>.json
+  _teams-index.json            teams/<ref>.json
+  _circuits-index.json         circuits/<ref>.json
+  _races-index.json            races/<year>/<round>.json
+  _records-index.json          records/<topic>.json
+  _driver-codes.json           (CODE → driverRef, for legacy redirects)
 ```
 
-`SELECTED_YEAR` comes from `?year=YYYY` first, then `localStorage.f1-year`, then defaults to `'current'`.
+`src/data/archive.js` (`getDriversIndex`, `getDriver`, `getTeamsIndex`, …)
+reads these with `resolve(process.cwd(), …)` paths; every detail route's
+`getStaticPaths` is fed from it. `stats.astro` and the records pages read
+`_records-index.json` / `records/*.json` directly at build time.
 
-So in normal use:
+### 2. Season bundles → year-aware listing pages
 
-- **Current season** is always live. Fresh data each cache window.
-- **Past seasons that we've snapshotted** load from the bundled `data/<year>.json`. **Zero API calls.** This is the preferred state for any year that's done.
-- **Past seasons that we haven't snapshotted yet** fall through to the API. Use `node scripts/fetch-season.mjs <year>` to commit a bundle and convert that year to the zero-API path.
-
-The Jolpica base URL defaults to `https://api.jolpi.ca/ergast/f1`. Override with `window.F1_API_BASE = '...'` or `<body data-api="...">`.
-
-## What `loadFromAPI` actually fetches
-
-For the current season, `loadFromAPI()` makes:
-
-- `/{year}/?limit=100` - schedule
-- `/{year}/drivers/?limit=100` - drivers
-- `/{year}/constructors/?limit=100` - constructors
-- `/{year}/driverstandings/?limit=100` - standings (also tells us the latest completed round)
-- For each completed round: `/{year}/{round}/results/`, `/{year}/{round}/qualifying/`, and `/{year}/{round}/sprint/` if the round was a sprint weekend
-
-That's about 4 + 2N + (sprint count) requests on a cold cache. They go through `fetchJSON` which handles caching, concurrency, and retry.
-
-## Cache
-
-All Jolpica responses go through one `fetchJSON(path)` helper in [js/api.js](../js/api.js). Behaviour:
-
-- **localStorage**, key `f1gures.api.v1.<path>`, value `{ t: timestamp, v: response }`.
-- **TTL: 1 hour.** If the entry is older than that, it's treated as a miss.
-- Quota exceeded or private-mode failures are caught silently - the cache is best-effort.
-- Cache key is the request path, so the same endpoint shared between screens (e.g. driver standings on home and on the standings page) only hits the network once per hour.
-
-To invalidate by hand:
-
-```js
-Object.keys(localStorage).filter(k => k.startsWith('f1gures.api.')).forEach(k => localStorage.removeItem(k));
+```
+public/data/<year>.json        (2020–2026 committed; 1950–2019 generated
+        │                       from the CSVs by build-archive; current year
+        │                       refreshed from Jolpica by the cron workflow)
+        ▼
+scripts/sync-current-season.mjs   copies highest-numbered bundle to
+        ▼
+src/data/currentSeason.json    (gitignored)
+        ▼
+src/data/currentSeason.js      buildFromYearJson(json, circuitProfiles)
+        │                      + attaches weather-next.json and climate/*
+        ▼
+the 5 year-aware islands import it as their SSR fallback
+(Home, Calendar, CircuitsIndex, DriverStandings, ConstructorStandings)
 ```
 
-Other localStorage keys the app uses:
+`buildFromYearJson` (in `src/data/buildFallback.js`) produces the full data
+object screens consume — `drivers`, `teams`, `calendar`, `results`,
+`computeStandings()` (delegating to `src/lib/seasonStats.mjs`, the single
+source of truth for points math). With no bundle it yields an
+`_empty: true` shape and screens render placeholders — there is
+deliberately no speculative grid.
 
-- `f1-year` - the year picker's selection (`'current'` or `"YYYY"`).
-- `f1-theme` - `'light'` or `'dark'`.
+### 3. Weather and climate
 
-## Concurrency gate
+- `scripts/fetch-weather.mjs` (prebuild, best-effort, never fails the
+  build): finds the next race in the synced calendar and, if it's within
+  14 days, pulls an hourly forecast from Open-Meteo for that circuit's
+  lat/lng (`scripts/circuit-latlng.json`) → `src/data/weather-next.json`
+  (gitignored).
+- `scripts/build-climate.mjs` (manual `npm run build:climate`): 10-year
+  ERA5 climate normals per circuit → `src/data/climate/<ref>.json`
+  (gitignored).
+- `src/data/currentSeason.js` attaches both via `import.meta.glob` so
+  missing files can't break the build. Only `HomeScreen`'s next-race
+  session widget consumes them: live forecast preferred, climate normals
+  as the fallback (rendered with a "climate" tag) via
+  `SessionWeatherCell` / `SessionWeatherExpand` / `WeatherIcon` and the
+  helpers in `src/lib/weather.js`.
 
-Jolpica rate-limits aggressive bursts (HTTP 429). To avoid that, `fetchJSON` runs through a 4-deep concurrency gate (`MAX_INFLIGHT = 4`). Excess requests queue and acquire a slot when one frees up. Both the boot fetches and the driver-career fan-out share this gate.
+### 4. Mobile app feed
 
-## Retry
+`scripts/build-app-feed.mjs` (last prebuild step) writes the versioned
+feed the native apps consume to `public/data/app/v1/` — see
+[app-data-feed.md](app-data-feed.md) for the contract. Standings are
+precomputed via `seasonStats.mjs`, so the apps ship no scoring rules.
 
-Inside the gate, each request will retry up to **5 attempts** for transient failures:
+## Client-side runtime fetches
 
-| Failure | Retry? | Backoff |
+All against the site's own origin:
+
+| Who | When | What |
 |---|---|---|
-| `TypeError: Failed to fetch` (network drop) | yes | exponential, capped at 4s |
-| HTTP 429 (rate limited) | yes | `Retry-After` header if present, else exponential |
-| HTTP 503 (service unavailable) | yes | same as 429 |
-| HTTP 4xx (other) | **no** | throws immediately |
-| HTTP 5xx (other) | **no** | throws immediately |
+| `useYearAwareData` (`src/lib/yearAwareData.js`) | user picks a non-current year | `/data/<year>.json`, rebuilt client-side with `buildFromYearJson`. Precedence: `?year=` URL param overrides `localStorage.f1-year`; empty/`current`/same-year means "use the SSR data, no fetch". On fetch error it falls back to the SSR data |
+| `DriversIndexIsland` / `TeamsIndexIsland` | on mount | `/data/archive/_drivers-index.json` / `_teams-index.json` (all-time rosters) |
+| `SearchPalette` | first open (lazy, module-cached) | the four `_*-index.json` archive indexes |
+| Compare Mode (`CompareLauncher`, `CompareCta`, `compareShared.jsx`) | picking entities | `_drivers-index.json` / `_teams-index.json` for the picker, then `/data/archive/drivers/<ref>.json` or `teams/<ref>.json` per selected entity (cached). Math in `src/lib/compareStats.js` |
+| `RaceCountdown` | upcoming race/detail pages | no fetch — reads session ISO timestamps from SSR data attributes and ticks locally |
+| `FeedbackForm` | submit | POST to the Cloudflare Worker URL in `src/data/feedbackConfig.js` (the only cross-origin request in the app) |
 
-Backoff schedule: `min(500 * 2^attempt, 4000)` ms - i.e. 0.5s, 1s, 2s, 4s, 4s.
+To avoid a flash of wrong-year content, `BaseLayout.astro` ships an inline
+"year guard" script that adds `html.year-pending` (hiding
+`[data-year-aware]` sections) when a non-current year is stored, until the
+islands hydrate and swap data in.
 
-This was added because cold-cache loads on mobile networks were occasionally seeing one fetch in the parallel fan-out reject with `TypeError: Failed to fetch`, which without retry was enough to tank the whole driver-career panel.
+## Legacy URLs
 
-## Live driver career stats
+Old query-string URLs still resolve, two ways:
 
-The per-driver Career Stats panel on `driver.html` is **never hardcoded**. It tries a static cross-user cache first, then falls back to live Jolpica.
+1. **Server-side (Apache)**: `scripts/build-htaccess.mjs` generates
+   `public/.htaccess` with 301 rewrites built from `_driver-codes.json`.
+2. **Client-side (everywhere)**: redirect shims in `public/`:
+   - `driver.html` fetches `_driver-codes.json` and maps `?id=NOR` →
+     `/drivers/norris/`
+   - `team.html` / `circuit.html` fetch their index and map `?id=` to the
+     entity route
+   - `race.html` validates `?year=&round=` against `_races-index.json` →
+     `/races/<year>/<round>/` (future rounds → `/calendar/`)
+   - `calendar.html`, `circuits.html`, `standings-*.html` are trivial
+     `location.replace` shims to the new routes
 
-`window.F1_API.fetchDriverCareer(jolpicaId)` (in [js/api.js](../js/api.js)):
+All shims are `noindex` with a canonical to the new route.
 
-1. **Static cross-user cache** - `fetch('data/careers/<jolpicaId>.json')`. Same origin, browser-cached, zero Jolpica calls. The file is one of ~25 pre-fetched payloads committed to the repo, refreshed nightly by [.github/workflows/refresh-careers.yml](../.github/workflows/refresh-careers.yml). This is the path 99% of visitors take.
-2. **Live fan-out** - only if the static file is missing or malformed (e.g. a brand-new driver not yet in the curated list). Two phases:
-   - **Phase A** - eight cheap `total`-count endpoints in parallel:
-     - `/drivers/{id}/seasons/?limit=1`
-     - `/drivers/{id}/races/?limit=1`
-     - `/drivers/{id}/results/{1,2,3}/?limit=1` (wins, P2s, P3s - podiums = sum)
-     - `/drivers/{id}/qualifying/1/?limit=1` (poles)
-     - `/drivers/{id}/fastest/1/results/?limit=1` (fastest laps)
-     - `/drivers/{id}/seasons/?limit=100` (the full list of years they've raced)
-   - **Phase B** - one `/{year}/drivers/{id}/driverstandings/?limit=1` per participating season, in parallel. Counts seasons where `position === '1'` to derive the championship total. Jolpica diverges from classic Ergast by requiring `season_year` for cross-season standings, so this fan-out is necessary.
+## localStorage keys
 
-For Hamilton (the heaviest live case, 20 seasons) that's 8 + 1 + 20 ≈ 29 requests. The concurrency gate keeps it polite; the in-memory cache makes repeat visits free for an hour.
+Exactly two:
 
-The driver page waits for `F1_READY` to resolve before kicking off the career fetch, so it doesn't compete with the boot fan-out for slots in the gate.
+- `f1-theme` — `'light'` | `'dark'`. Written by `ThemeToggle`, read
+  pre-paint by the BaseLayout inline script (toggles `html.light`).
+- `f1-year` — `'current'` or a 4-digit year. Written by `YearPicker`, read
+  by `useYearAwareData` (after the `?year=` param) and by the year-guard
+  inline script.
 
-## Nightly refresh
+(The Compare temperature/share state and the weather °C/°F unit are *not*
+persisted — Compare state lives in the URL, the temp unit is derived from
+`navigator.language` each load.)
 
-[.github/workflows/refresh-careers.yml](../.github/workflows/refresh-careers.yml) runs at 05:00 UTC each night and on `workflow_dispatch`. It checks out the repo, runs `node scripts/fetch-careers.mjs`, and commits any changes to `data/careers/` - which the existing `deploy.yml` then FTPs to production.
+## Refresh cadence
 
-[scripts/fetch-careers.mjs](../scripts/fetch-careers.mjs) processes drivers **sequentially** (one at a time, with an 750ms pause between drivers) to be polite to Jolpica's rate limit. Within each driver, the same fan-out as the client runs in parallel through a 4-deep concurrency gate. Driver IDs are the union of `js/data.js` (current grid) and every `data/<year>.json` (recent seasons), deduped.
-
-If the new payload matches the existing file (excluding `updatedAt`), the file is left alone - no noisy commits when nothing changed. To run by hand: `node scripts/fetch-careers.mjs`.
-
-## Failure modes
-
-If the live load fails (network down, Jolpica unreachable, etc.), `F1_READY` still resolves - it just resolves with whatever `window.F1_DATA` already was, i.e. the bundled fallback. The site stays functional offline.
-
-The career-stats panel is independent: if Jolpica is unreachable when the user opens a driver page, that panel shows `-` placeholders but the rest of the page still renders fine using `F1_DATA`.
+`.github/workflows/refresh-current-season.yml` runs nightly at 04:00 UTC
+**and every 10 minutes Fri–Mon UTC** (race weekends). It fetches the
+current year from Jolpica (`scripts/fetch-season.mjs`), commits
+`public/data/<year>.json` if it changed, then rebuilds and FTP-deploys.
+Because prebuild regenerates everything downstream (archive race pages for
+completed rounds, the current-season sync, the app feed), race results
+flow to the site and the mobile apps within minutes of landing — the fetch
+step is non-fatal, so a Jolpica outage just redeploys existing data.
