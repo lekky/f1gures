@@ -534,6 +534,8 @@ button { font-family: inherit; }
 .champ-row-figs { display: flex; align-items: baseline; gap: 5px; margin-top: 10px; }
 .champ-row-pts { font-family: var(--f-display); font-weight: 800; font-size: 36px; line-height: 0.8; color: color-mix(in srgb, var(--tc, var(--accent)) 50%, var(--fg-1)); }
 .champ-row-pts-u { font-family: var(--f-display); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
+.champ-row-chart { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.champ-row-chart-lbl { font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
 .champ-row-sub { font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); margin-top: 4px; }
 
 @media (max-width: 900px) {

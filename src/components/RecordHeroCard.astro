@@ -57,17 +57,6 @@ const holder = entries[0];
 const maxValue = Math.max(...entries.map(e => e.value), 1);
 const accent = holder?.teamColor || 'var(--accent)';
 
-const UNIT_ABBR: Record<string, string> = {
-  'wins': 'win', 'podiums': 'pod', 'poles': 'pol', 'championships': 'tit',
-  'starts': 'sta', 'fastest-laps': 'fas',
-  'wins-in-season': 'win', 'podium-streak': 'pod', 'win-streak': 'win',
-  'title-margin': 'pts',
-  'youngest-champion': '', 'oldest-winner': '',
-  'team-titles': 'tit', 'team-wins': 'win', 'team-1-2-finishes': '1-2',
-  'wins-at-circuit': 'win', 'poles-at-circuit': 'pol',
-};
-const rowUnit = UNIT_ABBR[record.id] ?? '';
-
 function splitValue(label: string) {
   if (!label) return { num: '', unit: '' };
   const m = label.match(/^(\d+y\s*\d+d)\b\s*(.*)$/);
@@ -140,7 +129,6 @@ const holderTeamLogo  = record.subjectType === 'team' ? teamLogo(holder?.constru
             </div>
             <span class="card-bar-value">
               <span class="card-bar-num">{v.num}</span>
-              {rowUnit && <span class="card-bar-unit"> {rowUnit}</span>}
             </span>
             {record.subjectType === 'driver-at-circuit' && e.circuitName && (
               <span class="card-bar-sub">{e.circuitName}</span>

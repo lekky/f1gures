@@ -195,6 +195,12 @@ export function ChampSection({ mode, title, fullHref, rows, D, recentRounds, blu
                   <span className="champ-row-pts"><CountUp value={r.points} /></span>
                   <span className="champ-row-pts-u">pts</span>
                 </div>
+                {r.recent.length > 0 && (
+                  <div className="champ-row-chart">
+                    <span className="champ-row-chart-lbl">Last {r.recent.length}</span>
+                    <MiniChart values={r.recent} color={r.color} width={mob ? 72 : 88} height={18} />
+                  </div>
+                )}
                 <div className="champ-row-sub">{r.sub}</div>
               </div>
             </a>
