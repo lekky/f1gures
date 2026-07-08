@@ -389,8 +389,9 @@ button { font-family: inherit; }
 .home-band-tint  { background: var(--bg-0); }
 .home-band-inner { max-width: 1280px; margin: 0 auto; padding: 40px 20px; }
 .home-band-inner-mob { padding: 20px 14px; }
-/* Last band clears the mobile bottom nav. */
-.home-mob .home-band:last-child .home-band-inner-mob { padding-bottom: 28px; }
+/* Last band clears the fixed mobile bottom nav (height + safe-area) plus
+   breathing room, so the final championship cards aren't flush against it. */
+.home-mob .home-band:last-child .home-band-inner-mob { padding-bottom: calc(28px + var(--botnav-h) + env(safe-area-inset-bottom)); }
 @media (max-width: 720px) {
   .home-band-inner { padding: 20px 14px; }
 }
@@ -549,7 +550,10 @@ button { font-family: inherit; }
   .champ-photo-img { object-position: center 18%; }
   .team-logo-fill { object-fit: contain; }
   .champ-photo-ghost { display: none; }
-  .champ-leader-body { padding: 16px; }
+  /* Plain block (not flex) so the body doesn't form a BFC that shrinks
+     beside the floated photo — text wraps around/below it and spans the
+     full card width. */
+  .champ-leader-body { padding: 16px; display: block; }
   .champ-name-last { font-size: 32px; }
   .champ-leader-blurb { max-width: none; }
   .champ-figures { clear: right; flex-wrap: wrap; gap: 16px; margin-top: 14px; }
