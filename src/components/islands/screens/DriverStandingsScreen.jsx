@@ -98,7 +98,7 @@ export default function DriverStandingsScreen({ data }) {
         </div>
       </div>
 
-      {mob && <StandingsTypeToggle active="d" />}
+      <div className="standings-toggle-mobile"><StandingsTypeToggle active="d" /></div>
 
       <TriviaBoard />
 
@@ -121,7 +121,7 @@ export default function DriverStandingsScreen({ data }) {
                 <th>Δ</th>
                 <th className="sortable" onClick={() => toggleSort('driver')}>Driver<SortInd k="driver" /></th>
                 <th className="sortable" onClick={() => toggleSort('team')}>Team<SortInd k="team" /></th>
-                {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
+                {recentRounds.length > 0 && <th className="right col-recent">Last {recentRounds.length}</th>}
                 <th className="right sortable" onClick={() => toggleSort('points')}>Pts<a className="th-guide-link" href="/guide/points-system/" onClick={(e) => e.stopPropagation()} aria-label="How F1 points work">?</a><SortInd k="points" /></th>
                 <th className="right sortable" onClick={() => toggleSort('wins')}>W<SortInd k="wins" /></th>
                 <th className="right sortable" onClick={() => toggleSort('podiums')}>Pod<SortInd k="podiums" /></th>
@@ -167,8 +167,8 @@ export default function DriverStandingsScreen({ data }) {
                         ? <a href={teamHref} style={{ color: 'inherit', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{team.name}</a>
                         : '-'}
                     </td>
-                    {!mob && recentRounds.length > 0 && (
-                      <td className="right">
+                    {recentRounds.length > 0 && (
+                      <td className="right col-recent">
                         <div style={{ display: 'inline-block' }}>
                           <MiniChart
                             values={recentRounds.map(r => driverPointsForRound(DD, row.driver.id, r.round))}
@@ -197,7 +197,7 @@ export default function DriverStandingsScreen({ data }) {
       </Panel>
 
       <SectionHead title="Head-to-Head" />
-      <HeadToHead data={DD} standings={standings} mob={mob} />
+      <HeadToHead data={DD} standings={standings} />
     </div>
   );
 }

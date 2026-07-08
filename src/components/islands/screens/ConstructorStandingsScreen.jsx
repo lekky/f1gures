@@ -32,7 +32,7 @@ export default function ConstructorStandingsScreen({ data }) {
         </div>
       </div>
 
-      {mob && <StandingsTypeToggle active="c" />}
+      <div className="standings-toggle-mobile"><StandingsTypeToggle active="c" /></div>
 
       <TriviaBoard />
 
@@ -54,7 +54,7 @@ export default function ConstructorStandingsScreen({ data }) {
                 <th>Pos</th>
                 <th>Team</th>
                 <th>Drivers</th>
-                {!mob && recentRounds.length > 0 && <th className="right">Last {recentRounds.length}</th>}
+                {recentRounds.length > 0 && <th className="right col-recent">Last {recentRounds.length}</th>}
                 <th className="right">Points<a className="th-guide-link" href="/guide/points-system/" onClick={(e) => e.stopPropagation()} aria-label="How F1 points work">?</a></th>
                 <th className="right">Wins</th>
                 <th className="right">Podiums</th>
@@ -95,8 +95,8 @@ export default function ConstructorStandingsScreen({ data }) {
                         ))}
                       </div>
                     </td>
-                    {!mob && recentRounds.length > 0 && (
-                      <td className="right">
+                    {recentRounds.length > 0 && (
+                      <td className="right col-recent">
                         <div style={{ display: 'inline-block' }}>
                           <MiniChart
                             values={recentRounds.map(r => teamPointsForRound(DD, row.team.id, r.round))}
