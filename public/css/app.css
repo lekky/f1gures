@@ -546,7 +546,19 @@ button { font-family: inherit; }
   /* Leader: a square photo floated top-right; the text wraps beside/below it
      (so the face shows instead of a full-width hair crop). */
   .champ-leader { display: block; min-height: 0; }
-  .champ-leader-photo { float: right; flex: none; width: 116px; height: 116px; margin: 14px 14px 0 14px; }
+  /* Match the 2nd/3rd cards: the team-colour stripe gradient fills the top of
+     the card (behind the header + floated photo) rather than only the small
+     photo square. Masked so it fades out with no hard seam into the body. */
+  .champ-leader::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 170px; z-index: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(135deg, color-mix(in srgb, var(--tc, var(--accent)) 7%, transparent) 0 2px, transparent 2px 9px),
+      linear-gradient(160deg, color-mix(in srgb, var(--tc, var(--accent)) 16%, var(--bg-2)), transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent);
+    mask-image: linear-gradient(to bottom, #000 50%, transparent);
+  }
+  .champ-leader-body { position: relative; z-index: 1; }
+  .champ-leader-photo { position: relative; z-index: 1; float: right; flex: none; width: 116px; height: 116px; margin: 14px 14px 0 14px; }
   .champ-photo-img { object-position: center 18%; }
   .team-logo-fill { object-fit: contain; }
   .champ-photo-ghost { display: none; }
