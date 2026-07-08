@@ -8,6 +8,7 @@ import {
   TeamLogo,
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, TeamProgressionChart } from './StandingsCommon.jsx';
+import { TeamBars } from './StandingsBars.jsx';
 import TriviaBoard from './TriviaBoard.jsx';
 import { ChampSection, teamsSummary } from './ChampPodium.jsx';
 
@@ -46,6 +47,9 @@ export default function ConstructorStandingsScreen({ data }) {
         </div>
       )}
 
+      <TeamBars D={DD} standings={standings} leaderPoints={leaderPoints} recentRounds={recentRounds} />
+
+      <div className="std-fulltable">
       <Panel tight>
         <div className="tbl-wrap">
           <table className="tbl">
@@ -117,6 +121,7 @@ export default function ConstructorStandingsScreen({ data }) {
           </table>
         </div>
       </Panel>
+      </div>
 
       <SectionHead title="Constructor Points Progression" />
       <Panel>

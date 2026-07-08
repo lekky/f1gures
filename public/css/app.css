@@ -993,6 +993,146 @@ button { font-family: inherit; }
 /* Breathing room between the leader/podium cards and the "Full Table" heading. */
 .std-podium .champ + .section-head-band { margin-top: 36px; }
 
+/* ── Mobile standings: bar rows + tap-to-expand ───────────────────
+   Each row is a proportional points bar; tapping drops an inline stat panel.
+   Only shown <=720px — desktop keeps the sortable .std-fulltable table. Both
+   are always in the DOM (CSS toggles) so there is no hydration flash and the
+   list works before JS (rows just don't expand). --tc = team colour. */
+.std-barlist { display: none; }
+@media (max-width: 720px) {
+  .std-barlist { display: block; }
+  .std-fulltable { display: none; }
+}
+
+.stdrow { border-bottom: 1px solid var(--line-1); }
+.stdrow:last-child { border-bottom: 0; }
+.stdrow.is-open {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border-radius: 8px;
+  border-bottom-color: transparent;
+}
+.stdrow-head {
+  display: flex; align-items: stretch; gap: 11px; width: 100%;
+  padding: 11px 6px; background: none; border: 0; text-align: left;
+  color: inherit; cursor: pointer; font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.stdrow-pos {
+  flex: 0 0 22px; align-self: center; text-align: center;
+  font-family: var(--f-display); font-weight: 800; font-size: 18px;
+  color: var(--fg-1); font-variant-numeric: tabular-nums;
+}
+.stdrow-strip { flex: 0 0 3px; align-self: stretch; background: var(--tc, var(--fg-3)); border-radius: 2px; }
+.stdrow-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+
+.stdrow-top { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.stdrow-face {
+  flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+  object-fit: cover; background: var(--bg-3);
+}
+.stdrow-flag.flag-img { height: 13px; flex: 0 0 auto; }
+/* Name: the surname is protected (never truncates); the given name shrinks to
+   an ellipsis first so "Andrea Kimi Antonelli" keeps "Antonelli" readable. */
+.stdrow-name { display: flex; align-items: baseline; gap: 4px; min-width: 0; font-size: 14px; }
+.stdrow-name .first {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; color: var(--fg-3); font-weight: 400;
+}
+.stdrow-name b { flex: 0 0 auto; white-space: nowrap; color: var(--fg-1); font-weight: 700; }
+.stdrow-name-team {
+  display: block; font-family: var(--f-display); text-transform: uppercase;
+  letter-spacing: 0.01em; font-size: 15px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.stdrow-code {
+  flex: 0 0 auto; font-family: var(--f-mono); font-size: 10px;
+  letter-spacing: 0.05em; color: var(--fg-3);
+}
+.stdrow-team {
+  margin-left: auto; flex: 0 1 auto; min-width: 0; max-width: 44%;
+  font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.stdrow-caret { flex: 0 0 auto; width: 12px; text-align: center; color: var(--fg-3); font-size: 11px; }
+.stdrow.is-open .stdrow-caret { color: var(--accent-text); }
+
+/* Points bar */
+.stdrow-bar {
+  position: relative; display: block; height: 26px; border-radius: 3px;
+  overflow: hidden; background: color-mix(in srgb, var(--fg-1) 7%, transparent);
+}
+.stdrow-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--tc, var(--accent)) 92%, transparent),
+    color-mix(in srgb, var(--tc, var(--accent)) 62%, transparent));
+}
+.stdrow-val {
+  position: absolute; right: 8px; top: 0; bottom: 0;
+  display: flex; align-items: center; gap: 3px;
+  font-family: var(--f-display); font-weight: 800; font-size: 13px;
+  color: var(--fg-1); text-shadow: 0 1px 2px var(--bg-1);
+  font-variant-numeric: tabular-nums;
+}
+.stdrow-val small { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+.stdrow-val.is-leader {
+  color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 800;
+}
+
+/* Expanded panel */
+.stdrow-panel { padding: 2px 6px 14px 39px; }
+.stdrow-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
+  margin-bottom: 10px;
+}
+.stdrow-stat { padding: 9px 4px; text-align: center; }
+.stdrow-stat + .stdrow-stat { border-left: 1px solid var(--line-1); }
+.stdrow-stat-num {
+  font-family: var(--f-display); font-weight: 800; font-size: 20px;
+  color: var(--fg-1); line-height: 1; font-variant-numeric: tabular-nums;
+}
+.stdrow-stat-lbl {
+  margin-top: 4px; font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--fg-3);
+}
+
+/* Constructor line-up */
+.stdrow-lineup {
+  border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
+  margin-bottom: 10px;
+}
+.stdrow-lineup-row {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  color: inherit; text-decoration: none;
+}
+.stdrow-lineup-row + .stdrow-lineup-row { border-top: 1px solid var(--line-1); }
+.stdrow-lineup-row:hover { background: var(--bg-hover); }
+.stdrow-lineup-face { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: var(--bg-3); }
+.stdrow-lineup-flag.flag-img { height: 14px; flex: 0 0 auto; }
+.stdrow-lineup-name { min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stdrow-lineup-name .first { color: var(--fg-3); }
+.stdrow-lineup-name b { color: var(--fg-1); font-weight: 700; }
+.stdrow-lineup-pos { flex: 0 0 auto; font-family: var(--f-mono); font-size: 10px; color: var(--fg-3); letter-spacing: 0.04em; }
+.stdrow-lineup-pts {
+  margin-left: auto; flex: 0 0 auto; display: flex; align-items: baseline; gap: 3px;
+  font-family: var(--f-display); font-weight: 800; font-size: 15px; color: var(--fg-1);
+  font-variant-numeric: tabular-nums;
+}
+.stdrow-lineup-pts small { font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+
+/* Form + gap + profile link */
+.stdrow-formrow { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.stdrow-form-lbl { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
+.stdrow-gap { margin-left: auto; font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); letter-spacing: 0.02em; }
+.stdrow-profile {
+  display: inline-block; font-family: var(--f-display); font-weight: 700;
+  font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent-text); text-decoration: none;
+}
+.stdrow-profile:hover { text-decoration: underline; }
+
 /* Flag images (lipis flag-icons, 4:3). Height is driven by the surrounding
    font-size so each call site keeps its previous visual weight; width
    auto-tracks the 4:3 ratio. Subtle border + radius keeps light flags

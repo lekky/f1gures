@@ -7,6 +7,7 @@ import {
   MiniChart, lastNCompletedRounds, driverPointsForRound,
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, PointsChart, HeadToHead } from './StandingsCommon.jsx';
+import { DriverBars } from './StandingsBars.jsx';
 import TriviaBoard from './TriviaBoard.jsx';
 import { ChampSection, driversSummary } from './ChampPodium.jsx';
 
@@ -112,6 +113,9 @@ export default function DriverStandingsScreen({ data }) {
         </div>
       )}
 
+      <DriverBars D={DD} standings={standings} leaderPoints={leaderPoints} recentRounds={recentRounds} />
+
+      <div className="std-fulltable">
       <Panel tight>
         <div className="tbl-wrap">
           <table className="tbl">
@@ -190,6 +194,7 @@ export default function DriverStandingsScreen({ data }) {
           </table>
         </div>
       </Panel>
+      </div>
 
       <SectionHead title="Points Progression" />
       <Panel>
