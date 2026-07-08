@@ -178,7 +178,7 @@ function NextRacePanel({ data, cal, next, mob }) {
       <div className="kbd-corner kbd-tr"></div>
       <div className="kbd-corner kbd-bl"></div>
       <div className="kbd-corner kbd-br"></div>
-      <div style={{ position: 'relative', zIndex: 1, padding: mob ? 16 : 24, display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: mob ? 20 : 32 }}>
+      <div className="next-race-hero" style={{ position: 'relative', zIndex: 1 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <span className="t-eyebrow" style={{ color: 'var(--accent)' }}>Next Race</span>
@@ -186,7 +186,7 @@ function NextRacePanel({ data, cal, next, mob }) {
             <span className="t-eyebrow">Round {String(next.round).padStart(2, '0')}/{cal.length}</span>
             {next.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
           </div>
-          <div className="t-display" style={{ fontSize: mob ? 44 : 76, marginBottom: 6 }}>
+          <div className="t-display hero-gp-name" style={{ marginBottom: 6 }}>
             {next.name.replace(' Grand Prix', '')}<span style={{ color: 'var(--accent)' }}>.</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg-2)', marginBottom: 16 }}>
@@ -219,26 +219,19 @@ function NextRacePanel({ data, cal, next, mob }) {
         </div>
 
         <div style={{ minWidth: 0 }}>
-          {(() => {
-            // Grid template shared by the column header and every row. Time
-            // columns use fixed widths (not `auto`) so the header and each row -
-            // separate grid containers - resolve identical tracks and line up.
-            // Order: num, name, weather, your time[, track] - the time columns
-            // sit last so they're flush to the right edge (weather tucks in
-            // before them rather than pushing them left). Two time columns once
-            // the visitor's zone is known; a single one before that (SSR).
-            const cols = twoTz
-              ? (mob ? '26px minmax(0,1fr) 22px 78px 70px' : '44px minmax(0,1fr) 52px 100px 92px')
-              : (mob ? '28px minmax(0,1fr) 22px 78px' : '46px minmax(0,1fr) 56px 100px');
-            return (
+          {/* Grid template shared by the column header and every row lives in
+              CSS (.nrs-grid): time columns use fixed widths so the header and
+              each row - separate grid containers - resolve identical tracks and
+              line up. The mobile widths come from a media query rather than JS
+              so the prerendered HTML doesn't flash desktop→mobile on hydration.
+              Two time columns once the visitor's zone is known (default); a
+              single one before that (SSR), keyed off the .single-tz class. */}
           <div style={{ minWidth: 0 }}>
           <div style={{ marginBottom: 8 }}>
             <span className="t-eyebrow">Session Schedule</span>
           </div>
           <div style={{ border: '1px solid var(--line-1)', background: 'var(--bg-2)', minWidth: 0 }} className={`next-race-sessions${twoTz ? '' : ' single-tz'}`}>
-            <div style={{
-              display: 'grid', gridTemplateColumns: cols,
-              gap: mob ? 8 : 12, padding: mob ? '7px 12px' : '7px 14px', alignItems: 'center',
+            <div className="nrs-grid nrs-head" style={{
               borderBottom: '1px solid var(--line-1)', background: 'var(--bg-1)',
             }}>
               <span></span>
@@ -261,10 +254,7 @@ function NextRacePanel({ data, cal, next, mob }) {
               const isExpanded = expandedSessionId === s.id;
               return (
                 <div key={s.id} style={{ minWidth: 0 }}>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: cols,
-                    gap: mob ? 8 : 12, padding: mob ? '10px 12px' : '10px 14px', alignItems: 'center',
+                  <div className="nrs-grid nrs-row" style={{
                     borderBottom: (isExpanded || i < sessions.length - 1) ? '1px solid var(--line-1)' : '0',
                     background: nextSession && s.id === nextSession.id ? 'rgba(232,0,45,0.04)' : 'transparent',
                   }}>
@@ -308,8 +298,6 @@ function NextRacePanel({ data, cal, next, mob }) {
               : <>Times in track local time ({zoneShort(trackZone, raceDt)})</>}
           </div>
           </div>
-            );
-          })()}
           {lapRec && (
             <div style={{
               marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line-1)',
@@ -490,7 +478,7 @@ function Band({ tone = 'plain', mob, children }) {
   // tone: 'plain' (page bg) | 'tint' (recessed bg)
   return (
     <section className={`home-band home-band-${tone}`}>
-      <div className={`home-band-inner ${mob ? 'home-band-inner-mob' : ''}`}>
+      <div className="home-band-inner">
         {children}
       </div>
     </section>
@@ -615,7 +603,7 @@ function TitleRace({ data, standings, mob }) {
         </a>
       } />
       <div className="panel" style={{ padding: 20 }}>
-          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: mob ? 220 : 280, overflow: 'visible' }} role="img" aria-label="Championship points progression, top five drivers">
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="title-race-chart" style={{ width: '100%', overflow: 'visible' }} role="img" aria-label="Championship points progression, top five drivers">
             {gridLines.map((yy, i) => (
               <line key={i} x1={PADL} y1={yy} x2={W - PADR} y2={yy} style={{ stroke: 'var(--line-1)' }} strokeWidth="1" />
             ))}
@@ -672,7 +660,7 @@ export default function HomeScreen({ data }) {
   const teamsBlurb = teamsSummary(D, top3Teams, completedCount);
 
   return (
-    <div className={mob ? 'home-mob' : ''}>
+    <div className="home-page">
       <h1 className="sr-only">F1 {D.seasonYear || ''} Live Standings, Calendar & Stats</h1>
       <Band tone="plain" mob={mob}>
         <TriviaBoard />

@@ -388,12 +388,64 @@ button { font-family: inherit; }
 .home-band-plain { background: var(--bg-1); }
 .home-band-tint  { background: var(--bg-0); }
 .home-band-inner { max-width: 1280px; margin: 0 auto; padding: 40px 20px; }
-.home-band-inner-mob { padding: 20px 14px; }
-/* Last band clears the fixed mobile bottom nav (height + safe-area) plus
-   breathing room, so the final championship cards aren't flush against it. */
-.home-mob .home-band:last-child .home-band-inner-mob { padding-bottom: calc(28px + var(--botnav-h) + env(safe-area-inset-bottom)); }
 @media (max-width: 720px) {
   .home-band-inner { padding: 20px 14px; }
+  /* Last band clears the fixed mobile bottom nav (height + safe-area) plus
+     breathing room, so the final championship cards aren't flush against it. */
+  .home-page .home-band:last-child .home-band-inner { padding-bottom: calc(28px + var(--botnav-h) + env(safe-area-inset-bottom)); }
+}
+
+/* ============================================================
+   NEXT-RACE HERO - responsive layout in CSS (not JS useIsMobile)
+   The homepage is prerendered without a viewport, so a JS-driven
+   layout ships the desktop variant in the static HTML and snaps to
+   mobile only after hydration - a visible "big to small" flash on
+   phones. Driving the size switches from media queries keeps the
+   first paint correct at any width and survives JS being disabled.
+   ============================================================ */
+.next-race-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  padding: 24px;
+}
+.next-race-hero .hero-gp-name { font-size: 76px; }
+
+/* Session-schedule table: header + rows share identical column tracks
+   (fixed widths, not auto) so the two separate grid containers line up.
+   Five columns once the visitor's zone is known; four before that (SSR /
+   pre-mount), keyed off .single-tz on the container. */
+.next-race-sessions .nrs-grid {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  grid-template-columns: 44px minmax(0, 1fr) 52px 100px 92px;
+}
+.next-race-sessions.single-tz .nrs-grid {
+  grid-template-columns: 46px minmax(0, 1fr) 56px 100px;
+}
+.next-race-sessions .nrs-head { padding: 7px 14px; }
+.next-race-sessions .nrs-row  { padding: 10px 14px; }
+
+.title-race-chart { height: 280px; }
+
+@media (max-width: 720px) {
+  .next-race-hero {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 16px;
+  }
+  .next-race-hero .hero-gp-name { font-size: 44px; }
+  .next-race-sessions .nrs-grid {
+    gap: 8px;
+    grid-template-columns: 26px minmax(0, 1fr) 22px 78px 70px;
+  }
+  .next-race-sessions.single-tz .nrs-grid {
+    grid-template-columns: 28px minmax(0, 1fr) 22px 78px;
+  }
+  .next-race-sessions .nrs-head { padding: 7px 12px; }
+  .next-race-sessions .nrs-row  { padding: 10px 12px; }
+  .title-race-chart { height: 220px; }
 }
 
 /* ============================================================
