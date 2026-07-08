@@ -837,6 +837,9 @@ button { font-family: inherit; }
   display: inline-block;
   height: 1em;
   width: auto;
+  /* Reserve horizontal space before the 640x480 SVG loads so lazy flags
+     don't pop in and reflow their row (fixes CLS on the home page). */
+  aspect-ratio: 4 / 3;
   vertical-align: -0.15em;
   border-radius: 2px;
   box-shadow: 0 0 0 1px var(--line-1);
