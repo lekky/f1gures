@@ -346,6 +346,12 @@ function NextRacePanel({ data, cal, next, mob }) {
   );
 }
 
+// Past-season header: champions on the left, a dedicated Season Records list
+// on the right. The main column stacks the World Drivers' Champion over the
+// Constructors' Champion; the side column lists the season records with each
+// holder's driver headshot. Mirrors the live `.champ-leader` vocabulary (gold
+// champion pills, team-mixed points colour) so complete seasons feel of a
+// piece with in-progress ones. Whole card links to the drivers' standings.
 function SeasonAtGlance({ data, cal, standings, mob }) {
   const D = data;
   const drivers = standings.drivers;
@@ -362,70 +368,117 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
   const mostFL = topBy('fastestLaps');
   const totalDnfs = drivers.reduce((s, r) => s + (r.dnfs || 0), 0);
 
-  const Record = ({ lbl, name, val }) => (
-    <div className="stat" style={{ textAlign: 'left', padding: '12px 14px' }}>
-      <div className="stat-lbl">{lbl}</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 16, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--fg-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-        <span className="t-mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>{val}</span>
+  // A record row, optionally carrying the holder's headshot. `driver` is the
+  // standings row for the holder (null for grid-wide records like Total DNFs);
+  // the avatar is tinted with their team colour and hidden if the image 404s.
+  const Record = ({ lbl, name, val, driver }) => {
+    const img = driver && driver.jolpicaId ? `/images/drivers/${driver.jolpicaId}.webp` : null;
+    const tc = driver ? (D.teamById(driver.team) || {}).color : null;
+    return (
+      <div className="sag-rec">
+        <div className="sag-rec-lbl">{lbl}</div>
+        <div className="sag-rec-row">
+          {img && (
+            <img
+              className="sag-rec-avatar"
+              src={img}
+              alt=""
+              loading="lazy"
+              style={tc ? { '--tc': tc } : undefined}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          )}
+          <span className="sag-rec-name">{name}</span>
+          <span className="sag-rec-val"><CountUp value={val} /></span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div className="panel f1-card-link" style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer', borderLeft: champTeam ? `3px solid ${champTeam.color}` : undefined }}
-         onClick={() => navigate({ name: 'standings-d' })}>
+    <div
+      className="sag f1-card-link"
+      style={champTeam ? { '--tc': champTeam.color } : undefined}
+      onClick={() => navigate({ name: 'standings-d' })}
+    >
       <div className="kbd-corner kbd-tl"></div>
       <div className="kbd-corner kbd-tr"></div>
       <div className="kbd-corner kbd-bl"></div>
       <div className="kbd-corner kbd-br"></div>
-      <div style={{ padding: mob ? 16 : 24, display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: mob ? 20 : 32 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+
+      <div className="sag-grid">
+        <div className="sag-main">
+          <div className="sag-head">
             <span className="t-eyebrow" style={{ color: 'var(--accent)' }}>{D.seasonYear} Season</span>
-            <span style={{ flex: 1, height: 1, background: 'var(--line-1)' }}></span>
-            <span className="t-eyebrow">{cal.length} Rounds</span>
+            <span className="sag-head-rule"></span>
+            <span className="t-eyebrow">{cal.length} {cal.length === 1 ? 'Round' : 'Rounds'} · Complete</span>
           </div>
+
           {champ && (
             <>
-              <div className="t-display" style={{ fontSize: mob ? 38 : 56, marginBottom: 6 }}>
-                {champ.driver.last}<span style={{ color: 'var(--accent)' }}>.</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg-2)', marginBottom: 14, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 20, lineHeight: 1 }}><Flag cc={champ.driver.country} flag={champ.driver.flag} /></span>
-                <span className="t-mono" style={{ fontSize: 13 }}>{champTeam && champTeam.name.toUpperCase()}</span>
-                <span style={{ color: 'var(--fg-4)' }}>·</span>
-                <span className="t-mono" style={{ fontSize: 13 }}>{champ.points} PTS</span>
+              <div className="sag-block">
+                <span className="sag-pill"><span className="sag-pill-crown" aria-hidden="true">♛</span> World Drivers' Champion</span>
+                <h2 className="sag-name">
+                  {champ.driver.last}<span className="sag-dot">.</span>
+                </h2>
+                <div className="sag-meta">
+                  <span className="sag-flag"><Flag cc={champ.driver.country} flag={champ.driver.flag} /></span>
+                  {champTeam && <span>{champTeam.name}</span>}
+                  <span className="sag-meta-dot">·</span>
+                  <span>{champ.driver.first} {champ.driver.last}</span>
+                </div>
+                <div className="sag-figures">
+                  <div className="sag-pts">
+                    <span className="sag-pts-v"><CountUp value={champ.points} /></span>
+                    <span className="sag-pts-u">pts</span>
+                  </div>
+                  <span className="sag-fig-div"></span>
+                  <div className="sag-substats">
+                    <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.wins} /></span><span className="sag-substat-l">Wins</span></div>
+                    <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.podiums} /></span><span className="sag-substat-l">Podiums</span></div>
+                    <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.poles} /></span><span className="sag-substat-l">Poles</span></div>
+                  </div>
+                </div>
                 {champRunner && (
-                  <>
-                    <span style={{ color: 'var(--fg-4)' }}>·</span>
-                    <span className="t-mono" style={{ fontSize: 13 }}>+{champ.points - champRunner.points} OVER {champRunner.driver.last.toUpperCase()}</span>
-                  </>
+                  <p className="sag-blurb">Sealed the title <b>+{champ.points - champRunner.points} pts</b> clear of {champRunner.driver.last}</p>
                 )}
               </div>
-              <div className="t-eyebrow" style={{ color: 'var(--fg-3)', marginBottom: 4 }}>World Drivers' Champion</div>
+
               {teamChamp && (
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line-1)' }}>
-                  <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: mob ? 22 : 28, letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: 4 }}>
-                    {teamChamp.team.name}
+                <div className="sag-block">
+                  <span className="sag-pill"><span className="sag-pill-crown" aria-hidden="true">♛</span> Constructors' Champion</span>
+                  <h2 className="sag-name sag-name-cc">{teamChamp.team.name}</h2>
+                  <div className="sag-figures">
+                    <div className="sag-pts">
+                      <span className="sag-pts-v"><CountUp value={teamChamp.points} /></span>
+                      <span className="sag-pts-u">pts</span>
+                    </div>
+                    <span className="sag-fig-div"></span>
+                    <div className="sag-substats">
+                      <div className="sag-substat"><span className="sag-substat-v"><CountUp value={teamChamp.wins} /></span><span className="sag-substat-l">Wins</span></div>
+                      <div className="sag-substat"><span className="sag-substat-v"><CountUp value={teamChamp.podiums} /></span><span className="sag-substat-l">Podiums</span></div>
+                    </div>
                   </div>
-                  <div className="t-eyebrow" style={{ color: 'var(--fg-3)', marginBottom: 4 }}>Constructors' Champion</div>
-                  <div className="t-mono" style={{ fontSize: 13, color: 'var(--fg-2)' }}>
-                    {teamChamp.points} PTS{teamRunner ? ` · +${teamChamp.points - teamRunner.points} over ${teamRunner.team.name}` : ''}
-                  </div>
+                  {teamRunner && (
+                    <p className="sag-blurb"><b>+{teamChamp.points - teamRunner.points} pts</b> ahead of {teamRunner.team.name}</p>
+                  )}
                 </div>
               )}
             </>
           )}
         </div>
 
-        <div>
-          <div className="t-eyebrow" style={{ marginBottom: 10 }}>Season Records</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-            {mostWins && <Record lbl="Most Wins" name={mostWins.driver.last} val={mostWins.wins} />}
-            {mostPoles && <Record lbl="Most Poles" name={mostPoles.driver.last} val={mostPoles.poles} />}
-            {mostFL && <Record lbl="Most Fastest Laps" name={mostFL.driver.last} val={mostFL.fastestLaps} />}
-            <Record lbl="Total DNFs" name="Across grid" val={totalDnfs} />
+        <div className="sag-side">
+          <div className="sag-side-head">
+            <span className="sag-side-mark" aria-hidden="true"></span>
+            <span className="sag-side-title">Season Records</span>
+            <span className="sag-go" aria-hidden="true">↗</span>
+          </div>
+          <div className="sag-reclist">
+            {mostWins && <Record lbl="Most Wins" name={mostWins.driver.last} val={mostWins.wins} driver={mostWins.driver} />}
+            {mostPoles && <Record lbl="Most Poles" name={mostPoles.driver.last} val={mostPoles.poles} driver={mostPoles.driver} />}
+            {mostFL && <Record lbl="Most Fastest Laps" name={mostFL.driver.last} val={mostFL.fastestLaps} driver={mostFL.driver} />}
+            <Record lbl="Total DNFs" name="Across grid" val={totalDnfs} driver={null} />
           </div>
         </div>
       </div>
