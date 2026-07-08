@@ -245,15 +245,6 @@ a { color: inherit; }
 @media (max-width: 720px) {
   .drivers-grid,
   .teams-grid { grid-template-columns: 1fr; }
-  .next-race-sessions > div > div[style*='grid-template-columns'] {
-    grid-template-columns: 26px minmax(0, 1fr) 22px 78px 70px !important;
-    gap: 8px !important;
-    padding: 10px 12px !important;
-  }
-  /* Pre-mount / SSR fallback: single track-time column (no visitor zone yet). */
-  .next-race-sessions.single-tz > div > div[style*='grid-template-columns'] {
-    grid-template-columns: 28px minmax(0, 1fr) 22px 78px !important;
-  }
 }
 .listing-card {
   display: flex;
