@@ -498,6 +498,16 @@ for (const s of constructorStandings) {
 }
 
 const allYears = [...racesByYear.keys()].sort((a, b) => a - b);
+
+// Last year the Ergast CSV dump covers. Everything after this is handled by
+// the hand-curated / API-fetched public/data/<year>.json bundles. Derived, not
+// hardcoded: the moment the dump in data/history/ is refreshed to include a new
+// year, this moves and the "post-Ergast bundle" passes below stop double-
+// processing that year (which they would if the cutoff were a literal 2024).
+// NOTE: distinct from the runtime ARCHIVE_MAX_YEAR written to archiveMeta.js,
+// which is max over ALL races (incl. post-Ergast + upcoming holding pages).
+const ERGAST_MAX_YEAR = Math.max(...allYears);
+
 let seasonsWritten = 0, seasonsSkipped = 0;
 
 for (const year of allYears) {
@@ -862,10 +872,11 @@ for (const race of racesSorted) {
 writeFileSync(join(OUT, '_races-index.json'), JSON.stringify(racesIndex));
 console.log(`[archive] wrote ${racesWritten} race detail bundles → ${join(OUT, 'races')}`);
 
-// ─── Post-2024 bundle → race archive entries ─────────────────────────────
-// For years after the Ergast CSV dump (> 2024), read public/data/<year>.json
-// and emit archive race JSONs for completed rounds (those with results).
-// These are appended to racesIndex so getStaticPaths prerenders /races/<y>/<r>/.
+// ─── Post-Ergast bundle → race archive entries ───────────────────────────
+// For years after the Ergast CSV dump (> ERGAST_MAX_YEAR), read
+// public/data/<year>.json and emit archive race JSONs for completed rounds
+// (those with results). These are appended to racesIndex so getStaticPaths
+// prerenders /races/<y>/<r>/.
 
 const BUNDLE_TEAM_ALIAS = { redbull: 'red_bull', aston: 'aston_martin' };
 
@@ -873,7 +884,7 @@ const DATA_DIR = join(ROOT, 'public', 'data');
 const bundleYears = readdirSync(DATA_DIR)
   .filter(f => /^\d{4}\.json$/.test(f))
   .map(f => parseInt(f, 10))
-  .filter(y => y > 2024)
+  .filter(y => y > ERGAST_MAX_YEAR)
   .sort((a, b) => a - b);
 
 // Collect all completed rounds across all bundle years, sorted by year+round
@@ -1397,12 +1408,10 @@ const HAND_CIRCUIT_ALIAS = {
   zandvoort: 'zandvoort',
   rodriguez: 'rodriguez',
 };
-const ARCHIVE_MAX_YEAR = Math.max(...allYears);
-
 const seasonFiles = readdirSync(SEASONS_OUT)
   .filter(f => /^\d{4}\.json$/.test(f))
   .map(f => ({ year: parseInt(f.slice(0, 4), 10), path: join(SEASONS_OUT, f) }))
-  .filter(e => e.year > ARCHIVE_MAX_YEAR)
+  .filter(e => e.year > ERGAST_MAX_YEAR)
   .sort((a, b) => a.year - b.year);
 
 let postArchiveRacesAdded = 0;
@@ -1682,13 +1691,13 @@ for (const [year, posMap] of bundleStandings) {
 const driverIndexByRef = new Map();
 for (const entry of index) driverIndexByRef.set(entry.driverRef, entry);
 
-// Extend the teammate index with post-2024 bundle rows so the recompute below
-// captures current-season duels (e.g. Norris vs Piastri in 2025/26). Every
-// bundle participant has a doc in the cache with per-race constructorRef/grid/
-// position, so this covers each race's full field.
+// Extend the teammate index with post-Ergast bundle rows so the recompute
+// below captures current-season duels (e.g. Norris vs Piastri in 2025/26).
+// Every bundle participant has a doc in the cache with per-race
+// constructorRef/grid/position, so this covers each race's full field.
 for (const [driverRef, doc] of driverDocCache) {
   for (const row of doc.perRace) {
-    if (row.year > 2024) indexRaceTeamEntry(row.year, row.round, row.constructorRef, driverRef, row.grid, row.position);
+    if (row.year > ERGAST_MAX_YEAR) indexRaceTeamEntry(row.year, row.round, row.constructorRef, driverRef, row.grid, row.position);
   }
 }
 

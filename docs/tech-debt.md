@@ -58,16 +58,18 @@ not anchors.
   ten 2025 constructor positions in the team docs now match the standings
   page exactly.
 
-### 3. Hardcoded Ergast cutoff `2024` alongside the dynamic one
-- `build-archive.mjs` derives `ARCHIVE_MAX_YEAR` dynamically but two
-  places hardcode `> 2024` (bundle-year filter ~L872; team race-entry
-  indexing ~L1678).
-- **Why it's debt:** if the Ergast CSV dump is ever refreshed to include
-  2025, the dynamic logic shifts automatically while the literals don't —
-  the overlapping season would be processed as both an Ergast year and a
-  bundle year, double-counting races.
-- **Fix:** one `ERGAST_MAX_YEAR = Math.max(...allYears)` near the top,
-  referenced everywhere; no `2024` literals.
+### 3. Hardcoded Ergast cutoff `2024` alongside the dynamic one — ✅ RESOLVED
+- **Was:** two passes hardcoded `> 2024` (bundle-year filter, team race-entry
+  indexing) while a third derived the cutoff dynamically — under a local
+  `const ARCHIVE_MAX_YEAR` that confusingly reused the name of the runtime
+  guard. If the Ergast CSV dump ever advanced to include 2025, the derived
+  logic would shift while the literals wouldn't, so the overlapping season
+  would be processed as both an Ergast year and a bundle year (double-counted).
+- **Fix (done):** one `ERGAST_MAX_YEAR = Math.max(...allYears)` defined where
+  `allYears` is built and referenced at all three sites; the misnamed local
+  const is removed (the name now belongs only to the runtime guard in
+  `archiveMeta.js`, a genuinely different value). Pure refactor — verified the
+  archive build output is unchanged today (ERGAST_MAX_YEAR === 2024).
 
 ### 4. FTP deploy: no retry, and likely plaintext FTP
 - `deploy.yml` / `refresh-current-season.yml` use FTP-Deploy-Action with
