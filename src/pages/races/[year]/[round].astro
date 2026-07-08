@@ -108,6 +108,8 @@ if (!completed) {
       name: `${race.name} ${race.year} - ${SESSION_NAMES[key] || key}`,
       startDate: `${(val as any).date}T${(val as any).time}`,
       sport: 'Formula 1',
+      eventStatus: 'https://schema.org/EventScheduled',
+      ...(sportsEvent.location ? { location: sportsEvent.location } : {}),
     });
   }
   if (subEvents.length > 0) sportsEvent.subEvent = subEvents;
