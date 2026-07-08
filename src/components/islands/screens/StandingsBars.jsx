@@ -24,14 +24,12 @@ function StatCell({ label, value }) {
   );
 }
 
-// Points bar: team-coloured fill sized to the leader, value pinned right.
-function Bar({ pct, leader, value }) {
+// Points bar: team-coloured fill sized to the leader, points value pinned right.
+function Bar({ pct, value }) {
   return (
     <span className="stdrow-bar">
       <span className="stdrow-fill" style={{ width: `${pct}%` }} aria-hidden="true" />
-      <span className={`stdrow-val ${leader ? 'is-leader' : ''}`}>
-        {leader ? 'Leader' : <>{value}<small>pts</small></>}
-      </span>
+      <span className="stdrow-val">{value}<small>pts</small></span>
     </span>
   );
 }
@@ -84,7 +82,7 @@ export function DriverBars({ D, standings, leaderPoints, recentRounds }) {
                   <span className="stdrow-team">{team ? team.name : ''}</span>
                   <span className="stdrow-caret" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
                 </span>
-                <Bar pct={pct} leader={gap <= 0} value={row.points} />
+                <Bar pct={pct} value={row.points} />
               </span>
             </button>
             {isOpen && (
@@ -146,7 +144,7 @@ export function TeamBars({ D, standings, leaderPoints, recentRounds }) {
                   <span className="stdrow-team">{row.wins}W &middot; {row.podiums}P</span>
                   <span className="stdrow-caret" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
                 </span>
-                <Bar pct={pct} leader={gap <= 0} value={row.points} />
+                <Bar pct={pct} value={row.points} />
               </span>
             </button>
             {isOpen && (
