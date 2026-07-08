@@ -150,6 +150,36 @@ describe('computeStandings sprint awareness', () => {
     expect(st.drivers[1].driver.id).toBe('LEC');
     expect(st.drivers[0].points).toBe(st.drivers[1].points);
   });
+
+  it('ranks teams by full countback when points and wins are tied', () => {
+    // Two single-car teams level on 30 points with 0 wins each. t1's car took
+    // a P2 (its best result); t2's best was a P3, so FIA countback (most wins,
+    // then 2nds, then 3rds...) ranks t1 ahead. Guards the constructor-standings
+    // path in build-archive.mjs, which must defer to this ranking rather than a
+    // local points-then-wins sort that can't break a wins tie.
+    const tied = {
+      drivers: [
+        { id: 'AAA', team: 't1' },
+        { id: 'BBB', team: 't2' },
+      ],
+      teams: [{ id: 't1' }, { id: 't2' }],
+      results: {
+        // AAA P2 (18), BBB P3 (15)
+        1: { order: ['XXX', 'AAA', 'BBB'],
+             detail: { XXX: { points: 25 }, AAA: { points: 18 }, BBB: { points: 15 } } },
+        // BBB P3 (15), AAA P4 (12) - levels both teams on 30, 0 wins each
+        2: { order: ['XXX', 'YYY', 'BBB', 'AAA'],
+             detail: { XXX: { points: 25 }, YYY: { points: 18 }, BBB: { points: 15 }, AAA: { points: 12 } } },
+      },
+    };
+    const st = computeStandings(tied);
+    const t1 = st.teams.find(t => t.team.id === 't1');
+    const t2 = st.teams.find(t => t.team.id === 't2');
+    expect(t1.points).toBe(t2.points); // 30 each
+    expect(t1.wins).toBe(t2.wins);     // 0 each - a points+wins sort can't separate them
+    expect(t1.position).toBe(1);       // better 2nd place wins on countback
+    expect(t2.position).toBe(2);
+  });
 });
 
 // Regression against the real committed bundle: 2025 championship totals

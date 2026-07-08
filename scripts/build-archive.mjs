@@ -1637,10 +1637,13 @@ for (const { year, path } of seasonFiles) {
 }
 
 // Pre-compute championship standings per bundle year via the shared scoring
-// engine (sprint-aware, wins countback on points ties - the same standings
-// the islands render). Used below to fill position for post-Ergast perSeason
-// rows instead of null.
-const bundleStandings = new Map(); // year → Map<driverRef, champPosition>
+// engine (sprint-aware, full FIA countback on points ties - the same
+// standings the islands render). Used below to fill position for post-Ergast
+// perSeason rows instead of null. Drivers are keyed by driverRef; teams by
+// bundle team id (season.teams[].id), which is what the team-merge loop keys
+// its aggregates by. One computeStandings call feeds both.
+const bundleStandings = new Map();     // year → Map<driverRef, champPosition>
+const bundleTeamStandings = new Map(); // year → Map<bundleTeamId, champPosition>
 for (const { year, path } of seasonFiles) {
   const season = JSON.parse(readFileSync(path, 'utf8'));
   if (!season.results) continue;
@@ -1648,12 +1651,18 @@ for (const { year, path } of seasonFiles) {
   for (const d of season.drivers || []) {
     if (d.id && d.jolpicaId) driverByCode.set(d.id, d);
   }
+  const standings = computeBundleSeasonStandings(season);
   const posMap = new Map();
-  for (const row of computeBundleSeasonStandings(season).drivers) {
+  for (const row of standings.drivers) {
     const d = driverByCode.get(row.driver.id);
     if (d) posMap.set(d.jolpicaId, row.position);
   }
   bundleStandings.set(year, posMap);
+  const teamPosMap = new Map();
+  for (const row of standings.teams) {
+    if (row.team && row.team.id != null) teamPosMap.set(row.team.id, row.position);
+  }
+  bundleTeamStandings.set(year, teamPosMap);
 }
 
 // Count championships from completed bundle years (any year before the current
@@ -2104,10 +2113,13 @@ for (const { year, path } of seasonFiles) {
     }
   }
 
-  // Year standings: highest points = P1, wins countback on ties (FIA rule)
-  const sorted = [...byTeam.entries()].sort((a, b) =>
-    b[1].points - a[1].points || b[1].wins - a[1].wins);
-  const positions = new Map(sorted.map(([tId], i) => [tId, i + 1]));
+  // Constructor championship positions come from the shared scoring engine
+  // (computeStandings → bundleTeamStandings), which breaks points ties with
+  // full FIA countback (most wins, then 2nds, then 3rds, ...) - the same rank
+  // the /standings-constructors/ page renders. Do NOT re-derive the ranking
+  // here: a local points-then-wins sort disagrees with the engine on ties and
+  // produced team-doc positions that contradicted the standings page.
+  const teamPositions = bundleTeamStandings.get(year) || new Map();
 
   for (const [tId, agg] of byTeam) {
     const bundleTeam = teamByBundleId.get(tId);
@@ -2123,7 +2135,7 @@ for (const { year, path } of seasonFiles) {
         country: info.country || null, flag: info.flag || null,
         position: bundleStandings.get(year)?.get(ref) ?? null,
       })),
-      position: positions.get(tId) ?? null,
+      position: teamPositions.get(tId) ?? null,
       points: agg.points,
       wins: agg.wins,
       races: agg.rounds.size,
