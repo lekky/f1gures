@@ -44,18 +44,19 @@ not anchors.
   eslint/prettier config and no `astro check` has ever run, so adding it
   may surface a backlog of type issues to triage first.
 
-### 2. Team standings for post-Ergast years bypass `seasonStats.mjs`
-- `scripts/build-archive.mjs` (post-Ergast team merge, ~L2092–2106) sums
-  team points and ranks with a hand-rolled `points || wins` sort, while
-  the driver path in the same merge correctly uses the canonical
-  `computeStandings`. The canonical FIA countback goes 1sts → 2nds →
-  3rds → …, so a points+wins tie can rank teams differently in the team
-  docs than the islands render.
-- **Why it's debt:** this is exactly the "three copies produced three
-  different totals" failure CLAUDE.md warns about, re-introduced for
-  team WCC positions.
-- **Fix:** call `computeStandings(season).teams` and map `.position` by
-  `constructorRef`, mirroring the driver path.
+### 2. Team standings for post-Ergast years bypassed `seasonStats.mjs` — ✅ RESOLVED
+- **Was:** `scripts/build-archive.mjs` ranked post-Ergast (2025+) constructor
+  standings with a hand-rolled `points || wins` sort, while the driver path
+  used the canonical `computeStandings`. A points+wins tie fell to arbitrary
+  map-insertion order and could disagree with the `/standings-constructors/`
+  page (real case: 2025 RB and Aston Martin both on 89 pts, 0 wins).
+- **Fix (done):** `build-archive.mjs` now derives a `bundleTeamStandings`
+  map from `computeStandings(season).teams` (full FIA countback) and uses it
+  for team-doc positions, mirroring how `bundleStandings` already feeds
+  driver positions — one `computeStandings` call per season feeds both.
+  Guarded by a team-countback test in `seasonStats.test.js`. Verified: all
+  ten 2025 constructor positions in the team docs now match the standings
+  page exactly.
 
 ### 3. Hardcoded Ergast cutoff `2024` alongside the dynamic one
 - `build-archive.mjs` derives `ARCHIVE_MAX_YEAR` dynamically but two
