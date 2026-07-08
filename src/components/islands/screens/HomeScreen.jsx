@@ -522,10 +522,12 @@ function SeasonProgress({ data, cal, next }) {
   );
 }
 
-// Momentum line chart of the top-5 drivers' championship progression + a
-// leader card. Hand-rolled SVG (no Recharts) to keep it off the homepage
-// bundle. Data comes straight from computeStandings(): progression is the
-// cumulative-points-per-round series, completedRounds the x-axis.
+// Momentum line chart of the top-5 drivers' championship progression.
+// Hand-rolled SVG (no Recharts) to keep it off the homepage bundle. Data
+// comes straight from computeStandings(): progression is the
+// cumulative-points-per-round series, completedRounds the x-axis. The leader
+// card that once sat beside this chart was dropped — the Drivers'
+// Championship ChampSection below already renders that leader.
 function TitleRace({ data, standings, mob }) {
   const D = data;
   const drivers = standings.drivers || [];
@@ -533,10 +535,6 @@ function TitleRace({ data, standings, mob }) {
   if (drivers.length < 2 || rounds.length < 2) return null;
 
   const top = drivers.slice(0, 5);
-  const leader = drivers[0];
-  const p2 = drivers[1];
-  const leaderTeam = D.teamById(leader.driver.team);
-  const gap = leader.points - p2.points;
 
   const W = 720, H = 250, PADL = 8, PADR = 8, PADT = 14, PADB = 24;
   const finalPts = top.map(r => {
@@ -563,8 +561,7 @@ function TitleRace({ data, standings, mob }) {
           Full Standings <span className="arrow">→</span>
         </a>
       } />
-      <div className="grid" style={{ gridTemplateColumns: mob ? '1fr' : '1fr 320px', gap: 16, alignItems: 'stretch' }}>
-        <div className="panel" style={{ padding: 20 }}>
+      <div className="panel" style={{ padding: 20 }}>
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: mob ? 220 : 280, overflow: 'visible' }} role="img" aria-label="Championship points progression, top five drivers">
             {gridLines.map((yy, i) => (
               <line key={i} x1={PADL} y1={yy} x2={W - PADR} y2={yy} style={{ stroke: 'var(--line-1)' }} strokeWidth="1" />
@@ -587,26 +584,6 @@ function TitleRace({ data, standings, mob }) {
               </span>
             ))}
           </div>
-        </div>
-
-        <a className="panel" href={urlFor({ name: 'driver', id: leader.driver.id, ref: leader.driver.jolpicaId })}
-           style={{ borderTop: `3px solid ${leaderTeam.color}`, padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
-          <div className="t-eyebrow">Championship Leader</div>
-          <div className="t-display" style={{ fontSize: 30, marginTop: 6 }}>{leader.driver.first} {leader.driver.last}</div>
-          <div className="t-mono" style={{ color: 'var(--fg-3)', fontSize: 12 }}>#{leader.driver.num} · {leaderTeam.name}</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 14 }}>
-            <span className="t-display" style={{ fontSize: 64, color: leaderTeam.color, lineHeight: 0.8 }}><CountUp value={leader.points} /></span>
-            <span className="t-eyebrow">pts</span>
-          </div>
-          <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--bg-1)', border: '1px solid var(--line-1)' }}>
-            {gap > 0
-              ? <span className="t-mono" style={{ fontSize: 13 }}>+<b>{gap}</b> over {p2.driver.last}</span>
-              : <span className="t-mono" style={{ fontSize: 13 }}>Level on points · ahead on countback</span>}
-          </div>
-          <div className="t-mono" style={{ color: 'var(--fg-3)', fontSize: 12, marginTop: 10 }}>
-            {leader.wins} wins · {leader.podiums} podiums · {leader.poles} poles
-          </div>
-        </a>
       </div>
     </Band>
   );
