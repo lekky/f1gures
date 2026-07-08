@@ -186,6 +186,16 @@ html.light .topbar-mobile {
 .standings-toggle-mobile { display: none; }
 @media (max-width: 720px) { .standings-toggle-mobile { display: flex; } }
 
+/* Standings responsive bits driven by CSS (not JS useIsMobile) so the
+   prerendered desktop HTML doesn't flash on hydration: the head-to-head
+   picker collapses to one column, and the "Last N" recent-form column
+   (SSR-rendered) hides on mobile instead of being conditionally omitted. */
+.h2h-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+@media (max-width: 720px) {
+  .h2h-pickers { grid-template-columns: 1fr; }
+  .col-recent { display: none; }
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
@@ -1315,6 +1325,55 @@ html.light .tab.live { color: #c10021; }
   font-family: var(--f-display); font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.02em; color: var(--fg-1);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ============================================================
+   CALENDAR - responsive layout in CSS (not JS useIsMobile), so the
+   prerendered desktop HTML doesn't flash "big to small" on hydration
+   (matches the NEXT-RACE HERO approach used on the home page).
+   ============================================================ */
+/* Next-race hero card */
+.race-card.cal-next-card { padding: 40px; gap: 26px; }
+.cal-next-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; }
+.race-flag.cal-next-flag { font-size: 34px; }
+.cal-next-title { font-size: 64px; }
+.cal-next-cd { min-width: 320px; }
+.cal-next-sessions { gap: 14px; }
+
+/* Schedule rows: desktop = 6 columns (round, flag, name, date, status,
+   chevron); on mobile the date + status columns hide and their info folds
+   into .cal-row-mobmeta under the name, leaving 4 columns. All cells are
+   always rendered so the switch is pure CSS - no hydration DOM swap. */
+.cal-row {
+  grid-template-columns: 52px 26px minmax(0, 1.5fr) minmax(0, 1.1fr) minmax(0, 1.1fr) auto;
+  gap: 16px;
+  padding: 13px 18px;
+}
+.cal-row.is-next-row { padding: 20px 20px; }
+.cal-name { font-size: 15px; }
+.cal-row.is-next-row .cal-name { font-size: 19px; }
+.cal-row-mobmeta { display: none; }
+.cal-row-datecol { display: inline-flex; }
+.cal-row-statuscol { display: flex; }
+
+@media (max-width: 720px) {
+  .race-card.cal-next-card { padding: 24px; gap: 18px; }
+  .cal-next-body { grid-template-columns: 1fr; gap: 16px; }
+  .race-flag.cal-next-flag { font-size: 26px; }
+  .cal-next-title { font-size: 42px; }
+  .cal-next-cd { min-width: 0; }
+  .cal-next-sessions { gap: 8px; }
+
+  .cal-row {
+    grid-template-columns: 40px 22px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px 12px;
+  }
+  .cal-row.is-next-row { padding: 18px 14px; }
+  .cal-name { font-size: 14px; }
+  .cal-row.is-next-row .cal-name { font-size: 17px; }
+  .cal-row-datecol, .cal-row-statuscol { display: none; }
+  .cal-row-mobmeta { display: inline-flex; }
 }
 .cal-circuit {
   display: block; max-width: 100%;

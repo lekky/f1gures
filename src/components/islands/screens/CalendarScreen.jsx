@@ -76,13 +76,8 @@ function NextRaceHero({ F, race, mob }) {
 
   return (
     <div
-      className="race-card race-card-link is-next"
-      style={{
-        marginBottom: 28,
-        padding: mob ? 24 : 40,
-        minHeight: 0,
-        gap: mob ? 18 : 26,
-      }}
+      className="race-card race-card-link is-next cal-next-card"
+      style={{ marginBottom: 28, minHeight: 0 }}
     >
       <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} - round ${race.round}`}></a>
 
@@ -96,20 +91,15 @@ function NextRaceHero({ F, race, mob }) {
         {race.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: mob ? '1fr' : 'minmax(0, 1fr) auto',
-        gap: mob ? 16 : 28,
-        alignItems: 'center',
-      }}>
+      <div className="cal-next-body">
         <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
-            <span className="race-flag" style={{ fontSize: mob ? 26 : 34 }}>
+            <span className="race-flag cal-next-flag">
               <Flag cc={race.country} flag={race.flag} />
             </span>
             <div
-              className="t-display"
-              style={{ fontSize: mob ? 42 : 64, lineHeight: 0.95, textTransform: 'uppercase' }}
+              className="t-display cal-next-title"
+              style={{ lineHeight: 0.95, textTransform: 'uppercase' }}
             >
               {race.name.replace(' Grand Prix', '')}
               <span style={{ color: 'var(--accent)' }}>.</span>
@@ -128,14 +118,14 @@ function NextRaceHero({ F, race, mob }) {
           </div>
         </div>
 
-        <div style={{ minWidth: mob ? 0 : 320 }}>
+        <div className="cal-next-cd">
           <Countdown target={target} />
         </div>
       </div>
 
       {sessions.length > 0 && (
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: mob ? 8 : 14,
+        <div className="cal-next-sessions" style={{
+          display: 'flex', flexWrap: 'wrap',
           paddingTop: 12, borderTop: '1px dashed var(--line-1)',
           color: 'var(--fg-3)',
         }}>
@@ -265,15 +255,6 @@ function ScheduleRow({ F, race, status, mob, now }) {
   return (
     <div
       className={`cal-row race-card-link ${statusCls}`}
-      style={{
-        gridTemplateColumns: mob
-          ? '40px 22px minmax(0, 1fr) auto'
-          : '52px 26px minmax(0, 1.5fr) minmax(0, 1.1fr) minmax(0, 1.1fr) auto',
-        gap: mob ? 10 : 16,
-        padding: isNext
-          ? (mob ? '18px 14px' : '20px 20px')
-          : (mob ? '12px 12px' : '13px 18px'),
-      }}
     >
       <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} - round ${race.round}`}></a>
 
@@ -293,7 +274,7 @@ function ScheduleRow({ F, race, status, mob, now }) {
 
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'center' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span className="cal-name" style={{ fontSize: isNext ? (mob ? 17 : 19) : (mob ? 14 : 15) }}>
+          <span className="cal-name">
             {race.name.replace(' Grand Prix', '')}
           </span>
           {race.sprint && <SprintBadge href="/guide/race-weekend-format/" />}
@@ -305,46 +286,40 @@ function ScheduleRow({ F, race, status, mob, now }) {
         >
           {circuit.name}
         </a>
-        {mob && (
-          <span className="t-mono" style={{ fontSize: 11, color: 'var(--fg-3)', display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span>{fmtDate(race.date)}</span>
-            {isDone && winner && (
-              <>
-                <span style={{ color: 'var(--fg-4)' }}>·</span>
-                {winnerFace}
-                {winnerHref
-                  ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'var(--fg-1)' }}>{winnerSurname}</a>
-                  : <span style={{ color: 'var(--fg-1)' }}>{winnerSurname}</span>}
-              </>
-            )}
-            {!isDone && (
-              <>
-                <span style={{ color: 'var(--fg-4)' }}>·</span>
-                <span className={`pill pill-${status}`}>{status}</span>
-                <CountdownLabel days={days} accent={isNext} />
-              </>
-            )}
-          </span>
-        )}
+        <span className="t-mono cal-row-mobmeta" style={{ fontSize: 11, color: 'var(--fg-3)', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span>{fmtDate(race.date)}</span>
+          {isDone && winner && (
+            <>
+              <span style={{ color: 'var(--fg-4)' }}>·</span>
+              {winnerFace}
+              {winnerHref
+                ? <a href={winnerHref} className="inline-link race-card-overlay-link" style={{ color: 'var(--fg-1)' }}>{winnerSurname}</a>
+                : <span style={{ color: 'var(--fg-1)' }}>{winnerSurname}</span>}
+            </>
+          )}
+          {!isDone && (
+            <>
+              <span style={{ color: 'var(--fg-4)' }}>·</span>
+              <span className={`pill pill-${status}`}>{status}</span>
+              <CountdownLabel days={days} accent={isNext} />
+            </>
+          )}
+        </span>
       </div>
 
-      {!mob && (
-        <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-          <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-2)' }}>
-            {fmtDate(race.date)}
-          </span>
-          {!isDone && <CountdownLabel days={days} accent={isNext} />}
+      <span className="cal-row-datecol" style={{ alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <span className="t-mono" style={{ fontSize: 12, color: 'var(--fg-2)' }}>
+          {fmtDate(race.date)}
         </span>
-      )}
+        {!isDone && <CountdownLabel days={days} accent={isNext} />}
+      </span>
 
-      {!mob && (
-        <span style={{
-          fontSize: 12, color: 'var(--fg-1)', display: 'flex', gap: 8, alignItems: 'center',
-          justifyContent: 'flex-end', minWidth: 0,
-        }}>
-          {statusSide}
-        </span>
-      )}
+      <span className="cal-row-statuscol" style={{
+        fontSize: 12, color: 'var(--fg-1)', gap: 8, alignItems: 'center',
+        justifyContent: 'flex-end', minWidth: 0,
+      }}>
+        {statusSide}
+      </span>
 
       <span aria-hidden="true" style={{ color: isNext ? 'var(--accent)' : 'var(--fg-4)', fontFamily: 'var(--f-mono)', fontSize: 16 }}>›</span>
     </div>

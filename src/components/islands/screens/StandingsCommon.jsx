@@ -105,7 +105,7 @@ function DriverPicker({ data, label, value, onChange }) {
   );
 }
 
-export function HeadToHead({ data, standings, mob }) {
+export function HeadToHead({ data, standings }) {
   const DD = data;
   const defaultA = (standings.drivers[0] && standings.drivers[0].driver.id) || (DD.drivers[0] && DD.drivers[0].id);
   const defaultB = (standings.drivers[1] && standings.drivers[1].driver.id) || (DD.drivers[1] && DD.drivers[1].id) || defaultA;
@@ -147,7 +147,7 @@ export function HeadToHead({ data, standings, mob }) {
   ];
   return (
     <Panel>
-      <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 18 }}>
+      <div className="h2h-pickers">
         <DriverPicker data={DD} label="Driver A" value={a} onChange={setA} />
         <DriverPicker data={DD} label="Driver B" value={b} onChange={setB} />
       </div>
