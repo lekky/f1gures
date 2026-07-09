@@ -345,6 +345,34 @@ function NextRacePanel({ data, cal, next, mob }) {
 // holder's driver headshot. Mirrors the live `.champ-leader` vocabulary (gold
 // champion pills, team-mixed points colour) so complete seasons feel of a
 // piece with in-progress ones. Whole card links to the drivers' standings.
+// Champion headshot for the past-season hero. Tries the driver's webp
+// (keyed by driverRef); if that 404s, falls back to a team-tinted silhouette
+// so historic champions without a photo still read as a portrait.
+function ChampFace({ driver, team }) {
+  const [failed, setFailed] = useState(false);
+  const tc = team ? team.color : 'var(--accent)';
+  const src = driver && driver.jolpicaId ? `/images/drivers/${driver.jolpicaId}.webp` : null;
+  if (src && !failed) {
+    return (
+      <img
+        className="sag-champ-face"
+        src={src}
+        alt=""
+        loading="lazy"
+        style={{ '--tc': tc }}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <div className="sag-champ-face sag-champ-face-fallback" style={{ '--tc': tc }}>
+      <svg viewBox="0 0 100 120" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+        <path d="M50 12 C28 12 18 28 18 46 L18 60 L14 70 L14 82 L20 88 L20 120 L80 120 L80 88 L86 82 L86 70 L82 60 L82 46 C82 28 72 12 50 12 Z" fill={tc} opacity="0.85" />
+      </svg>
+    </div>
+  );
+}
+
 function SeasonAtGlance({ data, cal, standings, mob }) {
   const D = data;
   const drivers = standings.drivers;
@@ -365,8 +393,9 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
   // standings row for the holder (null for grid-wide records like Total DNFs);
   // the avatar is tinted with their team colour and hidden if the image 404s.
   const Record = ({ lbl, name, val, driver }) => {
+    const team = driver ? D.teamById(driver.team) : null;
     const img = driver && driver.jolpicaId ? `/images/drivers/${driver.jolpicaId}.webp` : null;
-    const tc = driver ? (D.teamById(driver.team) || {}).color : null;
+    const tc = team ? team.color : null;
     return (
       <div className="sag-rec">
         <div className="sag-rec-lbl">{lbl}</div>
@@ -381,7 +410,15 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           )}
-          <span className="sag-rec-name">{name}</span>
+          <div className="sag-rec-id">
+            <span className="sag-rec-name">{name}</span>
+            {team && (
+              <span className="sag-rec-team">
+                <TeamLogo team={team} size={16} />
+                <span className="sag-rec-team-name">{team.name}</span>
+              </span>
+            )}
+          </div>
           <span className="sag-rec-val"><CountUp value={val} /></span>
         </div>
       </div>
@@ -394,6 +431,7 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
       style={champTeam ? { '--tc': champTeam.color } : undefined}
       onClick={() => navigate({ name: 'standings-d' })}
     >
+      <div className="hero-speedlines" aria-hidden="true"></div>
       <div className="kbd-corner kbd-tl"></div>
       <div className="kbd-corner kbd-tr"></div>
       <div className="kbd-corner kbd-bl"></div>
@@ -410,51 +448,66 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
           {champ && (
             <>
               <div className="sag-block">
-                <span className="sag-pill"><span className="sag-pill-crown" aria-hidden="true">♛</span> World Drivers' Champion</span>
-                <h2 className="sag-name">
-                  {champ.driver.last}<span className="sag-dot">.</span>
-                </h2>
-                <div className="sag-meta">
-                  <span className="sag-flag"><Flag cc={champ.driver.country} flag={champ.driver.flag} /></span>
-                  {champTeam && <span>{champTeam.name}</span>}
-                  <span className="sag-meta-dot">·</span>
-                  <span>{champ.driver.first} {champ.driver.last}</span>
-                </div>
-                <div className="sag-figures">
-                  <div className="sag-pts">
-                    <span className="sag-pts-v"><CountUp value={champ.points} /></span>
-                    <span className="sag-pts-u">pts</span>
+                <div className="sag-champ">
+                  <div className="sag-champ-media">
+                    <ChampFace driver={champ.driver} team={champTeam} />
+                    {champTeam && <TeamLogo team={champTeam} size={30} />}
                   </div>
-                  <span className="sag-fig-div"></span>
-                  <div className="sag-substats">
-                    <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.wins} /></span><span className="sag-substat-l">Wins</span></div>
-                    <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.podiums} /></span><span className="sag-substat-l">Podiums</span></div>
-                    <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.poles} /></span><span className="sag-substat-l">Poles</span></div>
+                  <div className="sag-champ-body">
+                    <span className="sag-pill"><span className="sag-pill-crown" aria-hidden="true">♛</span> World Drivers' Champion</span>
+                    <h2 className="sag-name">
+                      {champ.driver.last}<span className="sag-dot">.</span>
+                    </h2>
+                    <div className="sag-meta">
+                      <span className="sag-flag"><Flag cc={champ.driver.country} flag={champ.driver.flag} /></span>
+                      {champTeam && <span>{champTeam.name}</span>}
+                      <span className="sag-meta-dot">·</span>
+                      <span>{champ.driver.first} {champ.driver.last}</span>
+                    </div>
+                    <div className="sag-figures">
+                      <div className="sag-pts">
+                        <span className="sag-pts-v"><CountUp value={champ.points} /></span>
+                        <span className="sag-pts-u">pts</span>
+                      </div>
+                      <span className="sag-fig-div"></span>
+                      <div className="sag-substats">
+                        <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.wins} /></span><span className="sag-substat-l">Wins</span></div>
+                        <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.podiums} /></span><span className="sag-substat-l">Podiums</span></div>
+                        <div className="sag-substat"><span className="sag-substat-v"><CountUp value={champ.poles} /></span><span className="sag-substat-l">Poles</span></div>
+                      </div>
+                    </div>
+                    {champRunner && (
+                      <p className="sag-blurb">Sealed the title <b>+{champ.points - champRunner.points} pts</b> clear of {champRunner.driver.last}</p>
+                    )}
                   </div>
                 </div>
-                {champRunner && (
-                  <p className="sag-blurb">Sealed the title <b>+{champ.points - champRunner.points} pts</b> clear of {champRunner.driver.last}</p>
-                )}
               </div>
 
               {teamChamp && (
                 <div className="sag-block">
-                  <span className="sag-pill"><span className="sag-pill-crown" aria-hidden="true">♛</span> Constructors' Champion</span>
-                  <h2 className="sag-name sag-name-cc">{teamChamp.team.name}</h2>
-                  <div className="sag-figures">
-                    <div className="sag-pts">
-                      <span className="sag-pts-v"><CountUp value={teamChamp.points} /></span>
-                      <span className="sag-pts-u">pts</span>
+                  <div className="sag-champ">
+                    <div className="sag-champ-media sag-champ-media-team">
+                      <TeamLogo team={teamChamp.team} size={64} />
                     </div>
-                    <span className="sag-fig-div"></span>
-                    <div className="sag-substats">
-                      <div className="sag-substat"><span className="sag-substat-v"><CountUp value={teamChamp.wins} /></span><span className="sag-substat-l">Wins</span></div>
-                      <div className="sag-substat"><span className="sag-substat-v"><CountUp value={teamChamp.podiums} /></span><span className="sag-substat-l">Podiums</span></div>
+                    <div className="sag-champ-body">
+                      <span className="sag-pill"><span className="sag-pill-crown" aria-hidden="true">♛</span> Constructors' Champion</span>
+                      <h2 className="sag-name sag-name-cc">{teamChamp.team.name}</h2>
+                      <div className="sag-figures">
+                        <div className="sag-pts">
+                          <span className="sag-pts-v"><CountUp value={teamChamp.points} /></span>
+                          <span className="sag-pts-u">pts</span>
+                        </div>
+                        <span className="sag-fig-div"></span>
+                        <div className="sag-substats">
+                          <div className="sag-substat"><span className="sag-substat-v"><CountUp value={teamChamp.wins} /></span><span className="sag-substat-l">Wins</span></div>
+                          <div className="sag-substat"><span className="sag-substat-v"><CountUp value={teamChamp.podiums} /></span><span className="sag-substat-l">Podiums</span></div>
+                        </div>
+                      </div>
+                      {teamRunner && (
+                        <p className="sag-blurb"><b>+{teamChamp.points - teamRunner.points} pts</b> ahead of {teamRunner.team.name}</p>
+                      )}
                     </div>
                   </div>
-                  {teamRunner && (
-                    <p className="sag-blurb"><b>+{teamChamp.points - teamRunner.points} pts</b> ahead of {teamRunner.team.name}</p>
-                  )}
                 </div>
               )}
             </>
