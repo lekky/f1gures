@@ -5,6 +5,7 @@ import RecordsTimeline from '../../components/RecordsTimeline.astro';
 import RecordHeroCard from '../../components/RecordHeroCard.astro';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import TriviaBoard from '../../components/islands/screens/TriviaBoard.jsx';
 
 const indexPath = resolve(process.cwd(), 'public/data/archive/_records-index.json');
 const data = JSON.parse(readFileSync(indexPath, 'utf8'));
@@ -147,6 +148,8 @@ const totalRecords = allRecords.length;
       <h1>F1 Records &amp; Milestones</h1>
       <p class="page-sub">Every Formula 1 leaderboard worth knowing - career, single-season, streaks, milestones, teams and tracks. All-time and modern-era (1981+) rankings, computed from 1950 through the last completed season.</p>
     </header>
+
+    <TriviaBoard client:visible />
 
     {heroEntry && (
       <RecordsTopHero hero={heroEntry} totalRecords={totalRecords} blurb={heroBlurb} />

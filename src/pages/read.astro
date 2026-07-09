@@ -4,6 +4,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { publishedGuidesSorted } from '../lib/guide';
 import { sortPosts, isPublic, fmtPostDate } from '../lib/blog';
 import { BLOG_CATEGORY_LABELS } from '../content/config';
+import TriviaBoard from '../components/islands/screens/TriviaBoard.jsx';
 
 // Read hub — the "words" bucket. Fronts the beginner's Guide and the Blog,
 // surfacing a start point for each plus the latest posts with their hero
@@ -48,6 +49,8 @@ const jsonLd = {
         <p class="page-sub">Start from zero with the beginner’s guide, then follow along with race recaps, technical explainers and historic deep-dives.</p>
       </div>
     </div>
+
+    <TriviaBoard client:visible />
 
     <div class="hub-pillars">
       <a class="hub-pillar" href="/guide/">

@@ -3835,36 +3835,32 @@ a.guide-pg:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-ho
   --trivia-amber-glow: rgba(255, 184, 92, 0.35);
   --trivia-green: #5fd08a;
   display: flex;
+  flex-direction: column;
   align-items: stretch;
   margin-bottom: 16px;
-  background: var(--trivia-bg);
-  border: 1px solid var(--trivia-edge);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-  position: relative;
 }
-/* CRT scanlines */
-.trivia::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.25) 0 1px, transparent 1px 3px);
-  opacity: 0.5;
+/* Header row: the red "Did You Know" chip and the orange Share button joined
+   into one tab on the left, sitting flush on the screen's top edge. */
+.trivia-head {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
 }
 .trivia-lab {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 0 18px;
+  padding: 6px 13px;
   background: var(--accent);
   color: #fff;
   font-family: var(--f-display);
   font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  font-size: 11px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  border: 1px solid var(--trivia-edge);
+  border-bottom: none;
 }
 .trivia-dot {
   width: 7px;
@@ -3873,26 +3869,90 @@ a.guide-pg:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-ho
   background: #fff;
   animation: trivia-blink 1.1s infinite;
 }
+/* Share: an orange button joined to the right of the red chip — it shares the
+   chip's right border (no left border) and has no bottom edge, so the red + orange
+   read as one tab merging into the screen. */
+.trivia-actions {
+  display: inline-flex;
+  align-items: stretch;
+}
+.trivia-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  background: var(--trivia-amber);
+  border: 1px solid var(--trivia-edge);
+  border-left: none;
+  border-bottom: none;
+  color: #0a0c10;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.trivia-btn:hover { background: #ffc879; }
+.trivia-btn:active { background: #f0a844; }
+.trivia-btn svg { display: block; }
 .trivia-scr {
-  flex: 1;
-  min-width: 0;
+  align-self: stretch;    /* full width below the content-width header */
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 0 18px;
+  gap: 10px;
+  padding: 0 16px;
   min-height: 48px;
+  background: var(--trivia-bg);
+  border: 1px solid var(--trivia-edge);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   font-family: var(--f-mono);
   font-size: 13px;
   letter-spacing: 0.02em;
   color: var(--trivia-amber);
   text-shadow: 0 0 8px var(--trivia-amber-glow);
   overflow: hidden;
+  position: relative;
 }
-.trivia-pre {
+/* CRT scanlines, over the screen only. */
+.trivia-scr::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.25) 0 1px, transparent 1px 3px);
+  opacity: 0.5;
+}
+/* Inline pause: slim green control at the left of the screen, where the
+   terminal prompt used to sit. Touch has no hover, so this is the pause. */
+.trivia-pause {
   flex-shrink: 0;
-  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--trivia-green);
   color: var(--trivia-green);
-  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.trivia-pause:hover { background: rgba(95, 208, 138, 0.12); }
+.trivia-pause svg { display: block; }
+/* Divider between the pause control and the reading area. */
+.trivia-sep {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 1px;
+  margin: 0 3px 0 1px;
+  background: var(--trivia-edge);
+  position: relative;
+  z-index: 1;
 }
 /* Single-line ticker: .trivia-line is the clipping viewport; .trivia-line-inner
    holds the text + cursor and is scrolled left (via JS) so the cursor stays in
@@ -3923,7 +3983,8 @@ a.guide-pg:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-ho
 @keyframes trivia-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 
 @media (max-width: 720px) {
-  .trivia-lab { padding: 0 12px; font-size: 11px; letter-spacing: 0.12em; }
+  .trivia-lab { padding: 6px 11px; font-size: 10px; letter-spacing: 0.1em; }
+  .trivia-btn { padding: 6px 11px; font-size: 10px; }
   .trivia-scr { padding: 0 12px; font-size: 12px; }
 }
 
@@ -3932,7 +3993,6 @@ a.guide-pg:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-ho
    fits on one line, then filling and scrolling vertically (to follow the
    cursor) once it wraps, so long facts still reveal fully. */
 .trivia--2line .trivia-scr { align-items: center; padding-top: 9px; padding-bottom: 9px; min-height: 0; }
-.trivia--2line .trivia-pre { line-height: 1.35; }
 .trivia--2line .trivia-line { height: 2.7em; line-height: 1.35; }
 .trivia--2line .trivia-line-inner { white-space: normal; line-height: 1.35; }
 
@@ -3944,7 +4004,6 @@ a.guide-pg:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-ho
 /* Reduced motion: drop the typewriter and the horizontal scroll. Facts wrap so
    the whole thing is readable at a glance, and simply swap. */
 .trivia--reduce .trivia-scr { align-items: flex-start; padding-top: 10px; padding-bottom: 10px; }
-.trivia--reduce .trivia-pre { line-height: 1.5; }
 .trivia--reduce .trivia-line { overflow: visible; }
 .trivia--reduce .trivia-line-inner { white-space: normal; transform: none !important; transition: none; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) {
