@@ -1035,8 +1035,8 @@ button { font-family: inherit; }
   margin-bottom: 8px;
 }
 .stdrow.is-open {
-  background: color-mix(in srgb, var(--accent) 7%, var(--bg-2));
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--line-2));
+  background: var(--bg-3);
+  border-color: var(--line-2);
 }
 .stdrow-head {
   display: flex; align-items: stretch; gap: 11px; width: 100%;
