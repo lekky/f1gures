@@ -118,10 +118,6 @@ function rowHref(e: Entry): string | null {
                     </>
                   )}
                 </div>
-                <span class="tbl-card-bar">
-                  <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${barPct}%`}></span>
-                  <span class="tbl-card-val">{e.valueLabel}</span>
-                </span>
               </td>
               {subjectType === 'driver-at-circuit' && (
                 <td class="col-circuit" data-label="Circuit">
@@ -129,13 +125,16 @@ function rowHref(e: Entry): string | null {
                 </td>
               )}
               {subjectType === 'driver' && (
-                <td class="col-team" data-label="Team">
+                <td class="col-team card-sub" data-label="Team">
                   {e.teamRef
                     ? <a href={`/teams/${e.teamRef}/`} onclick="event.stopPropagation()">{e.teamName}</a>
                     : <span>-</span>}
                 </td>
               )}
-              <td class="col-value right card-hide" data-label="Stat">{e.valueLabel}</td>
+              <td class="col-value right card-metric" data-label="Stat">
+                <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${barPct}%`}></span>
+                <span class="tbl-card-val">{e.valueLabel}</span>
+              </td>
               <td class="col-context" data-label="Detail">{e.context || ''}</td>
             </tr>
           );

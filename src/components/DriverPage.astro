@@ -766,9 +766,9 @@ const duelSurname = driver.surname;
                   <span class="std-bar" aria-hidden="true" style={`width:${((s.points ?? 0) / seasonMaxPoints) * 100}%; --tc:${teamColor}`}></span>
                   <span class="hist-pts-val">{s.points != null ? s.points : '-'}</span>
                 </td>
-                <td class="right t-mono" data-label="Wins">{s.wins}</td>
-                <td class="right t-mono" data-label="Races">{s.races}</td>
-                <td class="right t-mono" data-label="Best">{ord(s.bestFinish)}</td>
+                <td class="right t-mono card-stat" data-label="Wins">{s.wins}</td>
+                <td class="right t-mono card-stat" data-label="Races">{s.races}</td>
+                <td class="right t-mono card-stat" data-label="Best">{ord(s.bestFinish)}</td>
               </tr>
               );
             })}
@@ -801,7 +801,7 @@ const duelSurname = driver.surname;
               const logo = teamLogoPath(r.constructorRef);
               return (
                 <tr style={`--team-color: ${teamColor}`}>
-                  <td class="t-mono card-sub" data-label="Season">{r.year}</td>
+                  <td class="t-mono" data-label="Season">{r.year}</td>
                   <td class="card-primary">
                     <span class="race-cell">
                       {(r.country || r.flag) && <span class="race-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
@@ -810,7 +810,7 @@ const duelSurname = driver.surname;
                       ) : (r.raceName || '-')}
                     </span>
                   </td>
-                  <td data-label="Team">
+                  <td class="card-sub" data-label="Team">
                     <span class="race-cell">
                       {logo && <img class="team-logo-sm" src={logo} alt="" width="20" height="20" loading="lazy" />}
                       {r.constructorRef && r.constructorName ? (
@@ -818,7 +818,7 @@ const duelSurname = driver.surname;
                       ) : (r.constructorName || '-')}
                     </span>
                   </td>
-                  <td class="right t-mono" data-label="Grid">{fmtNum(r.grid)}</td>
+                  <td class="right t-mono card-stat" data-label="Grid">{fmtNum(r.grid)}</td>
                   <td class="center card-pos">
                     {numericFinish
                       ? <div class={posClass(r.position)}>{r.position}</div>

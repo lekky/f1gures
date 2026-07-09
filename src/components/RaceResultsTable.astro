@@ -100,6 +100,10 @@ function rowCls(i: number): string {
                 ? <span class="std-gap is-leader">Win</span>
                 : (r.time ? <span class="std-gap">{r.time}</span> : null)}
             </div>
+            <span class="tbl-card-bar">
+              <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${barPct(gaps[i])}%; --tc: ${r.constructorColor || 'var(--fg-3)'}`}></span>
+              <span class="tbl-card-val">{isWinner(r) ? 'Win' : (r.time || r.status || '—')}</span>
+            </span>
           </td>
           <td data-label="Team">
             <span class="rr-team-cell">
@@ -109,8 +113,8 @@ function rowCls(i: number): string {
                 : <span class="rr-team">{r.constructorName || '-'}</span>}
             </span>
           </td>
-          <td class="right t-mono" data-label="Grid">{r.grid != null ? r.grid : '-'}</td>
-          <td class="right rr-pts" data-label="Points">{r.points}</td>
+          <td class="right t-mono card-stat" data-label="Grid">{r.grid != null ? r.grid : '-'}</td>
+          <td class="right rr-pts card-stat" data-label="Points">{r.points}</td>
           {isRace && (
             <td class="t-mono rr-fl" data-label="Fastest Lap">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
           )}
