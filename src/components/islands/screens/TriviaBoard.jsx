@@ -16,6 +16,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import triviaData from '../../../data/trivia.json';
+import { buildTriviaShareBlob } from '../../../lib/triviaShareCard.js';
 
 const FACTS = triviaData.facts || [];
 
@@ -71,13 +72,34 @@ export default function TriviaBoard() {
     if (!text || typeof navigator === 'undefined' || !navigator.clipboard) return;
     navigator.clipboard.writeText(text).catch(() => {});
   };
-  const shareFact = () => {
+  const [sharing, setSharing] = useState(false);
+  // Share a branded image of the current fact (with the f1gures logo). Falls
+  // back to a plain-text share, then to copying the fact, so it degrades on
+  // browsers without file-sharing or Web Share support.
+  const shareFact = async () => {
     const text = factRef.current;
-    if (!text) return;
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      navigator.share({ text: `${text} — f1gures.app`, url: 'https://f1gures.app/' }).catch(() => {});
-    } else {
-      copyFact();
+    if (!text || sharing) return;
+    const nav = typeof navigator !== 'undefined' ? navigator : null;
+    const textData = { text: `${text} — f1gures.app`, url: 'https://f1gures.app/' };
+    setSharing(true);
+    try {
+      const blob = await buildTriviaShareBlob(text);
+      const file = blob && new File([blob], 'f1gures-did-you-know.png', { type: 'image/png' });
+      if (file && nav && nav.canShare && nav.canShare({ files: [file] })) {
+        await nav.share({ ...textData, files: [file] });
+      } else if (nav && nav.share) {
+        await nav.share(textData);
+      } else {
+        copyFact();
+      }
+    } catch (e) {
+      // AbortError = user dismissed the share sheet; anything else falls back.
+      if (!(e && e.name === 'AbortError')) {
+        if (nav && nav.share) nav.share(textData).catch(() => {});
+        else copyFact();
+      }
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -188,9 +210,9 @@ export default function TriviaBoard() {
           Did You Know
         </div>
         <div className="trivia-actions">
-          <button type="button" className="trivia-btn" onClick={shareFact} aria-label="Share this fact">
+          <button type="button" className="trivia-btn" onClick={shareFact} disabled={sharing} aria-label="Share this fact as an image">
             <svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><circle cx="10.5" cy="3.5" r="1.8" fill="none" stroke="currentColor" strokeWidth="1.3" /><circle cx="3.5" cy="7" r="1.8" fill="none" stroke="currentColor" strokeWidth="1.3" /><circle cx="10.5" cy="10.5" r="1.8" fill="none" stroke="currentColor" strokeWidth="1.3" /><path d="M5.1 6.1l3.8-1.9M5.1 7.9l3.8 1.9" stroke="currentColor" strokeWidth="1.3" /></svg>
-            Share
+            {sharing ? 'Sharing…' : 'Share'}
           </button>
         </div>
       </div>
