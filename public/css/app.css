@@ -8,8 +8,7 @@
   --bg-3: #252629;
   --bg-hover: #2d2f36;
   --bg-elevated: #22232a;
-  /* Neutral grey band behind table headers (cool grey in light mode, where
-     --bg-3 is a warm beige). */
+  /* Neutral grey band behind table headers. */
   --tbl-head-bg: #2a2b30;
   /* Form Guide / ink band - constant dark in BOTH themes (no html.light override) */
   --band-ink: #0c0c0d;
@@ -21,8 +20,7 @@
   --line-1: #2c2e36;
   --line-2: #383a44;
   --line-3: #484c56;
-  /* Neutral-grey divider for section-head rules (kept theme-consistent so the
-     line reads grey, not the warm border tints, in light mode). */
+  /* Neutral-grey divider for section-head rules (kept theme-consistent). */
   --rule: #3a3c45;
 
   /* Text */
@@ -99,18 +97,18 @@
 
 /* ── Light mode ───────────────────────────────────────────── */
 html.light {
-  /* Cool page background (overrides #122's warm light theme for the page
-     surface only; cards/borders below stay warm). */
+  /* Cool neutral light palette — page, cards and borders all sit on the same
+     blue-grey ramp (no warm/beige tints). */
   --bg-0: #eeeef2;
   --bg-1: #E8EAEE;
   --bg-2: #ffffff;
-  --bg-3: #ebe7df;
-  --bg-hover: #e7e2d8;
+  --bg-3: #e9eaef;
+  --bg-hover: #e1e3ea;
   --tbl-head-bg: #e3e4e9;
   --bg-elevated: #ffffff;
-  --line-1: #e1ded6;
-  --line-2: #cbc7bb;
-  --line-3: #b4afa1;
+  --line-1: #dcdee5;
+  --line-2: #c7cad3;
+  --line-3: #aab0bc;
   --rule: #c3c5cb;
   --fg-1: #0d0e12;
   --fg-2: #3d3e48;
@@ -170,6 +168,7 @@ html.light .topbar-mobile {
 .standings-toggle {
   display: flex;
   margin: 0 0 16px;
+  background: var(--bg-2);
   border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
 }
 .standings-toggle-opt {
@@ -1035,8 +1034,9 @@ button { font-family: inherit; }
   margin-bottom: 8px;
 }
 .stdrow.is-open {
-  background: color-mix(in srgb, var(--accent) 7%, var(--bg-2));
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--line-2));
+  background: var(--bg-2);
+  border-color: var(--tc, var(--line-2));
+  border-width: 2px;
 }
 .stdrow-head {
   display: flex; align-items: stretch; gap: 11px; width: 100%;
