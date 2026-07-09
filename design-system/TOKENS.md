@@ -50,19 +50,19 @@ Every token below has a paired light-mode value in `html.light { ... }`.
 | Token            | Dark    | Light    | Role                                       |
 |------------------|---------|----------|--------------------------------------------|
 | `--bg-0`         | #050505 | #EEEEF2  | Deepest — code blocks, page edges          |
-| `--bg-1`         | #0A0A0A | #F5F5F8  | Page background                            |
+| `--bg-1`         | #060709 | #E8EAEE  | Page background                            |
 | `--bg-2`         | #1C1D22 | #FFFFFF  | Cards, panels, tables                      |
-| `--bg-3`         | #252629 | #EDEDF1  | Table headers, pills, inputs               |
-| `--bg-hover`     | #2D2F36 | #E6E6EA  | Interactive hover fill                     |
+| `--bg-3`         | #252629 | #E9EAEF  | Table headers, pills, inputs               |
+| `--bg-hover`     | #2D2F36 | #E1E3EA  | Interactive hover fill                     |
 | `--bg-elevated`  | #22232A | #FFFFFF  | Lifted card (`.race-card:hover`, `.is-next`) |
 
 ### Lines
 
 | Token       | Dark    | Light    | Role                                |
 |-------------|---------|----------|-------------------------------------|
-| `--line-1`  | #2C2E36 | #E0E1E6  | Quiet — panel borders, row dividers |
-| `--line-2`  | #383A44 | #CCCDD4  | Default — controls, pills, callouts |
-| `--line-3`  | #484C56 | #B2B3BC  | Active — hover & focus borders      |
+| `--line-1`  | #2C2E36 | #DCDEE5  | Quiet — panel borders, row dividers |
+| `--line-2`  | #383A44 | #C7CAD3  | Default — controls, pills, callouts |
+| `--line-3`  | #484C56 | #AAB0BC  | Active — hover & focus borders      |
 
 ### Foreground
 

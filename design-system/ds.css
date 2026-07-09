@@ -161,7 +161,7 @@ html.light .ds-nav { background: rgba(245,245,248,0.92); }
   color: #f5f5f5;
 }
 .ds-specimen-stage.light {
-  background: #f5f5f8;
+  background: #e8eaee;
   color: #0d0e12;
 }
 .ds-specimen-stage.center { justify-content: center; }
@@ -576,7 +576,7 @@ html.light .ds-hero-mark { opacity: 0.05; }
   background: #050505; color: #f5f5f5;
 }
 .ds-split > .pane-light {
-  background: #f5f5f8; color: #0d0e12;
+  background: #e8eaee; color: #0d0e12;
   border-left: 1px solid var(--line-1);
 }
 .ds-split .pane-lbl {
