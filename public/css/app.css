@@ -1004,16 +1004,21 @@ button { font-family: inherit; }
   .std-fulltable { display: none; }
 }
 
-.stdrow { border-bottom: 1px solid var(--line-1); }
-.stdrow:last-child { border-bottom: 0; }
-.stdrow.is-open {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
+/* Each row is its own card so a collapsed row reads as a distinct surface
+   above the page background (not merged into it). */
+.stdrow {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
   border-radius: 8px;
-  border-bottom-color: transparent;
+  margin-bottom: 8px;
+}
+.stdrow.is-open {
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-2));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line-2));
 }
 .stdrow-head {
   display: flex; align-items: stretch; gap: 11px; width: 100%;
-  padding: 11px 6px; background: none; border: 0; text-align: left;
+  padding: 11px 10px; background: none; border: 0; text-align: left;
   color: inherit; cursor: pointer; font: inherit;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1044,10 +1049,6 @@ button { font-family: inherit; }
   letter-spacing: 0.01em; font-size: 15px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
-.stdrow-code {
-  flex: 0 0 auto; font-family: var(--f-mono); font-size: 10px;
-  letter-spacing: 0.05em; color: var(--fg-3);
-}
 .stdrow-team {
   margin-left: auto; flex: 0 1 auto; min-width: 0; max-width: 44%;
   font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden;
@@ -1059,7 +1060,7 @@ button { font-family: inherit; }
 /* Points bar */
 .stdrow-bar {
   position: relative; display: block; height: 26px; border-radius: 3px;
-  overflow: hidden; background: color-mix(in srgb, var(--fg-1) 7%, transparent);
+  overflow: hidden; background: color-mix(in srgb, var(--fg-1) 9%, var(--bg-2));
 }
 .stdrow-fill {
   position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px;
@@ -1067,17 +1068,20 @@ button { font-family: inherit; }
     color-mix(in srgb, var(--tc, var(--accent)) 92%, transparent),
     color-mix(in srgb, var(--tc, var(--accent)) 62%, transparent));
 }
+/* Value rides in a solid chip so it always clears WCAG AA regardless of the
+   team-colour fill it may sit over (white-on-bright-fill would otherwise fail). */
 .stdrow-val {
-  position: absolute; right: 8px; top: 0; bottom: 0;
-  display: flex; align-items: center; gap: 3px;
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: baseline; gap: 3px;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--bg-1); color: var(--fg-1);
   font-family: var(--f-display); font-weight: 800; font-size: 13px;
-  color: var(--fg-1); text-shadow: 0 1px 2px var(--bg-1);
   font-variant-numeric: tabular-nums;
 }
-.stdrow-val small { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+.stdrow-val small { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
 
 /* Expanded panel */
-.stdrow-panel { padding: 2px 6px 14px 39px; }
+.stdrow-panel { padding: 2px 10px 14px 44px; }
 .stdrow-stats {
   display: grid; grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;

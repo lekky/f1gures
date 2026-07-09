@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import {
-  Flag, MiniChart, urlFor,
+  Flag, MiniChart, TeamLogo, urlFor,
   driverPointsForRound, teamPointsForRound,
 } from '../../../lib/shared.jsx';
 
@@ -78,7 +78,6 @@ export function DriverBars({ D, standings, leaderPoints, recentRounds }) {
                   )}
                   <Flag cc={drv.country} flag={drv.flag} name={drv.nationality} className="stdrow-flag" />
                   <span className="stdrow-name"><span className="first">{drv.first}</span> <b>{drv.last}</b></span>
-                  <span className="stdrow-code">{drv.code}</span>
                   <span className="stdrow-team">{team ? team.name : ''}</span>
                   <span className="stdrow-caret" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
                 </span>
@@ -139,9 +138,9 @@ export function TeamBars({ D, standings, leaderPoints, recentRounds }) {
               <span className="stdrow-strip" aria-hidden="true" />
               <span className="stdrow-body">
                 <span className="stdrow-top">
+                  <TeamLogo team={team} size={22} />
                   <span className="stdrow-name stdrow-name-team"><b>{team.name}</b></span>
-                  <span className="stdrow-code">{team.short}</span>
-                  <span className="stdrow-team">{row.wins}W &middot; {row.podiums}P</span>
+                  <span className="stdrow-team">{row.wins} Wins &middot; {row.podiums} Pods</span>
                   <span className="stdrow-caret" aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
                 </span>
                 <Bar pct={pct} value={row.points} />
