@@ -717,6 +717,21 @@ button { font-family: inherit; }
 .sag-blurb { margin: 12px 0 0; font-family: var(--f-mono); font-size: 12.5px; color: var(--fg-3); letter-spacing: 0.01em; }
 .sag-blurb b { color: color-mix(in srgb, var(--tc, var(--accent)) 50%, var(--fg-1)); font-weight: 600; }
 
+/* Champion media column — driver headshot + team logo (drivers), or the team
+   logo alone (constructors), sitting left of the champion details. Mirrors the
+   next-race hero's photo treatment. */
+.sag-champ { display: flex; align-items: flex-start; gap: 18px; }
+.sag-champ-body { flex: 1; min-width: 0; }
+.sag-champ-media { flex-shrink: 0; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.sag-champ-media-team { padding-top: 4px; }
+.sag-champ-face {
+  width: 92px; height: 104px; object-fit: cover; object-position: top center;
+  border-radius: 8px; background: var(--bg-3);
+  border: 2px solid var(--tc, var(--line-2)); box-shadow: var(--shadow-card);
+}
+.sag-champ-face-fallback { display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.sag-champ-face-fallback svg { width: 78%; height: auto; }
+
 /* Season-records list — one card per record, holder headshot + red value. */
 .sag-reclist { display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .sag-rec { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; background: var(--bg-2); border: 1px solid var(--line-1); padding: 12px 14px; }
@@ -726,7 +741,11 @@ button { font-family: inherit; }
   flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; object-fit: cover; object-position: top center;
   background: var(--bg-3); border: 1.5px solid var(--tc, var(--line-2));
 }
-.sag-rec-name { flex: 1; min-width: 0; font-family: var(--f-display); font-weight: 700; font-size: 17px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--fg-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sag-rec-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sag-rec-name { min-width: 0; font-family: var(--f-display); font-weight: 700; font-size: 17px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--fg-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sag-rec-team { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.sag-rec-team img { flex-shrink: 0; }
+.sag-rec-team-name { font-family: var(--f-display); font-weight: 700; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sag-rec-val { flex-shrink: 0; font-family: var(--f-display); font-weight: 800; font-size: 28px; line-height: 0.8; color: var(--accent-text); }
 
 @media (max-width: 900px) {
@@ -738,6 +757,9 @@ button { font-family: inherit; }
 @media (max-width: 720px) {
   .sag-main, .sag-side { padding: 16px; }
   .sag-head { margin-bottom: 14px; }
+  .sag-champ { gap: 14px; }
+  .sag-champ-media { width: 74px; }
+  .sag-champ-face { width: 74px; height: 86px; }
   .sag-name { font-size: 40px; }
   .sag-name-cc { font-size: 32px; }
   .sag-figures { gap: 14px; }

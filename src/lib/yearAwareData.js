@@ -12,6 +12,38 @@
 import { useEffect, useState } from 'react';
 import { buildFromYearJson } from '../data/buildFallback.js';
 
+// Finish the top progress bar (rendered in BaseLayout) — drive it to 100% and
+// fade it out, using inline styles so it keeps animating even after the
+// year-pending class (which started the trickle in CSS) is removed. Reset to
+// zero afterwards so a later navigation starts clean.
+function finishYearBar() {
+  if (typeof document === 'undefined') return;
+  const bar = document.getElementById('year-load-bar');
+  if (!bar) return;
+  const w = bar.getBoundingClientRect().width;
+  bar.style.transition = 'none';
+  bar.style.width = `${w}px`;
+  bar.getBoundingClientRect(); // force reflow so the jump to 100% animates
+  bar.style.transition = 'width .18s ease-out, opacity .35s ease .1s';
+  bar.style.width = '100%';
+  bar.style.opacity = '0';
+  window.setTimeout(() => {
+    bar.style.transition = 'none';
+    bar.style.width = '0';
+    bar.style.removeProperty('opacity');
+  }, 520);
+}
+
+// Reveal the year-aware content and finish the progress bar. No-op for
+// default-year visitors (year-pending was never added).
+function revealYearAware() {
+  if (typeof document === 'undefined') return;
+  const html = document.documentElement;
+  if (!html.classList.contains('year-pending')) return;
+  finishYearBar();          // finish while the bar is still visible (class on)
+  html.classList.remove('year-pending');
+}
+
 function readYearPref(fallbackYear) {
   if (typeof window === 'undefined') return null;
   let pref = null;
@@ -37,15 +69,17 @@ export function useYearAwareData(fallback) {
 
   const [data, setData] = useState(initial);
 
+  // Reveal the content (and finish the progress bar) once the real bundle has
+  // rendered. Keyed on `data` so it runs AFTER React commits the loaded
+  // season - removing year-pending any earlier would flash the hidden loading
+  // placeholder for a frame. The pre-hydration script keeps content hidden and
+  // the top bar trickling until this fires; default-year visitors have data
+  // that is never `_loading`, so this reveals on mount (a no-op - year-pending
+  // was never added).
   useEffect(() => {
-    // Pre-hydration script in BaseLayout adds `html.year-pending` to hide
-    // year-aware island content before paint when a non-current year is
-    // stored. By the time this effect runs React has hydrated and is
-    // rendering the screen (loading or real), so it's safe to reveal.
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.remove('year-pending');
-    }
-  }, []);
+    if (data && data._loading) return;
+    revealYearAware();
+  }, [data]);
 
   useEffect(() => {
     if (!pendingYear) return;
@@ -54,12 +88,17 @@ export function useYearAwareData(fallback) {
     // blurb) - year JSON bundles don't include it and it's stable across
     // seasons.
     const staticCircuits = fallback.circuits || {};
+    // Failsafe: never leave content stranded behind a stalled fetch. If the
+    // bundle hasn't resolved in 10s, drop back to the current-season data
+    // (which reveals via the effect above).
+    const failsafe = setTimeout(() => { if (!cancelled) setData(fallback); }, 10000);
     fetch(`/data/${pendingYear}.json`)
       .then(r => r.ok ? r.json() : Promise.reject(new Error(`no bundle for ${pendingYear}`)))
       .then(json => { if (!cancelled) setData(buildFromYearJson(json, staticCircuits)); })
-      .catch(() => { if (!cancelled) setData(fallback); });
+      .catch(() => { if (!cancelled) setData(fallback); })
+      .finally(() => clearTimeout(failsafe));
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(failsafe); };
   }, [pendingYear]);
 
   return data;

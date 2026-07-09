@@ -146,16 +146,36 @@ if (breadcrumb && breadcrumb.length > 0) {
        the class on mount once they've taken over rendering. -->
   <script is:inline define:vars={{ currentSeasonYear }}>
     (function () {
+      // Mirror readYearPref() in yearAwareData.js: the `?year=` URL param
+      // wins over the stored preference. Checking only localStorage let a
+      // shared/linked `/?year=1998` URL flash the current season before the
+      // historic bundle swapped in.
+      var y = null;
+      try { y = localStorage.getItem('f1-year'); } catch (e) {}
       try {
-        var y = localStorage.getItem('f1-year');
-        if (y && y !== 'current' && y !== currentSeasonYear) {
-          document.documentElement.classList.add('year-pending');
-        }
+        var u = new URLSearchParams(window.location.search).get('year');
+        if (u) y = u;
       } catch (e) {}
+      if (y && y !== 'current' && y !== currentSeasonYear) {
+        document.documentElement.classList.add('year-pending');
+      }
     })();
   </script>
   <style is:inline>
     html.year-pending [data-year-aware] { visibility: hidden; }
+    /* Thin top progress bar shown only while a picked season's bundle loads.
+       Starts trickling toward 88% via CSS the moment the year-pending class
+       is present (before hydration); yearAwareData.js drives it to 100% and
+       fades it once the bundle lands. */
+    #year-load-bar {
+      position: fixed; top: 0; left: 0; height: 3px; width: 0;
+      background: var(--accent); z-index: 9999;
+      opacity: 0; pointer-events: none;
+    }
+    html.year-pending #year-load-bar {
+      opacity: 1; width: 88%;
+      transition: width 8s cubic-bezier(0.06, 0.7, 0.1, 1);
+    }
   </style>
 
   {import.meta.env.PROD && (
@@ -178,6 +198,7 @@ if (breadcrumb && breadcrumb.length > 0) {
   )}
 </head>
 <body>
+  <div id="year-load-bar" aria-hidden="true"></div>
   <Chrome>
     <slot />
   </Chrome>
