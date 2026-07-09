@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Flag from './Flag.astro';
 import LineageStrip from './LineageStrip.astro';
+import MobileTableCards from './MobileTableCards.astro';
 import { NATIONALITY } from '../lib/nationality.js';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 import CompareCta from './islands/CompareCta.jsx';
@@ -364,7 +365,7 @@ function hasFace(ref: string): boolean {
             {recentSeasons.map(s => (
               <tr style={`--team-color: ${team.color}`}>
                 <td class="t-mono card-primary">{s.year}</td>
-                <td class="team-finish-col card-block" data-label="Finish">
+                <td class="team-finish-col card-metric" data-label="Finish">
                   <div class="finish-bar">
                     <div class="finish-bar-track">
                       <div
@@ -447,7 +448,7 @@ function hasFace(ref: string): boolean {
               <tr style={`--team-color: ${team.color}`}>
                 <td class="t-mono card-primary">{s.year}</td>
                 <td class="center card-pos"><div class={posClass(s.position)}>{s.position ?? '-'}</div></td>
-                <td class="hist-pts-td" data-label="Points">
+                <td class="hist-pts-td card-metric" data-label="Points">
                   <span class="std-bar" aria-hidden="true" style={`width:${((s.points ?? 0) / seasonMaxPoints) * 100}%; --tc:${team.color}`}></span>
                   <span class="hist-pts-val">{s.points != null ? s.points : '-'}</span>
                 </td>
@@ -471,6 +472,8 @@ function hasFace(ref: string): boolean {
     </>
   )}
 </div>
+
+<MobileTableCards />
 
 <style>
   /* ── Hero ───────────────────────────────────────────────────── */

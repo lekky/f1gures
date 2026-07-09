@@ -40,6 +40,7 @@ interface Props {
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { circuitProfiles } from '../data/circuitProfiles.js';
+import MobileTableCards from './MobileTableCards.astro';
 import currentSeason from '../data/currentSeason.js';
 import { fmtDateLong } from '../lib/shared.jsx';
 import { hasDriverFace } from '../lib/driverFaceExists.js';
@@ -501,7 +502,7 @@ const recordCards: CircuitRecordCard[] = [
               const logo = teamLogoPath(r.winnerTeamRef);
               return (
                 <tr style={r.winnerTeamColor ? `--team-color: ${r.winnerTeamColor}` : ''}>
-                  <td class="right t-mono" data-label="Season"><a href={raceHref} class="inline-link">{r.year}</a></td>
+                  <td class="t-mono card-sub" data-label="Season"><a href={raceHref} class="inline-link">{r.year}</a></td>
                   <td class="card-primary">
                     <span class="race-cell">
                       {winnerFace
@@ -542,6 +543,8 @@ const recordCards: CircuitRecordCard[] = [
     </>
   )}
 </div>
+
+<MobileTableCards />
 
 {hasTrackPath && (
   <script is:inline>

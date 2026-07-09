@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import RecordsTable from '../../components/RecordsTable.astro';
+import MobileTableCards from '../../components/MobileTableCards.astro';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
@@ -77,6 +78,7 @@ const jsonLd = top.length > 0 ? {
       <RecordsTable entries={data.modern.top50  || []} subjectType={data.subjectType} era="modern" />
       <RecordsTable entries={data.classic?.top50 || []} subjectType={data.subjectType} era="classic" />
     </div>
+    <MobileTableCards />
   </main>
 
   <script is:inline>
