@@ -1844,6 +1844,11 @@ html.light .circuit-track .circuit-track-light { display: block; }
    the .card-accent-arrow renders. */
 .card-accent.f1-card-link::after { content: none; }
 
+/* The past-season hero (.sag) navigates to the drivers' standings and shows
+   its own dedicated .sag-go arrow in the Season Records header - suppress the
+   generic corner arrow so the two don't collide in the top-right. */
+.sag.f1-card-link::after { content: none; }
+
 /* Older blog-article-nav-link layouts text-align right; keep arrow
    clear of the title text by leaving a small gutter. */
 .blog-article-nav-older::after {
