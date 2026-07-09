@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import CompareLauncher from '../components/islands/CompareLauncher.jsx';
+import TriviaBoard from '../components/islands/screens/TriviaBoard.jsx';
 
 // Standalone head-to-head tool. The launcher island does all the work
 // client-side (grid-seeded pickers, joins, share card); this page is the SEO
@@ -42,6 +43,8 @@ const jsonLd = {
         <p class="page-sub">Line up any two drivers or teams side by side and see every number that settles the argument, plus the rivalry only a head-to-head can show. Pick a side to start.</p>
       </div>
     </div>
+
+    <TriviaBoard client:visible />
 
     <CompareLauncher client:load />
   </div>

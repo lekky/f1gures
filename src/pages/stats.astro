@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import RecordHeroCard from '../components/RecordHeroCard.astro';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import TriviaBoard from '../components/islands/screens/TriviaBoard.jsx';
 
 // Stats hub — the "numbers" bucket. Leads with the marquee records leaderboards
 // (reusing RecordHeroCard, the design-system's colourful leaderboard pattern:
@@ -53,6 +54,8 @@ const jsonLd = {
         <p class="page-sub">Every Formula 1 leaderboard worth knowing, plus the tools to settle an argument: records, milestones and head-to-head comparisons, computed from 1950 to the last completed race.</p>
       </div>
     </div>
+
+    <TriviaBoard client:visible />
 
     <div class="hub-tools">
       <a class="hub-tool" href="/records/">

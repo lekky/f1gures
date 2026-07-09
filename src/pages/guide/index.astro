@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { publishedGuidesSorted, guidesByCategory, guideColor } from '../../lib/guide';
+import TriviaBoard from '../../components/islands/screens/TriviaBoard.jsx';
 
 const pages = publishedGuidesSorted(await getCollection('guide'));
 const groups = guidesByCategory(pages);
@@ -50,6 +51,8 @@ const jsonLd = {
         <p class="page-sub">Everything you need to follow a Grand Prix and understand the commentary: the weekend format, points, tyres, strategy and the rules. Short reads, in plain language, in the order they build on each other.</p>
       </div>
     </div>
+
+    <TriviaBoard client:visible />
 
     {first && (
       <div class="guide-startbar">

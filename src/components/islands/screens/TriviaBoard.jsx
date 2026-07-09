@@ -40,8 +40,8 @@ function pickSet(n) {
 // types, so a fast speed leaves no time to read words before they slide off the
 // narrow screen. Desktop fits most facts without scrolling, so it stays snappy.
 const TIMING = {
-  desktop: { type: 28, hold: 3800 },
-  mobile:  { type: 55, hold: 4800 },
+  desktop: { type: 34, hold: 5600 },
+  mobile:  { type: 62, hold: 6400 },
 };
 const PAUSE_POLL_MS = 200;
 
@@ -52,9 +52,34 @@ export default function TriviaBoard() {
   // line and scrolls horizontally. Both keep the cursor (and the latest words)
   // in view as the fact types past the viewport.
   const [twoLine, setTwoLine] = useState(false);
+  // Controls: an explicit pause toggle (the board no longer pauses on hover),
+  // plus copy/share of the current fact. `paused` drives the button icon;
+  // `pausedRef` is the engine gate the typewriter loop polls.
+  const [paused, setPaused] = useState(false);
+  const factRef = useRef(FACTS.length ? FACTS[0].text : ''); // full current fact
   const pausedRef = useRef(false);
   const lineRef = useRef(null);   // viewport (clips overflow)
   const innerRef = useRef(null);  // scrolled content (text + cursor)
+
+  const togglePause = () => {
+    const next = !pausedRef.current;
+    pausedRef.current = next;
+    setPaused(next);
+  };
+  const copyFact = () => {
+    const text = factRef.current;
+    if (!text || typeof navigator === 'undefined' || !navigator.clipboard) return;
+    navigator.clipboard.writeText(text).catch(() => {});
+  };
+  const shareFact = () => {
+    const text = factRef.current;
+    if (!text) return;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      navigator.share({ text: `${text} — f1gures.app`, url: 'https://f1gures.app/' }).catch(() => {});
+    } else {
+      copyFact();
+    }
+  };
 
   // Keep the cursor in view by scrolling the inner line so its trailing edge
   // stays at the viewport edge. Runs after every character. No-op under reduced
@@ -120,6 +145,7 @@ export default function TriviaBoard() {
     const advance = () => {
       oi = (oi + 1) % order.length;
       const text = FACTS[order[oi]].text;
+      factRef.current = text;
       if (isReduced) {
         setDisplay(text);
         later(advance, timing.hold);
@@ -155,15 +181,34 @@ export default function TriviaBoard() {
     <div
       className={`trivia${reduced ? ' trivia--reduce' : ''}${twoLine ? ' trivia--2line' : ''}`}
       aria-label="Did you know? Formula 1 trivia"
-      onMouseEnter={() => { pausedRef.current = true; }}
-      onMouseLeave={() => { pausedRef.current = false; }}
     >
-      <div className="trivia-lab">
-        <span className="trivia-dot" aria-hidden="true"></span>
-        Did You Know
+      <div className="trivia-head">
+        <div className="trivia-lab">
+          <span className="trivia-dot" aria-hidden="true"></span>
+          Did You Know
+        </div>
+        <div className="trivia-actions">
+          <button type="button" className="trivia-btn" onClick={shareFact} aria-label="Share this fact">
+            <svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><circle cx="10.5" cy="3.5" r="1.8" fill="none" stroke="currentColor" strokeWidth="1.3" /><circle cx="3.5" cy="7" r="1.8" fill="none" stroke="currentColor" strokeWidth="1.3" /><circle cx="10.5" cy="10.5" r="1.8" fill="none" stroke="currentColor" strokeWidth="1.3" /><path d="M5.1 6.1l3.8-1.9M5.1 7.9l3.8 1.9" stroke="currentColor" strokeWidth="1.3" /></svg>
+            Share
+          </button>
+        </div>
       </div>
       <div className="trivia-scr">
-        <span className="trivia-pre" aria-hidden="true">&gt;&gt;</span>
+        <button
+          type="button"
+          className="trivia-pause"
+          onClick={togglePause}
+          aria-pressed={paused}
+          aria-label={paused ? 'Resume trivia' : 'Pause trivia'}
+        >
+          {paused ? (
+            <svg viewBox="0 0 12 12" width="13" height="13" aria-hidden="true"><path d="M3 2l7 4-7 4z" fill="currentColor" /></svg>
+          ) : (
+            <svg viewBox="0 0 12 12" width="13" height="13" aria-hidden="true"><rect x="3" y="2" width="2.4" height="8" fill="currentColor" /><rect x="6.6" y="2" width="2.4" height="8" fill="currentColor" /></svg>
+          )}
+        </button>
+        <span className="trivia-sep" aria-hidden="true"></span>
         <span className="trivia-line" ref={lineRef}>
           <span className="trivia-line-inner" ref={innerRef}>
             <span className="trivia-txt">{display}</span>
