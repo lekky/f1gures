@@ -9,6 +9,7 @@ import {
   TURNSTILE_SITE_KEY,
   feedbackConfigured,
 } from '../../data/feedbackConfig.js';
+import { track } from '../../lib/analytics.js';
 
 const CATEGORIES = [
   { id: 'bug', label: 'Bug', hint: 'Something is broken or wrong' },
@@ -120,14 +121,17 @@ export default function FeedbackForm() {
       if (res.ok && data.ok) {
         setResult(data.issue || null);
         setStatus('success');
+        track('feedback_submit', { category, outcome: 'success' });
       } else {
         setError(data.error || 'Something went wrong. Please try again.');
         setStatus('error');
+        track('feedback_submit', { category, outcome: 'error' });
         resetTurnstile();
       }
     } catch {
       setError('Network error. Please check your connection and try again.');
       setStatus('error');
+      track('feedback_submit', { category, outcome: 'error' });
       resetTurnstile();
     }
   }

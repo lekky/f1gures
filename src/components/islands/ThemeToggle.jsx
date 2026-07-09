@@ -4,6 +4,7 @@
 // state and writes back on click. No flash on hydration.
 
 import { useEffect, useState } from 'react';
+import { track } from '../../lib/analytics.js';
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState('light');
@@ -21,6 +22,7 @@ export default function ThemeToggle() {
   function setMode(next) {
     document.documentElement.classList.toggle('light', next === 'light');
     try { localStorage.setItem('f1-theme', next); } catch (e) {}
+    track('theme_change', { theme: next });
     setTheme(next);
   }
 

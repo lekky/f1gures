@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MiniChart, SectionHead, urlFor, useIsMobile } from '../../../lib/shared.jsx';
 import { filterItems, sortItems, paginateItems } from '../../../lib/listingUtils.js';
+import { track, trackDebounced } from '../../../lib/analytics.js';
 
 const PAGE_SIZE = 24;
 const SORT_FIELDS = [
@@ -183,14 +184,16 @@ export default function DriversIndexScreen({ drivers }) {
   const { items, totalPages } = paginateItems(sorted, { page, pageSize: PAGE_SIZE });
 
   function handleSort(field) {
+    let nextField = field, nextDir = 'desc';
     if (sortField === field) {
-      if (sortDir === 'desc') setSortDir('asc');
-      else { setSortField('championships'); setSortDir('desc'); }
+      if (sortDir === 'desc') { setSortDir('asc'); nextDir = 'asc'; }
+      else { setSortField('championships'); setSortDir('desc'); nextField = 'championships'; }
     } else {
       setSortField(field);
       setSortDir('desc');
     }
     setPage(1);
+    track('listing_filter', { feature: 'drivers', action: 'sort', sort_field: nextField, sort_dir: nextDir });
   }
 
   return (
@@ -218,7 +221,11 @@ export default function DriversIndexScreen({ drivers }) {
           type="search"
           placeholder="Search drivers…"
           value={search}
-          onInput={e => { setSearch(e.target.value); setPage(1); }}
+          onInput={e => {
+            const v = e.target.value;
+            setSearch(v); setPage(1);
+            if (v.trim()) trackDebounced('drivers-search', 'listing_filter', { feature: 'drivers', action: 'search', search_term: v.trim() });
+          }}
         />
       </div>
 

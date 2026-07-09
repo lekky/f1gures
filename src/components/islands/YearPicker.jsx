@@ -4,6 +4,7 @@
 // JSON to load.
 
 import { useEffect, useRef, useState } from 'react';
+import { track } from '../../lib/analytics.js';
 
 function useClickOutside(ref, onClose) {
   useEffect(() => {
@@ -40,6 +41,10 @@ export default function YearPicker({ compact = false }) {
 
   const pick = (year) => {
     try { localStorage.setItem('f1-year', year); } catch (e) {}
+    track('year_change', {
+      year: String(year),
+      from_page: typeof location !== 'undefined' ? location.pathname : undefined,
+    });
     window.location.href = year === 'current' ? '/' : `/?year=${year}`;
   };
 

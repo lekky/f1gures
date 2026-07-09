@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Flag, urlFor } from '../../lib/shared.jsx';
+import { track } from '../../lib/analytics.js';
 
 let _indexes = null;
 let _indexesPromise = null;
@@ -181,11 +182,21 @@ export default function SearchPalette() {
     if (!entry) return;
     const { kind, item } = entry;
     let href = null;
-    if (kind === 'driver') href = urlFor({ name: 'driver', ref: item.driverRef });
-    else if (kind === 'team') href = urlFor({ name: 'team', ref: item.constructorRef });
-    else if (kind === 'circuit') href = urlFor({ name: 'circuit', ref: item.circuitRef });
-    else if (kind === 'race') href = urlFor({ name: 'race', year: item.year, round: item.round });
-    if (href) window.location.href = href;
+    let itemId = null;
+    if (kind === 'driver') { itemId = item.driverRef; href = urlFor({ name: 'driver', ref: itemId }); }
+    else if (kind === 'team') { itemId = item.constructorRef; href = urlFor({ name: 'team', ref: itemId }); }
+    else if (kind === 'circuit') { itemId = item.circuitRef; href = urlFor({ name: 'circuit', ref: itemId }); }
+    else if (kind === 'race') { itemId = `${item.year}-${item.round}`; href = urlFor({ name: 'race', year: item.year, round: item.round }); }
+    if (href) {
+      const rank = flat.findIndex(f => f.item === item);
+      track('search_select', {
+        content_type: kind,
+        item_id: itemId,
+        search_term: query.trim(),
+        result_rank: rank >= 0 ? rank + 1 : undefined,
+      });
+      window.location.href = href;
+    }
   }
 
   function onInputKey(e) {

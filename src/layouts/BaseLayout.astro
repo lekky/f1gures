@@ -166,6 +166,13 @@ if (breadcrumb && breadcrumb.length > 0) {
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-17WG173FST');
+        // Buy Me a Coffee widget is injected async, so listen at the document
+        // level. Donation completes off-site — this captures intent (the click).
+        document.addEventListener('click', function (e) {
+          if (e.target.closest && e.target.closest('#bmc-wbtn')) {
+            gtag('event', 'donate_click', { source: 'bmc_widget' });
+          }
+        });
       </script>
     </>
   )}

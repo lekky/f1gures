@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Panel, urlFor, Flag } from '../../../lib/shared.jsx';
+import { track } from '../../../lib/analytics.js';
 
 export function StandingsTypeToggle({ active }) {
   return (
@@ -148,8 +149,8 @@ export function HeadToHead({ data, standings }) {
   return (
     <Panel>
       <div className="h2h-pickers">
-        <DriverPicker data={DD} label="Driver A" value={a} onChange={setA} />
-        <DriverPicker data={DD} label="Driver B" value={b} onChange={setB} />
+        <DriverPicker data={DD} label="Driver A" value={a} onChange={(v) => { setA(v); track('head_to_head', { driver_a: v, driver_b: b, season_year: DD.seasonYear }); }} />
+        <DriverPicker data={DD} label="Driver B" value={b} onChange={(v) => { setB(v); track('head_to_head', { driver_a: a, driver_b: v, season_year: DD.seasonYear }); }} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'center', marginBottom: 18 }}>
         <div style={{ borderLeft: `3px solid ${teamA.color}`, paddingLeft: 12 }}>
