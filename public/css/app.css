@@ -1034,7 +1034,7 @@ button { font-family: inherit; }
   margin-bottom: 8px;
 }
 .stdrow.is-open {
-  background: var(--bg-3);
+  background: var(--bg-2);
   border-color: var(--tc, var(--line-2));
   border-width: 2px;
 }
