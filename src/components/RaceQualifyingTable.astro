@@ -124,9 +124,9 @@ function rowCls(i: number): string {
                 : <span class="rr-team">{r.constructorName || '-'}</span>}
             </span>
           </td>
-          <td class="right t-mono card-stat" data-label="Q1">{r.q1 || '-'}</td>
+          <td class="right t-mono card-stat card-stat-first" data-label="Q1">{r.q1 || '-'}</td>
           <td class="right t-mono card-stat" data-label="Q2">{r.q2 || '-'}</td>
-          <td class="right t-mono card-stat" data-label="Q3">{r.q3 || '-'}</td>
+          <td class="right t-mono card-stat card-stat-last" data-label="Q3">{r.q3 || '-'}</td>
         </tr>
       ))}
     </tbody>

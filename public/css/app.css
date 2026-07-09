@@ -1823,35 +1823,41 @@ html.light .circuit-track .circuit-track-light { display: block; }
     position: relative;
     background: var(--bg-2);
     border: 1px solid var(--line-1);
-    border-left: 3px solid var(--team-color, var(--line-2));
     border-radius: 8px;
-    padding: 11px 34px 12px 12px;
+    padding: 11px 32px 12px 14px;
     margin: 0 0 8px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
   /* Reserve the left gutter only when a rank/position badge sits in it. */
-  .tbl-cards tr:has(td.card-pos) { padding-left: 44px; }
+  .tbl-cards tr:has(td.card-pos) { padding-left: 46px; }
   .tbl-cards tbody tr:last-child { margin-bottom: 0; }
-  .tbl-cards tr.is-open {
-    border-color: var(--team-color, var(--line-2));
-    box-shadow: inset 0 0 0 1px var(--team-color, transparent);
-  }
+  /* Open card takes the team colour on its border (mirrors .stdrow.is-open). */
+  .tbl-cards tr.is-open { border-color: var(--team-color, var(--line-2)); }
 
-  /* Expand caret (chevron), pinned top-right; rotates open. */
-  .tbl-cards tr::after {
-    content: ''; position: absolute; top: 15px; right: 13px;
-    width: 7px; height: 7px;
-    border-right: 2px solid var(--fg-3); border-bottom: 2px solid var(--fg-3);
-    transform: rotate(-45deg); transition: transform 0.15s ease;
+  /* Team-colour strip — a thin vertical bar to the RIGHT of the rank number
+     (mirrors .stdrow-strip), NOT the card's edge. Cards without a rank get the
+     strip at the left edge. */
+  .tbl-cards tr::before {
+    content: ''; position: absolute; top: 9px; bottom: 9px; width: 3px;
+    left: 7px; border-radius: 2px;
+    background: var(--team-color, var(--line-2));
   }
-  .tbl-cards tr.is-open::after { transform: rotate(45deg); border-color: var(--accent-text); }
+  .tbl-cards tr:has(td.card-pos)::before { left: 39px; }
+
+  /* Expand caret — small ▸ / ▾ glyph, matching .stdrow-caret. */
+  .tbl-cards tr::after {
+    content: '\25B8'; position: absolute; top: 12px; right: 12px;
+    color: var(--fg-3); font-size: 11px; line-height: 1;
+    transition: color 0.15s ease;
+  }
+  .tbl-cards tr.is-open::after { content: '\25BE'; color: var(--accent-text); }
   .tbl-cards tr[data-noexpand]::after { content: none; }
   .tbl-cards tr[data-noexpand] { cursor: default; }
 
-  /* Rank / position badge — in the left strip gutter, aligned to the name row. */
+  /* Rank / position badge — in the left gutter, aligned to the name row. */
   .tbl-cards td.card-pos {
-    position: absolute; left: 0; top: 11px; width: 44px; height: 30px;
+    position: absolute; left: 0; top: 11px; width: 40px; height: 30px;
     display: flex; align-items: center; justify-content: center;
     padding: 0; border: none;
   }
@@ -1936,8 +1942,10 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards tr:not(.is-open) td:not(.card-pos):not(.card-primary):not(.card-sub):not(.card-metric) { display: none; }
   .tbl-cards td.card-hide { display: none !important; }
 
-  /* Expanded numeric stats — a connected chip grid (top/bottom rule + internal
-     dividers), value big over a small label. Mirrors .stdrow-stats. */
+  /* Expanded numeric stats — a fully-boxed grid (border all round, rounded
+     ends, internal dividers), value big over a small label. Mirrors
+     .stdrow-stats. The bounding border is drawn by .card-stat-first /
+     .card-stat-last (set per table on the first + last stat cell). */
   .tbl-cards tr.is-open td.card-stat {
     order: 4; flex: 1 1 0; min-width: 0;
     display: flex; flex-direction: column-reverse; align-items: center; gap: 3px;
@@ -1948,6 +1956,14 @@ html.light .circuit-track .circuit-track-light { display: block; }
     color: var(--fg-1); font-variant-numeric: tabular-nums; line-height: 1;
   }
   .tbl-cards tr.is-open td.card-stat ~ td.card-stat { border-left: 1px solid var(--line-1); }
+  .tbl-cards tr.is-open td.card-stat-first {
+    border-left: 1px solid var(--line-2);
+    border-top-left-radius: 6px; border-bottom-left-radius: 6px;
+  }
+  .tbl-cards tr.is-open td.card-stat-last {
+    border-right: 1px solid var(--line-2);
+    border-top-right-radius: 6px; border-bottom-right-radius: 6px;
+  }
   .tbl-cards tr.is-open td.card-stat::before {
     content: attr(data-label); font-family: var(--f-display); font-weight: 600;
     font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3);

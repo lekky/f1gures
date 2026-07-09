@@ -766,9 +766,9 @@ const duelSurname = driver.surname;
                   <span class="std-bar" aria-hidden="true" style={`width:${((s.points ?? 0) / seasonMaxPoints) * 100}%; --tc:${teamColor}`}></span>
                   <span class="hist-pts-val">{s.points != null ? s.points : '-'}</span>
                 </td>
-                <td class="right t-mono card-stat" data-label="Wins">{s.wins}</td>
+                <td class="right t-mono card-stat card-stat-first" data-label="Wins">{s.wins}</td>
                 <td class="right t-mono card-stat" data-label="Races">{s.races}</td>
-                <td class="right t-mono card-stat" data-label="Best">{ord(s.bestFinish)}</td>
+                <td class="right t-mono card-stat card-stat-last" data-label="Best">{ord(s.bestFinish)}</td>
               </tr>
               );
             })}
@@ -818,7 +818,7 @@ const duelSurname = driver.surname;
                       ) : (r.constructorName || '-')}
                     </span>
                   </td>
-                  <td class="right t-mono card-stat" data-label="Grid">{fmtNum(r.grid)}</td>
+                  <td class="right t-mono card-stat card-stat-first card-stat-last" data-label="Grid">{fmtNum(r.grid)}</td>
                   <td class="center card-pos">
                     {numericFinish
                       ? <div class={posClass(r.position)}>{r.position}</div>

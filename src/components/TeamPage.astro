@@ -376,9 +376,9 @@ function hasFace(ref: string): boolean {
                     <span class={`finish-bar-lbl ${s.position === 1 ? 'is-champ' : ''}`}>{ord(s.position)}</span>
                   </div>
                 </td>
-                <td class="right t-mono card-stat" data-label="Points">{s.points != null ? s.points : '-'}</td>
+                <td class="right t-mono card-stat card-stat-first" data-label="Points">{s.points != null ? s.points : '-'}</td>
                 <td class="right t-mono card-stat" data-label="Wins">{s.wins}</td>
-                <td class="right t-mono card-stat" data-label="Races">{s.races}</td>
+                <td class="right t-mono card-stat card-stat-last" data-label="Races">{s.races}</td>
                 <td class="team-drivers-cell card-block" data-label="Drivers">
                   {s.drivers.map(d => (
                     <a class="tdrv" href={`/drivers/${d.driverRef}/`}>
@@ -452,8 +452,8 @@ function hasFace(ref: string): boolean {
                   <span class="std-bar" aria-hidden="true" style={`width:${((s.points ?? 0) / seasonMaxPoints) * 100}%; --tc:${team.color}`}></span>
                   <span class="hist-pts-val">{s.points != null ? s.points : '-'}</span>
                 </td>
-                <td class="right t-mono card-stat" data-label="Wins">{s.wins}</td>
-                <td class="right t-mono card-stat" data-label="Races">{s.races}</td>
+                <td class="right t-mono card-stat card-stat-first" data-label="Wins">{s.wins}</td>
+                <td class="right t-mono card-stat card-stat-last" data-label="Races">{s.races}</td>
                 <td class="team-drivers-cell card-block" data-label="Drivers">
                   {s.drivers.map(d => (
                     <a class="tdrv" href={`/drivers/${d.driverRef}/`}>
