@@ -591,9 +591,22 @@ function FormGuide({ data, mob }) {
   );
 }
 
+// Pick a column count so every row holds an equal number of flags whenever the
+// season splits cleanly (≤12 per row); primes fall back to a balanced grid with
+// a short last row. 22 rounds → 11 × 2, 24 → 12 × 2, 21 → 7 × 3.
+function seasonCols(n) {
+  if (n <= 12) return n;
+  for (const rows of [2, 3, 4]) {
+    if (n % rows === 0 && n / rows <= 12) return n / rows;
+  }
+  const rows = Math.ceil(n / 12);
+  return Math.ceil(n / rows);
+}
+
 // Season progress banner: a dark full-bleed strip (matching the form-guide
-// ink) with the completion %, a one-line summary, and one slanted tick per
-// round — red for completed, white for the next race, faint for upcoming.
+// ink) with the completion %, a one-line summary, and one national flag per
+// round — full colour for completed, white-bordered for the next race, greyed
+// and dimmed for upcoming. Flags sit in an equal-count grid (see seasonCols).
 function SeasonProgress({ data, cal, next }) {
   const total = cal.length;
   if (!total) return null;
@@ -601,6 +614,7 @@ function SeasonProgress({ data, cal, next }) {
   const pct = Math.round((completed / total) * 100);
   const remaining = total - completed;
   const nextRound = next ? next.round : null;
+  const cols = seasonCols(total);
   return (
     <section className="home-band season-progress" aria-label={`${data.seasonYear || ''} season progress`}>
       <div className="sp-inner">
@@ -609,11 +623,16 @@ function SeasonProgress({ data, cal, next }) {
           <div className="sp-title">{data.seasonYear} Season</div>
           <div className="sp-sub">{completed} of {total} rounds complete · {remaining} to go</div>
         </div>
-        <div className="sp-ticks" aria-hidden="true">
+        <div className="sp-ticks" style={{ '--sp-cols': cols }} aria-hidden="true">
           {cal.map(r => {
             const done = !!data.results[r.round];
             const isNext = nextRound != null && r.round === nextRound;
-            return <span key={r.round} className={`sp-tick${done ? ' done' : isNext ? ' next' : ''}`}></span>;
+            const state = done ? ' done' : isNext ? ' next' : ' future';
+            return (
+              <span key={r.round} className={`sp-tick${state}`}>
+                <Flag cc={r.country} flag={r.flag} name={r.name} />
+              </span>
+            );
           })}
         </div>
       </div>
