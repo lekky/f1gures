@@ -146,12 +146,19 @@ if (breadcrumb && breadcrumb.length > 0) {
        the class on mount once they've taken over rendering. -->
   <script is:inline define:vars={{ currentSeasonYear }}>
     (function () {
+      // Mirror readYearPref() in yearAwareData.js: the `?year=` URL param
+      // wins over the stored preference. Checking only localStorage let a
+      // shared/linked `/?year=1998` URL flash the current season before the
+      // historic bundle swapped in.
+      var y = null;
+      try { y = localStorage.getItem('f1-year'); } catch (e) {}
       try {
-        var y = localStorage.getItem('f1-year');
-        if (y && y !== 'current' && y !== currentSeasonYear) {
-          document.documentElement.classList.add('year-pending');
-        }
+        var u = new URLSearchParams(window.location.search).get('year');
+        if (u) y = u;
       } catch (e) {}
+      if (y && y !== 'current' && y !== currentSeasonYear) {
+        document.documentElement.classList.add('year-pending');
+      }
     })();
   </script>
   <style is:inline>
