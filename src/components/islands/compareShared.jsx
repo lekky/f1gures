@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { fmtVal } from '../../lib/compareStats.js';
 import { buildShareBlob } from '../../lib/compareShareCard.js';
 import { NATIONALITY } from '../../lib/nationality.js';
+import { track } from '../../lib/analytics.js';
 
 // team-logo files use the buildFallback id, not the Ergast constructorRef.
 export const LOGO_ALIAS = { red_bull: 'redbull', aston_martin: 'aston' };
@@ -441,6 +442,13 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
   useEffect(() => { const id = requestAnimationFrame(() => setLive(true)); return () => cancelAnimationFrame(id); }, [cmp]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 1800); return () => clearTimeout(t); }, [toast]);
 
+  // One compare_run per rendered comparison — covers every entry point (CTA
+  // overlay, /compare/ launcher, suggested matchups, and ?vs=/?a=&b= deeplinks),
+  // since they all funnel through CompareView.
+  useEffect(() => {
+    track('compare_run', { compare_type: kind, entity_a: cmp.a.ref, entity_b: cmp.b.ref });
+  }, [kind, cmp.a.ref, cmp.b.ref]);
+
   const A = cmp.a, B = cmp.b;
   const aColor = 'var(--accent)';
   const bColor = B.color || teamColor || 'var(--accent-dim)';
@@ -452,6 +460,9 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
   const shareTitle = `${A.name} vs ${B.name} · F1gures`;
   const fileName = `f1gures-${A.ref}-vs-${B.ref}.png`;
   const makeBlob = () => buildShareBlob(cmp, { bColor: cardBColor });
+  const shareEvent = (method) => track('compare_share', {
+    method, compare_type: kind, entity_a: A.ref, entity_b: B.ref,
+  });
 
   async function onSave() {
     if (busy) return; setBusy('save');
@@ -462,6 +473,7 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
       a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setToast('Image saved');
+      shareEvent('save_png');
     } catch { setToast('Save failed'); }
     setBusy('');
   }
@@ -472,6 +484,7 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
       if (navigator.clipboard && window.ClipboardItem) {
         await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })]);
         setToast('Image copied');
+        shareEvent('copy_image');
       } else { throw new Error('no clipboard'); }
     } catch { setToast('Copy unsupported — use Save'); }
     setBusy('');
@@ -482,9 +495,9 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
       const blob = await makeBlob();
       const file = new File([blob], fileName, { type: 'image/png' });
       const data = { title: shareTitle, text: shareTitle, url: window.location.href };
-      if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ ...data, files: [file] });
-      else if (navigator.share) await navigator.share(data);
-      else { await navigator.clipboard.writeText(window.location.href); setToast('Link copied'); }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ ...data, files: [file] }); shareEvent('web_share_file'); }
+      else if (navigator.share) { await navigator.share(data); shareEvent('web_share'); }
+      else { await navigator.clipboard.writeText(window.location.href); setToast('Link copied'); shareEvent('link_copy'); }
     } catch (e) { if (e && e.name !== 'AbortError') setToast('Share unavailable'); }
     setBusy('');
   }
