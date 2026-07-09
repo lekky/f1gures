@@ -8,6 +8,7 @@ import {
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, PointsChart, HeadToHead } from './StandingsCommon.jsx';
 import { DriverBars } from './StandingsBars.jsx';
+import { track } from '../../../lib/analytics.js';
 import TriviaBoard from './TriviaBoard.jsx';
 import { ChampSection, driversSummary } from './ChampPodium.jsx';
 
@@ -43,8 +44,12 @@ export default function DriverStandingsScreen({ data }) {
   }, [standings, sortKey, sortDir, DD]);
 
   const toggleSort = (k) => {
-    if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortKey(k); setSortDir(k === 'driver' || k === 'team' ? 'asc' : 'desc'); }
+    const nextDir = sortKey === k
+      ? (sortDir === 'asc' ? 'desc' : 'asc')
+      : (k === 'driver' || k === 'team' ? 'asc' : 'desc');
+    if (sortKey === k) setSortDir(nextDir);
+    else { setSortKey(k); setSortDir(nextDir); }
+    track('standings_sort', { sort_key: k, sort_dir: nextDir, season_year: DD.seasonYear });
   };
   const SortInd = ({ k }) => sortKey === k ? <span className="sort-ind">{sortDir === 'asc' ? '▲' : '▼'}</span> : null;
 
@@ -82,6 +87,7 @@ export default function DriverStandingsScreen({ data }) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    track('export_csv', { kind: 'drivers', season_year: year, sort_key: sortKey, sort_dir: sortDir });
   };
 
   const lastRoundEntry = DD.calendar.find(r => r.round === standings.lastRound) || {};

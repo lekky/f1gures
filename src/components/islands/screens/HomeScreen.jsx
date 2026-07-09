@@ -8,6 +8,7 @@ import {
   MiniChart, lastNCompletedRounds, driverPointsForRound, teamPointsForRound,
 } from '../../../lib/shared.jsx';
 import { useTempUnit } from '../../../lib/weather.js';
+import { track } from '../../../lib/analytics.js';
 import { circuitProfiles } from '../../../data/circuitProfiles.js';
 import SessionWeatherCell from './SessionWeatherCell.jsx';
 import SessionWeatherExpand from './SessionWeatherExpand.jsx';
@@ -116,7 +117,11 @@ function NextRacePanel({ data, cal, next, mob }) {
   const [expandedSessionId, setExpandedSessionId] = useState(null);
   const unit = useTempUnit();
   const useF = unit === 'F';
-  const toggleExpand = (id) => setExpandedSessionId(curr => curr === id ? null : id);
+  const toggleExpand = (id) => setExpandedSessionId(curr => {
+    const next = curr === id ? null : id;
+    if (next) track('weather_expand', { session_id: id });
+    return next;
+  });
 
   const trackZone = circuitTz(next.circuitId);
 
