@@ -1781,6 +1781,107 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl.tbl-static td { padding: 8px 10px; }
 }
 
+/* Results / qualifying rows carry the team colour as a left strip on desktop
+   (previously an inline border-left; now driven by the per-row --team-color so
+   the same custom property feeds the mobile card strip too). */
+.rr-tbl tbody tr { border-left: 3px solid var(--team-color, transparent); }
+
+/* ============================================================
+   MOBILE TABLE CARDS  (.tbl-cards, <=720px)
+   Reflows a detail-page table into the standings-card language:
+   each <tr> becomes a rounded card with a team-colour left strip,
+   a big rank badge, a full-width primary (name) line, and the
+   remaining columns as compact label / value rows driven by each
+   <td>'s data-label. Desktop is untouched — the transform lives
+   entirely inside the media query, so the same markup keeps the
+   sortable/dense table >720px. Compose-friendly: the existing
+   .std-bar / .std-gap visuals ride along inside the primary cell.
+   Opt-in per table so untouched .tbl / .tbl-static stay as tables.
+   ============================================================ */
+.tbl-card-bar { display: none; }
+
+@media (max-width: 720px) {
+  .tbl-cards { display: block; min-width: 0; }
+  .tbl-cards thead { display: none; }
+  .tbl-cards tbody { display: block; }
+
+  .tbl-cards tr {
+    display: block;
+    position: relative;
+    background: var(--bg-2);
+    border: 1px solid var(--line-1);
+    border-left: 3px solid var(--team-color, var(--line-2));
+    border-radius: 10px;
+    padding: 10px 12px 8px;
+    margin: 0 0 8px;
+  }
+  /* Reserve the left gutter only when a rank/position badge sits in it. */
+  .tbl-cards tr:has(td.card-pos) { padding-left: 46px; }
+  .tbl-cards tbody tr:last-child,
+  .tbl-cards tr:last-child { margin-bottom: 0; }
+  /* kill any inline border-left colour we've moved onto --team-color */
+  .tbl-cards tr[style*="border-left"] { border-left-width: 3px; }
+
+  /* Default cell = a label / value row */
+  .tbl-cards td {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 7px 0; border: none; border-top: 1px solid var(--line-1);
+    text-align: right; font-size: 13px; min-width: 0;
+  }
+  .tbl-cards td::before {
+    content: attr(data-label);
+    flex: 0 0 auto; text-align: left;
+    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--fg-3); font-weight: 600;
+  }
+  .tbl-cards td:not([data-label])::before,
+  .tbl-cards td[data-label=""]::before { content: none; }
+  /* Nothing to show (e.g. fastest-lap cell for non-holders) — drop the row
+     entirely rather than leave a dangling label. */
+  .tbl-cards td:empty { display: none; }
+
+  /* Rank / position badge — pulled into the left strip gutter */
+  .tbl-cards td.card-pos {
+    position: absolute; left: 0; top: 10px; width: 44px;
+    display: block; padding: 0; border: none; text-align: center;
+  }
+  .tbl-cards td.card-pos::before { content: none; }
+  .tbl-cards td.card-pos .pos { width: auto; font-size: 20px; }
+
+  /* Primary (name) line — full width header, hosts the standings bar */
+  .tbl-cards td.card-primary {
+    display: block; padding: 2px 0 9px; border-top: none;
+    border-bottom: 1px solid var(--line-1); margin-bottom: 3px;
+    text-align: left; min-height: 30px;
+  }
+  .tbl-cards td.card-primary::before { content: none; }
+  .tbl-cards td.card-primary .std-name-inner { min-width: 0; }
+
+  /* Block cell — label above, free-flowing content below (driver lists etc.) */
+  .tbl-cards td.card-block {
+    display: block; text-align: left; padding: 8px 0;
+  }
+  .tbl-cards td.card-block::before { display: block; margin-bottom: 6px; }
+
+  /* Proportional value bar (records / single-metric tables). Width is set
+     inline per row via --tbl-card-bar; colour follows the team strip.
+     Named -tbl- to avoid colliding with the records-hero .card-bar pattern. */
+  .tbl-cards td.card-primary .tbl-card-bar {
+    display: block; height: 6px; border-radius: 3px; margin-top: 8px;
+    width: var(--tbl-card-bar, 0%);
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--team-color, var(--accent)) 70%, transparent),
+      color-mix(in srgb, var(--team-color, var(--accent)) 28%, transparent));
+  }
+
+  /* History tables carry a mini points bar inside the points cell; in card
+     mode the value stands alone, so drop the absolute bar to avoid it
+     smearing across the short label/value row. */
+  .tbl-cards td.hist-pts-td .std-bar { display: none; }
+  .tbl-cards td.hist-pts-td { position: static; }
+  .tbl-cards td.hist-pts-td .hist-pts-val { font-family: var(--f-mono); }
+}
+
 /* ============================================================
    CONTENT LINK AFFORDANCE
    Two distinct affordance patterns:

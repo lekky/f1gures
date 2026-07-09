@@ -349,7 +349,7 @@ function hasFace(ref: string): boolean {
     <>
       <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Recent Seasons</h2><div class="section-rule"></div></div>
       <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="tbl tbl-static">
+        <table class="tbl tbl-static tbl-cards">
           <thead>
             <tr>
               <th>Year</th>
@@ -362,9 +362,9 @@ function hasFace(ref: string): boolean {
           </thead>
           <tbody>
             {recentSeasons.map(s => (
-              <tr>
-                <td class="t-mono">{s.year}</td>
-                <td class="team-finish-col">
+              <tr style={`--team-color: ${team.color}`}>
+                <td class="t-mono card-primary">{s.year}</td>
+                <td class="team-finish-col card-block" data-label="Finish">
                   <div class="finish-bar">
                     <div class="finish-bar-track">
                       <div
@@ -375,10 +375,10 @@ function hasFace(ref: string): boolean {
                     <span class={`finish-bar-lbl ${s.position === 1 ? 'is-champ' : ''}`}>{ord(s.position)}</span>
                   </div>
                 </td>
-                <td class="right t-mono">{s.points != null ? s.points : '-'}</td>
-                <td class="right t-mono">{s.wins}</td>
-                <td class="right t-mono">{s.races}</td>
-                <td class="team-drivers-cell">
+                <td class="right t-mono" data-label="Points">{s.points != null ? s.points : '-'}</td>
+                <td class="right t-mono" data-label="Wins">{s.wins}</td>
+                <td class="right t-mono" data-label="Races">{s.races}</td>
+                <td class="team-drivers-cell card-block" data-label="Drivers">
                   {s.drivers.map(d => (
                     <a class="tdrv" href={`/drivers/${d.driverRef}/`}>
                       {(d.country || d.flag) && <span class="tdrv-flag"><Flag cc={d.country} flag={d.flag} name={d.name} /></span>}
@@ -431,7 +431,7 @@ function hasFace(ref: string): boolean {
     <>
       <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Season by Season</h2><div class="section-rule"></div></div>
       <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="tbl tbl-static hist-tbl">
+        <table class="tbl tbl-static hist-tbl tbl-cards">
           <thead>
             <tr>
               <th>Year</th>
@@ -444,16 +444,16 @@ function hasFace(ref: string): boolean {
           </thead>
           <tbody>
             {team.perSeason.map(s => (
-              <tr>
-                <td class="t-mono">{s.year}</td>
-                <td class="center"><div class={posClass(s.position)}>{s.position ?? '-'}</div></td>
-                <td class="hist-pts-td">
+              <tr style={`--team-color: ${team.color}`}>
+                <td class="t-mono card-primary">{s.year}</td>
+                <td class="center card-pos"><div class={posClass(s.position)}>{s.position ?? '-'}</div></td>
+                <td class="hist-pts-td" data-label="Points">
                   <span class="std-bar" aria-hidden="true" style={`width:${((s.points ?? 0) / seasonMaxPoints) * 100}%; --tc:${team.color}`}></span>
                   <span class="hist-pts-val">{s.points != null ? s.points : '-'}</span>
                 </td>
-                <td class="right t-mono">{s.wins}</td>
-                <td class="right t-mono">{s.races}</td>
-                <td class="team-drivers-cell">
+                <td class="right t-mono" data-label="Wins">{s.wins}</td>
+                <td class="right t-mono" data-label="Races">{s.races}</td>
+                <td class="team-drivers-cell card-block" data-label="Drivers">
                   {s.drivers.map(d => (
                     <a class="tdrv" href={`/drivers/${d.driverRef}/`}>
                       {(d.country || d.flag) && <span class="tdrv-flag"><Flag cc={d.country} flag={d.flag} name={d.name} /></span>}

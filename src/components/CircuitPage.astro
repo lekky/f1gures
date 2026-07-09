@@ -483,7 +483,7 @@ const recordCards: CircuitRecordCard[] = [
     <>
       <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Historical Winners</h2><div class="section-rule"></div></div>
       <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="tbl tbl-static circuit-winners-tbl">
+        <table class="tbl tbl-static circuit-winners-tbl tbl-cards">
           <thead>
             <tr>
               <th class="right">Year</th>
@@ -500,9 +500,9 @@ const recordCards: CircuitRecordCard[] = [
               const poleFace = r.poleRef && hasDriverFace(r.poleRef) ? `/images/drivers/${r.poleRef}.webp` : null;
               const logo = teamLogoPath(r.winnerTeamRef);
               return (
-                <tr>
-                  <td class="right t-mono"><a href={raceHref} class="inline-link">{r.year}</a></td>
-                  <td>
+                <tr style={r.winnerTeamColor ? `--team-color: ${r.winnerTeamColor}` : ''}>
+                  <td class="right t-mono" data-label="Season"><a href={raceHref} class="inline-link">{r.year}</a></td>
+                  <td class="card-primary">
                     <span class="race-cell">
                       {winnerFace
                         ? <img class="cw-face" src={winnerFace} alt="" width="26" height="26" loading="lazy" />
@@ -512,7 +512,7 @@ const recordCards: CircuitRecordCard[] = [
                         : <span class="cw-name">{r.winnerName || '-'}</span>}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Team">
                     <span class="race-cell">
                       {logo && <img class="team-logo-sm" src={logo} alt="" width="20" height="20" loading="lazy" />}
                       {r.winnerTeamRef
@@ -520,7 +520,7 @@ const recordCards: CircuitRecordCard[] = [
                         : (r.winnerTeam || '-')}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Pole">
                     {r.poleName ? (
                       <span class="race-cell">
                         {poleFace
@@ -532,7 +532,7 @@ const recordCards: CircuitRecordCard[] = [
                       </span>
                     ) : '-'}
                   </td>
-                  <td class="right t-mono">{r.fastestLapTime || '-'}</td>
+                  <td class="right t-mono" data-label="Fastest Lap">{r.fastestLapTime || '-'}</td>
                 </tr>
               );
             })}

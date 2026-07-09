@@ -73,7 +73,7 @@ function rowCls(i: number): string {
 ---
 
 <div class="panel tbl-collapsible" id={id} data-collapsed={overflow ? 'true' : 'false'}>
-  <table class="tbl tbl-static rr-tbl">
+  <table class="tbl tbl-static rr-tbl tbl-cards">
     <thead>
       <tr>
         <th class="center">Pos</th>
@@ -86,9 +86,9 @@ function rowCls(i: number): string {
     </thead>
     <tbody>
       {rows.map((r, i) => (
-        <tr class={rowCls(i)} style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
-          <td class="center"><div class={posClass(r.position)}>{r.position != null ? r.position : '-'}</div></td>
-          <td class="std-name-td">
+        <tr class={rowCls(i)} style={r.constructorColor ? `--team-color: ${r.constructorColor}` : ''}>
+          <td class="center card-pos"><div class={posClass(r.position)}>{r.position != null ? r.position : '-'}</div></td>
+          <td class="std-name-td card-primary">
             <span class="std-bar" aria-hidden="true" style={`width:${barPct(gaps[i])}%; --tc:${r.constructorColor || 'var(--fg-3)'}`}></span>
             <div class="std-name-inner rr-name-inner">
               {r.driverRef ? (
@@ -112,7 +112,7 @@ function rowCls(i: number): string {
                   )}
             </div>
           </td>
-          <td>
+          <td data-label="Team">
             <span class="rr-team-cell">
               {teamLogoPath(r.constructorRef) && <img class="team-logo-sm" src={teamLogoPath(r.constructorRef)} alt="" width="20" height="20" loading="lazy" />}
               {r.constructorRef
@@ -120,9 +120,9 @@ function rowCls(i: number): string {
                 : <span class="rr-team">{r.constructorName || '-'}</span>}
             </span>
           </td>
-          <td class="right t-mono">{r.q1 || '-'}</td>
-          <td class="right t-mono">{r.q2 || '-'}</td>
-          <td class="right t-mono">{r.q3 || '-'}</td>
+          <td class="right t-mono" data-label="Q1">{r.q1 || '-'}</td>
+          <td class="right t-mono" data-label="Q2">{r.q2 || '-'}</td>
+          <td class="right t-mono" data-label="Q3">{r.q3 || '-'}</td>
         </tr>
       ))}
     </tbody>
