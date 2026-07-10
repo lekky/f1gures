@@ -5,11 +5,29 @@ name: CI
 # check standing between a merge and the live site — it must pass before merge
 # (enforce via a required status check in branch protection: Settings →
 # Branches → main → Require status checks → "test").
+# The vitest suite covers src/lib/ and scripts/ only, so skip it when a
+# change touches nothing but docs / reference / tooling files (same list as
+# deploy.yml). Note: this repo has no branch protection, so a skipped run
+# never leaves a PR stuck on a required "test" check.
 on:
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'design-system/**'
+      - 'feedback-worker/**'
+      - '.claude/**'
+      - 'README.md'
+      - 'CLAUDE.md'
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
+      - 'design-system/**'
+      - 'feedback-worker/**'
+      - '.claude/**'
+      - 'README.md'
+      - 'CLAUDE.md'
 
 # One in-flight run per ref; a new push supersedes the previous run.
 # (Safe to cancel here, unlike the deploy workflow.)

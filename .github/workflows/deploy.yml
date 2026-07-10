@@ -4,10 +4,25 @@ on:
   push:
     branches:
       - main
+    # Skip a full ~2,300-page rebuild + FTP when a push touches ONLY files
+    # that never end up in dist/: repo docs, the design-system reference,
+    # the separately-deployed feedback worker, local tooling, and the CI
+    # workflows themselves. A push that also touches anything else (src/,
+    # public/, scripts/, config) still deploys. Blog/guide content lives in
+    # src/content/** and data in public/data/**, so both stay in scope.
+    paths-ignore:
+      - 'docs/**'
+      - 'design-system/**'
+      - 'feedback-worker/**'
+      - '.claude/**'
+      - '.github/**'
+      - 'README.md'
+      - 'CLAUDE.md'
   # Manual redeploy of current main. Needed when a refresh run commits a new
   # bundle but its FTP deploy fails transiently: later refreshes are no-ops
   # (changed=false skips build+deploy), so the change never reaches the live
-  # server without a way to re-trigger a deploy on demand.
+  # server without a way to re-trigger a deploy on demand. Also the escape
+  # hatch to deploy after a docs-only push that paths-ignore skipped.
   workflow_dispatch:
 
 concurrency:
