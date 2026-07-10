@@ -14,10 +14,8 @@ on:
     # 04:00 UTC daily - safety net for off-weekends and anything missed by
     # the race-weekend cron below.
     - cron: '0 4 * * *'
-    # Race-weekend polling: every 10 min Fri-Mon UTC. Covers FP1 Friday
-    # morning in Asia through US night races (Vegas) spilling into Monday
-    # UTC. The bundle-changed gate means most runs are no-ops.
-    - cron: '*/10 * * * 5,6,0,1'
+    # Race-weekend polling: every 10 min Sat-Sun UTC. Late US/Mexico races and sprint-quali Fridays are caught by the daily 04:00 run above. Bundle-changed gate keeps most runs no-ops.
+    - cron: '*/10 * * * 6,0'
   workflow_dispatch:
 
 permissions:
