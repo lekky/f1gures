@@ -106,7 +106,7 @@ async function generateRaceOgs() {
         const racePath = path.join(ARCHIVE, 'races', String(entry.year), `${entry.round}.json`);
         if (!fs.existsSync(racePath)) return;
         const race = JSON.parse(fs.readFileSync(racePath, 'utf8'));
-        const png = await renderPng(renderRaceOg(race));
+        const png = await renderPng(await renderRaceOg(race));
         fs.writeFileSync(out, png);
         fs.writeFileSync(stateFile, wantState);
         count++;
@@ -174,7 +174,7 @@ async function generateCircuitOgs() {
         const p = path.join(ARCHIVE, 'circuits', `${entry.circuitRef}.json`);
         if (!fs.existsSync(p)) return;
         const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-        const png = await renderPng(renderCircuitOg(data));
+        const png = await renderPng(await renderCircuitOg(data));
         fs.writeFileSync(out, png);
         count++;
       } catch (err) {

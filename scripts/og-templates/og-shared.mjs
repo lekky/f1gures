@@ -26,12 +26,29 @@ const ROOT = path.resolve(__dirname, '../..');
 const DRIVERS_DIR = path.join(ROOT, 'public/images/drivers');
 const TEAMS_DIR = path.join(ROOT, 'public/images/teams');
 const FLAGS_DIR = path.join(ROOT, 'public/images/flags');
+const CIRCUIT_MAPS_DIR = path.join(ROOT, 'public/images/circuits/white-outline');
 
-// nationality demonym -> flag SVG path (null if unmapped / missing on disk).
-function flagPathFor(nationality) {
-  const cc = NATIONALITY[nationality]?.country;
+// ISO alpha-2 -> flag SVG path (null if missing on disk).
+function flagPathForCC(cc) {
   if (!cc) return null;
   const p = path.join(FLAGS_DIR, `${cc.toLowerCase()}.svg`);
+  return fs.existsSync(p) ? p : null;
+}
+// nationality demonym -> flag SVG path.
+function flagPathFor(nationality) {
+  return flagPathForCC(NATIONALITY[nationality]?.country);
+}
+
+// circuitRef -> track-map SVG basename. The white-outline basenames diverge
+// from Ergast circuitRefs for a handful of tracks (mirrors SVG_FOR_REF in
+// CircuitPage.astro). Only ~two dozen modern circuits have a map.
+const CIRCUIT_SVG_FOR_REF = {
+  albert_park: 'albert', americas: 'cota', marina_bay: 'marina', red_bull_ring: 'spielberg',
+  vegas: 'lasvegas', villeneuve: 'montreal', yas_marina: 'yas',
+};
+function trackMapPath(circuitRef) {
+  const base = CIRCUIT_SVG_FOR_REF[circuitRef] || circuitRef;
+  const p = path.join(CIRCUIT_MAPS_DIR, `${base}.svg`);
   return fs.existsSync(p) ? p : null;
 }
 
@@ -89,9 +106,7 @@ export async function loadLogo(ref, s) {
   return null;
 }
 
-/** Crisp national flag rasterised to w×h, PNG data URI (null if absent). */
-export async function loadFlag(nationality, w, h) {
-  const p = flagPathFor(nationality);
+async function crispFlagFromPath(p, w, h) {
   if (!p) return null;
   try {
     const buf = await sharp(p, { density: 300 }).resize(w, h, { fit: 'cover' }).png().toBuffer();
@@ -101,14 +116,7 @@ export async function loadFlag(nationality, w, h) {
   }
 }
 
-/**
- * A large national flag pre-faded via an alpha gradient, for use as an ambient
- * background wash. Returns a PNG data URI (null if absent).
- * @param {string} dir     'left' | 'diag' | 'down' — fade direction
- * @param {number} maxAlpha peak opacity at the strong edge
- */
-export async function loadFadedFlag(nationality, w, h, { dir = 'left', maxAlpha = 0.24 } = {}) {
-  const p = flagPathFor(nationality);
+async function fadedFlagFromPath(p, w, h, { dir = 'left', maxAlpha = 0.24 } = {}) {
   if (!p) return null;
   try {
     const flag = await sharp(p, { density: 300 }).resize(w, h, { fit: 'cover' }).png().toBuffer();
@@ -126,6 +134,27 @@ export async function loadFadedFlag(nationality, w, h, { dir = 'left', maxAlpha 
     );
     const out = await sharp(flag).composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer();
     return `data:image/png;base64,${out.toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
+/** Crisp national flag rasterised to w×h, PNG data URI (null if absent). */
+export const loadFlag = (nationality, w, h) => crispFlagFromPath(flagPathFor(nationality), w, h);
+/** As loadFlag, but keyed by ISO alpha-2 country code (e.g. circuit.country). */
+export const loadFlagCC = (cc, w, h) => crispFlagFromPath(flagPathForCC(cc), w, h);
+/** Large national flag pre-faded to an ambient wash, PNG data URI (null if absent). */
+export const loadFadedFlag = (nationality, w, h, opts) => fadedFlagFromPath(flagPathFor(nationality), w, h, opts);
+/** As loadFadedFlag, but keyed by ISO alpha-2 country code. */
+export const loadFadedFlagCC = (cc, w, h, opts) => fadedFlagFromPath(flagPathForCC(cc), w, h, opts);
+
+/** White-outline track map rasterised to fit w×h, PNG data URI (null if none). */
+export async function loadTrackMap(circuitRef, w, h) {
+  const p = trackMapPath(circuitRef);
+  if (!p) return null;
+  try {
+    const buf = await sharp(p, { density: 400 }).resize(w, h, { fit: 'inside' }).png().toBuffer();
+    return `data:image/png;base64,${buf.toString('base64')}`;
   } catch {
     return null;
   }
