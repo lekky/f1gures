@@ -989,18 +989,26 @@ const duelSurname = driver.surname;
   )}
 </div>
 
-{/* Tap-to-expand wiring for the mobile bar rows (.belist, <=720px). Rows
-    toggle independently (design handoff behaviour); links inside still
-    navigate. First row per list is server-rendered open, so the pattern
-    reads without JS. */}
+{/* Tap-to-expand wiring for the mobile bar rows (.belist, <=720px). One row
+    open at a time per section (mirrors the standings rows' behaviour); links
+    inside still navigate. First row per list is server-rendered open, so the
+    pattern reads without JS. */}
 <script is:inline>
   document.addEventListener('click', function (e) {
     if (e.target.closest('a')) return;
     var head = e.target.closest('.behead');
     if (!head) return;
     var row = head.closest('.berow');
-    row.classList.toggle('open');
-    head.setAttribute('aria-expanded', row.classList.contains('open') ? 'true' : 'false');
+    var wasOpen = row.classList.contains('open');
+    var scope = row.closest('.drv-history') || document;
+    scope.querySelectorAll('.berow.open').forEach(function (r) {
+      r.classList.remove('open');
+      r.querySelector('.behead').setAttribute('aria-expanded', 'false');
+    });
+    if (!wasOpen) {
+      row.classList.add('open');
+      head.setAttribute('aria-expanded', 'true');
+    }
   });
 </script>
 

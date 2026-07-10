@@ -2066,8 +2066,9 @@ html.light .circuit-track .circuit-track-light { display: block; }
    a team-colour points bar with the value riding inside it
    (striped bar + status when zero points), and an expandable
    panel with a boxed stat grid, status / bonus tags, a
-   grid→finish note and a deep link. Rows toggle independently;
-   the first row per list is server-rendered open. Both DOM trees
+   grid→finish note and a deep link. One row open at a time per
+   section (mirrors the standings rows' behaviour); the first row
+   per list is server-rendered open. Both DOM trees
    are always rendered — this block swaps table ↔ list at 720px
    (same architecture as .std-barlist / .std-fulltable).
    --tc = team colour, set per row. */
