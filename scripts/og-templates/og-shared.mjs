@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { NATIONALITY } from '../../src/lib/nationality.js';
 
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
@@ -24,6 +25,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
 const DRIVERS_DIR = path.join(ROOT, 'public/images/drivers');
 const TEAMS_DIR = path.join(ROOT, 'public/images/teams');
+const FLAGS_DIR = path.join(ROOT, 'public/images/flags');
+
+// nationality demonym -> flag SVG path (null if unmapped / missing on disk).
+function flagPathFor(nationality) {
+  const cc = NATIONALITY[nationality]?.country;
+  if (!cc) return null;
+  const p = path.join(FLAGS_DIR, `${cc.toLowerCase()}.svg`);
+  return fs.existsSync(p) ? p : null;
+}
 
 // Team-logo filename aliases (bundle/Ergast ref -> logo basename). Mirrors the
 // maps in compareShareCard.js / urlFor; keep in sync.
@@ -77,6 +87,48 @@ export async function loadLogo(ref, s) {
     }
   }
   return null;
+}
+
+/** Crisp national flag rasterised to w×h, PNG data URI (null if absent). */
+export async function loadFlag(nationality, w, h) {
+  const p = flagPathFor(nationality);
+  if (!p) return null;
+  try {
+    const buf = await sharp(p, { density: 300 }).resize(w, h, { fit: 'cover' }).png().toBuffer();
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A large national flag pre-faded via an alpha gradient, for use as an ambient
+ * background wash. Returns a PNG data URI (null if absent).
+ * @param {string} dir     'left' | 'diag' | 'down' — fade direction
+ * @param {number} maxAlpha peak opacity at the strong edge
+ */
+export async function loadFadedFlag(nationality, w, h, { dir = 'left', maxAlpha = 0.24 } = {}) {
+  const p = flagPathFor(nationality);
+  if (!p) return null;
+  try {
+    const flag = await sharp(p, { density: 300 }).resize(w, h, { fit: 'cover' }).png().toBuffer();
+    const coords =
+      dir === 'diag' ? 'x1="0" y1="0" x2="1" y2="1"' :
+      dir === 'down' ? 'x1="0" y1="0" x2="0" y2="1"' :
+      'x1="0" y1="0" x2="1" y2="0"';
+    const mask = Buffer.from(
+      `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><defs>` +
+      `<linearGradient id="g" ${coords}>` +
+      `<stop offset="0" stop-color="#fff" stop-opacity="${maxAlpha}"/>` +
+      `<stop offset="0.55" stop-color="#fff" stop-opacity="${maxAlpha * 0.35}"/>` +
+      `<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>` +
+      `<rect width="${w}" height="${h}" fill="url(#g)"/></svg>`,
+    );
+    const out = await sharp(flag).composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer();
+    return `data:image/png;base64,${out.toString('base64')}`;
+  } catch {
+    return null;
+  }
 }
 
 // ── low-level element helpers ──
