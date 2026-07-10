@@ -5,8 +5,11 @@ name: Refresh Current Season
 # builds have it cached), then rebuilds and FTP-deploys the site so the
 # prerendered HTML reflects the new standings.
 #
-# Build + FTP are gated on the bundle actually having changed - most race-
-# weekend polls cost ~20s of CI and zero FTP traffic. workflow_dispatch
+# Build + FTP are gated on the bundle actually having changed. So is
+# `npm ci`: the fetch + change-detection path uses only Node built-ins
+# (fetch-season.mjs imports nothing from node_modules), so a no-op poll
+# skips dependency install entirely and bills ~1 minute instead of 2-3.
+# Only a real data change pays for npm ci + build + FTP. workflow_dispatch
 # bypasses the gate so you can force a redeploy.
 
 on:
@@ -35,9 +38,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Fetch current season from Jolpica
         id: fetch
@@ -70,6 +70,10 @@ jobs:
             git push
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Install dependencies
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: npm ci
 
       - name: Cache OG images
         if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
