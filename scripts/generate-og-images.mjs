@@ -16,6 +16,7 @@ import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { OG_WIDTH, OG_HEIGHT } from './og-templates/og-shared.mjs';
 import { renderRaceOg } from './og-templates/og-race.mjs';
+import { computeStandings } from '../src/lib/seasonStats.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -142,7 +143,7 @@ async function generateDriverOgs() {
         const driverPath = path.join(ARCHIVE, 'drivers', `${entry.driverRef}.json`);
         if (!fs.existsSync(driverPath)) return;
         const driver = JSON.parse(fs.readFileSync(driverPath, 'utf8'));
-        const png = await renderPng(renderDriverOg(driver));
+        const png = await renderPng(await renderDriverOg(driver, { teamColor: entry.teamColor }));
         fs.writeFileSync(out, png);
         count++;
       } catch (err) {
@@ -204,12 +205,110 @@ async function generateTeamOgs() {
         const p = path.join(ARCHIVE, 'teams', `${entry.constructorRef}.json`);
         if (!fs.existsSync(p)) return;
         const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-        const png = await renderPng(renderTeamOg(data));
+        const png = await renderPng(await renderTeamOg(data));
         fs.writeFileSync(out, png);
         count++;
       } catch (err) {
         failed++;
         console.warn(`[og] team ${entry.constructorRef} failed: ${err.message}`);
+      }
+    }));
+  }
+  return { count, skipped, failed };
+}
+
+// Current-season championship top-3 cards. Always regenerated (only 2 images)
+// so they never go stale relative to the latest bundle.
+async function generateStandingsOgs() {
+  const dataDir = path.join(ROOT, 'public/data');
+  const years = fs.readdirSync(dataDir)
+    .map(f => /^(\d{4})\.json$/.exec(f))
+    .filter(Boolean)
+    .map(m => Number(m[1]))
+    .sort((a, b) => b - a);
+  if (!years.length) return { count: 0, skipped: 0, failed: 0 };
+  const year = years[0];
+  const bundle = JSON.parse(fs.readFileSync(path.join(dataDir, `${year}.json`), 'utf8'));
+
+  const outDir = path.join(OUT_BASE, 'standings');
+  ensureDir(outDir);
+  const { renderStandingsOg } = await import('./og-templates/og-standings.mjs');
+
+  const teamsById = {};
+  for (const t of bundle.teams || []) teamsById[t.id] = t;
+  const teamColor = (id) => {
+    const c = teamsById[id] ? teamsById[id].color : '#9B9B9B';
+    return c === '#888888' ? '#9B9B9B' : c;
+  };
+  const teamName = (id) => (teamsById[id] ? teamsById[id].name : id);
+
+  let count = 0, failed = 0;
+  try {
+    const st = computeStandings(bundle);
+    if (!st.drivers?.length) {
+      console.warn('[og] standings: empty bundle, skipping');
+      return { count: 0, skipped: 0, failed: 0 };
+    }
+
+    const driverRows = st.drivers.map((r) => {
+      const d = r.driver;
+      return {
+        name: `${d.first} ${d.last}`,
+        teamName: teamName(d.team),
+        color: teamColor(d.team),
+        points: r.points,
+        faceRef: d.jolpicaId || d.id,
+      };
+    });
+    const teamRows = st.teams.map((t) => ({
+      name: teamName(t.team.id),
+      color: teamColor(t.team.id),
+      points: t.points,
+      short: (teamsById[t.team.id]?.short) || '',
+      nat: t.team.nationality || '',
+    }));
+
+    const jobs = [
+      { kind: 'drivers', rows: driverRows, out: path.join(outDir, 'drivers.png') },
+      { kind: 'constructors', rows: teamRows, out: path.join(outDir, 'constructors.png') },
+    ];
+    for (const j of jobs) {
+      const png = await renderPng(await renderStandingsOg({ kind: j.kind, year, rows: j.rows }));
+      fs.writeFileSync(j.out, png);
+      count++;
+    }
+  } catch (err) {
+    failed++;
+    console.warn(`[og] standings failed: ${err.message}`);
+  }
+  return { count, skipped: 0, failed };
+}
+
+// Records leaderboard top-3 cards, one per topic. Skip-if-exists (they barely
+// change; a data change busts the CI cache and forces a rebuild).
+async function generateRecordsOgs() {
+  const recordsDir = path.join(ARCHIVE, 'records');
+  if (!fs.existsSync(recordsDir)) return { count: 0, skipped: 0, failed: 0 };
+  const files = fs.readdirSync(recordsDir).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+  const outDir = path.join(OUT_BASE, 'records');
+  ensureDir(outDir);
+  const { renderRecordsOg } = await import('./og-templates/og-records.mjs');
+
+  let count = 0, skipped = 0, failed = 0;
+  for (let i = 0; i < files.length; i += 20) {
+    const batch = files.slice(i, i + 20);
+    await Promise.all(batch.map(async (file) => {
+      const slug = file.replace(/\.json$/, '');
+      try {
+        const out = path.join(outDir, `${slug}.png`);
+        if (!FORCE && fs.existsSync(out)) { skipped++; return; }
+        const topic = JSON.parse(fs.readFileSync(path.join(recordsDir, file), 'utf8'));
+        const png = await renderPng(await renderRecordsOg(topic));
+        fs.writeFileSync(out, png);
+        count++;
+      } catch (err) {
+        failed++;
+        console.warn(`[og] record ${slug} failed: ${err.message}`);
       }
     }));
   }
@@ -231,6 +330,8 @@ async function main() {
   summarise('drivers', await generateDriverOgs());
   summarise('circuits', await generateCircuitOgs());
   summarise('teams', await generateTeamOgs());
+  summarise('standings', await generateStandingsOgs());
+  summarise('records', await generateRecordsOgs());
 }
 
 main().catch(err => {
