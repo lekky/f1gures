@@ -315,6 +315,71 @@ async function generateRecordsOgs() {
   return { count, skipped, failed };
 }
 
+// Static / hub / listing page cards. Always regenerated (few images; counts and
+// season year should track the data).
+async function generatePageOgs() {
+  const { renderPageOg } = await import('./og-templates/og-page.mjs');
+  const outDir = path.join(OUT_BASE, 'pages');
+  ensureDir(outDir);
+
+  const count = (file) => {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(ARCHIVE, file), 'utf8'));
+      return Array.isArray(j) ? j.length : 0;
+    } catch { return 0; }
+  };
+  const nDrivers = count('_drivers-index.json');
+  const nTeams = count('_teams-index.json');
+  const nCircuits = count('_circuits-index.json');
+  const nRaces = count('_races-index.json');
+  const nRecords = fs.existsSync(path.join(ARCHIVE, 'records'))
+    ? fs.readdirSync(path.join(ARCHIVE, 'records')).filter(f => f.endsWith('.json') && !f.startsWith('_')).length
+    : 0;
+
+  const dataDir = path.join(ROOT, 'public/data');
+  const years = fs.readdirSync(dataDir).map(f => /^(\d{4})\.json$/.exec(f)).filter(Boolean).map(m => Number(m[1])).sort((a, b) => b - a);
+  const year = years[0];
+  let rounds = 0;
+  try { rounds = JSON.parse(fs.readFileSync(path.join(dataDir, `${year}.json`), 'utf8')).calendar.length; } catch {}
+
+  const nf = (n) => n.toLocaleString('en-US');
+
+  const pages = [
+    { slug: 'home', kicker: 'Formula 1', title: 'F1 Stats & History', subtitle: 'Every driver, team, race & circuit — 1950 to today.',
+      stats: [{ value: nf(nDrivers), label: 'Drivers' }, { value: nf(nTeams), label: 'Teams' }, { value: nf(nRaces), label: 'Races' }] },
+    { slug: 'calendar', kicker: `${year} Season`, title: 'F1 Race Calendar', subtitle: 'Schedule, results, sessions & weather.',
+      stats: [{ value: rounds, label: 'Rounds' }, { value: year, label: 'Season' }] },
+    { slug: 'drivers', kicker: 'All-Time', title: 'Every F1 Driver', subtitle: 'Careers, stats & head-to-heads since 1950.',
+      stats: [{ value: nf(nDrivers), label: 'Drivers' }] },
+    { slug: 'teams', kicker: 'All-Time', title: 'Every F1 Constructor', subtitle: 'Team histories, lineages & records since 1950.',
+      stats: [{ value: nf(nTeams), label: 'Teams' }] },
+    { slug: 'circuits', kicker: 'All-Time', title: 'Every F1 Circuit', subtitle: 'Track maps, records & race history since 1950.',
+      stats: [{ value: nCircuits, label: 'Circuits' }] },
+    { slug: 'records', kicker: 'F1 Records', title: 'All-Time Records', subtitle: 'Wins, poles, podiums, titles & more — ranked.',
+      stats: [{ value: nRecords, label: 'Leaderboards' }] },
+    { slug: 'stats', kicker: 'F1 Stats', title: 'Stats & Records', subtitle: 'Every leaderboard plus head-to-head Compare.' },
+    { slug: 'read', kicker: 'F1gures', title: 'Guides & Blog', subtitle: 'Learn how F1 works, then read the latest.' },
+    { slug: 'compare', kicker: 'Head-to-Head', title: 'Compare Mode', subtitle: 'Put any two drivers or teams side by side.' },
+    { slug: 'guide', kicker: "Beginner's Guide", title: 'How F1 Works', subtitle: 'Points, formats, flags & jargon — explained simply.' },
+    { slug: 'blog', kicker: 'F1gures Blog', title: 'The Blog', subtitle: 'Race previews, recaps & data deep-dives.' },
+    { slug: 'feedback', kicker: 'F1gures', title: 'Feedback', subtitle: 'Spotted a bug or have an idea? Tell us.' },
+    { slug: '404', kicker: 'Error 404', title: 'Page Not Found', subtitle: "Let's get you back on track.", icon: true },
+  ];
+
+  let cnt = 0, failed = 0;
+  for (const p of pages) {
+    try {
+      const png = await renderPng(renderPageOg(p));
+      fs.writeFileSync(path.join(outDir, `${p.slug}.png`), png);
+      cnt++;
+    } catch (err) {
+      failed++;
+      console.warn(`[og] page ${p.slug} failed: ${err.message}`);
+    }
+  }
+  return { count: cnt, skipped: 0, failed };
+}
+
 function summarise(label, r) {
   const parts = [`generated ${r.count}`];
   if (r.skipped > 0) parts.push(`${r.skipped} cached`);
@@ -332,6 +397,7 @@ async function main() {
   summarise('teams', await generateTeamOgs());
   summarise('standings', await generateStandingsOgs());
   summarise('records', await generateRecordsOgs());
+  summarise('pages', await generatePageOgs());
 }
 
 main().catch(err => {

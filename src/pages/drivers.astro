@@ -5,6 +5,6 @@ const title = 'F1 Drivers - All Time | f1gures';
 const description = 'Every Formula 1 driver from 1950 to today. Career wins, championships, and active years. Filter by nationality.';
 const breadcrumb = [{ name: 'Home', path: '/' }, { name: 'Drivers', path: '/drivers/' }];
 ---
-<BaseLayout title={title} description={description} canonicalPath="/drivers/" ogType="website" breadcrumb={breadcrumb}>
+<BaseLayout title={title} description={description} canonicalPath="/drivers/" ogType="website" breadcrumb={breadcrumb} ogImage="/images/og/pages/drivers.png">
   <DriversIndexIsland client:load />
 </BaseLayout>

@@ -5,6 +5,6 @@ const title = 'F1 Teams - All Time | f1gures';
 const description = 'Every Formula 1 constructor from 1950 to today. Championships, wins, and active years. Filter by nationality.';
 const breadcrumb = [{ name: 'Home', path: '/' }, { name: 'Teams', path: '/teams/' }];
 ---
-<BaseLayout title={title} description={description} canonicalPath="/teams/" ogType="website" breadcrumb={breadcrumb}>
+<BaseLayout title={title} description={description} canonicalPath="/teams/" ogType="website" breadcrumb={breadcrumb} ogImage="/images/og/pages/teams.png">
   <TeamsIndexIsland client:load />
 </BaseLayout>
