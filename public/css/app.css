@@ -1833,7 +1833,8 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards tr:has(td.card-pos) { padding-left: 46px; }
   .tbl-cards tbody tr:last-child { margin-bottom: 0; }
   /* Open card takes the team colour on its border (mirrors .stdrow.is-open). */
-  .tbl-cards tr.is-open { border-color: var(--team-color, var(--line-2)); }
+  .tbl-cards tr.is-open { border-color: var(--team-color, var(--line-2)); border-width: 2px; padding: 10px 31px 11px 13px; }
+  .tbl-cards tr.is-open:has(td.card-pos) { padding-left: 45px; }
 
   /* Team-colour strip — a thin vertical bar to the RIGHT of the rank number
      (mirrors .stdrow-strip), NOT the card's edge. Cards without a rank get the
@@ -1865,12 +1866,23 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards td.card-pos .pos { width: auto; font-size: 18px; }
 
   /* Identity line — fills the space left of the team, shrinking (ellipsis) so
-     the team stays on the same line, right-aligned. */
+     the team stays on the same line, right-aligned. min-width is also the
+     cell's hypothetical size during flex line-breaking: at 40% it can never
+     share a line with the 100%-basis .card-metric bar (a zero-min cell would —
+     0 + 100% fits exactly — collapsing the identity to 0 width under the bar),
+     while 40% plus card-sub's 42% cap still always fit on one line together. */
   .tbl-cards td.card-primary {
-    order: 1; flex: 1 1 0; min-width: 0;
+    order: 1; flex: 1 1 0; min-width: 40%;
     padding: 0; border: none; text-align: left; font-size: 14px;
   }
   .tbl-cards td.card-primary::before { content: none; }
+  /* Bare-year identity (season-by-season / recent-seasons tables): the cell is
+     just "2026" — promote it from table mono to the standings identity weight
+     so the card leads with a bold display-face year, like .stdrow-name. */
+  .tbl-cards td.card-primary.t-mono {
+    font-family: var(--f-display); font-weight: 800; font-size: 15px;
+    color: var(--fg-1); letter-spacing: 0.01em;
+  }
   .tbl-cards td.card-primary .std-name-inner { min-width: 0; justify-content: flex-start; gap: 6px; }
   .tbl-cards td.card-primary .records-cell,
   .tbl-cards td.card-primary .race-cell { min-width: 0; }
@@ -1878,6 +1890,14 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards td.card-primary .rr-name,
   .tbl-cards td.card-primary .cw-name,
   .tbl-cards td.card-primary .inline-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Split first/last names truncate like .stdrow-name: the given name shrinks
+     to an ellipsis first, the surname never truncates ("Michael Schumacher" →
+     "Mich… Schumacher", not "Michael Schumach…"). */
+  .tbl-cards td.card-primary .driver-firstlast { display: flex; align-items: baseline; min-width: 0; }
+  .tbl-cards td.card-primary .driver-firstlast .first {
+    flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .tbl-cards td.card-primary .driver-firstlast .last { flex: 0 0 auto; white-space: nowrap; }
   /* Driver code is redundant with the name on the card — drop it for space. */
   .tbl-cards td.card-primary .driver-code,
   .tbl-cards td.card-primary .rr-code { display: none; }
@@ -2005,11 +2025,34 @@ html.light .circuit-track .circuit-track-light { display: block; }
 
   .tbl-cards td.hist-pts-td.card-metric .hist-pts-val { font-family: var(--f-display); }
 
-  /* The team recent-seasons "Finish" cell is already a self-contained bar
-     (.finish-bar); when used as the hero metric, don't wrap it in the track. */
+  /* The team recent-seasons "Finish" cell brings its own bar (.finish-bar — a
+     thin desktop track with the position label alongside). On the card,
+     restyle it into the standard hero metric: 26px team-colour gradient fill
+     with the position riding in a solid value chip, mirroring .stdrow-bar.
+     !important beats the inline `background: <team colour>` the fill carries
+     for the desktop table. */
   .tbl-cards td.team-finish-col.card-metric {
     background: none; height: auto; overflow: visible; margin-top: 10px;
   }
+  .tbl-cards td.team-finish-col.card-metric .finish-bar {
+    display: block; position: relative; height: 26px; border-radius: 4px;
+    overflow: hidden; background: color-mix(in srgb, var(--fg-1) 9%, var(--bg-2));
+  }
+  .tbl-cards td.team-finish-col.card-metric .finish-bar-track {
+    position: absolute; inset: 0; height: auto; min-width: 0; background: none;
+  }
+  .tbl-cards td.team-finish-col.card-metric .finish-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--team-color, var(--accent)) 92%, transparent),
+      color-mix(in srgb, var(--team-color, var(--accent)) 62%, transparent)) !important;
+  }
+  .tbl-cards td.team-finish-col.card-metric .finish-bar-lbl {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    min-width: 0; padding: 2px 8px; border-radius: 4px;
+    background: var(--bg-1); color: var(--fg-1); font-size: 13px;
+  }
+  .tbl-cards td.team-finish-col.card-metric .finish-bar-lbl.is-champ { color: var(--accent-text); }
 }
 
 /* ============================================================
@@ -3734,6 +3777,14 @@ html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
 }
 .records-era-toggle button + button { border-left: 1px solid var(--line-1); }
 .records-era-toggle button.active { background: var(--bg-2); color: var(--fg-1); }
+/* Mobile: three equal segments; the year ranges (.era-range spans in the
+   button labels) are dropped so the labels fit on one line each instead of
+   wrapping into a ragged multi-line block. */
+@media (max-width: 720px) {
+  .records-era-toggle { display: flex; width: 100%; }
+  .records-era-toggle button { flex: 1 1 0; padding: 9px 4px; font-size: 11px; text-align: center; white-space: nowrap; }
+  .records-era-toggle .era-range { display: none; }
+}
 
 .records-note {
   font-size: 13px; color: var(--fg-3); margin: 0 0 12px;
@@ -4728,4 +4779,75 @@ html.light .cmp-f-flagwash { opacity: 0.1; }
 
 @media (max-width: 560px) {
   .cmp-sugg-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   SITE FOOTER  (Footer.astro, global via Chrome)
+   Desktop = records-style branded footer; mobile collapses
+   (CSS-only) to the minimal treatment "B" and clears the fixed
+   bottom nav. See Footer.astro for the DOM contract.
+   ============================================================ */
+.site-footer { border-top: 2px solid var(--accent); background: var(--bg-1); }
+.site-footer-inner { max-width: 1280px; margin: 0 auto; padding: 36px var(--sp-7) 26px; }
+
+.site-footer a { color: var(--fg-3); text-decoration: none; transition: color var(--mo, 140ms) ease; }
+.site-footer a:hover { color: var(--fg-1); }
+
+/* top: brand + three link columns (display:contents lets the nav's
+   children join the .sf-top grid directly) */
+.sf-top { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 30px; }
+.sf-cols { display: contents; }
+
+.sf-logo { display: inline-block; margin-bottom: 12px; }
+.sf-logo-img { display: block; height: 30px; width: auto; }
+.sf-logo .wm-light { display: none; }
+html.light .sf-logo .wm-dark { display: none; }
+html.light .sf-logo .wm-light { display: block; }
+
+.sf-tagline { margin: 0 0 16px; color: var(--fg-3); font-size: 13px; line-height: 1.55; max-width: 30ch; }
+
+.sf-season { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--line-2); background: var(--bg-2); padding: 8px 13px; }
+.sf-season-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); position: relative; }
+.sf-season-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid var(--accent); opacity: .5; animation: sfPulse 2.4s ease-out infinite; }
+@keyframes sfPulse { 0% { transform: scale(.6); opacity: .6; } 100% { transform: scale(1.7); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sf-season-dot::after { animation: none; } }
+.sf-season-lbl { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; color: var(--fg-3); }
+.sf-season-val { font-family: var(--f-display); font-weight: 800; font-size: 14px; color: var(--fg-1); letter-spacing: 0.02em; }
+
+.sf-head { margin: 0; font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; font-size: 11px; color: var(--fg-4); }
+.sf-col ul { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.sf-col a { font-size: 13px; }
+
+/* mobile-only condensed nav (hidden on desktop) */
+.sf-links-mobile { display: none; }
+
+.sf-rule { height: 1px; background: var(--line-1); margin: 26px 0 16px; }
+
+.sf-bottom { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; }
+.sf-dots { display: flex; gap: 6px; }
+.sf-dots span { display: block; width: 9px; height: 9px; border-radius: 50%; }
+.sf-meta { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.02em; color: var(--fg-4); font-variant-numeric: tabular-nums; }
+.sf-meta .sf-disclaimer { color: var(--fg-3); }
+.sf-meta-sep { color: var(--fg-4); opacity: .5; }
+.sf-actions { margin-left: auto; display: flex; gap: 16px; }
+.sf-actions a { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; font-size: 11px; color: var(--fg-2); }
+.sf-actions a:hover { color: var(--accent-text); }
+
+@media (max-width: 720px) {
+  /* Collapse to treatment "B": drop the columns/tagline/season chip,
+     centre everything, show the condensed secondary nav, and reserve
+     clearance for the fixed .botnav (matches the .page pattern). */
+  .site-footer-inner { padding: 26px var(--sp-6) calc(22px + var(--botnav-h) + env(safe-area-inset-bottom)); text-align: center; }
+  .sf-top { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .sf-brand { display: flex; flex-direction: column; align-items: center; }
+  .sf-cols, .sf-tagline, .sf-season, .sf-actions { display: none; }
+  .sf-logo { margin-bottom: 14px; }
+  .sf-logo-img { height: 27px; }
+  .sf-links-mobile { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 4px; margin: 2px 0 4px; }
+  .sf-links-mobile a { font-size: 13px; }
+  .sf-links-mobile a:not(:last-child)::after { content: "·"; margin-left: 8px; color: var(--fg-4); opacity: .5; }
+  .sf-rule { margin: 18px 0 16px; }
+  .sf-bottom { flex-direction: column; align-items: center; gap: 14px; }
+  .sf-dots { justify-content: center; }
+  .sf-meta { justify-content: center; }
 }
