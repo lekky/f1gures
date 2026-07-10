@@ -74,7 +74,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import RaceResultsBody from './RaceResultsBody.astro';
 import RaceUpcomingBody from './RaceUpcomingBody.astro';
-import MobileTableCards from './MobileTableCards.astro';
+import MobileBarRows from './MobileBarRows.astro';
 import Flag from './Flag.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 
@@ -169,7 +169,7 @@ const flagWashSrc = washCc
   </div>
 </div>
 
-<MobileTableCards />
+<MobileBarRows />
 
 <style is:global>
   /* This block is global so rules also style elements rendered by the

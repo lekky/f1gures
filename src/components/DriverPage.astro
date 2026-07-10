@@ -71,6 +71,7 @@ interface Props {
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import MobileBarRows from './MobileBarRows.astro';
 import { buildDriverSummary } from '../lib/buildDriverSummary.js';
 import { getDriverBio } from '../data/driverBios.js';
 import { NATIONALITY } from '../lib/nationality.js';
@@ -1003,35 +1004,7 @@ const duelSurname = driver.surname;
   )}
 </div>
 
-{/* Tap-to-expand wiring for the mobile bar rows (.belist, <=720px). One row
-    open at a time per section (mirrors the standings rows' behaviour); links
-    inside still navigate. First row per list is server-rendered open, so the
-    pattern reads without JS. */}
-<script is:inline>
-  document.addEventListener('click', function (e) {
-    if (e.target.closest('a')) return;
-    var yearHead = e.target.closest('.be-yearhead');
-    if (yearHead) {
-      var group = yearHead.closest('.be-group');
-      group.classList.toggle('collapsed');
-      yearHead.setAttribute('aria-expanded', group.classList.contains('collapsed') ? 'false' : 'true');
-      return;
-    }
-    var head = e.target.closest('.behead');
-    if (!head) return;
-    var row = head.closest('.berow');
-    var wasOpen = row.classList.contains('open');
-    var scope = row.closest('.drv-history') || document;
-    scope.querySelectorAll('.berow.open').forEach(function (r) {
-      r.classList.remove('open');
-      r.querySelector('.behead').setAttribute('aria-expanded', 'false');
-    });
-    if (!wasOpen) {
-      row.classList.add('open');
-      head.setAttribute('aria-expanded', 'true');
-    }
-  });
-</script>
+<MobileBarRows />
 
 <style>
   /* ── Hero ───────────────────────────────────────────────────── */
