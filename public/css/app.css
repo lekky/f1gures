@@ -259,12 +259,16 @@ button { font-family: inherit; }
   gap: 24px;
 }
 .nav-logo {
-  font-family: var(--f-display); font-weight: 800; font-size: 22px;
-  letter-spacing: 0.04em; line-height: 1; cursor: pointer;
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; cursor: pointer;
 }
-.nav-logo .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent-glow); }
-.nav-logo .logo-1 { color: var(--accent); }
+/* Brand wordmark image, with a light/dark swap so the plate outline + letters
+   stay legible on both themes. The two <img> share a slot; the theme decides
+   which one shows (default = dark art; html.light = light art). */
+.nav-logo-img { display: block; height: 26px; width: auto; }
+.nav-logo .wm-light { display: none; }
+html.light .nav-logo .wm-dark { display: none; }
+html.light .nav-logo .wm-light { display: block; }
+.topbar-logo .nav-logo-img { height: 24px; }
 .nav-items { display: flex; gap: 2px; height: 100%; align-items: center; }
 .nav-item {
   font-family: var(--f-display); font-weight: 600;

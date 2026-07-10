@@ -17,6 +17,7 @@ const PAL = {
 const DISPLAY = "'Arial Narrow', 'Roboto Condensed', 'Oswald', sans-serif";
 const MONO = "'JetBrains Mono', 'Consolas', ui-monospace, monospace";
 const LOGO_ALIAS = { red_bull: 'redbull', aston_martin: 'aston' };
+const WORDMARK_SRC = '/images/logo/f1gures-wordmark-dark.png';
 
 function loadImg(src) {
   return new Promise((resolve) => {
@@ -206,13 +207,14 @@ export async function buildShareBlob(cmp, { bColor } = {}) {
   const A = cmp.a, B = cmp.b;
   const aColor = PAL.accent;
   const bCol = bColor || B.color || PAL.accentText;
-  const [aImg, bImg, aFlag, bFlag, aLogo, bLogo] = await Promise.all([
+  const [aImg, bImg, aFlag, bFlag, aLogo, bLogo, wordmark] = await Promise.all([
     loadImg(faceSrc(cmp.kind, A.ref)),
     loadImg(faceSrc(cmp.kind, B.ref)),
     loadImg(flagSrc(A.nationality)),
     loadImg(flagSrc(B.nationality)),
     loadImg(cmp.kind === 'team' ? null : logoSrc(A.teamRef)),
     loadImg(cmp.kind === 'team' ? null : logoSrc(B.teamRef)),
+    loadImg(WORDMARK_SRC),
   ]);
 
   const W = 1080, H = 1080, S = 2;
@@ -229,14 +231,19 @@ export async function buildShareBlob(cmp, { bColor } = {}) {
   for (let i = -H; i < W; i += 8) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke(); }
 
   const pad = 60;
-  // ── masthead ──
-  ctx.fillStyle = PAL.accent;
-  ctx.beginPath(); ctx.arc(pad + 5, 52, 6, 0, Math.PI * 2); ctx.fill();
+  // ── masthead: brand wordmark (falls back to dot + text) ──
   ctx.textBaseline = 'alphabetic';
-  ctx.textAlign = 'left';
-  ctx.fillStyle = PAL.fg;
-  ctx.font = `800 30px ${DISPLAY}`;
-  ctx.fillText('F1GURES', pad + 20, 62);
+  if (wordmark && wordmark.width) {
+    const lh = 42, lw = (wordmark.width / wordmark.height) * lh;
+    ctx.drawImage(wordmark, pad, 18, lw, lh);
+  } else {
+    ctx.fillStyle = PAL.accent;
+    ctx.beginPath(); ctx.arc(pad + 5, 52, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = 'left';
+    ctx.fillStyle = PAL.fg;
+    ctx.font = `800 30px ${DISPLAY}`;
+    ctx.fillText('F1GURES', pad + 20, 62);
+  }
   ctx.textAlign = 'right';
   ctx.fillStyle = PAL.fg3;
   ctx.font = `400 18px ${MONO}`;
@@ -327,7 +334,7 @@ export async function buildShareBlob(cmp, { bColor } = {}) {
   ctx.textAlign = 'left';
   ctx.fillStyle = PAL.fg2;
   ctx.font = `700 20px ${DISPLAY}`;
-  ctx.fillText('f1gures.app', pad, H - 28);
+  ctx.fillText('www.f1gures.app', pad, H - 28);
   ctx.textAlign = 'right';
   ctx.fillStyle = PAL.fg3;
   ctx.font = `400 15px ${MONO}`;
