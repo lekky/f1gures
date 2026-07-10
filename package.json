@@ -4,6 +4,7 @@
   "description": "Live F1 stats, calendar, race results and driver career stats.",
   "type": "module",
   "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
