@@ -1,33 +1,37 @@
 name: Deploy to Server
 
+# Code/content changes to main are deployed on a BATCHED SCHEDULE, not on
+# every push. Each scheduled slot rebuilds main once, picking up everything
+# merged since the last successful deploy. This caps routine deploys at 3/day
+# instead of one-per-push (which exhausted the free Actions minutes).
+#
+# Data-driven deploys (new race results) are handled separately and on their
+# own cadence by refresh-current-season.yml - this workflow is only for code
+# and content (blog posts, UI, etc.).
+#
+# Need something live immediately? Trigger this workflow by hand
+# (workflow_dispatch) - it bypasses the "unchanged" gate and always deploys.
+
 on:
-  push:
-    branches:
-      - main
-    # Skip a full ~2,300-page rebuild + FTP when a push touches ONLY files
-    # that never end up in dist/: repo docs, the design-system reference,
-    # the separately-deployed feedback worker, local tooling, and the CI
-    # workflows themselves. A push that also touches anything else (src/,
-    # public/, scripts/, config) still deploys. Blog/guide content lives in
-    # src/content/** and data in public/data/**, so both stay in scope.
-    paths-ignore:
-      - 'docs/**'
-      - 'design-system/**'
-      - 'feedback-worker/**'
-      - '.claude/**'
-      - '.github/**'
-      - 'README.md'
-      - 'CLAUDE.md'
-  # Manual redeploy of current main. Needed when a refresh run commits a new
-  # bundle but its FTP deploy fails transiently: later refreshes are no-ops
-  # (changed=false skips build+deploy), so the change never reaches the live
-  # server without a way to re-trigger a deploy on demand. Also the escape
-  # hatch to deploy after a docs-only push that paths-ignore skipped.
+  schedule:
+    # Times are UTC. The user is on UK time; these map to 12:00 / 18:00 /
+    # 23:00 BST (UTC+1) during summer. When UK clocks go back to GMT in late
+    # October, they shift to 11:00 / 17:00 / 22:00 local - bump each cron +1h
+    # then if you want to preserve the exact local slots.
+    - cron: '0 11 * * *'  # ~midday UK
+    - cron: '0 17 * * *'  # ~early evening UK
+    - cron: '0 22 * * *'  # ~night UK
+  # Manual "publish now": always deploys current main, bypassing the gate.
+  # Also the escape hatch when a refresh run's own FTP step failed transiently.
   workflow_dispatch:
 
 concurrency:
   group: deploy
   cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read   # read this workflow's run history for the "unchanged" gate
 
 jobs:
   deploy:
@@ -35,15 +39,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # On a scheduled run, skip the whole build if main hasn't moved since the
+      # last successful deploy - no point rebuilding on a day with no merges.
+      # A manual dispatch always deploys (deploy=true) so "publish now" works
+      # even when nothing changed (e.g. to recover a failed FTP upload).
+      - name: Decide whether to deploy
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "Manual/dispatch run - deploying current main."
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LAST=$(gh run list -R "$GITHUB_REPOSITORY" --workflow deploy.yml \
+                   --branch main --status success --limit 1 \
+                   --json headSha --jq '.[0].headSha // ""' || echo "")
+          if [ -n "$LAST" ] && [ "$LAST" = "$GITHUB_SHA" ]; then
+            echo "main ($GITHUB_SHA) unchanged since last successful deploy - skipping build."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "main changed since last deploy (last=$LAST, now=$GITHUB_SHA) - deploying."
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.decide.outputs.deploy == 'true'
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
+        if: steps.decide.outputs.deploy == 'true'
         run: npm ci
 
       - name: Cache OG images
+        if: steps.decide.outputs.deploy == 'true'
         uses: actions/cache@v4
         with:
           path: public/images/og
@@ -53,9 +85,11 @@ jobs:
           key: og-images-v1-${{ hashFiles('data/history/**', 'public/data/*.json', 'scripts/build-archive.mjs', 'scripts/generate-og-images.mjs', 'scripts/og-templates/**', 'package-lock.json') }}
 
       - name: Build Astro site
+        if: steps.decide.outputs.deploy == 'true'
         run: npm run build
 
       - name: Deploy via FTP
+        if: steps.decide.outputs.deploy == 'true'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.SFTP_HOST }}
