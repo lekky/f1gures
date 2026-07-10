@@ -2087,6 +2087,31 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .be-secline .rule { flex: 1; height: 1px; background: var(--line-1); }
   .be-secline .cnt { font-family: var(--f-mono); font-size: 10px; color: var(--fg-3); }
 
+  /* Race-by-race season groups — each year sits behind a full-width
+     team-colour bar that collapses the whole group (only the latest season
+     starts expanded). The colour is a mix, not solid, so the year label
+     keeps contrast on bright team colours in both themes. */
+  .be-group { margin-top: 10px; }
+  .be-group:first-child { margin-top: 6px; }
+  .be-yearhead {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    margin: 0; padding: 8px 10px 8px 9px; border: 0; cursor: pointer;
+    border-left: 4px solid var(--tc, var(--accent));
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--tc, var(--accent)) 26%, var(--bg-2)),
+      color-mix(in srgb, var(--tc, var(--accent)) 8%, var(--bg-2)));
+    font: inherit; color: inherit; text-align: left;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .be-yearhead .chev { font-size: 10px; color: var(--fg-2); transition: transform 0.24s ease; }
+  .be-group:not(.collapsed) .be-yearhead .chev { transform: rotate(90deg); }
+  .be-yearhead .yr {
+    font-family: var(--f-display); font-weight: 800; font-size: 14px;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-1);
+  }
+  .be-yearhead .cnt { margin-left: auto; font-family: var(--f-mono); font-size: 10px; color: var(--fg-2); }
+  .be-group.collapsed .belist { display: none; }
+
   .belist { display: flex; flex-direction: column; }
   .berow { border-bottom: 1px solid var(--line-1); }
   .berow:last-child { border-bottom: 0; }
@@ -2124,9 +2149,14 @@ html.light .circuit-track .circuit-track-light { display: block; }
     min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .be-who .sec {
+    display: inline-flex; align-items: center; gap: 5px;
     margin-left: auto; flex-shrink: 1; min-width: 0; max-width: 42%;
     font-family: var(--f-mono); font-size: 10px; color: var(--fg-3);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .be-team-logo {
+    width: 14px; height: 14px; object-fit: contain; border-radius: 2px;
+    background: #fff; padding: 1px; flex-shrink: 0;
   }
   .be-who .chev { flex-shrink: 0; font-size: 11px; color: var(--fg-3); transition: transform 0.24s ease; margin-left: 2px; }
   .berow.open .chev { transform: rotate(90deg); color: var(--accent-text); }

@@ -808,6 +808,7 @@ const duelSurname = driver.surname;
               const current = s.year === currentYear;
               const open = i === 0;
               const pts = s.points ?? 0;
+              const seasonLogo = teamLogoPath(s.constructorRef);
               return (
               <div class={`berow ${open ? 'open' : ''}`} style={`--tc:${teamColor}`}>
                 <button class="behead" type="button" aria-expanded={open ? 'true' : 'false'}>
@@ -819,7 +820,10 @@ const duelSurname = driver.surname;
                     <span class="be-who">
                       <span class="tcbar" aria-hidden="true"></span>
                       <span class="rname">{s.year}</span>
-                      <span class="sec">{s.constructorName || '–'} · {s.wins}W</span>
+                      <span class="sec">
+                        {seasonLogo && <img class="be-team-logo" src={seasonLogo} alt="" width="14" height="14" loading="lazy" />}
+                        {s.constructorName || '–'} · {s.wins}W
+                      </span>
                       <span class="chev" aria-hidden="true">▶</span>
                     </span>
                     <span class="be-track">
@@ -918,8 +922,14 @@ const duelSurname = driver.surname;
         </table>
         <div class="belist-wrap">
           {racesByYear.map((g, gi) => (
-            <>
-              <div class="be-secline"><span class="yr">{g.year}</span><span class="rule"></span><span class="cnt">{g.races.length} {g.races.length === 1 ? 'race' : 'races'}</span></div>
+            <div class={`be-group ${gi === 0 ? '' : 'collapsed'}`} style={`--tc:${teamColor}`}>
+              {/* Season header bar — collapses the whole year group; only the
+                  latest season starts expanded. */}
+              <button class="be-yearhead" type="button" aria-expanded={gi === 0 ? 'true' : 'false'}>
+                <span class="chev" aria-hidden="true">▶</span>
+                <span class="yr">{g.year}</span>
+                <span class="cnt">{g.races.length} {g.races.length === 1 ? 'race' : 'races'}</span>
+              </button>
               <div class="belist">
                 {g.races.map((r, i) => {
                   const numeric = isNumericFinish(r);
@@ -929,6 +939,7 @@ const duelSurname = driver.surname;
                   const open = gi === 0 && i === 0;
                   const raceHref = raceUrl(r.year, r.round);
                   const delta = gainLoss(r);
+                  const rowLogo = teamLogoPath(r.constructorRef);
                   const statusTag = (
                     <span class={`be-status ${numeric ? 'fin' : 'ret'}`}>
                       {numeric
@@ -949,7 +960,10 @@ const duelSurname = driver.surname;
                           <span class="tcbar" aria-hidden="true"></span>
                           {(r.country || r.flag) && <span class="be-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
                           <span class="rname">{(r.raceName || '–').replace(' Grand Prix', ' GP')}</span>
-                          <span class="sec">{r.constructorName || ''}</span>
+                          <span class="sec">
+                            {rowLogo && <img class="be-team-logo" src={rowLogo} alt="" width="14" height="14" loading="lazy" />}
+                            {r.constructorName || ''}
+                          </span>
                           <span class="chev" aria-hidden="true">▶</span>
                         </span>
                         <span class="be-track">
@@ -981,7 +995,7 @@ const duelSurname = driver.surname;
                   );
                 })}
               </div>
-            </>
+            </div>
           ))}
         </div>
       </div>
@@ -996,6 +1010,13 @@ const duelSurname = driver.surname;
 <script is:inline>
   document.addEventListener('click', function (e) {
     if (e.target.closest('a')) return;
+    var yearHead = e.target.closest('.be-yearhead');
+    if (yearHead) {
+      var group = yearHead.closest('.be-group');
+      group.classList.toggle('collapsed');
+      yearHead.setAttribute('aria-expanded', group.classList.contains('collapsed') ? 'false' : 'true');
+      return;
+    }
     var head = e.target.closest('.behead');
     if (!head) return;
     var row = head.closest('.berow');
