@@ -39,6 +39,11 @@ const { entries, subjectType, era } = Astro.props as {
 
 const isDefault = era === 'all-time';
 
+// Largest value in this era drives the mobile-card proportional bar (mobile
+// only — desktop keeps the plain table). Records are ranked most-first, so the
+// top entry is the max; guard the empty-era / all-zero cases.
+const maxValue = Math.max(1, ...entries.map(e => (typeof e.value === 'number' ? Math.abs(e.value) : 0)));
+
 function flagCode(e: Entry): string | null {
   if (e.country) return e.country.toLowerCase();
   const fromEmoji = ccFromFlag(e.flag);
@@ -57,7 +62,7 @@ function rowHref(e: Entry): string | null {
 ---
 <div class="panel records-table-panel" data-era-table={era} hidden={!isDefault}>
   <div class="tbl-wrap">
-    <table class="tbl">
+    <table class="tbl tbl-cards">
       <thead>
         <tr>
           <th class="col-rank">#</th>
@@ -74,16 +79,19 @@ function rowHref(e: Entry): string | null {
           const cc = flagCode(e);
           const hasHeadshot = subjectType !== 'team' && headshotExists(e.driverRef);
           const teamColor = e.teamColor || 'var(--line-2)';
+          const barPct = typeof e.value === 'number'
+            ? Math.max(6, (Math.abs(e.value) / maxValue) * 100)
+            : 0;
           return (
             <tr
               class="clickable"
               onclick={href ? `window.location='${href}'` : undefined}
               style={`--team-color: ${teamColor}`}
             >
-              <td class="col-rank">
+              <td class="col-rank card-pos">
                 <div class={`pos pos-${e.rank}`}>{e.rank}</div>
               </td>
-              <td class="col-name">
+              <td class="col-name card-primary">
                 <div class="records-cell">
                   {subjectType === 'team' ? (
                     <>
@@ -112,19 +120,22 @@ function rowHref(e: Entry): string | null {
                 </div>
               </td>
               {subjectType === 'driver-at-circuit' && (
-                <td class="col-circuit">
+                <td class="col-circuit" data-label="Circuit">
                   <a href={`/circuits/${e.circuitRef}/`} onclick="event.stopPropagation()">{e.circuitName}</a>
                 </td>
               )}
               {subjectType === 'driver' && (
-                <td class="col-team">
+                <td class="col-team card-sub" data-label="Team">
                   {e.teamRef
                     ? <a href={`/teams/${e.teamRef}/`} onclick="event.stopPropagation()">{e.teamName}</a>
                     : <span>-</span>}
                 </td>
               )}
-              <td class="col-value right">{e.valueLabel}</td>
-              <td class="col-context">{e.context || ''}</td>
+              <td class="col-value right card-metric" data-label="Stat">
+                <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${barPct}%`}></span>
+                <span class="tbl-card-val">{e.valueLabel}</span>
+              </td>
+              <td class="col-context" data-label="Detail">{e.context || ''}</td>
             </tr>
           );
         })}

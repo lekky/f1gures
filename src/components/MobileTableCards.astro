@@ -1,0 +1,52 @@
+---
+// Tap-to-expand wiring for the mobile table cards (.tbl-cards, <=720px).
+// Mirrors the standings island: first card open by default, one open at a
+// time. Desktop (>720px) is a no-op — those tables render as normal tables.
+// Include once per page that uses .tbl-cards. The whole card toggles, except
+// clicks on real links (which navigate) and rows flagged data-noexpand.
+---
+<script is:inline>
+  (function () {
+    function initTable(tbl) {
+      var rows = tbl.tBodies.length ? tbl.tBodies[0].rows : [];
+      // Flag rows that have no expandable detail cells so the caret hides.
+      for (var i = 0; i < rows.length; i++) {
+        var tr = rows[i];
+        var hasDetail = false;
+        var cells = tr.cells;
+        for (var c = 0; c < cells.length; c++) {
+          var cl = cells[c].classList;
+          if (!cl.contains('card-pos') && !cl.contains('card-primary') &&
+              !cl.contains('card-sub') && !cl.contains('card-metric') &&
+              !cl.contains('card-hide') && cells[c].textContent.trim() !== '') {
+            hasDetail = true; break;
+          }
+        }
+        if (!hasDetail) tr.setAttribute('data-noexpand', '');
+      }
+      // Open the first expandable row by default.
+      for (var j = 0; j < rows.length; j++) {
+        if (!rows[j].hasAttribute('data-noexpand')) { rows[j].classList.add('is-open'); break; }
+      }
+      // Capture-phase click: intercept before any inline row onclick navigate.
+      tbl.addEventListener('click', function (e) {
+        if (window.innerWidth > 720) return;            // desktop = plain table
+        if (e.target.closest('a')) return;              // let links navigate
+        var tr = e.target.closest('tr');
+        if (!tr || tr.parentNode.tagName === 'THEAD' || tr.hasAttribute('data-noexpand')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var wasOpen = tr.classList.contains('is-open');
+        for (var k = 0; k < rows.length; k++) rows[k].classList.remove('is-open');
+        if (!wasOpen) tr.classList.add('is-open');
+      }, true);
+    }
+    function init() {
+      var tables = document.querySelectorAll('table.tbl-cards');
+      for (var i = 0; i < tables.length; i++) initTable(tables[i]);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else { init(); }
+  })();
+</script>

@@ -16,6 +16,7 @@ import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { OG_WIDTH, OG_HEIGHT } from './og-templates/og-shared.mjs';
 import { renderRaceOg } from './og-templates/og-race.mjs';
+import { computeStandings } from '../src/lib/seasonStats.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -105,7 +106,7 @@ async function generateRaceOgs() {
         const racePath = path.join(ARCHIVE, 'races', String(entry.year), `${entry.round}.json`);
         if (!fs.existsSync(racePath)) return;
         const race = JSON.parse(fs.readFileSync(racePath, 'utf8'));
-        const png = await renderPng(renderRaceOg(race));
+        const png = await renderPng(await renderRaceOg(race));
         fs.writeFileSync(out, png);
         fs.writeFileSync(stateFile, wantState);
         count++;
@@ -142,7 +143,7 @@ async function generateDriverOgs() {
         const driverPath = path.join(ARCHIVE, 'drivers', `${entry.driverRef}.json`);
         if (!fs.existsSync(driverPath)) return;
         const driver = JSON.parse(fs.readFileSync(driverPath, 'utf8'));
-        const png = await renderPng(renderDriverOg(driver));
+        const png = await renderPng(await renderDriverOg(driver, { teamColor: entry.teamColor }));
         fs.writeFileSync(out, png);
         count++;
       } catch (err) {
@@ -173,7 +174,7 @@ async function generateCircuitOgs() {
         const p = path.join(ARCHIVE, 'circuits', `${entry.circuitRef}.json`);
         if (!fs.existsSync(p)) return;
         const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-        const png = await renderPng(renderCircuitOg(data));
+        const png = await renderPng(await renderCircuitOg(data));
         fs.writeFileSync(out, png);
         count++;
       } catch (err) {
@@ -204,7 +205,7 @@ async function generateTeamOgs() {
         const p = path.join(ARCHIVE, 'teams', `${entry.constructorRef}.json`);
         if (!fs.existsSync(p)) return;
         const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-        const png = await renderPng(renderTeamOg(data));
+        const png = await renderPng(await renderTeamOg(data));
         fs.writeFileSync(out, png);
         count++;
       } catch (err) {
@@ -214,6 +215,169 @@ async function generateTeamOgs() {
     }));
   }
   return { count, skipped, failed };
+}
+
+// Current-season championship top-3 cards. Always regenerated (only 2 images)
+// so they never go stale relative to the latest bundle.
+async function generateStandingsOgs() {
+  const dataDir = path.join(ROOT, 'public/data');
+  const years = fs.readdirSync(dataDir)
+    .map(f => /^(\d{4})\.json$/.exec(f))
+    .filter(Boolean)
+    .map(m => Number(m[1]))
+    .sort((a, b) => b - a);
+  if (!years.length) return { count: 0, skipped: 0, failed: 0 };
+  const year = years[0];
+  const bundle = JSON.parse(fs.readFileSync(path.join(dataDir, `${year}.json`), 'utf8'));
+
+  const outDir = path.join(OUT_BASE, 'standings');
+  ensureDir(outDir);
+  const { renderStandingsOg } = await import('./og-templates/og-standings.mjs');
+
+  const teamsById = {};
+  for (const t of bundle.teams || []) teamsById[t.id] = t;
+  const teamColor = (id) => {
+    const c = teamsById[id] ? teamsById[id].color : '#9B9B9B';
+    return c === '#888888' ? '#9B9B9B' : c;
+  };
+  const teamName = (id) => (teamsById[id] ? teamsById[id].name : id);
+
+  let count = 0, failed = 0;
+  try {
+    const st = computeStandings(bundle);
+    if (!st.drivers?.length) {
+      console.warn('[og] standings: empty bundle, skipping');
+      return { count: 0, skipped: 0, failed: 0 };
+    }
+
+    const driverRows = st.drivers.map((r) => {
+      const d = r.driver;
+      return {
+        name: `${d.first} ${d.last}`,
+        teamName: teamName(d.team),
+        color: teamColor(d.team),
+        points: r.points,
+        faceRef: d.jolpicaId || d.id,
+      };
+    });
+    const teamRows = st.teams.map((t) => ({
+      name: teamName(t.team.id),
+      color: teamColor(t.team.id),
+      points: t.points,
+      short: (teamsById[t.team.id]?.short) || '',
+      nat: t.team.nationality || '',
+    }));
+
+    const jobs = [
+      { kind: 'drivers', rows: driverRows, out: path.join(outDir, 'drivers.png') },
+      { kind: 'constructors', rows: teamRows, out: path.join(outDir, 'constructors.png') },
+    ];
+    for (const j of jobs) {
+      const png = await renderPng(await renderStandingsOg({ kind: j.kind, year, rows: j.rows }));
+      fs.writeFileSync(j.out, png);
+      count++;
+    }
+  } catch (err) {
+    failed++;
+    console.warn(`[og] standings failed: ${err.message}`);
+  }
+  return { count, skipped: 0, failed };
+}
+
+// Records leaderboard top-3 cards, one per topic. Skip-if-exists (they barely
+// change; a data change busts the CI cache and forces a rebuild).
+async function generateRecordsOgs() {
+  const recordsDir = path.join(ARCHIVE, 'records');
+  if (!fs.existsSync(recordsDir)) return { count: 0, skipped: 0, failed: 0 };
+  const files = fs.readdirSync(recordsDir).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+  const outDir = path.join(OUT_BASE, 'records');
+  ensureDir(outDir);
+  const { renderRecordsOg } = await import('./og-templates/og-records.mjs');
+
+  let count = 0, skipped = 0, failed = 0;
+  for (let i = 0; i < files.length; i += 20) {
+    const batch = files.slice(i, i + 20);
+    await Promise.all(batch.map(async (file) => {
+      const slug = file.replace(/\.json$/, '');
+      try {
+        const out = path.join(outDir, `${slug}.png`);
+        if (!FORCE && fs.existsSync(out)) { skipped++; return; }
+        const topic = JSON.parse(fs.readFileSync(path.join(recordsDir, file), 'utf8'));
+        const png = await renderPng(await renderRecordsOg(topic));
+        fs.writeFileSync(out, png);
+        count++;
+      } catch (err) {
+        failed++;
+        console.warn(`[og] record ${slug} failed: ${err.message}`);
+      }
+    }));
+  }
+  return { count, skipped, failed };
+}
+
+// Static / hub / listing page cards. Always regenerated (few images; counts and
+// season year should track the data).
+async function generatePageOgs() {
+  const { renderPageOg } = await import('./og-templates/og-page.mjs');
+  const outDir = path.join(OUT_BASE, 'pages');
+  ensureDir(outDir);
+
+  const count = (file) => {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(ARCHIVE, file), 'utf8'));
+      return Array.isArray(j) ? j.length : 0;
+    } catch { return 0; }
+  };
+  const nDrivers = count('_drivers-index.json');
+  const nTeams = count('_teams-index.json');
+  const nCircuits = count('_circuits-index.json');
+  const nRaces = count('_races-index.json');
+  const nRecords = fs.existsSync(path.join(ARCHIVE, 'records'))
+    ? fs.readdirSync(path.join(ARCHIVE, 'records')).filter(f => f.endsWith('.json') && !f.startsWith('_')).length
+    : 0;
+
+  const dataDir = path.join(ROOT, 'public/data');
+  const years = fs.readdirSync(dataDir).map(f => /^(\d{4})\.json$/.exec(f)).filter(Boolean).map(m => Number(m[1])).sort((a, b) => b - a);
+  const year = years[0];
+  let rounds = 0;
+  try { rounds = JSON.parse(fs.readFileSync(path.join(dataDir, `${year}.json`), 'utf8')).calendar.length; } catch {}
+
+  const nf = (n) => n.toLocaleString('en-US');
+
+  const pages = [
+    { slug: 'home', kicker: 'Formula 1', title: 'F1 Stats & History', subtitle: 'Every driver, team, race & circuit — 1950 to today.',
+      stats: [{ value: nf(nDrivers), label: 'Drivers' }, { value: nf(nTeams), label: 'Teams' }, { value: nf(nRaces), label: 'Races' }] },
+    { slug: 'calendar', kicker: `${year} Season`, title: 'F1 Race Calendar', subtitle: 'Schedule, results, sessions & weather.',
+      stats: [{ value: rounds, label: 'Rounds' }, { value: year, label: 'Season' }] },
+    { slug: 'drivers', kicker: 'All-Time', title: 'Every F1 Driver', subtitle: 'Careers, stats & head-to-heads since 1950.',
+      stats: [{ value: nf(nDrivers), label: 'Drivers' }] },
+    { slug: 'teams', kicker: 'All-Time', title: 'Every F1 Constructor', subtitle: 'Team histories, lineages & records since 1950.',
+      stats: [{ value: nf(nTeams), label: 'Teams' }] },
+    { slug: 'circuits', kicker: 'All-Time', title: 'Every F1 Circuit', subtitle: 'Track maps, records & race history since 1950.',
+      stats: [{ value: nCircuits, label: 'Circuits' }] },
+    { slug: 'records', kicker: 'F1 Records', title: 'All-Time Records', subtitle: 'Wins, poles, podiums, titles & more — ranked.',
+      stats: [{ value: nRecords, label: 'Leaderboards' }] },
+    { slug: 'stats', kicker: 'F1 Stats', title: 'Stats & Records', subtitle: 'Every leaderboard plus head-to-head Compare.' },
+    { slug: 'read', kicker: 'F1gures', title: 'Guides & Blog', subtitle: 'Learn how F1 works, then read the latest.' },
+    { slug: 'compare', kicker: 'Head-to-Head', title: 'Compare Mode', subtitle: 'Put any two drivers or teams side by side.' },
+    { slug: 'guide', kicker: "Beginner's Guide", title: 'How F1 Works', subtitle: 'Points, formats, flags & jargon — explained simply.' },
+    { slug: 'blog', kicker: 'F1gures Blog', title: 'The Blog', subtitle: 'Race previews, recaps & data deep-dives.' },
+    { slug: 'feedback', kicker: 'F1gures', title: 'Feedback', subtitle: 'Spotted a bug or have an idea? Tell us.' },
+    { slug: '404', kicker: 'Error 404', title: 'Page Not Found', subtitle: "Let's get you back on track.", icon: true },
+  ];
+
+  let cnt = 0, failed = 0;
+  for (const p of pages) {
+    try {
+      const png = await renderPng(renderPageOg(p));
+      fs.writeFileSync(path.join(outDir, `${p.slug}.png`), png);
+      cnt++;
+    } catch (err) {
+      failed++;
+      console.warn(`[og] page ${p.slug} failed: ${err.message}`);
+    }
+  }
+  return { count: cnt, skipped: 0, failed };
 }
 
 function summarise(label, r) {
@@ -231,6 +395,9 @@ async function main() {
   summarise('drivers', await generateDriverOgs());
   summarise('circuits', await generateCircuitOgs());
   summarise('teams', await generateTeamOgs());
+  summarise('standings', await generateStandingsOgs());
+  summarise('records', await generateRecordsOgs());
+  summarise('pages', await generatePageOgs());
 }
 
 main().catch(err => {

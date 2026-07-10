@@ -1781,6 +1781,237 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl.tbl-static td { padding: 8px 10px; }
 }
 
+/* Results / qualifying rows carry the team colour as a left strip on desktop
+   (previously an inline border-left; now driven by the per-row --team-color so
+   the same custom property feeds the mobile card strip too). */
+.rr-tbl tbody tr { border-left: 3px solid var(--team-color, transparent); }
+
+/* ============================================================
+   MOBILE TABLE CARDS  (.tbl-cards, <=720px)
+   Reflows a detail-page table into the SAME tap-to-expand card as
+   the mobile standings pages (see .stdrow above): each <tr> is a
+   compact card showing a rank badge, an identity line and — where a
+   metric exists — a team-coloured bar with the value in a chip.
+   Tapping a card expands the remaining columns into a stat panel;
+   the toggle is wired by the shared MobileTableCards.astro script
+   (first row open by default, one open at a time). Desktop is
+   untouched — everything lives inside the media query, so the same
+   markup keeps the dense table >720px.
+
+   Cell roles (set per component):
+     .card-pos      rank / position badge (left gutter, always shown)
+     .card-primary  identity line, e.g. driver / race / year (grows, left)
+     .card-sub      team / season, right of the identity line
+     .card-metric   headline metric — full-width bar + value chip
+     .card-stat     numeric stat, shown as a chip in the expanded grid
+     .card-block    full-width expanded row (driver lists, long text)
+     .card-hide     never rendered on mobile (duplicated data)
+     (anything else) detail — full-width label/value row when expanded
+   The <tr> is a flex-wrap card; `order` fixes the visual sequence
+   (identity + team, then bar, then stat grid, then rows) independent
+   of column order in the source table. Mirrors .stdrow.
+   ============================================================ */
+.tbl-card-bar { display: none; }
+
+@media (max-width: 720px) {
+  .tbl-cards { display: block; min-width: 0; }
+  .tbl-cards thead { display: none; }
+  .tbl-cards tbody { display: block; }
+
+  .tbl-cards tr {
+    display: flex; flex-wrap: wrap; align-items: center;
+    position: relative;
+    background: var(--bg-2);
+    border: 1px solid var(--line-1);
+    border-radius: 8px;
+    padding: 11px 32px 12px 14px;
+    margin: 0 0 8px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Reserve the left gutter only when a rank/position badge sits in it. */
+  .tbl-cards tr:has(td.card-pos) { padding-left: 46px; }
+  .tbl-cards tbody tr:last-child { margin-bottom: 0; }
+  /* Open card takes the team colour on its border (mirrors .stdrow.is-open). */
+  .tbl-cards tr.is-open { border-color: var(--team-color, var(--line-2)); }
+
+  /* Team-colour strip — a thin vertical bar to the RIGHT of the rank number
+     (mirrors .stdrow-strip), NOT the card's edge. Cards without a rank get the
+     strip at the left edge. */
+  .tbl-cards tr::before {
+    content: ''; position: absolute; top: 9px; bottom: 9px; width: 3px;
+    left: 7px; border-radius: 2px;
+    background: var(--team-color, var(--line-2));
+  }
+  .tbl-cards tr:has(td.card-pos)::before { left: 39px; }
+
+  /* Expand caret — small ▸ / ▾ glyph, matching .stdrow-caret. */
+  .tbl-cards tr::after {
+    content: '\25B8'; position: absolute; top: 12px; right: 12px;
+    color: var(--fg-3); font-size: 11px; line-height: 1;
+    transition: color 0.15s ease;
+  }
+  .tbl-cards tr.is-open::after { content: '\25BE'; color: var(--accent-text); }
+  .tbl-cards tr[data-noexpand]::after { content: none; }
+  .tbl-cards tr[data-noexpand] { cursor: default; }
+
+  /* Rank / position badge — in the left gutter, aligned to the name row. */
+  .tbl-cards td.card-pos {
+    position: absolute; left: 0; top: 11px; width: 40px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0; border: none;
+  }
+  .tbl-cards td.card-pos::before { content: none; }
+  .tbl-cards td.card-pos .pos { width: auto; font-size: 18px; }
+
+  /* Identity line — fills the space left of the team, shrinking (ellipsis) so
+     the team stays on the same line, right-aligned. */
+  .tbl-cards td.card-primary {
+    order: 1; flex: 1 1 0; min-width: 0;
+    padding: 0; border: none; text-align: left; font-size: 14px;
+  }
+  .tbl-cards td.card-primary::before { content: none; }
+  .tbl-cards td.card-primary .std-name-inner { min-width: 0; justify-content: flex-start; gap: 6px; }
+  .tbl-cards td.card-primary .records-cell,
+  .tbl-cards td.card-primary .race-cell { min-width: 0; }
+  .tbl-cards td.card-primary .records-name,
+  .tbl-cards td.card-primary .rr-name,
+  .tbl-cards td.card-primary .cw-name,
+  .tbl-cards td.card-primary .inline-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Driver code is redundant with the name on the card — drop it for space. */
+  .tbl-cards td.card-primary .driver-code,
+  .tbl-cards td.card-primary .rr-code { display: none; }
+  /* On the card, the standings-style bar is a full-width row (card-metric /
+     .tbl-card-bar) — hide the desktop behind-name fill + inline gap chip. */
+  .tbl-cards td.card-primary .std-bar { display: none; }
+  .tbl-cards td.card-primary .std-gap { display: none; }
+  .tbl-cards td.card-primary .rr-name,
+  .tbl-cards td.card-primary .cw-name { font-weight: 700; color: var(--fg-1); }
+  /* When the bar is nested inside the identity cell (results / qualifying),
+     the cell takes the full card width so the bar spans it. */
+  .tbl-cards td.card-primary:has(.tbl-card-bar) { flex-basis: 100%; order: 1; }
+
+  /* Team / season — right of the identity line, muted. */
+  .tbl-cards td.card-sub {
+    order: 2; flex: 0 1 auto; margin-left: 8px; max-width: 42%;
+    padding: 0; border: none; text-align: right;
+    font-size: 11px; letter-spacing: 0.03em; color: var(--fg-3);
+    text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tbl-cards td.card-sub::before { content: none; }
+  .tbl-cards td.card-sub a { color: inherit; text-decoration: none; }
+  .tbl-cards td.card-sub .team-logo-sm { width: 15px; height: 15px; vertical-align: -3px; margin-right: 4px; }
+  .tbl-cards td.card-sub .race-cell { justify-content: flex-end; }
+
+  /* Headline metric — team-coloured bar with the value in a solid chip,
+     mirroring .stdrow-bar. The bar track is either a sibling .card-metric cell
+     (records value column / history points cell — a direct flex item, so it
+     spans the card) or a .tbl-card-bar nested in the full-width identity cell
+     (results / qualifying). Fill width comes from --tbl-card-bar or an inline
+     width on .std-bar; the value rides in a solid chip. */
+  .tbl-cards td.card-metric {
+    order: 3; flex-basis: 100%; width: 100%;
+  }
+  .tbl-cards td.card-metric,
+  .tbl-cards td.card-primary .tbl-card-bar {
+    display: block; position: relative; height: 26px; margin-top: 10px;
+    padding: 0; border: none; border-radius: 4px; overflow: hidden;
+    background: color-mix(in srgb, var(--fg-1) 9%, var(--bg-2));
+  }
+  .tbl-cards td.card-metric::before { content: none; }
+  .tbl-cards td.card-metric .std-bar,
+  .tbl-cards td.card-metric .tbl-card-fill,
+  .tbl-cards td.card-primary .tbl-card-bar .tbl-card-fill {
+    display: block; position: absolute; left: 0; top: 0; bottom: 0; height: auto;
+    width: var(--tbl-card-bar, 100%); min-width: 3px; border-radius: 4px;
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--tc, var(--team-color, var(--accent))) 92%, transparent),
+      color-mix(in srgb, var(--tc, var(--team-color, var(--accent))) 62%, transparent));
+  }
+  .tbl-cards td.card-metric .hist-pts-val,
+  .tbl-cards td.card-metric .tbl-card-val,
+  .tbl-cards td.card-primary .tbl-card-bar .tbl-card-val {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: baseline; gap: 3px;
+    padding: 2px 8px; border-radius: 4px; background: var(--bg-1); color: var(--fg-1);
+    font-family: var(--f-display); font-weight: 800; font-size: 13px;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+
+  /* Detail cells — hidden until the card is open. */
+  .tbl-cards tr:not(.is-open) td:not(.card-pos):not(.card-primary):not(.card-sub):not(.card-metric) { display: none; }
+  .tbl-cards td.card-hide { display: none !important; }
+
+  /* Expanded numeric stats — a fully-boxed grid (border all round, rounded
+     ends, internal dividers), value big over a small label. Mirrors
+     .stdrow-stats. The bounding border is drawn by .card-stat-first /
+     .card-stat-last (set per table on the first + last stat cell). */
+  .tbl-cards tr.is-open td.card-stat {
+    order: 4; flex: 1 1 0; min-width: 0;
+    display: flex; flex-direction: column-reverse; align-items: center; gap: 3px;
+    margin-top: 11px; padding: 9px 4px;
+    border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2);
+    text-align: center;
+    font-family: var(--f-display); font-weight: 800; font-size: 19px;
+    color: var(--fg-1); font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .tbl-cards tr.is-open td.card-stat ~ td.card-stat { border-left: 1px solid var(--line-1); }
+  .tbl-cards tr.is-open td.card-stat-first {
+    border-left: 1px solid var(--line-2);
+    border-top-left-radius: 6px; border-bottom-left-radius: 6px;
+  }
+  .tbl-cards tr.is-open td.card-stat-last {
+    border-right: 1px solid var(--line-2);
+    border-top-right-radius: 6px; border-bottom-right-radius: 6px;
+  }
+  .tbl-cards tr.is-open td.card-stat::before {
+    content: attr(data-label); font-family: var(--f-display); font-weight: 600;
+    font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3);
+  }
+
+  /* Expanded free-form rows (non-numeric detail) + block cells. */
+  .tbl-cards tr.is-open td:not(.card-pos):not(.card-primary):not(.card-sub):not(.card-metric):not(.card-stat):not(.card-block):not(.card-hide) {
+    order: 5; flex-basis: 100%; width: 100%;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 9px 0 0; border: none; text-align: right; font-size: 13px; min-width: 0;
+  }
+  .tbl-cards td::before {
+    content: attr(data-label);
+    flex: 0 0 auto; text-align: left;
+    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--fg-3); font-weight: 600;
+  }
+  .tbl-cards td:not([data-label])::before,
+  .tbl-cards td[data-label=""]::before { content: none; }
+  .tbl-cards tr.is-open td:empty { display: none !important; }
+
+  /* Block detail cell — label above, free-flowing content below (driver lists). */
+  .tbl-cards tr.is-open td.card-block {
+    order: 6; flex-basis: 100%; width: 100%;
+    display: block; text-align: left; padding: 11px 0 0;
+  }
+  .tbl-cards td.card-block::before { display: block; margin-bottom: 7px; }
+
+  /* Profile / "view more" link, mirrors .stdrow-profile. */
+  .tbl-cards tr.is-open td.card-link {
+    order: 7; flex-basis: 100%; padding: 12px 0 0; border: none; display: block;
+  }
+  .tbl-cards td.card-link::before { content: none; }
+  .tbl-cards td.card-link a {
+    font-family: var(--f-display); font-weight: 700; font-size: 12px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text);
+    text-decoration: none;
+  }
+
+  .tbl-cards td.hist-pts-td.card-metric .hist-pts-val { font-family: var(--f-display); }
+
+  /* The team recent-seasons "Finish" cell is already a self-contained bar
+     (.finish-bar); when used as the hero metric, don't wrap it in the track. */
+  .tbl-cards td.team-finish-col.card-metric {
+    background: none; height: auto; overflow: visible; margin-top: 10px;
+  }
+}
+
 /* ============================================================
    CONTENT LINK AFFORDANCE
    Two distinct affordance patterns:

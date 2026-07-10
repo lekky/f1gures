@@ -63,7 +63,7 @@ function rowCls(i: number): string {
 ---
 
 <div class="panel tbl-collapsible" id={id} data-collapsed={overflow ? 'true' : 'false'}>
-  <table class="tbl tbl-static rr-tbl">
+  <table class="tbl tbl-static rr-tbl tbl-cards">
     <thead>
       <tr>
         <th class="center">Pos</th>
@@ -77,9 +77,9 @@ function rowCls(i: number): string {
     </thead>
     <tbody>
       {rows.map((r, i) => (
-        <tr class={rowCls(i)} style={r.constructorColor ? `border-left: 3px solid ${r.constructorColor}` : ''}>
-          <td class="center"><div class={posClass(r.position)}>{r.positionText || (r.position != null ? String(r.position) : '-')}</div></td>
-          <td class="std-name-td">
+        <tr class={rowCls(i)} style={r.constructorColor ? `--team-color: ${r.constructorColor}` : ''}>
+          <td class="center card-pos"><div class={posClass(r.position)}>{r.positionText || (r.position != null ? String(r.position) : '-')}</div></td>
+          <td class="std-name-td card-primary">
             <span class="std-bar" aria-hidden="true" style={`width:${barPct(gaps[i])}%; --tc:${r.constructorColor || 'var(--fg-3)'}`}></span>
             <div class="std-name-inner rr-name-inner">
               {r.driverRef ? (
@@ -100,8 +100,12 @@ function rowCls(i: number): string {
                 ? <span class="std-gap is-leader">Win</span>
                 : (r.time ? <span class="std-gap">{r.time}</span> : null)}
             </div>
+            <span class="tbl-card-bar">
+              <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${barPct(gaps[i])}%; --tc: ${r.constructorColor || 'var(--fg-3)'}`}></span>
+              <span class="tbl-card-val">{isWinner(r) ? 'Win' : (r.time || r.status || '—')}</span>
+            </span>
           </td>
-          <td>
+          <td data-label="Team">
             <span class="rr-team-cell">
               {teamLogoPath(r.constructorRef) && <img class="team-logo-sm" src={teamLogoPath(r.constructorRef)} alt="" width="20" height="20" loading="lazy" />}
               {r.constructorRef
@@ -109,12 +113,12 @@ function rowCls(i: number): string {
                 : <span class="rr-team">{r.constructorName || '-'}</span>}
             </span>
           </td>
-          <td class="right t-mono">{r.grid != null ? r.grid : '-'}</td>
-          <td class="right rr-pts">{r.points}</td>
+          <td class="right t-mono card-stat card-stat-first" data-label="Grid">{r.grid != null ? r.grid : '-'}</td>
+          <td class="right rr-pts card-stat card-stat-last" data-label="Points">{r.points}</td>
           {isRace && (
-            <td class="t-mono rr-fl">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
+            <td class="t-mono rr-fl" data-label="Fastest Lap">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
           )}
-          <td>
+          <td data-label="Status">
             <span class="status-cell">
               <StatusIcon status={r.status} />
               <span class="rr-status-lbl">{r.status || '-'}</span>
