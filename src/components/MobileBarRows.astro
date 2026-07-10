@@ -1,0 +1,42 @@
+---
+// Tap-to-expand wiring for the mobile bar + expand rows (.belist, <=720px) —
+// shared by the driver profile, race results and records pages (design
+// handoff: the "Mobile …" files in the claude.ai/design "F1 Web App" project).
+//
+// One row open at a time per .belist-wrap (mirrors the standings rows);
+// .be-yearhead group headers collapse their whole season group. The first row
+// per list is server-rendered open, so the pattern reads without JS. Links
+// inside rows still navigate. Include ONCE per page that renders a
+// .belist-wrap — the handler is document-level and guards against double
+// wiring.
+---
+<script is:inline>
+  (function () {
+    if (window.__beRowsWired) return;
+    window.__beRowsWired = true;
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('a')) return;
+      var yearHead = e.target.closest('.be-yearhead');
+      if (yearHead) {
+        var group = yearHead.closest('.be-group');
+        group.classList.toggle('collapsed');
+        yearHead.setAttribute('aria-expanded', group.classList.contains('collapsed') ? 'false' : 'true');
+        return;
+      }
+      var head = e.target.closest('.behead');
+      if (!head) return;
+      var row = head.closest('.berow');
+      var wasOpen = row.classList.contains('open');
+      var scope = row.closest('.belist-wrap') || document;
+      scope.querySelectorAll('.berow.open').forEach(function (r) {
+        r.classList.remove('open');
+        var h = r.querySelector('.behead');
+        if (h) h.setAttribute('aria-expanded', 'false');
+      });
+      if (!wasOpen) {
+        row.classList.add('open');
+        head.setAttribute('aria-expanded', 'true');
+      }
+    });
+  })();
+</script>

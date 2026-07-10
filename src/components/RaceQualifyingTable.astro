@@ -70,10 +70,27 @@ const overflow = rows.length > maxRows;
 function rowCls(i: number): string {
   return i >= maxRows ? 'rr-extra' : '';
 }
+
+// ── Mobile "bar + expand" rows (design handoff: Mobile Race Results) ──
+// Pole = full bar + "Pole" chip; the field tapers 96% → 26% by gap to pole.
+// Drivers with no pole-comparable lap get a striped bar + "No time".
+const beWidth = (gap: number | null): number | null => {
+  if (gap == null) return null;
+  if (gap <= 0 || maxGap <= 0) return 100;
+  return Math.max(26, Math.round(96 - (gap / maxGap) * 66));
+};
+const splitName = (name: string | null) => {
+  const parts = (name || '').trim().split(' ');
+  return { last: parts.pop() || '–', first: parts.join(' ') };
+};
+const initials = (r: Row) =>
+  r.code || (r.driverName || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+// Frontmatter helper: inline `<=` in a JSX expression trips the Astro compiler.
+const bePodium = (n: number | null) => n != null && n >= 1 && n <= 3;
 ---
 
 <div class="panel tbl-collapsible" id={id} data-collapsed={overflow ? 'true' : 'false'}>
-  <table class="tbl tbl-static rr-tbl tbl-cards">
+  <table class="tbl tbl-static rr-tbl">
     <thead>
       <tr>
         <th class="center">Pos</th>
@@ -87,8 +104,8 @@ function rowCls(i: number): string {
     <tbody>
       {rows.map((r, i) => (
         <tr class={rowCls(i)} style={r.constructorColor ? `--team-color: ${r.constructorColor}` : ''}>
-          <td class="center card-pos"><div class={posClass(r.position)}>{r.position != null ? r.position : '-'}</div></td>
-          <td class="std-name-td card-primary">
+          <td class="center"><div class={posClass(r.position)}>{r.position != null ? r.position : '-'}</div></td>
+          <td class="std-name-td">
             <span class="std-bar" aria-hidden="true" style={`width:${barPct(gaps[i])}%; --tc:${r.constructorColor || 'var(--fg-3)'}`}></span>
             <div class="std-name-inner rr-name-inner">
               {r.driverRef ? (
@@ -111,12 +128,8 @@ function rowCls(i: number): string {
                     <span class={`std-gap ${isPole(gaps[i]) ? 'is-leader' : ''}`}>{gapChip(gaps[i])}</span>
                   )}
             </div>
-            <span class="tbl-card-bar">
-              <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${barPct(gaps[i])}%; --tc: ${r.constructorColor || 'var(--fg-3)'}`}></span>
-              <span class="tbl-card-val">{noQ3Time(r) ? 'No time' : (gapChip(gaps[i]) || '—')}</span>
-            </span>
           </td>
-          <td data-label="Team">
+          <td>
             <span class="rr-team-cell">
               {teamLogoPath(r.constructorRef) && <img class="team-logo-sm" src={teamLogoPath(r.constructorRef)} alt="" width="20" height="20" loading="lazy" />}
               {r.constructorRef
@@ -124,13 +137,75 @@ function rowCls(i: number): string {
                 : <span class="rr-team">{r.constructorName || '-'}</span>}
             </span>
           </td>
-          <td class="right t-mono card-stat card-stat-first" data-label="Q1">{r.q1 || '-'}</td>
-          <td class="right t-mono card-stat" data-label="Q2">{r.q2 || '-'}</td>
-          <td class="right t-mono card-stat card-stat-last" data-label="Q3">{r.q3 || '-'}</td>
+          <td class="right t-mono">{r.q1 || '-'}</td>
+          <td class="right t-mono">{r.q2 || '-'}</td>
+          <td class="right t-mono">{r.q3 || '-'}</td>
         </tr>
       ))}
     </tbody>
   </table>
+  <div class="belist-wrap rr-belist">
+    <div class="be-secline"><span class="yr">Grid order</span><span class="rule"></span><span class="cnt">{rows.length} drivers</span></div>
+    <div class="belist">
+      {rows.map((r, i) => {
+        const noTime = noQ3Time(r) || gaps[i] == null;
+        const pole = isPole(gaps[i]);
+        const w = beWidth(gaps[i]);
+        const { first, last } = splitName(r.driverName);
+        const face = r.driverRef && hasDriverFace(r.driverRef) ? `/images/drivers/${r.driverRef}.webp` : null;
+        const logo = teamLogoPath(r.constructorRef);
+        const tc = r.constructorColor || 'var(--fg-3)';
+        return (
+        <div class={`berow ${pole ? 'lead' : ''} ${i === 0 ? 'open' : ''} ${rowCls(i)}`} style={`--tc:${tc}`}>
+          <button class="behead" type="button" aria-expanded={i === 0 ? 'true' : 'false'}>
+            <span class={`be-pos ${bePodium(r.position) ? `p${r.position}` : ''}`}>
+              {r.position != null ? r.position : '–'}
+            </span>
+            <span class="be-main">
+              <span class="be-who">
+                <span class="tcbar" aria-hidden="true"></span>
+                {face
+                  ? <img class="be-av" src={face} alt="" width="30" height="30" loading="lazy" />
+                  : <span class="be-av" aria-hidden="true">{initials(r)}</span>}
+                <span class="rname"><span class="fn">{first}</span> {last}</span>
+                <span class="chev" aria-hidden="true">▶</span>
+              </span>
+              <span class="be-track">
+                {noTime || w == null
+                  ? <span class="be-fill zero" style="width:100%"></span>
+                  : <span class="be-fill" style={`width:${w}%`}></span>}
+                {pole
+                  ? <span class="be-win">Pole</span>
+                  : noTime || gapChip(gaps[i]) == null
+                    ? <span class="be-track-status"><span class="be-status fin">No time</span></span>
+                    : <span class="be-gap">{gapChip(gaps[i])}</span>}
+              </span>
+            </span>
+          </button>
+          <div class="be-panel"><div><div class="be-inner">
+            <div class="be-grid c3">
+              <div class="c"><div class="l">Q1</div><div class="n mono">{r.q1 || '–'}</div></div>
+              <div class="c"><div class="l">Q2</div><div class="n mono">{r.q2 || '–'}</div></div>
+              <div class="c"><div class="l">Q3</div><div class="n mono">{r.q3 || '–'}</div></div>
+            </div>
+            <div class="be-drows">
+              <div class="be-drow">
+                <span class="k">Team</span>
+                <span class="v">
+                  {logo && <img class="be-team-logo" src={logo} alt="" width="14" height="14" loading="lazy" />}
+                  {r.constructorRef
+                    ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a>
+                    : (r.constructorName || '–')}
+                </span>
+              </div>
+            </div>
+            {r.driverRef && <a class="be-profile" href={`/drivers/${r.driverRef}/`}>View {last} profile →</a>}
+          </div></div></div>
+        </div>
+        );
+      })}
+    </div>
+  </div>
 </div>
 {overflow && (
   <button

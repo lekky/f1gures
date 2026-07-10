@@ -54,18 +54,33 @@ function barPct(gap: number | null): number {
   return Math.max(14, 100 - (gap / maxGap) * 86);
 }
 
-// Mobile-card bars must taper with the classified order: raw time gaps can be
-// non-monotonic (post-race penalties keep the crossing-line time, lapped cars
-// carry partial-lap strings), and a lower-placed car with a "closer" time would
-// draw a longer bar than the car ahead. Clamp each bar to the one above it;
-// the chip still shows the raw time string. Desktop keeps the raw widths.
-const rawPcts = rows.map((r, i) => barPct(gaps[i]));
-let prevPct = 100;
-const cardPcts = rawPcts.map(p => {
-  if (p <= 0) return p;
-  prevPct = Math.min(p, prevPct);
-  return prevPct;
+// ── Mobile "bar + expand" rows (design handoff: Mobile Race Results) ──
+// Winner = full bar + "Win" chip; the field tapers 96% → 26% by interval so
+// even the last classified car keeps a substantial bar with the gap readable
+// on the right. Widths clamp monotonically to the classified order: raw time
+// gaps can be non-monotonic (post-race penalties keep the crossing-line time,
+// lapped cars carry partial-lap strings) and a lower-placed car with a
+// "closer" time would out-bar the car ahead. Desktop keeps the raw widths.
+const isNumericFinish = (r: Row) =>
+  r.position != null && (r.positionText == null || /^\d+$/.test(r.positionText));
+const DNF_BADGE: Record<string, string> = { R: 'DNF', D: 'DSQ', W: 'WD', F: 'DNQ', E: 'EX', N: 'NC' };
+const dnfBadge = (r: Row) => DNF_BADGE[r.positionText ?? ''] ?? 'DNF';
+let prevW = 100;
+const beWidths = rows.map((r, i) => {
+  const gap = gaps[i];
+  if (r.position === 1 || gap === 0) return 100;
+  if (gap == null || maxGap <= 0) return null; // no parseable gap (lapped / DNF)
+  prevW = Math.min(Math.max(26, Math.round(96 - (gap / maxGap) * 66)), prevW);
+  return prevW;
 });
+const splitName = (name: string | null) => {
+  const parts = (name || '').trim().split(' ');
+  return { last: parts.pop() || '–', first: parts.join(' ') };
+};
+const initials = (r: Row) =>
+  r.code || (r.driverName || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+// Frontmatter helper: inline `<=` in a JSX expression trips the Astro compiler.
+const bePodium = (n: number) => n >= 1 && n <= 3;
 
 const posClass = (n: number | null) => (n != null && n >= 1 && n <= 3 ? `pos pos-${n}` : 'pos');
 const isWinner = (r: Row) => r.position === 1;
@@ -76,7 +91,7 @@ function rowCls(i: number): string {
 ---
 
 <div class="panel tbl-collapsible" id={id} data-collapsed={overflow ? 'true' : 'false'}>
-  <table class="tbl tbl-static rr-tbl tbl-cards">
+  <table class="tbl tbl-static rr-tbl">
     <thead>
       <tr>
         <th class="center">Pos</th>
@@ -91,8 +106,8 @@ function rowCls(i: number): string {
     <tbody>
       {rows.map((r, i) => (
         <tr class={rowCls(i)} style={r.constructorColor ? `--team-color: ${r.constructorColor}` : ''}>
-          <td class="center card-pos"><div class={posClass(r.position)}>{r.positionText || (r.position != null ? String(r.position) : '-')}</div></td>
-          <td class="std-name-td card-primary">
+          <td class="center"><div class={posClass(r.position)}>{r.positionText || (r.position != null ? String(r.position) : '-')}</div></td>
+          <td class="std-name-td">
             <span class="std-bar" aria-hidden="true" style={`width:${barPct(gaps[i])}%; --tc:${r.constructorColor || 'var(--fg-3)'}`}></span>
             <div class="std-name-inner rr-name-inner">
               {r.driverRef ? (
@@ -113,12 +128,8 @@ function rowCls(i: number): string {
                 ? <span class="std-gap is-leader">Win</span>
                 : (r.time ? <span class="std-gap">{r.time}</span> : null)}
             </div>
-            <span class="tbl-card-bar">
-              <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${cardPcts[i]}%; --tc: ${r.constructorColor || 'var(--fg-3)'}`}></span>
-              <span class="tbl-card-val">{isWinner(r) ? 'Win' : (r.time || r.status || '—')}</span>
-            </span>
           </td>
-          <td data-label="Team">
+          <td>
             <span class="rr-team-cell">
               {teamLogoPath(r.constructorRef) && <img class="team-logo-sm" src={teamLogoPath(r.constructorRef)} alt="" width="20" height="20" loading="lazy" />}
               {r.constructorRef
@@ -126,12 +137,12 @@ function rowCls(i: number): string {
                 : <span class="rr-team">{r.constructorName || '-'}</span>}
             </span>
           </td>
-          <td class="right t-mono card-stat card-stat-first" data-label="Grid">{r.grid != null ? r.grid : '-'}</td>
-          <td class="right rr-pts card-stat card-stat-last" data-label="Points">{r.points}</td>
+          <td class="right t-mono">{r.grid != null ? r.grid : '-'}</td>
+          <td class="right rr-pts">{r.points}</td>
           {isRace && (
-            <td class="t-mono rr-fl" data-label="Fastest Lap">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
+            <td class="t-mono rr-fl">{r.fastestLapRank === 1 ? `⚡ ${r.fastestLapTime || ''}` : ''}</td>
           )}
-          <td data-label="Status">
+          <td>
             <span class="status-cell">
               <StatusIcon status={r.status} />
               <span class="rr-status-lbl">{r.status || '-'}</span>
@@ -141,6 +152,94 @@ function rowCls(i: number): string {
       ))}
     </tbody>
   </table>
+  <div class="belist-wrap rr-belist">
+    <div class="be-secline"><span class="yr">Classification</span><span class="rule"></span><span class="cnt">{rows.length} drivers</span></div>
+    <div class="belist">
+      {rows.map((r, i) => {
+        const numeric = isNumericFinish(r);
+        const lead = r.position === 1;
+        const podium = numeric && r.position != null && bePodium(r.position);
+        const w = beWidths[i];
+        const { first, last } = splitName(r.driverName);
+        const delta = numeric && r.grid != null && r.grid > 0 && r.position != null ? r.grid - r.position : null;
+        const face = r.driverRef && hasDriverFace(r.driverRef) ? `/images/drivers/${r.driverRef}.webp` : null;
+        const logo = teamLogoPath(r.constructorRef);
+        const tc = r.constructorColor || 'var(--fg-3)';
+        const statusTag = (
+          <span class={`be-status ${numeric ? 'fin' : 'ret'}`}>
+            {numeric
+              ? <svg class="fl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 3v18"/><path d="M5 4h13l-2.5 4L18 12H5" fill="currentColor" stroke="none" opacity=".25"/><path d="M5 4h13l-2.5 4L18 12H5"/></svg>
+              : <span class="rd" aria-hidden="true"></span>}
+            {r.status || (numeric ? 'Finished' : 'Retired')}
+          </span>
+        );
+        return (
+        <div class={`berow ${lead ? 'lead' : ''} ${i === 0 ? 'open' : ''} ${rowCls(i)}`} style={`--tc:${tc}`}>
+          <button class="behead" type="button" aria-expanded={i === 0 ? 'true' : 'false'}>
+            <span class={`be-pos ${numeric ? (podium ? `p${r.position}` : '') : 'dnf'}`}>
+              {numeric ? r.position : dnfBadge(r)}
+            </span>
+            <span class="be-main">
+              <span class="be-who">
+                <span class="tcbar" aria-hidden="true"></span>
+                {face
+                  ? <img class="be-av" src={face} alt="" width="30" height="30" loading="lazy" />
+                  : <span class="be-av" aria-hidden="true">{initials(r)}</span>}
+                <span class="rname"><span class="fn">{first}</span> {last}</span>
+                <span class="chev" aria-hidden="true">▶</span>
+              </span>
+              <span class="be-track">
+                {numeric && w != null
+                  ? <span class="be-fill" style={`width:${w}%`}></span>
+                  : numeric
+                    ? <span class="be-fill" style="width:26%"></span>
+                    : <span class="be-fill zero" style="width:100%"></span>}
+                {lead
+                  ? <span class="be-win">Win</span>
+                  : numeric
+                    ? <span class="be-gap">{r.time || r.status || '–'}</span>
+                    : <span class="be-track-status">{statusTag}</span>}
+              </span>
+            </span>
+          </button>
+          <div class="be-panel"><div><div class="be-inner">
+            <div class="be-grid c2">
+              <div class="c"><div class="l">Grid</div><div class="n">{r.grid != null ? r.grid : '–'}</div></div>
+              <div class="c"><div class="l">Points</div><div class="n tc">{r.points}</div></div>
+            </div>
+            <div class="be-drows">
+              <div class="be-drow">
+                <span class="k">Team</span>
+                <span class="v">
+                  {logo && <img class="be-team-logo" src={logo} alt="" width="14" height="14" loading="lazy" />}
+                  {r.constructorRef
+                    ? <a href={`/teams/${r.constructorRef}/`}>{r.constructorName}</a>
+                    : (r.constructorName || '–')}
+                </span>
+              </div>
+              <div class="be-drow">
+                <span class="k">Grid → Finish</span>
+                <span class="v mono">
+                  {r.grid != null ? `P${r.grid}` : '–'} → {numeric ? `P${r.position}` : dnfBadge(r)}
+                  {delta != null && (
+                    <span class={`delta ${delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}`}>
+                      {delta > 0 ? `▲ ${delta}` : delta < 0 ? `▼ ${-delta}` : '– 0'}
+                    </span>
+                  )}
+                </span>
+              </div>
+              {isRace && r.fastestLapRank === 1 && (
+                <div class="be-drow"><span class="k">Fastest Lap</span><span class="v mono">⚡ {r.fastestLapTime || ''}</span></div>
+              )}
+              <div class="be-drow"><span class="k">Status</span><span class="v">{statusTag}</span></div>
+            </div>
+            {r.driverRef && <a class="be-profile" href={`/drivers/${r.driverRef}/`}>View {last} profile →</a>}
+          </div></div></div>
+        </div>
+        );
+      })}
+    </div>
+  </div>
 </div>
 {overflow && (
   <button
