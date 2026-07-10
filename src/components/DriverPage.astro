@@ -71,7 +71,6 @@ interface Props {
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import MobileTableCards from './MobileTableCards.astro';
 import { buildDriverSummary } from '../lib/buildDriverSummary.js';
 import { getDriverBio } from '../data/driverBios.js';
 import { NATIONALITY } from '../lib/nationality.js';
@@ -238,6 +237,33 @@ const racesDesc = [...driver.perRace].sort((a, b) =>
 const seasonMaxPoints = Math.max(1, ...driver.perSeason.map(s => s.points ?? 0));
 const raceMaxPoints = Math.max(1, ...driver.perRace.map(r => r.points || 0));
 const posClass = (n: number | null) => (n != null && n >= 1 && n <= 3 ? `pos pos-${n}` : 'pos');
+
+// ── Mobile "bar + expand" rows ───────────────────────────────────
+// Design handoff: "Mobile Driver Profile.html" (claude.ai/design, F1 Web App).
+// On <=720px the two history tables swap for .belist rows — position badge,
+// team-colour points bar with the value inside, tap-to-expand stat panel.
+// Both DOM trees are always rendered; CSS toggles them (same architecture as
+// the standings islands' .std-barlist / .std-fulltable pair).
+type PerRace = (typeof driver.perRace)[number];
+const isNumericFinish = (r: PerRace) =>
+  r.position != null && (r.positionText == null || /^\d+$/.test(r.positionText));
+// Ergast positionText codes for non-classified results → badge label.
+const DNF_BADGE: Record<string, string> = { R: 'DNF', D: 'DSQ', W: 'WD', F: 'DNQ', E: 'EX', N: 'NC' };
+const dnfBadge = (r: PerRace) => DNF_BADGE[r.positionText ?? ''] ?? 'DNF';
+// Race rows grouped by season, newest-first (racesDesc is already sorted).
+const racesByYear: Array<{ year: number; races: PerRace[] }> = [];
+for (const r of racesDesc) {
+  const g = racesByYear[racesByYear.length - 1];
+  if (g && g.year === r.year) g.races.push(r);
+  else racesByYear.push({ year: r.year, races: [r] });
+}
+const currentYear = new Date().getFullYear();
+const barPct = (pts: number, max: number) => Math.max(4, Math.round((pts / max) * 100));
+// Frontmatter helper: an inline `<=` in a JSX expression trips the Astro
+// compiler (see CLAUDE.md), so the podium check lives here.
+const bePodium = (n: number | null) => n != null && n >= 1 && n <= 3;
+const gainLoss = (r: PerRace) =>
+  isNumericFinish(r) && r.grid != null && r.grid > 0 && r.position != null ? r.grid - r.position : null;
 
 // ── Career outcome waffle ────────────────────────────────────────
 // One tile per career race, bucketed by outcome and sorted best→worst so the
@@ -734,8 +760,8 @@ const duelSurname = driver.surname;
   {driver.perSeason.length > 0 && (
     <>
       <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Season by Season</h2><div class="section-rule"></div></div>
-      <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="tbl tbl-static hist-tbl tbl-cards">
+      <div class="panel drv-history" style="padding: 0; overflow-x: auto;">
+        <table class="tbl tbl-static hist-tbl">
           <thead>
             <tr>
               <th>Year</th>
@@ -752,9 +778,9 @@ const duelSurname = driver.surname;
               const seasonLogo = teamLogoPath(s.constructorRef);
               return (
               <tr style={`--team-color: ${teamColor}`}>
-                <td class="t-mono card-primary">{s.year}</td>
-                <td class="center card-pos"><div class={posClass(s.position)}>{s.position ?? '-'}</div></td>
-                <td class="card-sub">
+                <td class="t-mono">{s.year}</td>
+                <td class="center"><div class={posClass(s.position)}>{s.position ?? '-'}</div></td>
+                <td>
                   <span class="race-cell">
                     {seasonLogo && <img class="team-logo-sm" src={seasonLogo} alt="" width="20" height="20" loading="lazy" />}
                     {s.constructorRef && s.constructorName ? (
@@ -762,18 +788,73 @@ const duelSurname = driver.surname;
                     ) : (s.constructorName || '-')}
                   </span>
                 </td>
-                <td class="hist-pts-td card-metric" data-label="Points">
+                <td class="hist-pts-td">
                   <span class="std-bar" aria-hidden="true" style={`width:${((s.points ?? 0) / seasonMaxPoints) * 100}%; --tc:${teamColor}`}></span>
                   <span class="hist-pts-val">{s.points != null ? s.points : '-'}</span>
                 </td>
-                <td class="right t-mono card-stat card-stat-first" data-label="Wins">{s.wins}</td>
-                <td class="right t-mono card-stat" data-label="Races">{s.races}</td>
-                <td class="right t-mono card-stat card-stat-last" data-label="Best">{ord(s.bestFinish)}</td>
+                <td class="right t-mono">{s.wins}</td>
+                <td class="right t-mono">{s.races}</td>
+                <td class="right t-mono">{ord(s.bestFinish)}</td>
               </tr>
               );
             })}
           </tbody>
         </table>
+        <div class="belist-wrap">
+          <div class="be-secline"><span class="yr">Career</span><span class="rule"></span><span class="cnt">{driver.perSeason.length} seasons</span></div>
+          <div class="belist">
+            {driver.perSeason.map((s, i) => {
+              const champ = s.position === 1;
+              const current = s.year === currentYear;
+              const open = i === 0;
+              const pts = s.points ?? 0;
+              const seasonLogo = teamLogoPath(s.constructorRef);
+              return (
+              <div class={`berow ${open ? 'open' : ''}`} style={`--tc:${teamColor}`}>
+                <button class="behead" type="button" aria-expanded={open ? 'true' : 'false'}>
+                  <span class={`be-pos ${bePodium(s.position) ? `p${s.position}` : ''}`}>
+                    {s.position != null ? `P${s.position}` : '–'}{champ ? ' ★' : ''}
+                    <small>{current ? 'NOW' : 'FIN'}</small>
+                  </span>
+                  <span class="be-main">
+                    <span class="be-who">
+                      <span class="tcbar" aria-hidden="true"></span>
+                      <span class="rname">{s.year}</span>
+                      <span class="sec">
+                        {seasonLogo && <img class="be-team-logo" src={seasonLogo} alt="" width="14" height="14" loading="lazy" />}
+                        {s.constructorName || '–'} · {s.wins}W
+                      </span>
+                      <span class="chev" aria-hidden="true">▶</span>
+                    </span>
+                    <span class="be-track">
+                      <span class="be-fill" style={`width:${barPct(pts, seasonMaxPoints)}%`}></span>
+                      <span class="be-v">{s.points != null ? s.points : '–'}<small>PTS</small></span>
+                    </span>
+                  </span>
+                </button>
+                <div class="be-panel"><div><div class="be-inner">
+                  <div class="be-grid c3">
+                    <div class="c"><div class="l">Wins</div><div class={`n ${s.wins > 0 ? 'tc' : ''}`}>{s.wins}</div></div>
+                    <div class="c"><div class="l">Races</div><div class="n">{s.races}</div></div>
+                    <div class="c"><div class="l">Best</div><div class={`n ${s.bestFinish === 1 ? 'tc' : ''}`}>{ord(s.bestFinish)}</div></div>
+                  </div>
+                  <div class="be-meta">
+                    <div class="be-tags">
+                      {s.constructorRef && s.constructorName
+                        ? <a class="be-tag tc" href={`/teams/${s.constructorRef}/`}>{s.constructorName}</a>
+                        : s.constructorName && <span class="be-tag tc">{s.constructorName}</span>}
+                      {champ && <span class="be-tag tc">Champion ★</span>}
+                      {current && <span class="be-tag">In progress</span>}
+                    </div>
+                    <span class="be-note">{current ? 'Season in progress' : (s.position != null ? `Finished P${s.position}` : '')}</span>
+                  </div>
+                  <a class="be-profile" href={`/standings-drivers/?year=${s.year}`}>{s.year} standings →</a>
+                </div></div></div>
+              </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </>
   )}
@@ -781,8 +862,8 @@ const duelSurname = driver.surname;
   {racesDesc.length > 0 && (
     <>
       <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Race by Race · All Seasons</h2><div class="section-rule"></div></div>
-      <div class="panel" style="padding: 0; overflow-x: auto;">
-        <table class="tbl tbl-static hist-tbl tbl-cards">
+      <div class="panel drv-history" style="padding: 0; overflow-x: auto;">
+        <table class="tbl tbl-static hist-tbl">
           <thead>
             <tr>
               <th>Year</th>
@@ -797,15 +878,12 @@ const duelSurname = driver.surname;
           <tbody>
             {racesDesc.map(r => {
               const raceHref = raceUrl(r.year, r.round);
-              const numericFinish = r.position != null && (r.positionText == null || /^\d+$/.test(r.positionText));
+              const numericFinish = isNumericFinish(r);
               const logo = teamLogoPath(r.constructorRef);
               return (
                 <tr style={`--team-color: ${teamColor}`}>
-                  {/* Season rides the collapsed card (card-sub, right of the race
-                      name) so races are datable without expanding; the team drops
-                      to the expanded details, like the race-results cards. */}
-                  <td class="t-mono card-sub" data-label="Season">{r.year}</td>
-                  <td class="card-primary">
+                  <td class="t-mono">{r.year}</td>
+                  <td>
                     <span class="race-cell">
                       {(r.country || r.flag) && <span class="race-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
                       {r.raceName && raceHref ? (
@@ -813,7 +891,7 @@ const duelSurname = driver.surname;
                       ) : (r.raceName || '-')}
                     </span>
                   </td>
-                  <td data-label="Team">
+                  <td>
                     <span class="race-cell">
                       {logo && <img class="team-logo-sm" src={logo} alt="" width="20" height="20" loading="lazy" />}
                       {r.constructorRef && r.constructorName ? (
@@ -821,17 +899,17 @@ const duelSurname = driver.surname;
                       ) : (r.constructorName || '-')}
                     </span>
                   </td>
-                  <td class="right t-mono card-stat card-stat-first card-stat-last" data-label="Grid">{fmtNum(r.grid)}</td>
-                  <td class="center card-pos">
+                  <td class="right t-mono">{fmtNum(r.grid)}</td>
+                  <td class="center">
                     {numericFinish
                       ? <div class={posClass(r.position)}>{r.position}</div>
                       : <span class="hist-dnf">{r.positionText || ord(r.position)}</span>}
                   </td>
-                  <td class="hist-pts-td card-metric" data-label="Points">
+                  <td class="hist-pts-td">
                     <span class="std-bar" aria-hidden="true" style={`width:${((r.points || 0) / raceMaxPoints) * 100}%; --tc:${teamColor}`}></span>
                     <span class="hist-pts-val">{r.points || 0}</span>
                   </td>
-                  <td data-label="Status">
+                  <td>
                     <span class="status-cell">
                       <StatusIcon status={r.status} />
                       <span>{r.status || '-'}</span>
@@ -842,12 +920,118 @@ const duelSurname = driver.surname;
             })}
           </tbody>
         </table>
+        <div class="belist-wrap">
+          {racesByYear.map((g, gi) => (
+            <div class={`be-group ${gi === 0 ? '' : 'collapsed'}`} style={`--tc:${teamColor}`}>
+              {/* Season header bar — collapses the whole year group; only the
+                  latest season starts expanded. */}
+              <button class="be-yearhead" type="button" aria-expanded={gi === 0 ? 'true' : 'false'}>
+                <span class="chev" aria-hidden="true">▶</span>
+                <span class="yr">{g.year}</span>
+                <span class="cnt">{g.races.length} {g.races.length === 1 ? 'race' : 'races'}</span>
+              </button>
+              <div class="belist">
+                {g.races.map((r, i) => {
+                  const numeric = isNumericFinish(r);
+                  const podium = numeric && bePodium(r.position);
+                  const pts = r.points || 0;
+                  const zero = pts === 0;
+                  const open = gi === 0 && i === 0;
+                  const raceHref = raceUrl(r.year, r.round);
+                  const delta = gainLoss(r);
+                  const rowLogo = teamLogoPath(r.constructorRef);
+                  const statusTag = (
+                    <span class={`be-status ${numeric ? 'fin' : 'ret'}`}>
+                      {numeric
+                        ? <svg class="fl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 3v18"/><path d="M5 4h13l-2.5 4L18 12H5" fill="currentColor" stroke="none" opacity=".25"/><path d="M5 4h13l-2.5 4L18 12H5"/></svg>
+                        : <span class="rd" aria-hidden="true"></span>}
+                      {r.status || (numeric ? 'Finished' : 'Retired')}
+                    </span>
+                  );
+                  return (
+                  <div class={`berow ${open ? 'open' : ''}`} style={`--tc:${teamColor}`}>
+                    <button class="behead" type="button" aria-expanded={open ? 'true' : 'false'}>
+                      <span class={`be-pos ${numeric ? (podium ? `p${r.position}` : '') : 'dnf'}`}>
+                        {numeric ? r.position : dnfBadge(r)}
+                        <small>{numeric ? 'FIN' : 'OUT'}</small>
+                      </span>
+                      <span class="be-main">
+                        <span class="be-who">
+                          <span class="tcbar" aria-hidden="true"></span>
+                          {(r.country || r.flag) && <span class="be-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
+                          <span class="rname">{(r.raceName || '–').replace(' Grand Prix', ' GP')}</span>
+                          <span class="sec">
+                            {rowLogo && <img class="be-team-logo" src={rowLogo} alt="" width="14" height="14" loading="lazy" />}
+                            {r.constructorName || ''}
+                          </span>
+                          <span class="chev" aria-hidden="true">▶</span>
+                        </span>
+                        <span class="be-track">
+                          <span class={`be-fill ${zero ? 'zero' : ''}`} style={`width:${zero ? 100 : barPct(pts, raceMaxPoints)}%`}></span>
+                          {zero ? statusTag : <span class="be-v">{pts}<small>PTS</small></span>}
+                        </span>
+                      </span>
+                    </button>
+                    <div class="be-panel"><div><div class="be-inner">
+                      <div class="be-grid">
+                        <div class="c"><div class="l">Grid</div><div class="n">{fmtNum(r.grid)}</div></div>
+                        <div class="c"><div class="l">Finish</div><div class={`n ${podium ? 'tc' : ''}`}>{numeric ? r.position : dnfBadge(r)}</div></div>
+                        <div class="c"><div class="l">Δ Pos</div><div class="n">{delta != null ? `${delta >= 0 ? '+' : ''}${delta}` : '–'}</div></div>
+                        <div class="c"><div class="l">Points</div><div class="n tc">{pts}</div></div>
+                      </div>
+                      <div class="be-meta">
+                        <div class="be-tags">
+                          {statusTag}
+                          {r.fastestLapRank === 1 && <span class="be-tag tc">FL</span>}
+                        </div>
+                        <span class="be-note">
+                          Grid {fmtNum(r.grid)} → {numeric ? `P${r.position}` : dnfBadge(r)}
+                          {delta != null && delta !== 0 && <span class={`delta ${delta > 0 ? 'up' : 'down'}`}> {delta > 0 ? '▲' : '▼'} {Math.abs(delta)}</span>}
+                        </span>
+                      </div>
+                      {raceHref && <a class="be-profile" href={raceHref}>Race result →</a>}
+                    </div></div></div>
+                  </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   )}
 </div>
 
-<MobileTableCards />
+{/* Tap-to-expand wiring for the mobile bar rows (.belist, <=720px). One row
+    open at a time per section (mirrors the standings rows' behaviour); links
+    inside still navigate. First row per list is server-rendered open, so the
+    pattern reads without JS. */}
+<script is:inline>
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('a')) return;
+    var yearHead = e.target.closest('.be-yearhead');
+    if (yearHead) {
+      var group = yearHead.closest('.be-group');
+      group.classList.toggle('collapsed');
+      yearHead.setAttribute('aria-expanded', group.classList.contains('collapsed') ? 'false' : 'true');
+      return;
+    }
+    var head = e.target.closest('.behead');
+    if (!head) return;
+    var row = head.closest('.berow');
+    var wasOpen = row.classList.contains('open');
+    var scope = row.closest('.drv-history') || document;
+    scope.querySelectorAll('.berow.open').forEach(function (r) {
+      r.classList.remove('open');
+      r.querySelector('.behead').setAttribute('aria-expanded', 'false');
+    });
+    if (!wasOpen) {
+      row.classList.add('open');
+      head.setAttribute('aria-expanded', 'true');
+    }
+  });
+</script>
 
 <style>
   /* ── Hero ───────────────────────────────────────────────────── */
