@@ -92,23 +92,27 @@ export async function buildTriviaShareBlob(fact) {
   ctx.strokeStyle = PAL.line;
   ctx.beginPath(); ctx.moveTo(pad, 112); ctx.lineTo(W - pad, 112); ctx.stroke();
 
-  // ── "DID YOU KNOW" kicker ──
-  ctx.fillStyle = PAL.accent;
-  ctx.beginPath(); ctx.arc(pad + 6, 176, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.textAlign = 'left';
-  ctx.fillStyle = PAL.accent;
-  ctx.font = `800 30px ${DISPLAY}`;
-  ctx.fillText('DID YOU KNOW', pad + 26, 187);
-
   // ── the fact, auto-fit and centred in the body ──
   const maxW = W - pad * 2;
   const { px, lines, lineH } = fitFact(ctx, text, maxW, 8);
+  const blockH = lines.length * lineH;
+  const bodyTop = 240, bodyBottom = H - 150;
+  const firstBaseline = bodyTop + Math.max(0, (bodyBottom - bodyTop - blockH) / 2) + px;
+
+  // ── "DID YOU KNOW" kicker — sits just above the fact text ──
+  const kickerBaseline = firstBaseline - px - 22;
+  ctx.fillStyle = PAL.accent;
+  ctx.beginPath(); ctx.arc(pad + 6, kickerBaseline - 11, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.textAlign = 'left';
+  ctx.fillStyle = PAL.accent;
+  ctx.font = `800 30px ${DISPLAY}`;
+  ctx.fillText('DID YOU KNOW', pad + 26, kickerBaseline);
+
+  // draw the fact
   ctx.font = `800 ${px}px ${DISPLAY}`;
   ctx.fillStyle = PAL.fg;
   ctx.textAlign = 'left';
-  const blockH = lines.length * lineH;
-  const bodyTop = 240, bodyBottom = H - 150;
-  let y = bodyTop + Math.max(0, (bodyBottom - bodyTop - blockH) / 2) + px;
+  let y = firstBaseline;
   for (const ln of lines) {
     ctx.fillText(ln, pad, y);
     y += lineH;
@@ -120,7 +124,7 @@ export async function buildTriviaShareBlob(fact) {
   ctx.textAlign = 'left';
   ctx.fillStyle = PAL.fg2;
   ctx.font = `700 22px ${DISPLAY}`;
-  ctx.fillText('f1gures.app', pad, H - 32);
+  ctx.fillText('www.f1gures.app', pad, H - 32);
   ctx.textAlign = 'right';
   ctx.fillStyle = PAL.fg3;
   ctx.font = `400 15px ${MONO}`;
