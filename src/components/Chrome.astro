@@ -11,6 +11,7 @@ import YearPicker from './islands/YearPicker.jsx';
 import StandingsDropdown from './islands/StandingsDropdown.jsx';
 import GridDropdown from './islands/GridDropdown.jsx';
 import SearchPalette from './islands/SearchPalette.jsx';
+import Footer from './Footer.astro';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 function isRoute(prefix: string) {
@@ -97,6 +98,8 @@ const botActive =
   </div>
 
   <slot />
+
+  <Footer />
 
   <!-- Mobile bottom nav (static) -->
   <nav class="botnav botnav-mobile">

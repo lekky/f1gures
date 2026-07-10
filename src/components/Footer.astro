@@ -1,0 +1,106 @@
+---
+// Footer - global site footer, rendered once inside Chrome below the page slot.
+//
+// Desktop  = the "records-style" branded footer: 2px accent top-rule, wordmark
+//            + tagline + season chip, four grouped link columns, then a bottom
+//            strip with the live team-colour dots, copyright + data attribution
+//            + disclaimer, and Feedback / Support actions.
+// Mobile   = collapses (CSS-only, same DOM) to the minimal "B" treatment: the
+//            columns/tagline/season chip hide, a centred secondary-link row +
+//            the team dots + the legal line show, and the block reserves bottom
+//            clearance for the fixed .botnav. See app.css "SITE FOOTER".
+//
+// Team-dot colours + the season year come from the synced current-season
+// bundle so the footer stays truthful without hand-maintenance (empty bundle =
+// dots simply omitted).
+
+import currentSeason from '../data/currentSeason.js';
+
+const teams = Array.isArray(currentSeason.teams) ? currentSeason.teams : [];
+const seasonYear = currentSeason.seasonYear || '';
+const year = new Date().getFullYear();
+const BMC_URL = 'https://buymeacoffee.com/f1gures';
+---
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div class="sf-top">
+      <div class="sf-brand">
+        <a class="sf-logo" href="/" aria-label="f1gures — home">
+          <img class="sf-logo-img wm-dark" src="/images/logo/f1gures-wordmark-dark.png" width="560" height="141" alt="" />
+          <img class="sf-logo-img wm-light" src="/images/logo/f1gures-wordmark-light.png" width="560" height="141" alt="" />
+        </a>
+        <p class="sf-tagline">Every F1 driver, team, circuit and race — 1950 to today, in numbers.</p>
+        {seasonYear && (
+          <div class="sf-season">
+            <span class="sf-season-dot" aria-hidden="true"></span>
+            <span class="sf-season-lbl">Season</span>
+            <span class="sf-season-val">{seasonYear}</span>
+          </div>
+        )}
+      </div>
+
+      <nav class="sf-cols" aria-label="Footer">
+        <div class="sf-col">
+          <h2 class="sf-head">Championship</h2>
+          <ul>
+            <li><a href="/standings-drivers/">Drivers' standings</a></li>
+            <li><a href="/standings-constructors/">Constructors' standings</a></li>
+            <li><a href="/calendar/">Race calendar</a></li>
+          </ul>
+        </div>
+        <div class="sf-col">
+          <h2 class="sf-head">The grid</h2>
+          <ul>
+            <li><a href="/drivers/">Drivers</a></li>
+            <li><a href="/teams/">Teams</a></li>
+            <li><a href="/circuits/">Circuits</a></li>
+          </ul>
+        </div>
+        <div class="sf-col">
+          <h2 class="sf-head">Stats &amp; reading</h2>
+          <ul>
+            <li><a href="/records/">Records</a></li>
+            <li><a href="/compare/">Compare tool</a></li>
+            <li><a href="/guide/">Beginner's guide</a></li>
+            <li><a href="/blog/">Blog</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- Mobile-only condensed secondary nav (treatment B). Primary sections
+           already live in the fixed bottom nav, so this leans on that and only
+           surfaces the "extra" destinations. -->
+      <nav class="sf-links-mobile" aria-label="Footer">
+        <a href="/records/">Records</a>
+        <a href="/compare/">Compare</a>
+        <a href="/guide/">Guide</a>
+        <a href="/blog/">Blog</a>
+        <a href="/feedback/">Feedback</a>
+        <a href={BMC_URL} rel="noopener noreferrer" target="_blank">Support</a>
+      </nav>
+    </div>
+
+    <div class="sf-rule"></div>
+
+    <div class="sf-bottom">
+      {teams.length > 0 && (
+        <div class="sf-dots" aria-hidden="true">
+          {teams.map((t) => (
+            <span style={`background:${t.color || '#888888'}`}></span>
+          ))}
+        </div>
+      )}
+      <p class="sf-meta">
+        <span>© {year} f1gures</span>
+        <span class="sf-meta-sep" aria-hidden="true">·</span>
+        <span>Data from the Ergast / Jolpica API</span>
+        <span class="sf-meta-sep" aria-hidden="true">·</span>
+        <span class="sf-disclaimer">Unofficial. Not associated with Formula 1, the FIA, or any team.</span>
+      </p>
+      <div class="sf-actions">
+        <a href="/feedback/">Feedback</a>
+        <a href={BMC_URL} rel="noopener noreferrer" target="_blank">Support ↗</a>
+      </div>
+    </div>
+  </div>
+</footer>
