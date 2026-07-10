@@ -169,6 +169,7 @@ per screen as a signal of "now / active / leader".
 
 ## Conventions
 
+- **Always branch off `main` before making any change**: the user runs several chats/agents against this repo at once, and they share local worktrees. Before editing anything, run `git fetch origin main && git checkout -b <fix|feat|chore>/<slug> origin/main` so each task lands on its own fresh branch off up-to-date `main` - never commit straight onto `main` or reuse whatever branch happens to be checked out. This keeps concurrent sessions from mixing each other's uncommitted work. Commit early (the environment can re-park uncommitted changes).
 - **Branch naming**: `fix/`, `feat/`, `chore/` prefixes.
 - **Never read `window.F1_DATA` in islands** - pass `data` via prop. The Astro page's island wrapper builds the F1 object; the screen consumes it pure.
 - **Year-aware listing pages**: the 5 season islands wrap their screen with `useYearAwareData(currentSeason)`. Don't bypass - direct `currentSeason` consumers won't react to the year picker. The `/drivers/` and `/teams/` index islands are the exception: they fetch the all-time archive index client-side and are intentionally not year-aware.
