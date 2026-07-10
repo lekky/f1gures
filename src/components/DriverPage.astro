@@ -801,7 +801,10 @@ const duelSurname = driver.surname;
               const logo = teamLogoPath(r.constructorRef);
               return (
                 <tr style={`--team-color: ${teamColor}`}>
-                  <td class="t-mono" data-label="Season">{r.year}</td>
+                  {/* Season rides the collapsed card (card-sub, right of the race
+                      name) so races are datable without expanding; the team drops
+                      to the expanded details, like the race-results cards. */}
+                  <td class="t-mono card-sub" data-label="Season">{r.year}</td>
                   <td class="card-primary">
                     <span class="race-cell">
                       {(r.country || r.flag) && <span class="race-flag"><Flag cc={r.country} flag={r.flag} name={r.raceName} /></span>}
@@ -810,7 +813,7 @@ const duelSurname = driver.surname;
                       ) : (r.raceName || '-')}
                     </span>
                   </td>
-                  <td class="card-sub" data-label="Team">
+                  <td data-label="Team">
                     <span class="race-cell">
                       {logo && <img class="team-logo-sm" src={logo} alt="" width="20" height="20" loading="lazy" />}
                       {r.constructorRef && r.constructorName ? (

@@ -67,9 +67,9 @@ const jsonLd = top.length > 0 ? {
     </header>
 
     <div class="records-era-toggle">
-      <button class="active" data-era-toggle="all-time" aria-pressed="true">All-time (1950-present)</button>
-      <button data-era-toggle="modern" aria-pressed="false">Modern era (1981-present)</button>
-      <button data-era-toggle="classic" aria-pressed="false">Classic era (1950-1980)</button>
+      <button class="active" data-era-toggle="all-time" aria-pressed="true">All-time <span class="era-range">(1950-present)</span></button>
+      <button data-era-toggle="modern" aria-pressed="false">Modern era <span class="era-range">(1981-present)</span></button>
+      <button data-era-toggle="classic" aria-pressed="false">Classic era <span class="era-range">(1950-1980)</span></button>
     </div>
 
     {data.note && <p class="records-note">{data.note}</p>}
