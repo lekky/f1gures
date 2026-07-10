@@ -54,6 +54,19 @@ function barPct(gap: number | null): number {
   return Math.max(14, 100 - (gap / maxGap) * 86);
 }
 
+// Mobile-card bars must taper with the classified order: raw time gaps can be
+// non-monotonic (post-race penalties keep the crossing-line time, lapped cars
+// carry partial-lap strings), and a lower-placed car with a "closer" time would
+// draw a longer bar than the car ahead. Clamp each bar to the one above it;
+// the chip still shows the raw time string. Desktop keeps the raw widths.
+const rawPcts = rows.map((r, i) => barPct(gaps[i]));
+let prevPct = 100;
+const cardPcts = rawPcts.map(p => {
+  if (p <= 0) return p;
+  prevPct = Math.min(p, prevPct);
+  return prevPct;
+});
+
 const posClass = (n: number | null) => (n != null && n >= 1 && n <= 3 ? `pos pos-${n}` : 'pos');
 const isWinner = (r: Row) => r.position === 1;
 const overflow = rows.length > maxRows;
@@ -101,7 +114,7 @@ function rowCls(i: number): string {
                 : (r.time ? <span class="std-gap">{r.time}</span> : null)}
             </div>
             <span class="tbl-card-bar">
-              <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${barPct(gaps[i])}%; --tc: ${r.constructorColor || 'var(--fg-3)'}`}></span>
+              <span class="tbl-card-fill" aria-hidden="true" style={`--tbl-card-bar: ${cardPcts[i]}%; --tc: ${r.constructorColor || 'var(--fg-3)'}`}></span>
               <span class="tbl-card-val">{isWinner(r) ? 'Win' : (r.time || r.status || '—')}</span>
             </span>
           </td>
