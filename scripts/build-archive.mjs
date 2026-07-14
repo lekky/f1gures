@@ -18,6 +18,7 @@ import { NATIONALITY, natInfo } from '../src/lib/nationality.js';
 import { hasDriverFace } from '../src/lib/driverFaceExists.js';
 import { teamLogoPath } from '../src/lib/teamLogo.js';
 import { buildCompareSuggestions } from './compareSuggestions.mjs';
+import { buildCountryStats } from './countryStats.mjs';
 import { DRIVER_MATCHUPS as CURATED_DRIVER_MATCHUPS, TEAM_MATCHUPS as CURATED_TEAM_MATCHUPS } from '../src/data/compareMatchups.js';
 
 // ─── Static lookups ───────────────────────────────────────────────────
@@ -2542,4 +2543,11 @@ if (postArchiveTeamYears > 0) {
   });
   writeFileSync(join(OUT, '_compare-suggestions.json'), JSON.stringify(suggestions));
   console.log(`[archive] wrote compare suggestions (${suggestions.driver.length} driver, ${suggestions.team.length} team)`);
+
+  // ── World-map country stats ─────────────────────────────────────
+  // All-time driver achievements aggregated by home nation (ISO-2), consumed by
+  // the /map/ world-map island. driverDocs already carry natInfo + career here.
+  const countryStats = buildCountryStats(driverDocs);
+  writeFileSync(join(OUT, '_countries.json'), JSON.stringify(countryStats));
+  console.log(`[archive] wrote country stats (${Object.keys(countryStats.countries).length} nations)`);
 }

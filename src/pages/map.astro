@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import WorldMap from '../components/islands/WorldMap.jsx';
+
+// F1 world map — all-time achievement by the driver's home nation, with a metric
+// switcher (wins / poles / podiums / titles / drivers / DNFs). The island does
+// everything client-side against the build-time _countries.json artifact; this
+// page is the SEO shell + hero. Linked from the Stats hub.
+const title = 'F1 World Map — Wins, Poles & Champions by Country | f1gures';
+const description = 'An interactive world map of Formula 1 by the driver’s home nation: switch between race wins, pole positions, podiums, world titles, driver count and retirements, coloured country by country from 1950 to today.';
+const canonicalPath = '/map/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Stats', path: '/stats/' },
+  { name: 'World Map', path: '/map/' },
+];
+
+const ORIGIN = 'https://f1gures.app';
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'F1gures World Map',
+  applicationCategory: 'SportsApplication',
+  operatingSystem: 'Web',
+  url: ORIGIN + canonicalPath,
+  description,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="website"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+>
+  <div class="page map-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">Around the world</div>
+        <h1 class="page-title">World Map</h1>
+        <p class="page-sub">Every Formula 1 nation, shaded by what its drivers have achieved. Flip between wins, poles, podiums, world titles, driver count and retirements — then tap a country for its totals and its record-holder.</p>
+      </div>
+    </div>
+
+    <WorldMap client:load />
+  </div>
+</BaseLayout>
+
+<style>
+  .map-page .page-sub { max-width: 64ch; }
+</style>

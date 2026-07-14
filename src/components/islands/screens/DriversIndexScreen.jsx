@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MiniChart, SectionHead, urlFor, useIsMobile } from '../../../lib/shared.jsx';
 import { filterItems, sortItems, paginateItems } from '../../../lib/listingUtils.js';
 
@@ -156,9 +156,16 @@ function CompactRow({ driver, mob }) {
 export default function DriversIndexScreen({ drivers }) {
   const mob = useIsMobile();
   const [search, setSearch] = useState('');
+  const [nat, setNat] = useState('');
   const [sortField, setSortField] = useState('championships');
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(1);
+
+  // Optional nationality pre-filter via ?nat= (e.g. from the /map/ country panel).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('nat');
+    if (q) setNat(q);
+  }, []);
 
   const currentYear = new Date().getFullYear();
   const currentDrivers = drivers
@@ -169,7 +176,7 @@ export default function DriversIndexScreen({ drivers }) {
       || b.wins - a.wins
     );
 
-  const filtered = filterItems(drivers, { search });
+  const filtered = filterItems(drivers, { search, nationality: nat });
   const sorted = (() => {
     if (sortField === 'championships') {
       const mult = sortDir === 'desc' ? 1 : -1;
@@ -220,6 +227,15 @@ export default function DriversIndexScreen({ drivers }) {
           value={search}
           onInput={e => { setSearch(e.target.value); setPage(1); }}
         />
+        {nat && (
+          <button
+            className="listing-filter-pill"
+            onClick={() => { setNat(''); setPage(1); }}
+            title="Clear nationality filter"
+          >
+            {nat} <span aria-hidden="true">×</span>
+          </button>
+        )}
       </div>
 
       <div className="sort-bar">
