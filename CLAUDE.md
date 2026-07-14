@@ -24,9 +24,10 @@ npm test            # vitest - covers src/lib/ and scripts/
 
 All steps are idempotent - safe to run repeatedly.
 
-Two **manual** (not in prebuild) build scripts:
+Three **manual** (not in prebuild) build scripts:
 - `npm run build:climate` (`scripts/build-climate.mjs`) - one-shot climate-normals bake. For each circuit in the current calendar, fetches 10 years of ERA5 history from Open-Meteo and writes `src/data/climate/<circuitRef>.json` (gitignored). Re-run only when the calendar adds a circuit or a race date shifts more than ~2 weeks - climate normals don't change overnight, so it's deliberately off the nightly path.
 - `npm run build:og` - just the OG-image step, if you only touched OG templates.
+- `python scripts/fetch-stints.py [year] [round]` (defaults `2026 9`, Silverstone) - **the one Python script in the repo**, run by hand. Pulls per-driver tyre-stint data (compound + start/end lap) for a single race from F1's official live-timing feed via [FastF1](https://github.com/theOehrly/Fast-F1) (Python 3.9+, `pip install fastf1`; covers 2018→present) and writes deterministic JSON to `public/data/stints/<year>-<round>.json`. Jolpica/Ergast has pit-stop laps but **no tyre compounds**, so it can't power this; FastF1 can. The Python cost is deliberately quarantined off the Node/Astro build (like `build:climate`) - **never add it to `prebuild`/CI/deploy**. Caches session blobs to `.fastf1-cache/` (gitignored). Output keys are 3-letter driver codes matching the season bundle's `results['<round>'].detail` codes. Compound→colour for the eventual chart: SOFT=`--accent` red, MEDIUM=yellow, HARD=white, INTERMEDIATE=green, WET=blue. The generated JSON **is** committed (like the season bundles), since it comes from a manual script, not prebuild.
 
 Other useful scripts: `npm run build:archive` (skip Astro, just the importer); `npm run fetch:current` then `npm run sync:current` (refresh the current-season JSON from Jolpica without waiting for the nightly cron).
 
