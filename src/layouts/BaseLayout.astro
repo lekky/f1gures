@@ -161,11 +161,20 @@ if (breadcrumb && breadcrumb.length > 0) {
       } catch (e) {}
       if (y && y !== 'current' && y !== currentSeasonYear) {
         document.documentElement.classList.add('year-pending');
+        // Cloak the season strip too: it server-renders in the current (red)
+        // state, so without this it flashes red before the island swaps it to
+        // archive (gold). The SeasonStrip island lifts this the instant its
+        // state reflects the picked year.
+        document.documentElement.classList.add('sstrip-cloak');
       }
     })();
   </script>
   <style is:inline>
     html.year-pending [data-year-aware] { visibility: hidden; }
+    /* Hide the season strip until the island renders the picked year, so it
+       never flashes its current-season (red) SSR state. visibility keeps its
+       height reserved (no layout shift); the island removes the class. */
+    html.sstrip-cloak .sstrip { visibility: hidden; }
     /* Thin top progress bar shown only while a picked season's bundle loads.
        Starts trickling toward 88% via CSS the moment the year-pending class
        is present (before hydration); yearAwareData.js drives it to 100% and

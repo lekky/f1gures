@@ -80,6 +80,22 @@ export default function SeasonStrip({
     if (pref && pref !== currentYear) setSelected(pref);
   }, [currentYear]);
 
+  // Reveal the strip (a pre-hydration script cloaks it when a past year is
+  // pending) only once our state reflects that year — so its first visible
+  // frame is the correct archive state, never a flash of the current season.
+  useEffect(() => {
+    const html = document.documentElement;
+    if (!html.classList.contains('sstrip-cloak')) return;
+    const pending = readYearPref();
+    if (pending == null || selected === pending) html.classList.remove('sstrip-cloak');
+  }, [selected]);
+
+  // Failsafe: never leave the strip cloaked if the pref can't be resolved.
+  useEffect(() => {
+    const t = setTimeout(() => document.documentElement.classList.remove('sstrip-cloak'), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
   const archive = selected !== currentYear;
 
   // Quick chips, sized to what the device fits:
