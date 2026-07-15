@@ -313,14 +313,6 @@ html.light .nav-logo .wm-light { display: block; }
 }
 .nav-spacer { flex: 1; }
 .nav-controls { display: flex; align-items: center; gap: 8px; }
-.nav-season {
-  display: flex; align-items: center; gap: 8px;
-  font-family: var(--f-display); font-weight: 600; font-size: 13px;
-  letter-spacing: 0.08em; color: var(--fg-2);
-  padding: 6px 12px; border: 1px solid var(--line-2); cursor: pointer;
-  background: var(--bg-2);
-}
-.nav-season:hover { border-color: var(--line-3); color: var(--fg-1); }
 .nav-dropdown {
   position: absolute; top: 100%; left: 0;
   background: var(--bg-2); border: 1px solid var(--line-2);
@@ -336,9 +328,186 @@ html.light .nav-logo .wm-light { display: block; }
 }
 .nav-dropdown a:hover, .nav-dropdown button:hover { background: var(--bg-hover); color: var(--fg-1); }
 .nav-dropdown button.active { color: var(--fg-1); background: var(--bg-hover); font-weight: 700; }
-.nav-dropdown-years { max-height: 320px; overflow-y: auto; min-width: 140px; }
-.nav-dropdown-years .dropdown-divider {
-  height: 1px; background: var(--line-1); margin: 4px 0;
+
+/* ──────────────────────────────────────────────────────────
+   Season strip — the site's single season control (SeasonStrip
+   island). Full-width bar under the nav. Colour is the state:
+   brand red = current/live season, champion gold = archive mode.
+   The strip is a brand banner and looks identical in both themes;
+   the decade panel is a deliberately light popover in both.
+   Gold-ink (#1a1205) and panel neutrals have no design tokens, so
+   the design's literals are used directly here.
+   ────────────────────────────────────────────────────────── */
+.sstrip {
+  position: relative; z-index: 40;
+  background: var(--accent);
+  border-bottom: 1px solid var(--accent-dim);
+}
+.sstrip-inner {
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 20px; min-height: 44px;
+}
+.sstrip-label {
+  flex-shrink: 0;
+  background: #fff; color: var(--accent);
+  font-family: var(--f-display); font-weight: 800; font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 5px 10px; line-height: 1;
+}
+.sstrip-chips { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.sstrip-chip {
+  background: transparent; border: 0; cursor: pointer;
+  color: rgba(255,255,255,0.75);
+  font-family: var(--f-display); font-weight: 700; font-size: 14px;
+  padding: 5px 10px; line-height: 1;
+  transition: color 0.1s ease;
+}
+.sstrip-chip:hover { color: #fff; }
+.sstrip-chip.active {
+  background: #fff; color: var(--accent); font-weight: 800; padding: 5px 12px;
+}
+.sstrip-div {
+  width: 1px; height: 16px; background: rgba(255,255,255,0.3); margin: 0 6px;
+  flex-shrink: 0;
+}
+.sstrip-decade-chip {
+  flex-shrink: 0; white-space: nowrap; cursor: pointer;
+  background: transparent; border: 1px solid rgba(255,255,255,0.45); color: #fff;
+  font-family: var(--f-display); font-weight: 700; font-size: 12px;
+  letter-spacing: 0.06em; padding: 4px 10px; line-height: 1;
+}
+.sstrip-decade-chip.open,
+.sstrip-decade-chip.active { background: #fff; color: var(--accent); border-color: #fff; }
+.sstrip-meta {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0; white-space: nowrap;
+  font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.85); text-transform: uppercase;
+}
+.sstrip-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #fff; flex-shrink: 0;
+  animation: sstrip-pulse 2s ease-in-out infinite;
+}
+@keyframes sstrip-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.sstrip-back {
+  flex-shrink: 0; white-space: nowrap; cursor: pointer; border: 0;
+  background: #1a1205; color: #fff;
+  font-family: var(--f-display); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 12px; line-height: 1;
+}
+
+/* ── Archive mode (gold) ── */
+.sstrip-archive { background: var(--gold); border-bottom-color: #b8862e; }
+.sstrip-archive .sstrip-label { background: #1a1205; color: var(--gold); }
+.sstrip-archive .sstrip-chip { color: rgba(26,18,5,0.6); }
+.sstrip-archive .sstrip-chip:hover { color: #1a1205; }
+.sstrip-archive .sstrip-chip.active { background: #1a1205; color: var(--gold); }
+.sstrip-archive .sstrip-div { background: rgba(26,18,5,0.25); }
+.sstrip-archive .sstrip-decade-chip { color: #1a1205; border-color: rgba(26,18,5,0.4); }
+.sstrip-archive .sstrip-decade-chip.open,
+.sstrip-archive .sstrip-decade-chip.active { background: #1a1205; color: var(--gold); border-color: #1a1205; }
+.sstrip-archive .sstrip-meta { color: rgba(26,18,5,0.7); }
+
+/* ── Decade mega-panel (desktop: anchored dropdown) ── */
+.sstrip-scrim { display: none; }
+.sstrip-panel {
+  position: absolute; top: calc(100% + 8px); left: 20px; z-index: 60;
+  width: 392px; max-width: calc(100vw - 40px);
+  background: #fff; border: 1px solid #c7cad3;
+  box-shadow: 0 12px 32px rgba(12,16,24,0.18);
+  padding: 6px; max-height: 78vh; overflow-y: auto;
+  animation: sstrip-drop 140ms ease-out;
+}
+@keyframes sstrip-drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.sstrip-panel-mobilehead { display: none; }
+.sstrip-panel-current {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; cursor: pointer; border: 0; text-align: left;
+  background: var(--accent); color: #fff; padding: 12px 14px;
+}
+.sstrip-panel-current .sstrip-dot { width: 7px; height: 7px; animation: none; }
+.sstrip-panel-current-l {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--f-display); font-weight: 800; font-size: 14px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+.sstrip-panel-current-r { font-family: var(--f-mono); font-size: 10px; opacity: 0.85; }
+.sstrip-decade { padding: 12px 10px 4px; }
+.sstrip-earlier { padding-bottom: 12px; }
+.sstrip-decade-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  font-family: var(--f-display); font-weight: 700; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: #646570;
+}
+.sstrip-decade-rule { flex: 1; height: 1px; background: #dcdee5; }
+.sstrip-decade-back {
+  border: 0; background: transparent; cursor: pointer; color: var(--accent);
+  font-family: var(--f-display); font-weight: 700; font-size: 11px; letter-spacing: 0.06em;
+}
+.sstrip-year-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.sstrip-year-cell {
+  border: 1px solid #dcdee5; background: #fff; cursor: pointer;
+  padding: 8px 0; text-align: center;
+  font-family: var(--f-display); font-weight: 700; font-size: 15px; color: #0d0e12;
+}
+.sstrip-year-cell:hover { border-color: var(--accent); color: var(--accent); }
+.sstrip-year-cell.active { border-color: var(--accent); color: var(--accent); font-weight: 800; }
+.sstrip-year-cell.active-archive { border: 2px solid var(--gold); background: #fdf6e3; color: #1a1205; }
+.sstrip-decade-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.sstrip-decade-cell {
+  background: #f4f5f8; border: 1px solid #dcdee5; cursor: pointer;
+  padding: 8px 0; text-align: center;
+  font-family: var(--f-display); font-weight: 700; font-size: 13px; color: #3d3e48;
+}
+.sstrip-decade-cell:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Panel border-top state colour (echoes strip; visible as bottom sheet too) */
+.sstrip-panel { border-top: 3px solid var(--accent); }
+.sstrip-archive .sstrip-panel { border-top-color: var(--gold); }
+
+/* ── Narrow (≤900px): two-row strip + bottom-sheet panel ──
+   The design treats < ~900px as mobile for the strip specifically (the site
+   chrome flips to the mobile top bar at 720px, but the single-row strip needs
+   more room than that, so it switches to the robust two-row layout earlier). */
+@media (max-width: 900px) {
+  .sstrip-inner {
+    flex-wrap: wrap; gap: 8px 10px; padding: 8px 12px; align-items: center;
+  }
+  /* Row 1: label + meta + back button. Row 2: scrolling chips. */
+  .sstrip-chips {
+    order: 3; flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px;
+  }
+  .sstrip-chips::-webkit-scrollbar { display: none; }
+  .sstrip-meta {
+    font-size: 9.5px; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .sstrip-meta-text { overflow: hidden; text-overflow: ellipsis; }
+  .sstrip-back { font-size: 10px; padding: 5px 10px; }
+
+  /* Bottom sheet */
+  .sstrip-scrim {
+    display: block; position: fixed; inset: 0; z-index: 70;
+    background: rgba(13,14,18,0.45);
+  }
+  .sstrip-panel {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100%;
+    max-width: 100%; max-height: 78vh; z-index: 71;
+    animation: sstrip-sheet 160ms ease-out;
+  }
+  @keyframes sstrip-sheet { from { transform: translateY(100%); } to { transform: none; } }
+  .sstrip-panel-mobilehead {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px 6px;
+    font-family: var(--f-display); font-weight: 800; font-size: 16px;
+    text-transform: uppercase; color: #0d0e12;
+  }
+  .sstrip-panel-close {
+    width: 28px; height: 28px; border: 1px solid #dcdee5; background: #fff;
+    cursor: pointer; color: #3d3e48; font-size: 13px; line-height: 1;
+  }
+  .sstrip-year-grid { grid-template-columns: repeat(4, 1fr); }
+  .sstrip-year-cell { padding: 10px 0; }
 }
 
 /* Mobile bottom nav.

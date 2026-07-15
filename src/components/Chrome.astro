@@ -7,11 +7,23 @@
 // replacing the runtime currentRouteName() in shell.jsx.
 
 import ThemeToggle from './islands/ThemeToggle.jsx';
-import YearPicker from './islands/YearPicker.jsx';
+import SeasonStrip from './islands/SeasonStrip.jsx';
 import StandingsDropdown from './islands/StandingsDropdown.jsx';
 import GridDropdown from './islands/GridDropdown.jsx';
 import SearchPalette from './islands/SearchPalette.jsx';
 import Footer from './Footer.astro';
+import currentSeason from '../data/currentSeason.js';
+
+// Current-season meta for the season strip's live label (round X/Y + next race).
+// Derived at build time from the synced current bundle; empty-bundle safe.
+const csYear = Number(currentSeason.seasonYear) || new Date().getUTCFullYear();
+const csCalendar = currentSeason.calendar || [];
+const csTotalRounds = csCalendar.length || null;
+const csDoneRounds = Object.keys(currentSeason.results || {}).length;
+const csSeasonComplete = csTotalRounds != null && csDoneRounds >= csTotalRounds;
+const csNextRound = !csSeasonComplete && csTotalRounds ? csDoneRounds + 1 : null;
+const csNextEntry = csNextRound ? csCalendar[csDoneRounds] : null;
+const csNextRaceName = csNextEntry ? (csNextEntry.name || '').replace(/\bGrand Prix\b/i, 'GP').trim() : '';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 function isRoute(prefix: string) {
@@ -76,7 +88,6 @@ const botActive =
         <span class="search-trigger-kbd"><span data-search-mod>Ctrl</span> K</span>
       </button>
       <ThemeToggle client:load />
-      <YearPicker client:load />
     </div>
   </nav>
 
@@ -94,8 +105,16 @@ const botActive =
       </svg>
     </button>
     <ThemeToggle client:load />
-    <YearPicker client:load compact />
   </div>
+
+  <SeasonStrip
+    client:load
+    currentYear={csYear}
+    nextRound={csNextRound}
+    totalRounds={csTotalRounds}
+    nextRaceName={csNextRaceName}
+    seasonComplete={csSeasonComplete}
+  />
 
   <slot />
 
