@@ -462,10 +462,10 @@ html.light .nav-logo .wm-light { display: block; }
   .sstrip-inner {
     flex-wrap: wrap; gap: 8px 10px; padding: 8px 12px; align-items: center;
   }
-  /* Row 1: label + meta + back button. Row 2: the year chips (count computed in
-     JS to keep the decade chip visible) + the decade chip. flex-wrap is a
-     safety net: if the JS count is ever off by one, chips wrap to a second line
-     rather than scrolling horizontally. */
+  /* Row 1: label + meta (live mode) / label + back button (archive mode).
+     Row 2: the year chips (count computed in JS to keep the decade chip
+     visible) + the decade chip. flex-wrap is a safety net: if the JS count is
+     ever off by one, chips wrap to a second line rather than scrolling. */
   .sstrip-chips {
     order: 3; flex-basis: 100%; flex-wrap: wrap; row-gap: 6px;
   }
@@ -474,6 +474,10 @@ html.light .nav-logo .wm-light { display: block; }
   }
   .sstrip-meta-text { overflow: hidden; text-overflow: ellipsis; }
   .sstrip-back { font-size: 10px; padding: 5px 10px; }
+  /* Archive mode: drop the season meta and sit "Back to current" on the top
+     row beside the ARCHIVE label (pushed to the right edge). */
+  .sstrip-archive .sstrip-meta { display: none; }
+  .sstrip-archive .sstrip-back { margin-left: auto; }
 
   /* Bottom sheet */
   .sstrip-scrim {
