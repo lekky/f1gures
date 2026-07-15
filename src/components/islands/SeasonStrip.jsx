@@ -13,7 +13,8 @@ import { forwardRef, useEffect, useRef, useState } from 'react';
 import { track } from '../../lib/analytics.js';
 
 const HISTORIC_MIN = 1950;
-const FIRST_STRIP_YEAR = 2018; // strip chips run currentYear → this; older = panel
+const FIRST_STRIP_YEAR = 2018; // panel's "Recent" split point (currentYear-1 → this)
+const DESKTOP_CHIPS = 9;       // quick-chip capacity on desktop (mobile is measured)
 
 // The routes whose islands react to ?year=. Selecting a year on any other page
 // sends you home for that year (matches the old YearPicker's behaviour).
@@ -41,6 +42,20 @@ function range(from, to) {
   return out;
 }
 
+// A window of `size` years centred on `center`, clamped to [min, max], returned
+// newest-first. Lets the strip show the selected year flanked by its neighbours
+// (±1, ±2, …) so adjacent seasons are one click away. Near an edge the window
+// slides inward to keep the full count.
+function windowAround(center, size, min, max) {
+  size = Math.max(1, Math.min(size, max - min + 1));
+  let lo = center - Math.floor((size - 1) / 2);
+  let hi = center + Math.ceil((size - 1) / 2);
+  if (lo < min) { hi += min - lo; lo = min; }
+  if (hi > max) { lo -= hi - max; hi = max; }
+  lo = Math.max(lo, min);
+  return range(hi, lo);
+}
+
 export default function SeasonStrip({
   currentYear,
   nextRound = null,
@@ -52,12 +67,12 @@ export default function SeasonStrip({
   const [panelOpen, setPanelOpen] = useState(false);
   const [expandedDecade, setExpandedDecade] = useState(null); // e.g. 1980
   const [meta, setMeta] = useState(null); // fetched _seasons.json
-  const [maxChips, setMaxChips] = useState(null); // null = show all (desktop/SSR)
+  // How many quick-chips fit. SSR/desktop default = DESKTOP_CHIPS; on mobile the
+  // effect measures the row and shrinks it to what fits on one line.
+  const [capacity, setCapacity] = useState(DESKTOP_CHIPS);
   const chipRef = useRef(null);
   const panelRef = useRef(null);
   const chipsRowRef = useRef(null);
-
-  const stripYears = range(currentYear, FIRST_STRIP_YEAR); // current → 2018
 
   // Resolve the picked year after mount (keeps first render === server HTML).
   useEffect(() => {
@@ -67,12 +82,10 @@ export default function SeasonStrip({
 
   const archive = selected !== currentYear;
 
-  // If a year outside the quick range is picked (e.g. 1999), surface it as an
-  // active chip at the head of the strip so the quick list reflects the choice
-  // — instead of only the "1950–2017" chip carrying the highlight.
-  const displayYears = archive && !stripYears.includes(selected)
-    ? [selected, ...stripYears]
-    : stripYears;
+  // Quick chips centred on the selected year (selected in the middle, flanked by
+  // neighbours), sized to what the device fits. Clamped to [1950, currentYear],
+  // so at either end the window slides inward rather than showing empty slots.
+  const displayYears = windowAround(selected, capacity, HISTORIC_MIN, currentYear);
 
   // Lazy-load the champion/rounds map the first time we need archive labels.
   useEffect(() => {
@@ -104,46 +117,37 @@ export default function SeasonStrip({
     };
   }, [panelOpen]);
 
-  // Responsive chip count: on mobile (≤900px) show as many year chips as fit on
-  // one row while keeping the decade chip visible — never scroll. Desktop shows
-  // all. Measurement runs with every chip momentarily visible (setMaxChips(null)
-  // → measure in the next frame → cap), so it stays correct as the chip list
-  // length changes (e.g. a historic year gets prepended).
+  // Responsive capacity: on mobile (≤900px) fit as many quick-chips on one row
+  // as the width allows while keeping the decade chip visible — never scroll.
+  // Desktop uses a fixed count. Year chips are uniform width (4 digits), so we
+  // measure the widest rendered chip and divide the free space by it.
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 900px)');
-    let raf = 0;
     function recompute() {
-      if (!mq.matches) { setMaxChips(null); return; }
-      setMaxChips(null); // reveal all chips so their natural widths are measurable
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const row = chipsRowRef.current;
-        if (!row) return;
-        const chips = [...row.querySelectorAll('.sstrip-chip')];
-        const decade = row.querySelector('.sstrip-decade-chip');
-        const divider = row.querySelector('.sstrip-div');
-        if (!chips.length || !decade) return;
-        const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
-        let dividerW = 0;
-        if (divider) {
-          const d = getComputedStyle(divider);
-          dividerW = divider.getBoundingClientRect().width +
-            (parseFloat(d.marginLeft) || 0) + (parseFloat(d.marginRight) || 0);
-        }
-        const avail = row.clientWidth - decade.getBoundingClientRect().width - dividerW - gap * 2;
-        let used = 0, fit = 0;
-        for (const c of chips) {
-          const next = used + (fit ? gap : 0) + c.getBoundingClientRect().width;
-          if (next <= avail) { used = next; fit++; } else break;
-        }
-        setMaxChips(Math.max(2, fit));
-      });
+      if (!mq.matches) { setCapacity(DESKTOP_CHIPS); return; }
+      const row = chipsRowRef.current;
+      if (!row) return;
+      const chips = [...row.querySelectorAll('.sstrip-chip')];
+      const decade = row.querySelector('.sstrip-decade-chip');
+      const divider = row.querySelector('.sstrip-div');
+      if (!chips.length || !decade) return;
+      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+      const chipW = Math.max(...chips.map(c => c.getBoundingClientRect().width));
+      let dividerW = 0;
+      if (divider) {
+        const d = getComputedStyle(divider);
+        dividerW = divider.getBoundingClientRect().width +
+          (parseFloat(d.marginLeft) || 0) + (parseFloat(d.marginRight) || 0);
+      }
+      const avail = row.clientWidth - decade.getBoundingClientRect().width - dividerW - gap;
+      const cap = Math.floor((avail + gap) / (chipW + gap));
+      setCapacity(Math.max(3, cap));
     }
     recompute();
     window.addEventListener('resize', recompute);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(recompute);
-    return () => { window.removeEventListener('resize', recompute); cancelAnimationFrame(raf); };
-  }, [currentYear, displayYears.length]);
+    return () => window.removeEventListener('resize', recompute);
+  }, [currentYear]);
 
   // Lock background scroll while the mobile bottom sheet is open — otherwise a
   // touch-drag inside the sheet scrolls the page behind it. The position:fixed
@@ -189,7 +193,9 @@ export default function SeasonStrip({
   }
 
   // ── Meta strings ────────────────────────────────────────────────
-  const panelLabel = `${HISTORIC_MIN}–${FIRST_STRIP_YEAR - 1}`;
+  // The panel is a full-range picker (the strip only shows a window near the
+  // selected year), so the trigger spans 1950 → current.
+  const panelLabel = `${HISTORIC_MIN}–${currentYear}`;
 
   let metaText;
   if (archive) {
@@ -212,13 +218,12 @@ export default function SeasonStrip({
         <span className="sstrip-label">{labelChip}</span>
 
         <div className="sstrip-chips" role="group" aria-label="Season" ref={chipsRowRef}>
-          {displayYears.map((y, i) => (
+          {displayYears.map((y) => (
             <button
               key={y}
               type="button"
               className={`sstrip-chip${y === selected ? ' active' : ''}`}
               aria-current={y === selected ? 'true' : undefined}
-              style={maxChips != null && i >= maxChips ? { display: 'none' } : undefined}
               onClick={() => pick(y)}
             >
               {y}
