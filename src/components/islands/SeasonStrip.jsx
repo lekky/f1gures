@@ -82,10 +82,15 @@ export default function SeasonStrip({
 
   const archive = selected !== currentYear;
 
-  // Quick chips centred on the selected year (selected in the middle, flanked by
-  // neighbours), sized to what the device fits. Clamped to [1950, currentYear],
-  // so at either end the window slides inward rather than showing empty slots.
-  const displayYears = windowAround(selected, capacity, HISTORIC_MIN, currentYear);
+  // Quick chips, sized to what the device fits:
+  //  - a recent selection (within the last `capacity` years) shows the recent
+  //    block anchored at the current year, so "back to now" stays in view;
+  //  - a deep-historic selection centres the window on the picked year so you
+  //    can browse its neighbours (±1, ±2, …).
+  const recentFloor = currentYear - capacity + 1;
+  const displayYears = selected >= recentFloor
+    ? range(currentYear, Math.max(HISTORIC_MIN, recentFloor))
+    : windowAround(selected, capacity, HISTORIC_MIN, currentYear);
 
   // Lazy-load the champion/rounds map the first time we need archive labels.
   useEffect(() => {
