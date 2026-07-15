@@ -52,8 +52,13 @@ export default function SeasonStrip({
   const [panelOpen, setPanelOpen] = useState(false);
   const [expandedDecade, setExpandedDecade] = useState(null); // e.g. 1980
   const [meta, setMeta] = useState(null); // fetched _seasons.json
+  const [maxChips, setMaxChips] = useState(null); // null = show all (desktop/SSR)
   const chipRef = useRef(null);
   const panelRef = useRef(null);
+  const chipsRowRef = useRef(null);
+  const chipMetricsRef = useRef(null); // cached natural widths
+
+  const stripYears = range(currentYear, FIRST_STRIP_YEAR); // current → 2018
 
   // Resolve the picked year after mount (keeps first render === server HTML).
   useEffect(() => {
@@ -93,6 +98,58 @@ export default function SeasonStrip({
     };
   }, [panelOpen]);
 
+  // Responsive chip count: on mobile (≤900px) show as many year chips as fit on
+  // one row while keeping the decade chip visible — never scroll. Desktop shows
+  // all. Natural chip widths are measured once (while all chips are visible on
+  // first render) and cached, so resize recomputes are pure math.
+  useEffect(() => {
+    const row = chipsRowRef.current;
+    if (!row) return;
+
+    function measureNatural() {
+      const chips = [...row.querySelectorAll('.sstrip-chip')];
+      const decade = row.querySelector('.sstrip-decade-chip');
+      const divider = row.querySelector('.sstrip-div');
+      if (chips.length !== stripYears.length || !decade) return null; // not all visible yet
+      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+      let dividerW = 0;
+      if (divider) {
+        const d = getComputedStyle(divider);
+        dividerW = divider.getBoundingClientRect().width +
+          (parseFloat(d.marginLeft) || 0) + (parseFloat(d.marginRight) || 0);
+      }
+      return {
+        chipW: chips.map(c => c.getBoundingClientRect().width),
+        decadeW: decade.getBoundingClientRect().width,
+        dividerW, gap,
+      };
+    }
+
+    function recompute() {
+      if (!window.matchMedia('(max-width: 900px)').matches) { setMaxChips(null); return; }
+      if (!chipMetricsRef.current) chipMetricsRef.current = measureNatural();
+      const m = chipMetricsRef.current;
+      if (!m) return;
+      const avail = row.clientWidth - m.decadeW - m.dividerW - m.gap * 2;
+      let used = 0, fit = 0;
+      for (const w of m.chipW) {
+        const next = used + (fit ? m.gap : 0) + w;
+        if (next <= avail) { used = next; fit++; } else break;
+      }
+      setMaxChips(Math.max(2, fit));
+    }
+
+    recompute();
+    window.addEventListener('resize', recompute);
+    // Re-measure once web fonts settle (chip widths depend on Barlow Condensed).
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        if (!chipMetricsRef.current && window.matchMedia('(max-width: 900px)').matches) recompute();
+      });
+    }
+    return () => window.removeEventListener('resize', recompute);
+  }, [currentYear, stripYears.length]);
+
   function closePanel() { setPanelOpen(false); setExpandedDecade(null); }
 
   function pick(year) {
@@ -109,7 +166,6 @@ export default function SeasonStrip({
   }
 
   // ── Meta strings ────────────────────────────────────────────────
-  const stripYears = range(currentYear, FIRST_STRIP_YEAR);
   const panelLabel = `${HISTORIC_MIN}–${FIRST_STRIP_YEAR - 1}`;
 
   let metaText;
@@ -132,13 +188,14 @@ export default function SeasonStrip({
       <div className="sstrip-inner">
         <span className="sstrip-label">{labelChip}</span>
 
-        <div className="sstrip-chips" role="group" aria-label="Season">
-          {stripYears.map(y => (
+        <div className="sstrip-chips" role="group" aria-label="Season" ref={chipsRowRef}>
+          {stripYears.map((y, i) => (
             <button
               key={y}
               type="button"
               className={`sstrip-chip${y === selected ? ' active' : ''}`}
               aria-current={y === selected ? 'true' : undefined}
+              style={maxChips != null && i >= maxChips ? { display: 'none' } : undefined}
               onClick={() => pick(y)}
             >
               {y}

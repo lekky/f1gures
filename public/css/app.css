@@ -476,15 +476,14 @@ html.light .nav-logo .wm-light { display: block; }
   .sstrip-inner {
     flex-wrap: wrap; gap: 8px 10px; padding: 8px 12px; align-items: center;
   }
-  /* Row 1: label + meta + back button. Row 2: a few recent-year chips + the
-     decade chip — no horizontal scroll. Older years live in the panel's
-     "Recent" grid (revealed below). */
+  /* Row 1: label + meta + back button. Row 2: as many recent-year chips as fit
+     (count computed in JS to keep the decade chip visible) + the decade chip.
+     flex-wrap is a safety net: if the JS count is ever off by one, chips wrap
+     to a second line rather than scrolling horizontally. Older years live in
+     the panel's "Recent" grid (revealed below). */
   .sstrip-chips {
     order: 3; flex-basis: 100%; flex-wrap: wrap; row-gap: 6px;
   }
-  /* Cap the strip to 4 year chips so the decade chip stays visible without
-     scrolling. The rest are reachable via the panel. */
-  .sstrip-chips .sstrip-chip:nth-of-type(n+5) { display: none; }
   .sstrip-recent { display: block; }
   .sstrip-meta {
     font-size: 9.5px; overflow: hidden; text-overflow: ellipsis; min-width: 0;
