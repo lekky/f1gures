@@ -232,6 +232,23 @@ const DecadePanel = forwardRef(function DecadePanel(
           )}
         </button>
 
+        {/* Recent years grid — only shown on mobile (CSS), where the strip caps
+            its chips to a few years to avoid horizontal scroll. Keeps the
+            capped-off years (currentYear-1 → FIRST_STRIP_YEAR) reachable. */}
+        {range(currentYear - 1, FIRST_STRIP_YEAR).length > 0 && (
+          <section className="sstrip-decade sstrip-recent">
+            <div className="sstrip-decade-head">
+              <span>Recent</span>
+              <span className="sstrip-decade-rule" aria-hidden="true" />
+            </div>
+            <div className="sstrip-year-grid">
+              {range(currentYear - 1, FIRST_STRIP_YEAR).map(y => (
+                <YearCell key={y} year={y} selected={selected} archive={archive} onPick={onPick} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {namedDecades.map(group => (
           <section className="sstrip-decade" key={group.label}>
             <div className="sstrip-decade-head">
