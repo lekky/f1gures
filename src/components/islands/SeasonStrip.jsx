@@ -56,7 +56,6 @@ export default function SeasonStrip({
   const chipRef = useRef(null);
   const panelRef = useRef(null);
   const chipsRowRef = useRef(null);
-  const chipMetricsRef = useRef(null); // cached natural widths
 
   const stripYears = range(currentYear, FIRST_STRIP_YEAR); // current → 2018
 
@@ -67,6 +66,13 @@ export default function SeasonStrip({
   }, [currentYear]);
 
   const archive = selected !== currentYear;
+
+  // If a year outside the quick range is picked (e.g. 1999), surface it as an
+  // active chip at the head of the strip so the quick list reflects the choice
+  // — instead of only the "1950–2017" chip carrying the highlight.
+  const displayYears = archive && !stripYears.includes(selected)
+    ? [selected, ...stripYears]
+    : stripYears;
 
   // Lazy-load the champion/rounds map the first time we need archive labels.
   useEffect(() => {
@@ -100,55 +106,72 @@ export default function SeasonStrip({
 
   // Responsive chip count: on mobile (≤900px) show as many year chips as fit on
   // one row while keeping the decade chip visible — never scroll. Desktop shows
-  // all. Natural chip widths are measured once (while all chips are visible on
-  // first render) and cached, so resize recomputes are pure math.
+  // all. Measurement runs with every chip momentarily visible (setMaxChips(null)
+  // → measure in the next frame → cap), so it stays correct as the chip list
+  // length changes (e.g. a historic year gets prepended).
   useEffect(() => {
-    const row = chipsRowRef.current;
-    if (!row) return;
-
-    function measureNatural() {
-      const chips = [...row.querySelectorAll('.sstrip-chip')];
-      const decade = row.querySelector('.sstrip-decade-chip');
-      const divider = row.querySelector('.sstrip-div');
-      if (chips.length !== stripYears.length || !decade) return null; // not all visible yet
-      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
-      let dividerW = 0;
-      if (divider) {
-        const d = getComputedStyle(divider);
-        dividerW = divider.getBoundingClientRect().width +
-          (parseFloat(d.marginLeft) || 0) + (parseFloat(d.marginRight) || 0);
-      }
-      return {
-        chipW: chips.map(c => c.getBoundingClientRect().width),
-        decadeW: decade.getBoundingClientRect().width,
-        dividerW, gap,
-      };
-    }
-
+    const mq = window.matchMedia('(max-width: 900px)');
+    let raf = 0;
     function recompute() {
-      if (!window.matchMedia('(max-width: 900px)').matches) { setMaxChips(null); return; }
-      if (!chipMetricsRef.current) chipMetricsRef.current = measureNatural();
-      const m = chipMetricsRef.current;
-      if (!m) return;
-      const avail = row.clientWidth - m.decadeW - m.dividerW - m.gap * 2;
-      let used = 0, fit = 0;
-      for (const w of m.chipW) {
-        const next = used + (fit ? m.gap : 0) + w;
-        if (next <= avail) { used = next; fit++; } else break;
-      }
-      setMaxChips(Math.max(2, fit));
-    }
-
-    recompute();
-    window.addEventListener('resize', recompute);
-    // Re-measure once web fonts settle (chip widths depend on Barlow Condensed).
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => {
-        if (!chipMetricsRef.current && window.matchMedia('(max-width: 900px)').matches) recompute();
+      if (!mq.matches) { setMaxChips(null); return; }
+      setMaxChips(null); // reveal all chips so their natural widths are measurable
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const row = chipsRowRef.current;
+        if (!row) return;
+        const chips = [...row.querySelectorAll('.sstrip-chip')];
+        const decade = row.querySelector('.sstrip-decade-chip');
+        const divider = row.querySelector('.sstrip-div');
+        if (!chips.length || !decade) return;
+        const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+        let dividerW = 0;
+        if (divider) {
+          const d = getComputedStyle(divider);
+          dividerW = divider.getBoundingClientRect().width +
+            (parseFloat(d.marginLeft) || 0) + (parseFloat(d.marginRight) || 0);
+        }
+        const avail = row.clientWidth - decade.getBoundingClientRect().width - dividerW - gap * 2;
+        let used = 0, fit = 0;
+        for (const c of chips) {
+          const next = used + (fit ? gap : 0) + c.getBoundingClientRect().width;
+          if (next <= avail) { used = next; fit++; } else break;
+        }
+        setMaxChips(Math.max(2, fit));
       });
     }
-    return () => window.removeEventListener('resize', recompute);
-  }, [currentYear, stripYears.length]);
+    recompute();
+    window.addEventListener('resize', recompute);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(recompute);
+    return () => { window.removeEventListener('resize', recompute); cancelAnimationFrame(raf); };
+  }, [currentYear, displayYears.length]);
+
+  // Lock background scroll while the mobile bottom sheet is open — otherwise a
+  // touch-drag inside the sheet scrolls the page behind it. The position:fixed
+  // technique is the reliable cross-browser (incl. iOS) lock: pin <body> at its
+  // current scroll offset, then restore the offset on close.
+  useEffect(() => {
+    if (!panelOpen) return;
+    if (!window.matchMedia('(max-width: 900px)').matches) return;
+    const body = document.body;
+    const scrollY = window.scrollY;
+    const prev = {
+      position: body.style.position, top: body.style.top,
+      left: body.style.left, right: body.style.right, width: body.style.width,
+    };
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.width = prev.width;
+      window.scrollTo(0, scrollY);
+    };
+  }, [panelOpen]);
 
   function closePanel() { setPanelOpen(false); setExpandedDecade(null); }
 
@@ -189,7 +212,7 @@ export default function SeasonStrip({
         <span className="sstrip-label">{labelChip}</span>
 
         <div className="sstrip-chips" role="group" aria-label="Season" ref={chipsRowRef}>
-          {stripYears.map((y, i) => (
+          {displayYears.map((y, i) => (
             <button
               key={y}
               type="button"
@@ -207,7 +230,7 @@ export default function SeasonStrip({
           <button
             type="button"
             ref={chipRef}
-            className={`sstrip-decade-chip${panelOpen ? ' open' : ''}${archive && selected < FIRST_STRIP_YEAR ? ' active' : ''}`}
+            className={`sstrip-decade-chip${panelOpen ? ' open' : ''}`}
             aria-expanded={panelOpen}
             aria-haspopup="dialog"
             onClick={() => setPanelOpen(o => !o)}
