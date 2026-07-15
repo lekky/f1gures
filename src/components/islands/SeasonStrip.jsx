@@ -13,7 +13,7 @@ import { forwardRef, useEffect, useRef, useState } from 'react';
 import { track } from '../../lib/analytics.js';
 
 const HISTORIC_MIN = 1950;
-const DESKTOP_CHIPS = 9; // quick-chip capacity on desktop (mobile is measured)
+const MAX_CHIPS = 9; // upper bound on quick-chips (kept odd so the pick centres)
 
 // The routes whose islands react to ?year=. Selecting a year on any other page
 // sends you home for that year (matches the old YearPicker's behaviour).
@@ -65,9 +65,9 @@ export default function SeasonStrip({
   const [selected, setSelected] = useState(currentYear); // SSR-safe: current
   const [panelOpen, setPanelOpen] = useState(false);
   const [meta, setMeta] = useState(null); // fetched _seasons.json
-  // How many quick-chips fit. SSR/desktop default = DESKTOP_CHIPS; on mobile the
-  // effect measures the row and shrinks it to what fits on one line.
-  const [capacity, setCapacity] = useState(DESKTOP_CHIPS);
+  // How many quick-chips fit. SSR default = MAX_CHIPS; the effect measures the
+  // available width (both layouts) and shrinks it to what fits on one line.
+  const [capacity, setCapacity] = useState(MAX_CHIPS);
   const chipRef = useRef(null);
   const panelRef = useRef(null);
   const chipsRowRef = useRef(null);
@@ -132,14 +132,14 @@ export default function SeasonStrip({
     };
   }, [panelOpen]);
 
-  // Responsive capacity: on mobile (≤900px) fit as many quick-chips on one row
-  // as the width allows while keeping the decade chip visible — never scroll.
-  // Desktop uses a fixed count. Year chips are uniform width (4 digits), so we
-  // measure the widest rendered chip and divide the free space by it.
+  // Responsive capacity: fit as many quick-chips as the width allows while
+  // keeping the decade chip visible — never wrap or scroll. Year chips are
+  // uniform width (4 digits), so we measure the widest chip and divide the free
+  // space by it. The free space differs by layout: on mobile (≤900px) the chips
+  // get their own full-width row; on desktop they share one row with the label,
+  // meta and Back button, so we subtract those siblings. Capped at MAX_CHIPS.
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 900px)');
     function recompute() {
-      if (!mq.matches) { setCapacity(DESKTOP_CHIPS); return; }
       const row = chipsRowRef.current;
       if (!row) return;
       const chips = [...row.querySelectorAll('.sstrip-chip')];
@@ -148,21 +148,46 @@ export default function SeasonStrip({
       if (!chips.length || !decade) return;
       const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
       const chipW = Math.max(...chips.map(c => c.getBoundingClientRect().width));
+      const decadeW = decade.getBoundingClientRect().width;
       let dividerW = 0;
       if (divider) {
         const d = getComputedStyle(divider);
         dividerW = divider.getBoundingClientRect().width +
           (parseFloat(d.marginLeft) || 0) + (parseFloat(d.marginRight) || 0);
       }
-      const avail = row.clientWidth - decade.getBoundingClientRect().width - dividerW - gap;
+
+      let avail;
+      if (window.matchMedia('(max-width: 900px)').matches) {
+        avail = row.clientWidth - decadeW - dividerW - gap;
+      } else {
+        const inner = row.parentElement;
+        const is = getComputedStyle(inner);
+        const innerGap = parseFloat(is.columnGap) || 0;
+        const innerPad = (parseFloat(is.paddingLeft) || 0) + (parseFloat(is.paddingRight) || 0);
+        let siblings = 0;
+        for (const child of inner.children) {
+          if (child !== row) siblings += child.getBoundingClientRect().width + innerGap;
+        }
+        avail = inner.clientWidth - innerPad - siblings - decadeW - dividerW - gap - 8;
+      }
       const cap = Math.floor((avail + gap) / (chipW + gap));
-      setCapacity(Math.max(3, cap));
+      setCapacity(Math.max(3, Math.min(cap, MAX_CHIPS)));
     }
     recompute();
     window.addEventListener('resize', recompute);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(recompute);
-    return () => window.removeEventListener('resize', recompute);
-  }, [currentYear]);
+    // Re-measure when the meta/back siblings change width — the champion string
+    // arrives asynchronously (from _seasons.json) and widens the meta, and the
+    // label/back swap between live and archive modes.
+    let ro;
+    if (typeof ResizeObserver !== 'undefined' && chipsRowRef.current) {
+      ro = new ResizeObserver(recompute);
+      ro.observe(chipsRowRef.current.parentElement);
+      const metaEl = chipsRowRef.current.parentElement.querySelector('.sstrip-meta');
+      if (metaEl) ro.observe(metaEl);
+    }
+    return () => { window.removeEventListener('resize', recompute); if (ro) ro.disconnect(); };
+  }, [currentYear, selected, archive, meta]);
 
   // Lock background scroll while the mobile bottom sheet is open — otherwise a
   // touch-drag inside the sheet scrolls the page behind it. The position:fixed
