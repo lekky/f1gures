@@ -13,8 +13,7 @@ import { forwardRef, useEffect, useRef, useState } from 'react';
 import { track } from '../../lib/analytics.js';
 
 const HISTORIC_MIN = 1950;
-const FIRST_STRIP_YEAR = 2018; // panel's "Recent" split point (currentYear-1 → this)
-const DESKTOP_CHIPS = 9;       // quick-chip capacity on desktop (mobile is measured)
+const DESKTOP_CHIPS = 9; // quick-chip capacity on desktop (mobile is measured)
 
 // The routes whose islands react to ?year=. Selecting a year on any other page
 // sends you home for that year (matches the old YearPicker's behaviour).
@@ -65,7 +64,6 @@ export default function SeasonStrip({
 }) {
   const [selected, setSelected] = useState(currentYear); // SSR-safe: current
   const [panelOpen, setPanelOpen] = useState(false);
-  const [expandedDecade, setExpandedDecade] = useState(null); // e.g. 1980
   const [meta, setMeta] = useState(null); // fetched _seasons.json
   // How many quick-chips fit. SSR/desktop default = DESKTOP_CHIPS; on mobile the
   // effect measures the row and shrinks it to what fits on one line.
@@ -98,15 +96,11 @@ export default function SeasonStrip({
 
   const archive = selected !== currentYear;
 
-  // Quick chips, sized to what the device fits:
-  //  - a recent selection (within the last `capacity` years) shows the recent
-  //    block anchored at the current year, so "back to now" stays in view;
-  //  - a deep-historic selection centres the window on the picked year so you
-  //    can browse its neighbours (±1, ±2, …).
-  const recentFloor = currentYear - capacity + 1;
-  const displayYears = selected >= recentFloor
-    ? range(currentYear, Math.max(HISTORIC_MIN, recentFloor))
-    : windowAround(selected, capacity, HISTORIC_MIN, currentYear);
+  // Quick chips centred on the selected year (selected in the middle, flanked
+  // by its neighbours ±1, ±2, …) so you can click straight through adjacent
+  // seasons. Sized to what the device fits; clamped to [1950, currentYear], so
+  // at either end the window slides inward rather than showing empty slots.
+  const displayYears = windowAround(selected, capacity, HISTORIC_MIN, currentYear);
 
   // Lazy-load the champion/rounds map the first time we need archive labels.
   useEffect(() => {
@@ -198,7 +192,7 @@ export default function SeasonStrip({
     };
   }, [panelOpen]);
 
-  function closePanel() { setPanelOpen(false); setExpandedDecade(null); }
+  function closePanel() { setPanelOpen(false); }
 
   function pick(year) {
     const isCurrent = year === currentYear;
@@ -286,8 +280,6 @@ export default function SeasonStrip({
           archive={archive}
           nextRound={nextRound}
           totalRounds={totalRounds}
-          expandedDecade={expandedDecade}
-          setExpandedDecade={setExpandedDecade}
           onPick={pick}
           onClose={closePanel}
         />
@@ -296,21 +288,18 @@ export default function SeasonStrip({
   );
 }
 
-// Decade-grouped season picker for 1950 → (FIRST_STRIP_YEAR-1). Anchored
-// dropdown on desktop, bottom sheet on mobile (styled via CSS).
+// Full season picker: every decade from the current one down to the 1950s, each
+// as a complete year grid, scrollable. Anchored dropdown on desktop, bottom
+// sheet on mobile (styled via CSS).
 const DecadePanel = forwardRef(function DecadePanel(
-  { currentYear, selected, archive, nextRound, totalRounds, expandedDecade, setExpandedDecade, onPick, onClose },
+  { currentYear, selected, archive, nextRound, totalRounds, onPick, onClose },
   ref,
 ) {
-  // Named decade groups shown with full year grids (2010s..1990s).
-  const namedDecades = [
-    { label: '2010s', years: range(FIRST_STRIP_YEAR - 1, 2010) },
-    { label: '2000s', years: range(2009, 2000) },
-    { label: '1990s', years: range(1999, 1990) },
-  ].filter(g => g.years.length);
-
-  // Collapsed decades (1980s..1950s); clicking expands one in place.
-  const earlierDecades = [1980, 1970, 1960, 1950];
+  const decades = [];
+  const topDecade = Math.floor(currentYear / 10) * 10;
+  for (let d = topDecade; d >= HISTORIC_MIN; d -= 10) {
+    decades.push({ label: `${d}s`, years: range(Math.min(d + 9, currentYear), Math.max(d, HISTORIC_MIN)) });
+  }
 
   return (
     <>
@@ -338,24 +327,7 @@ const DecadePanel = forwardRef(function DecadePanel(
           )}
         </button>
 
-        {/* Recent years grid — only shown on mobile (CSS), where the strip caps
-            its chips to a few years to avoid horizontal scroll. Keeps the
-            capped-off years (currentYear-1 → FIRST_STRIP_YEAR) reachable. */}
-        {range(currentYear - 1, FIRST_STRIP_YEAR).length > 0 && (
-          <section className="sstrip-decade sstrip-recent">
-            <div className="sstrip-decade-head">
-              <span>Recent</span>
-              <span className="sstrip-decade-rule" aria-hidden="true" />
-            </div>
-            <div className="sstrip-year-grid">
-              {range(currentYear - 1, FIRST_STRIP_YEAR).map(y => (
-                <YearCell key={y} year={y} selected={selected} archive={archive} onPick={onPick} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {namedDecades.map(group => (
+        {decades.map(group => (
           <section className="sstrip-decade" key={group.label}>
             <div className="sstrip-decade-head">
               <span>{group.label}</span>
@@ -368,38 +340,6 @@ const DecadePanel = forwardRef(function DecadePanel(
             </div>
           </section>
         ))}
-
-        <section className="sstrip-decade sstrip-earlier">
-          <div className="sstrip-decade-head">
-            <span>{expandedDecade ? `${expandedDecade}s` : 'Earlier'}</span>
-            <span className="sstrip-decade-rule" aria-hidden="true" />
-            {expandedDecade && (
-              <button type="button" className="sstrip-decade-back" onClick={() => setExpandedDecade(null)}>
-                ‹ Decades
-              </button>
-            )}
-          </div>
-          {expandedDecade ? (
-            <div className="sstrip-year-grid">
-              {range(expandedDecade + 9, expandedDecade).map(y => (
-                <YearCell key={y} year={y} selected={selected} archive={archive} onPick={onPick} />
-              ))}
-            </div>
-          ) : (
-            <div className="sstrip-decade-grid">
-              {earlierDecades.map(d => (
-                <button
-                  key={d}
-                  type="button"
-                  className="sstrip-decade-cell"
-                  onClick={() => setExpandedDecade(d)}
-                >
-                  {d}s
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
       </div>
     </>
   );
