@@ -2542,4 +2542,29 @@ if (postArchiveTeamYears > 0) {
   });
   writeFileSync(join(OUT, '_compare-suggestions.json'), JSON.stringify(suggestions));
   console.log(`[archive] wrote compare suggestions (${suggestions.driver.length} driver, ${suggestions.team.length} team)`);
+
+  // ── Season meta (for the header season strip) ───────────────────
+  // Compact year -> { rounds, champion, championRef, complete } map the
+  // SeasonStrip island fetches to label archive mode ("2022 · COMPLETE ·
+  // VERSTAPPEN CHAMPION"). Champion is the driver whose per-season standing
+  // position is 1 (covers all eras uniformly - Ergast + hand-curated bundles).
+  const seasonsMeta = {};
+  for (const doc of driverDocs) {
+    for (const s of doc.perSeason || []) {
+      if (s.position === 1) {
+        (seasonsMeta[s.year] ||= {}).champion = doc.surname;
+        seasonsMeta[s.year].championRef = doc.driverRef;
+      }
+    }
+  }
+  // Rounds per year = highest completed round in the races index.
+  const racesIndexForMeta = JSON.parse(readFileSync(join(OUT, '_races-index.json'), 'utf8'));
+  for (const r of racesIndexForMeta) {
+    const m = (seasonsMeta[r.year] ||= {});
+    m.rounds = Math.max(m.rounds || 0, r.round);
+  }
+  // A season is "complete" once it's a past year; the current year is live.
+  for (const y of Object.keys(seasonsMeta)) seasonsMeta[y].complete = Number(y) < currentYear;
+  writeFileSync(join(OUT, '_seasons.json'), JSON.stringify(seasonsMeta));
+  console.log(`[archive] wrote season meta (${Object.keys(seasonsMeta).length} seasons)`);
 }

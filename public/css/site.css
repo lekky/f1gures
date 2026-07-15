@@ -40,7 +40,6 @@ a { color: inherit; }
   align-items: center; padding: 0 14px; gap: 10px;
 }
 .topbar-mobile .topbar-logo { font-size: 18px; flex-shrink: 0; }
-.topbar-mobile .nav-season { padding: 4px 10px; font-size: 11px; flex-shrink: 0; }
 
 /* ──────────────────────────────────────────────────────────
    Additional utilities & responsive page-specific layouts
