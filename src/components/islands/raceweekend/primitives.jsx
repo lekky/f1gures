@@ -85,9 +85,20 @@ export function lapTickValues(total) {
   return out;
 }
 
+// Driver headshot inside an SVG chart. `href` must be a data URI
+// (ctx.faceImg) — external URLs are dropped when the chart is rasterised for
+// the share card. Renders nothing when the face isn't loaded/available.
+export function FaceImg({ href, x, y, size = 18 }) {
+  if (!href) return null;
+  return (
+    <image href={href} xlinkHref={href} x={x} y={y} width={size} height={size}
+      preserveAspectRatio="xMidYMin slice" />
+  );
+}
+
 // Ladder: horizontal delta bars (quali gaps, SQ gaps, speed traps…).
-// rows: [{ pos, code, color, value(px width fraction 0..1), txt }]
-export function Ladder({ rows, width = 500, rowH = 31, barMax = 340 }) {
+// rows: [{ pos, code, color, frac(0..1), txt, face? (data URI) }]
+export function Ladder({ rows, width = 500, rowH = 31, barMax = 310 }) {
   const height = rows.length * rowH + 14;
   return (
     <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', display: 'block' }}>
@@ -97,9 +108,10 @@ export function Ladder({ rows, width = 500, rowH = 31, barMax = 340 }) {
         return (
           <g key={r.code}>
             <text x="12" y={y + 12.5} fontFamily={MONO} fontSize="11" fill={PANEL.axis}>{r.pos}</text>
-            <text x="60" y={y + 12.5} fontFamily={MONO} fontSize="11" fontWeight="700" fill={r.color} textAnchor="end">{r.code}</text>
-            <rect x="68" y={y} width={w.toFixed(1)} height="16" fill={r.color} />
-            <text x={(68 + w + 8).toFixed(1)} y={y + 12.5} fontFamily={MONO} fontSize="11" fill={PANEL.fg2}>{r.txt}</text>
+            <FaceImg href={r.face} x={36} y={y - 2} size={20} />
+            <text x="88" y={y + 12.5} fontFamily={MONO} fontSize="11" fontWeight="700" fill={r.color} textAnchor="end">{r.code}</text>
+            <rect x="96" y={y} width={w.toFixed(1)} height="16" fill={r.color} />
+            <text x={(96 + w + 8).toFixed(1)} y={y + 12.5} fontFamily={MONO} fontSize="11" fill={PANEL.fg2}>{r.txt}</text>
           </g>
         );
       })}
@@ -108,11 +120,12 @@ export function Ladder({ rows, width = 500, rowH = 31, barMax = 340 }) {
 }
 
 // Diverging ladder centred at 0 (lap-1 gains & losses).
+// rows: [{ code, color, value, face? }]
 export function DivergingLadder({ rows, width = 500, rowH = 26, fmt }) {
   const height = rows.length * rowH + 16;
   const maxAbs = Math.max(1, ...rows.map((r) => Math.abs(r.value)));
   const cx = width / 2 + 20;
-  const span = width / 2 - 90;
+  const span = width / 2 - 110;
   return (
     <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', display: 'block' }}>
       <line x1={cx} x2={cx} y1="6" y2={height - 10} stroke={PANEL.grid} />
@@ -122,6 +135,7 @@ export function DivergingLadder({ rows, width = 500, rowH = 26, fmt }) {
         const pos = r.value >= 0;
         return (
           <g key={r.code}>
+            <FaceImg href={r.face} x={cx - span - 56} y={y - 2} size={18} />
             <text x={cx - span - 14} y={y + 11} fontFamily={MONO} fontSize="11" fontWeight="700" fill={r.color} textAnchor="end">{r.code}</text>
             <rect x={pos ? cx : cx - w} y={y} width={Math.max(2, w).toFixed(1)} height="13" fill={pos ? r.color : PANEL.dim} stroke={pos ? 'none' : r.color} strokeWidth={pos ? 0 : 1} />
             <text x={pos ? cx + w + 8 : cx - w - 8} y={y + 11} fontFamily={MONO} fontSize="10.5" fill={PANEL.fg2} textAnchor={pos ? 'start' : 'end'}>
