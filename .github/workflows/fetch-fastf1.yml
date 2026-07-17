@@ -1,32 +1,20 @@
 name: Fetch FastF1 Weekend Data
 
-# Pulls per-session timing/telemetry data for completed sessions of the
-# current season via FastF1 (scripts/fetch-fastf1.py --auto), commits the
-# derived JSONs (public/data/fastf1/<year>/<round>/), then rebuilds and
-# FTP-deploys so race pages grow their Weekend Analysis tabs during the
-# weekend itself.
+# ⚠️ SCHEDULE DISABLED — the FastF1 fetch does NOT work from GitHub's runners.
+# F1's live-timing API refuses datacenter IPs: every scheduled run failed at
+# "Failed to load session info data!" while the identical fetch succeeds from a
+# residential IP. So the automated fetch now runs LOCALLY via
+# scripts/fetch-and-deploy-local.ps1 (Windows Task Scheduler on a residential
+# machine), which fetches, commits to main, and dispatches deploy.yml.
 #
-# Cadence: every 15 minutes across race weekends. F1's live-timing archive
-# publishes a session ~30-60 min after it ends, so this puts charts live
-# within ~15 min of FastF1 having the data. Affordable because of a two-stage
-# gate:
-#   1. scripts/fastf1-pending.mjs (Node built-ins, <1s, no installs) checks
-#      whether any recently-finished session is missing on disk — when not,
-#      the run ends after checkout (~20-30s billed). This is ~90% of polls.
-#   2. npm ci / build / FTP only run when the fetch actually committed new
-#      data — mirroring refresh-current-season.yml.
-# workflow_dispatch bypasses both gates (backfills / force-redeploys).
-#
-# Shares the `deploy` concurrency group with deploy.yml and
-# refresh-current-season.yml so FTP syncs never overlap.
+# This workflow is kept dispatch-only as a manual fallback (e.g. to retry from
+# CI if F1 ever opens the API to cloud IPs, or when triggered on a self-hosted
+# runner with a residential egress). It runs scripts/fetch-fastf1.py --auto,
+# commits any new session JSON, then builds + FTP-deploys — gated on a real
+# data change, sharing the `deploy` concurrency group. Left here rather than
+# deleted so the wiring is one edit away if the constraint changes.
 
 on:
-  schedule:
-    # Race weekends: Fri through Sun, all day (sessions span ~04:00 UTC
-    # Vegas practice to ~23:00 UTC Americas races), plus early Monday for
-    # anything that publishes late.
-    - cron: '*/15 * * * FRI,SAT,SUN'
-    - cron: '*/15 0-7 * * MON'
   workflow_dispatch:
 
 permissions:

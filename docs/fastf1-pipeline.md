@@ -88,23 +88,33 @@ add `order`, `lapsAll`, `longRuns`, `speedTraps`.
   `foreignObject` for table-style charts) onto a branded canvas. Filename:
   `f1gures-<race>-<year>-<chart>-<16x9|1x1|9x16>.png`.
 
-## Ops
+## Ops — the fetch runs LOCALLY, not in CI
 
-- **`.github/workflows/fetch-fastf1.yml`** polls **every 15 minutes across
-  race weekends** (Fri–Sun + early Monday, UTC). Two-stage gate keeps that
-  affordable: `scripts/fastf1-pending.mjs` (Node built-ins, sub-second, no
-  installs — its SESSION_MINUTES/GRACE constants must stay in sync with the
-  Python script) ends the run right after checkout when no recently-finished
-  session is missing on disk; a pending session triggers the Python fetch +
-  commit; only an actual data change triggers npm ci + build + FTP. It shares
-  the `deploy` concurrency group with the other two deploy workflows. Net
-  latency: charts are live within ~15 min of FastF1 publishing a session
-  (FastF1 itself publishes ~30–60 min after the chequered flag). The gate's
-  30h lookback means permanently-missing sessions don't keep the poll hot —
-  those are manual-backfill territory via `workflow_dispatch` or a local run.
+**Key constraint: FastF1 cannot run on GitHub's runners.** F1's live-timing API
+refuses datacenter IPs — every CI fetch failed at `Failed to load session info
+data!`, while the identical `fastf1.get_session(...).load()` succeeds from a
+residential IP seconds later. This is not a cache or code bug (we ruled both
+out on the live 2026 Belgian FP2); it's the F1 API declining cloud egress. So:
+
+- **`scripts/fetch-and-deploy-local.ps1`** is the real automation. Windows Task
+  Scheduler runs it every ~15 min Fri–Sun on a residential machine. It
+  hard-syncs a **dedicated clone** (`C:\Users\rotsm\f1gures-fastf1-bot` — never
+  the dev checkout, so its `git reset --hard` is safe), runs
+  `scripts/fetch-fastf1.py --auto`, and if new session JSON appeared, commits to
+  `main` and dispatches `deploy.yml`. Net latency: a session is live within
+  ~15 min of FastF1 publishing it, **provided the machine is on and online** —
+  that's the tradeoff of local fetching. Logs land in the clone's
+  `.fetch-logs/`.
+- **`.github/workflows/fetch-fastf1.yml`** is kept **dispatch-only** as a manual
+  fallback (it still runs the gate + fetch + build + FTP when dispatched) in
+  case F1 ever serves cloud IPs or the fetch is pointed at a self-hosted runner
+  with residential egress. Its schedule is disabled — it only ever failed.
+- **`deploy.yml`** does the actual build + FTP for locally-committed data (the
+  local script dispatches it; its 3×-daily schedule is the fallback).
 - **Backfill**: FastF1 covers 2018+ (telemetry-complete). Run the script per
-  round locally and commit, e.g.
+  round **on a residential machine** and commit, e.g.
   `for /l %r in (1,1,8) do python scripts/fetch-fastf1.py 2026 %r`. The next
-  build picks the pages up automatically — no config needed.
-- If FastF1's schema shifts (new season quirks), the workflow's fetch step
-  fails loudly but deploys nothing; the site keeps serving the last good data.
+  build picks the pages up automatically.
+- `scripts/fastf1-pending.mjs` (a sub-second Node gate; SESSION_MINUTES/GRACE
+  constants must stay in sync with the Python script) is still used by the
+  dispatch-only workflow to decide whether a pending session exists.
