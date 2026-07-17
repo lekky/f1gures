@@ -49,8 +49,13 @@ Design decisions:
   one failed session never kills the rest of the weekend.
 - The schedule comes from the season bundle's calendar (falls back to the
   FastF1 event schedule), so manifest times match the site's session tables.
-- `.fastf1-cache/` (gitignored) holds FastF1's raw-response cache; reruns are
-  fast and mostly offline.
+- `.fastf1-cache/` (gitignored) holds FastF1's raw-response cache; local reruns
+  are fast and mostly offline. **CI deliberately does not persist this cache
+  across runs** — FastF1 caches the empty "not ready" responses from polling a
+  session before its archive is published, and a restored cache would re-serve
+  that stale empty forever, permanently stranding the session. Each CI run
+  starts fresh and queries the live API; `--auto`/`--force` also pass
+  `force_renew=True` (renews the processed-session cache layer).
 
 Session JSON shapes (schema 1): every file carries `drivers` (classification
 order, with `ref` = Ergast driverRef and `teamId` + `color` mapped from the

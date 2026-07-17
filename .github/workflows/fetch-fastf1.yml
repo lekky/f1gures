@@ -56,16 +56,15 @@ jobs:
           cache: pip
           cache-dependency-path: scripts/requirements-fastf1.txt
 
-      # FastF1's raw-response cache: keeps within-weekend reruns fast and
-      # avoids re-downloading telemetry for sessions we already saw.
-      - name: Cache FastF1 session data
-        if: steps.gate.outputs.pending == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/cache@v4
-        with:
-          path: .fastf1-cache
-          key: fastf1-cache-${{ github.run_id }}
-          restore-keys: |
-            fastf1-cache-
+      # NB: we deliberately do NOT persist .fastf1-cache across runs. FastF1's
+      # raw-response cache (fastf1_http_cache.sqlite) stores the empty "session
+      # not ready" responses returned when we poll a just-finished session
+      # before F1 publishes its archive. Restoring that sqlite from a prior run
+      # re-serves the stale empty forever, so the session never loads even once
+      # its data goes live (this stranded the 2026 Belgian GP FP2 tab). Each run
+      # starts with a fresh cache and queries the live API. The only cost is
+      # re-downloading the one pending session's data per run — the fetcher
+      # skips on-disk sessions, so finished sessions are never re-fetched.
 
       - name: Install FastF1
         if: steps.gate.outputs.pending == 'true' || github.event_name == 'workflow_dispatch'
