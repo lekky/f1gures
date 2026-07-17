@@ -1,0 +1,109 @@
+name: Fetch FastF1 Weekend Data
+
+# Pulls per-session timing/telemetry data for completed sessions of the
+# current season via FastF1 (scripts/fetch-fastf1.py --auto), commits the
+# derived JSONs (public/data/fastf1/<year>/<round>/), then rebuilds and
+# FTP-deploys so race pages grow their Weekend Analysis tabs during the
+# weekend itself.
+#
+# Cadence: F1's live-timing archive publishes a session ~30-60 min after it
+# ends, so the crons bracket the usual session windows (UTC). A run where
+# nothing new is available exits in ~1-2 min (pip cache + "Nothing to fetch"),
+# and npm ci / build / FTP are gated on data actually having changed —
+# mirroring refresh-current-season.yml. workflow_dispatch bypasses the gate
+# (use it for backfills after running the script locally, or force-redeploys).
+#
+# Shares the `deploy` concurrency group with deploy.yml and
+# refresh-current-season.yml so FTP syncs never overlap.
+
+on:
+  schedule:
+    # Friday practice/sprint-quali windows
+    - cron: '0 13,15,17,19,21 * * FRI'
+    # Saturday + Sunday: practice/quali/sprint/race windows, incl. late US races
+    - cron: '0 8,11,14,16,18,20,23 * * SAT,SUN'
+    # Monday catch-all for anything the weekend crons missed (e.g. Vegas)
+    - cron: '0 5 * * MON'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/requirements-fastf1.txt
+
+      # FastF1's raw-response cache: keeps within-weekend reruns fast and
+      # avoids re-downloading telemetry for sessions we already saw.
+      - name: Cache FastF1 session data
+        uses: actions/cache@v4
+        with:
+          path: .fastf1-cache
+          key: fastf1-cache-${{ github.run_id }}
+          restore-keys: |
+            fastf1-cache-
+
+      - name: Install FastF1
+        run: pip install -r scripts/requirements-fastf1.txt
+
+      - name: Fetch completed sessions
+        run: python scripts/fetch-fastf1.py --auto
+
+      - name: Commit data if changed
+        id: commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/data/fastf1
+          if git diff --cached --quiet; then
+            echo "No new FastF1 data - skipping build & deploy."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "chore(data): FastF1 session data refresh"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: npm ci
+
+      - name: Cache OG images
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/cache@v4
+        with:
+          path: public/images/og
+          # Same key family as deploy.yml / refresh-current-season.yml.
+          key: og-images-v1-${{ hashFiles('data/history/**', 'public/data/*.json', 'scripts/build-archive.mjs', 'scripts/generate-og-images.mjs', 'scripts/og-templates/**', 'package-lock.json') }}
+
+      - name: Build Astro site
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: npm run build
+
+      - name: Deploy via FTP
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USER }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          local-dir: ./dist/
+          state-name: .ftp-deploy-sync-state-dist.json

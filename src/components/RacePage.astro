@@ -73,12 +73,19 @@ interface Props {
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import RaceResultsBody from './RaceResultsBody.astro';
+import RaceWeekendBody from './RaceWeekendBody.astro';
 import RaceUpcomingBody from './RaceUpcomingBody.astro';
 import MobileBarRows from './MobileBarRows.astro';
 import Flag from './Flag.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 
 const { race } = Astro.props;
+// Weekends with FastF1 data on disk (public/data/fastf1/<year>/<round>/,
+// written by scripts/fetch-fastf1.py) get the full tabbed weekend-analysis
+// body with the Visualisation Explorer instead of the plain results body.
+const hasFastF1 = existsSync(
+  resolve(process.cwd(), 'public', 'data', 'fastf1', String(race.year), String(race.round), 'index.json'),
+);
 // Upcoming holding pages carry sprint as a boolean flag; completed sprint
 // weekends carry the sprint *results* array - both mean "sprint weekend".
 const isSprintWeekend = race.sprint === true || (Array.isArray(race.sprint) && race.sprint.length > 0);
@@ -151,9 +158,11 @@ const flagWashSrc = washCc
 
   <TriviaBoard client:visible />
 
-  {race.results.length > 0
-    ? <RaceResultsBody race={race} />
-    : <RaceUpcomingBody race={race} />}
+  {hasFastF1
+    ? <RaceWeekendBody race={race} />
+    : race.results.length > 0
+      ? <RaceResultsBody race={race} />
+      : <RaceUpcomingBody race={race} />}
 
   <div class="race-nav">
     {race.prev ? (

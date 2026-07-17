@@ -1,0 +1,79 @@
+---
+// Body for race weekends that have FastF1 data on disk
+// (public/data/fastf1/<year>/<round>/). Renders the intro row (summary + key
+// links) server-side, then mounts the RaceWeekendIsland: session tabs →
+// per-session results → the Visualisation Explorer.
+//
+// Mounted by RacePage.astro only when the FastF1 manifest exists, so pages
+// without data keep the plain server-rendered body.
+
+interface Props {
+  race: any;
+}
+
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { buildRaceSummary } from '../lib/buildRaceSummary.js';
+import RaceWeekendIsland from './islands/RaceWeekendIsland.jsx';
+
+const { race } = Astro.props;
+
+// NOTE: resolve(process.cwd(), ...) — not import.meta.url — see CLAUDE.md
+// (Vite bundles frontmatter, import.meta.url points at the bundle).
+const manifestPath = resolve(process.cwd(), 'public', 'data', 'fastf1', String(race.year), String(race.round), 'index.json');
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+
+const weekend = {
+  year: race.year,
+  round: race.round,
+  name: race.name,
+  circuitName: race.circuit?.name || null,
+  sprintWeekend: !!manifest.sprintWeekend,
+  sessions: manifest.sessions.map((s: any) => ({ id: s.id, label: s.label, start: s.start })),
+  available: manifest.sessions.filter((s: any) => s.hasData).map((s: any) => s.id),
+  summary: buildRaceSummary(race) || null,
+};
+
+const winnerRow = race.results.find((r: any) => r.position === 1) || null;
+const poleQualifying = race.qualifying?.[0] || null;
+
+interface KeyLink { label: string; href: string; text: string; }
+const keyLinks: KeyLink[] = [];
+if (winnerRow?.driverRef && winnerRow?.driverName) {
+  keyLinks.push({ label: 'Winner', href: `/drivers/${winnerRow.driverRef}/`, text: winnerRow.driverName });
+}
+if (poleQualifying?.driverRef && poleQualifying?.driverName && poleQualifying.driverRef !== winnerRow?.driverRef) {
+  keyLinks.push({ label: 'Pole', href: `/drivers/${poleQualifying.driverRef}/`, text: poleQualifying.driverName });
+}
+if (race.circuit?.circuitRef && race.circuit?.name) {
+  keyLinks.push({ label: 'Circuit', href: `/circuits/${race.circuit.circuitRef}/`, text: race.circuit.name });
+}
+if (winnerRow?.constructorRef && winnerRow?.constructorName) {
+  keyLinks.push({ label: 'Winning team', href: `/teams/${winnerRow.constructorRef}/`, text: winnerRow.constructorName });
+}
+---
+
+{keyLinks.length > 0 && (
+  <div class="race-intro rw-intro">
+    <div class="panel race-keylinks-card">
+      <span class="t-eyebrow race-keylinks-title">Key Links</span>
+    <ul>
+        {keyLinks.map((l) => (
+          <li>
+            <span class="t-mono race-keylinks-lbl">{l.label}</span>
+            <a href={l.href} class="inline-link">{l.text}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+)}
+
+<RaceWeekendIsland client:load race={race} weekend={weekend} />
+
+<style>
+  /* Key links become a slim horizontal row above the tabs (the island's
+     summary card carries the prose). */
+  .rw-intro { grid-template-columns: 1fr; margin-bottom: 12px; }
+  .rw-intro .race-keylinks-card ul { flex-direction: row; flex-wrap: wrap; gap: 10px 28px; }
+</style>

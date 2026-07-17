@@ -1,0 +1,3 @@
+# Python deps for scripts/fetch-fastf1.py (the FastF1 weekend pipeline).
+# numpy/pandas come in as fastf1 dependencies.
+fastf1>=3.8,<4
