@@ -41,9 +41,14 @@ function deriveRace(sess) {
   const gaps = gapByLap(laps, cum);
   const pos = posByLap(laps, cum, gridOf);
   const totalLaps = sess.totalLaps || Math.max(...finishOrder.map((c) => laps[c].length));
-  // Drop "stops" on the final lap — that's the field filing into parc fermé,
-  // not pit strategy.
-  const pits = (sess.pitStops || []).filter((p) => p.lap != null && p.lap > 0 && p.lap < totalLaps);
+  // Drop "stops" on each driver's own final lap — that's the car filing into
+  // parc fermé (or retiring into the pits), not pit strategy. Lapped cars
+  // finish on lap N-1, so this must be per-driver, not the race distance.
+  const lastLapOf = {};
+  finishOrder.forEach((c) => { lastLapOf[c] = laps[c][laps[c].length - 1].lap; });
+  const pits = (sess.pitStops || []).filter(
+    (p) => p.lap != null && p.lap > 0 && p.lap < (lastLapOf[p.code] ?? totalLaps),
+  );
   return {
     laps, cum, gaps, pos, posFinal, finishOrder, gridOf,
     totalLaps,
@@ -91,8 +96,11 @@ function useNow(active) {
   return now;
 }
 
-export default function RaceWeekendIsland({ race, weekend }) {
+const NO_ASSETS = { faces: {}, logos: {}, refs: {}, teams: {} };
+
+export default function RaceWeekendIsland({ race, weekend, assets }) {
   const { year, round, sessions, available, sprintWeekend } = weekend;
+  const ax = assets || NO_ASSETS;
   const defaultTab = available.length ? available[available.length - 1] : sessions[sessions.length - 1]?.id;
 
   const [tab, setTab] = useState(defaultTab);
@@ -164,12 +172,15 @@ export default function RaceWeekendIsland({ race, weekend }) {
     teamOf: (c) => meta[c]?.teamId || meta[c]?.team || null,
     teamNameOf: (c) => meta[c]?.team || '',
     nameOf: (c) => meta[c]?.name || c,
+    faceOf: (c) => ax.faces[c] || null,
+    logoOf: (c) => ax.logos[meta[c]?.teamId] || ax.logos[ax.teams[c]] || null,
+    refOf: (c) => ax.refs[c] || null,
     tip: (e, title, lines) => setTt({
       x: Math.min(e.clientX + 16, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 200),
       y: e.clientY + 14, title, lines,
     }),
     leave: () => setTt(null),
-  }), [meta]);
+  }), [meta, ax]);
 
   // driver filter (race tab)
   const defaultSel = useMemo(() => {
@@ -307,9 +318,9 @@ export default function RaceWeekendIsland({ race, weekend }) {
           <SessionHeader title="Race" startIso={activeSchedule?.start} weather={raceSess?.weather}
             extra={raceR ? `${raceR.totalLaps} LAPS` : undefined}
             highlight={sessInfo.winner ? { txt: `${sessInfo.winner.driverName?.toUpperCase()} WINS`, kind: 'green' } : null} />
-          <RacePodium3 results={race.results || []} />
+          <RacePodium3 results={race.results || []} ctx={ctx} />
           {raceChips && <StatChips chips={raceChips} />}
-          <RaceClassification results={race.results || []} stopsOf={raceR ? stopsOf : null} allRows={allRows} onToggle={() => setAllRows(!allRows)} />
+          <RaceClassification results={race.results || []} stopsOf={raceR ? stopsOf : null} allRows={allRows} onToggle={() => setAllRows(!allRows)} ctx={ctx} />
           <KeyMoments moments={keyMomentsFrom(raceSess)} />
           <DriverFilter order={raceR?.finishOrder || (race.results || []).filter((r) => r.code).map((r) => r.code)}
             colorOf={ctx.colorOf} sel={sel}
@@ -327,7 +338,7 @@ export default function RaceWeekendIsland({ race, weekend }) {
         <>
           <SessionHeader title="Qualifying" startIso={activeSchedule?.start} weather={data.q?.weather}
             highlight={sessInfo.pole ? { txt: `POLE · ${sessInfo.pole.code || sessInfo.pole.driverName} · ${sessInfo.pole.q3 || ''}`, kind: 'purple' } : null} />
-          <QualiTable rows={race.qualifying || []} />
+          <QualiTable rows={race.qualifying || []} ctx={ctx} />
         </>
       );
     }
@@ -337,7 +348,7 @@ export default function RaceWeekendIsland({ race, weekend }) {
           <SessionHeader title="Sprint" startIso={activeSchedule?.start} weather={sprintSess?.weather}
             extra={sprintR ? `${sprintR.totalLaps} LAPS` : undefined}
             highlight={sessInfo.sprintWinner ? { txt: `${sessInfo.sprintWinner.driverName?.toUpperCase()} WINS THE SPRINT`, kind: 'green' } : null} />
-          <SprintTable rows={Array.isArray(race.sprint) ? race.sprint : []} />
+          <SprintTable rows={Array.isArray(race.sprint) ? race.sprint : []} ctx={ctx} />
         </>
       );
     }
@@ -347,7 +358,7 @@ export default function RaceWeekendIsland({ race, weekend }) {
         <>
           <SessionHeader title="Sprint Qualifying" startIso={activeSchedule?.start} weather={sq?.weather}
             highlight={sq?.results?.[0] ? { txt: `SPRINT POLE · ${sq.results[0].code} · ${fmtLap(sq.results[0].q3)}`, kind: 'purple' } : null} />
-          {sq ? <FastF1SegTable sess={sq} segLabels={['SQ1', 'SQ2', 'SQ3']} /> : <div className="panel rw-loading">Loading session data…</div>}
+          {sq ? <FastF1SegTable sess={sq} segLabels={['SQ1', 'SQ2', 'SQ3']} ctx={ctx} /> : <div className="panel rw-loading">Loading session data…</div>}
         </>
       );
     }
@@ -356,7 +367,7 @@ export default function RaceWeekendIsland({ race, weekend }) {
       <>
         <SessionHeader title={activeSchedule?.label || 'Practice'} startIso={activeSchedule?.start} weather={fp?.weather}
           highlight={fp?.order?.[0] ? { txt: `P1 · ${fp.order[0].code} · ${fmtLap(fp.order[0].t)}`, kind: 'purple' } : null} />
-        <PracticeTimes sess={fp} />
+        <PracticeTimes sess={fp} ctx={ctx} />
       </>
     );
   };

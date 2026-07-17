@@ -53,8 +53,11 @@ Design decisions:
   fast and mostly offline.
 
 Session JSON shapes (schema 1): every file carries `drivers` (classification
-order, with `teamId` + `color` mapped to the season bundle's teams) and
-`weather`. Race/sprint files add compact per-lap arrays
+order, with `ref` = Ergast driverRef and `teamId` + `color` mapped from the
+season bundle — the frontend uses `ref` for driver-page links and headshots)
+and `weather`. Driver faces + team logos are resolved at build time in
+`RaceWeekendBody.astro` (via `driverFaceExists.js` / `teamLogo.js`) and passed
+to the island as URL maps, so the client never probes for missing images. Race/sprint files add compact per-lap arrays
 `[lap, t, pos, compound, tyreLife, stint, pit, neutral, green]` plus `stints`,
 `pitStops` (pit-lane transit, not stationary time — FastF1 has no stationary
 timing), `trackStatus` bands and `raceControl`. Quali files add `results`
@@ -82,11 +85,18 @@ add `order`, `lapsAll`, `longRuns`, `speedTraps`.
 
 ## Ops
 
-- **`.github/workflows/fetch-fastf1.yml`** polls during race weekends
-  (Fri/Sat/Sun windows + Monday catch-all, UTC), runs `--auto`, commits new
-  JSONs, and rebuilds + FTP-deploys only when data changed. It shares the
-  `deploy` concurrency group with the other two deploy workflows. Data usually
-  goes live within roughly an hour of a session ending.
+- **`.github/workflows/fetch-fastf1.yml`** polls **every 15 minutes across
+  race weekends** (Fri–Sun + early Monday, UTC). Two-stage gate keeps that
+  affordable: `scripts/fastf1-pending.mjs` (Node built-ins, sub-second, no
+  installs — its SESSION_MINUTES/GRACE constants must stay in sync with the
+  Python script) ends the run right after checkout when no recently-finished
+  session is missing on disk; a pending session triggers the Python fetch +
+  commit; only an actual data change triggers npm ci + build + FTP. It shares
+  the `deploy` concurrency group with the other two deploy workflows. Net
+  latency: charts are live within ~15 min of FastF1 publishing a session
+  (FastF1 itself publishes ~30–60 min after the chequered flag). The gate's
+  30h lookback means permanently-missing sessions don't keep the poll hot —
+  those are manual-backfill territory via `workflow_dispatch` or a local run.
 - **Backfill**: FastF1 covers 2018+ (telemetry-complete). Run the script per
   round locally and commit, e.g.
   `for /l %r in (1,1,8) do python scripts/fetch-fastf1.py 2026 %r`. The next

@@ -146,6 +146,18 @@ def team_color_map(bundle):
     return out
 
 
+def driver_ref_map(bundle):
+    """driver code -> Ergast driverRef (bundle `jolpicaId`), so the frontend can
+    link driver pages + resolve headshots without a client-side lookup."""
+    out = {}
+    for d in (bundle or {}).get("drivers", []):
+        code = d.get("code") or d.get("id")
+        ref = d.get("jolpicaId")
+        if code and ref:
+            out[str(code)] = str(ref)
+    return out
+
+
 def team_id_for(name):
     if name in TEAM_IDS:
         return TEAM_IDS[name]
@@ -155,7 +167,7 @@ def team_id_for(name):
 # ---------------------------------------------------------------- drivers
 
 
-def build_drivers(session, colors):
+def build_drivers(session, colors, refs):
     """Classified driver list in result order (falls back to laps order)."""
     rows = []
     res = session.results
@@ -173,6 +185,7 @@ def build_drivers(session, colors):
             time_v = r.get("Time")
             rows.append({
                 "code": code,
+                "ref": refs.get(code),
                 "name": str(r.get("FullName") or code),
                 "team": str(r.get("TeamName") or ""),
                 "teamId": tid,
@@ -188,9 +201,9 @@ def build_drivers(session, colors):
         return rows
     # practice fallback: no formal classification -> unique drivers from laps
     for code in session.laps["Driver"].dropna().unique():
-        rows.append({"code": str(code), "name": str(code), "team": "", "teamId": None,
-                     "color": "#8A8B93", "position": None, "grid": None,
-                     "status": None, "gap": None, "points": None})
+        rows.append({"code": str(code), "ref": refs.get(str(code)), "name": str(code),
+                     "team": "", "teamId": None, "color": "#8A8B93", "position": None,
+                     "grid": None, "status": None, "gap": None, "points": None})
     return rows
 
 
@@ -669,7 +682,7 @@ def write_json(path, obj):
     return len(text)
 
 
-def fetch_session(year, rnd, sid, colors):
+def fetch_session(year, rnd, sid, colors, refs):
     """Load one session via FastF1 and build its JSON payload."""
     stype = SESSION_TYPE[sid]
     need_tel = stype == "quali"
@@ -689,7 +702,7 @@ def fetch_session(year, rnd, sid, colors):
         "schema": SCHEMA,
         "type": stype,
         "session": sid,
-        "drivers": build_drivers(session, colors),
+        "drivers": build_drivers(session, colors, refs),
         "weather": build_weather(session),
     }
     payload.update(body)
@@ -700,6 +713,7 @@ def process_weekend(year, rnd, only_session=None, force=False):
     bundle = load_bundle(year)
     entry = bundle_calendar_entry(bundle, rnd)
     colors = team_color_map(bundle)
+    refs = driver_ref_map(bundle)
     sched = session_schedule(entry, year, rnd)
     if not sched:
         print(f"  {year} R{rnd}: no session schedule found — skipping")
@@ -725,7 +739,7 @@ def process_weekend(year, rnd, only_session=None, force=False):
             continue
         try:
             print(f"  {sid}: fetching…")
-            payload = fetch_session(year, rnd, sid, colors)
+            payload = fetch_session(year, rnd, sid, colors, refs)
             n = write_json(out_path, payload)
             print(f"  {sid}: wrote {out_path.relative_to(REPO_ROOT)} ({n/1024:.0f} KB)")
             have.append(sid)

@@ -57,24 +57,33 @@ export function SessionHeader({ title, startIso, highlight, weather, extra }) {
 }
 
 // ── Race block ──────────────────────────────────────────────────
-export function RacePodium3({ results }) {
+export function RacePodium3({ results, ctx }) {
   const top3 = results.filter((r) => r.position && r.position <= 3).sort((a, b) => a.position - b.position);
   if (top3.length < 3) return null;
   return (
     <div className="rw-podium">
-      {top3.map((r, i) => (
-        <div key={r.position} className="rw-podium-card panel" style={{ borderTop: `3px solid ${MEDALS[i]}` }}>
-          <div className="rw-podium-pos" style={{ color: MEDALS[i] }}>{r.position}</div>
-          <div className="rw-podium-chip" style={{ borderLeft: `3px solid ${r.constructorColor || 'var(--line-2)'}` }}>{r.code}</div>
-          <div className="rw-podium-meta">
-            <div className="rw-podium-name">
-              {r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : r.driverName}
+      {top3.map((r, i) => {
+        const face = ctx?.faceOf?.(r.code);
+        const logo = ctx?.logoOf?.(r.code);
+        return (
+          <div key={r.position} className="rw-podium-card panel" style={{ borderTop: `3px solid ${MEDALS[i]}` }}>
+            <div className="rw-podium-pos" style={{ color: MEDALS[i] }}>{r.position}</div>
+            {face
+              ? <img className="rw-podium-face" src={face} alt="" loading="lazy" style={{ borderLeft: `3px solid ${r.constructorColor || 'var(--line-2)'}` }} />
+              : <div className="rw-podium-chip" style={{ borderLeft: `3px solid ${r.constructorColor || 'var(--line-2)'}` }}>{r.code}</div>}
+            <div className="rw-podium-meta">
+              <div className="rw-podium-name">
+                {r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : r.driverName}
+              </div>
+              <div className="rw-podium-team t-mono">
+                {logo && <img className="rw-logo" src={logo} alt="" loading="lazy" />}
+                {r.constructorName?.toUpperCase()} · {i === 0 ? (r.time || 'WINNER') : (r.time || '—')}
+              </div>
             </div>
-            <div className="rw-podium-team t-mono">{r.constructorName?.toUpperCase()} · {i === 0 ? (r.time || 'WINNER') : (r.time || '—')}</div>
+            <div className="rw-podium-pts"><b>{r.points}</b> <span>PTS</span></div>
           </div>
-          <div className="rw-podium-pts"><b>{r.points}</b> <span>PTS</span></div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -92,7 +101,30 @@ export function StatChips({ chips }) {
   );
 }
 
-export function RaceClassification({ results, stopsOf, allRows, onToggle }) {
+// Shared driver cell: team-striped, optional headshot, driver-page link.
+export function DriverCell({ code, name, driverRef, color, ctx, showCode = true }) {
+  const face = ctx?.faceOf?.(code);
+  const href = driverRef || ctx?.refOf?.(code);
+  return (
+    <span className="rw-drv" style={{ borderLeftColor: color || 'var(--line-2)' }}>
+      {face && <img className="rw-face" src={face} alt="" loading="lazy" />}
+      {href ? <a href={`/drivers/${href}/`}>{name}</a> : name}
+      {showCode && code && <span className="rw-code t-mono">{code}</span>}
+    </span>
+  );
+}
+
+export function TeamCell({ code, name, ctx }) {
+  const logo = ctx?.logoOf?.(code);
+  return (
+    <span className="rw-team-cell">
+      {logo && <img className="rw-logo" src={logo} alt="" loading="lazy" />}
+      {name}
+    </span>
+  );
+}
+
+export function RaceClassification({ results, stopsOf, allRows, onToggle, ctx }) {
   const rows = allRows ? results : results.slice(0, 10);
   return (
     <div className="panel rw-table-card">
@@ -108,13 +140,8 @@ export function RaceClassification({ results, stopsOf, allRows, onToggle }) {
               return (
                 <tr key={i}>
                   <td className="rw-pos" style={{ color: POSC[r.position] || undefined }}>{dnf ? 'DNF' : r.position ?? r.positionText}</td>
-                  <td>
-                    <span className="rw-drv" style={{ borderLeftColor: r.constructorColor || 'var(--line-2)' }}>
-                      {r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : r.driverName}
-                      <span className="rw-code t-mono">{r.code}</span>
-                    </span>
-                  </td>
-                  <td className="rw-team">{r.constructorName}</td>
+                  <td><DriverCell code={r.code} name={r.driverName} driverRef={r.driverRef} color={r.constructorColor} ctx={ctx} /></td>
+                  <td className="rw-team"><TeamCell code={r.code} name={r.constructorName} ctx={ctx} /></td>
                   <td className="t-mono">{r.grid === 0 ? 'PIT' : r.grid != null ? `P${r.grid}` : '—'}</td>
                   <td className="t-mono rw-gap">{r.time || (dnf ? '—' : r.status) || '—'}</td>
                   <td className="t-mono rw-pts">{r.points > 0 ? r.points : '·'}</td>
@@ -177,7 +204,7 @@ export function DriverFilter({ order, colorOf, sel, onToggle, presets }) {
 }
 
 // ── Qualifying block (Q1/Q2/Q3 columns, session best in purple) ─
-export function QualiTable({ rows, segLabels = ['Q1', 'Q2', 'Q3'] }) {
+export function QualiTable({ rows, segLabels = ['Q1', 'Q2', 'Q3'], ctx }) {
   if (!rows?.length) return null;
   const parsed = rows.map((r) => ({ ...r, t1: parseT(r.q1), t2: parseT(r.q2), t3: parseT(r.q3) }));
   const best = ['t1', 't2', 't3'].map((k) => {
@@ -201,13 +228,8 @@ export function QualiTable({ rows, segLabels = ['Q1', 'Q2', 'Q3'] }) {
             {parsed.map((r, i) => (
               <tr key={i} className={i >= 10 ? 'rw-q-out' : undefined}>
                 <td className="rw-pos" style={i === 0 ? { color: '#7C3AED' } : undefined}>{r.position ?? i + 1}</td>
-                <td>
-                  <span className="rw-drv" style={{ borderLeftColor: r.constructorColor || 'var(--line-2)' }}>
-                    {r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : r.driverName}
-                    {r.code && <span className="rw-code t-mono">{r.code}</span>}
-                  </span>
-                </td>
-                <td className="rw-team">{r.constructorName}</td>
+                <td><DriverCell code={r.code} name={r.driverName} driverRef={r.driverRef} color={r.constructorColor} ctx={ctx} /></td>
+                <td className="rw-team"><TeamCell code={r.code} name={r.constructorName} ctx={ctx} /></td>
                 {cell(r.t1, best[0])}{cell(r.t2, best[1])}{cell(r.t3, best[2])}
               </tr>
             ))}
@@ -219,7 +241,7 @@ export function QualiTable({ rows, segLabels = ['Q1', 'Q2', 'Q3'] }) {
 }
 
 // ── Sprint result table ─────────────────────────────────────────
-export function SprintTable({ rows }) {
+export function SprintTable({ rows, ctx }) {
   if (!rows?.length) return null;
   return (
     <div className="panel rw-table-card">
@@ -231,12 +253,8 @@ export function SprintTable({ rows }) {
             {rows.map((r, i) => (
               <tr key={i}>
                 <td className="rw-pos" style={{ color: POSC[r.position] || undefined }}>{r.positionText === 'R' ? 'DNF' : r.position}</td>
-                <td>
-                  <span className="rw-drv" style={{ borderLeftColor: r.constructorColor || 'var(--line-2)' }}>
-                    {r.driverRef ? <a href={`/drivers/${r.driverRef}/`}>{r.driverName}</a> : r.driverName}
-                  </span>
-                </td>
-                <td className="rw-team">{r.constructorName}</td>
+                <td><DriverCell code={r.code} name={r.driverName} driverRef={r.driverRef} color={r.constructorColor} ctx={ctx} /></td>
+                <td className="rw-team"><TeamCell code={r.code} name={r.constructorName} ctx={ctx} /></td>
                 <td className="t-mono rw-gap">{r.time || r.status || '—'}</td>
                 <td className="t-mono rw-pts">{r.points > 0 ? r.points : '·'}</td>
               </tr>
@@ -249,21 +267,21 @@ export function SprintTable({ rows }) {
 }
 
 // ── FastF1-backed session times (SQ segments / FP order) ────────
-export function FastF1SegTable({ sess, label, segLabels }) {
+export function FastF1SegTable({ sess, label, segLabels, ctx }) {
   if (!sess?.results?.length) return null;
   const nameOf = (code) => sess.drivers?.find((d) => d.code === code) || {};
   const rows = sess.results.map((r, i) => {
     const d = nameOf(r.code);
     return {
-      position: i + 1, code: r.code, driverName: d.name || r.code,
+      position: i + 1, code: r.code, driverName: d.name || r.code, driverRef: d.ref || null,
       constructorName: d.team, constructorColor: d.color,
       q1: r.q1 != null ? fmtLap(r.q1) : null, q2: r.q2 != null ? fmtLap(r.q2) : null, q3: r.q3 != null ? fmtLap(r.q3) : null,
     };
   });
-  return <QualiTable rows={rows} segLabels={segLabels} />;
+  return <QualiTable rows={rows} segLabels={segLabels} ctx={ctx} />;
 }
 
-export function PracticeTimes({ sess }) {
+export function PracticeTimes({ sess, ctx }) {
   if (!sess?.order?.length) return <div className="panel rw-loading">Session times will appear once FastF1 publishes the session…</div>;
   const meta = (code) => sess.drivers?.find((d) => d.code === code) || {};
   const best = sess.order[0].t;
@@ -282,7 +300,7 @@ export function PracticeTimes({ sess }) {
                 return (
                   <tr key={r.code}>
                     <td className="rw-pos" style={pos === 1 ? { color: '#7C3AED' } : undefined}>{pos}</td>
-                    <td><span className="rw-drv" style={{ borderLeftColor: d.color || 'var(--line-2)' }}>{d.name || r.code}</span></td>
+                    <td><DriverCell code={r.code} name={d.name || r.code} driverRef={d.ref} color={d.color} ctx={ctx} showCode={false} /></td>
                     <td className="t-mono rw-gap">{fmtLap(r.t)}</td>
                     <td className="t-mono rw-fp-delta">{pos === 1 ? '—' : `+${(r.t - best).toFixed(3)}`}</td>
                   </tr>

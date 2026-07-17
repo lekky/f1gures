@@ -11,9 +11,11 @@ interface Props {
   race: any;
 }
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildRaceSummary } from '../lib/buildRaceSummary.js';
+import { hasDriverFace } from '../lib/driverFaceExists.js';
+import { teamLogoPath } from '../lib/teamLogo.js';
 import RaceWeekendIsland from './islands/RaceWeekendIsland.jsx';
 
 const { race } = Astro.props;
@@ -22,6 +24,42 @@ const { race } = Astro.props;
 // (Vite bundles frontmatter, import.meta.url points at the bundle).
 const manifestPath = resolve(process.cwd(), 'public', 'data', 'fastf1', String(race.year), String(race.round), 'index.json');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+
+// Driver faces + team logos are resolved at build time (file-existence checks
+// are server-only) and shipped to the island as URL maps — no client 404s.
+// Codes come from the season bundle roster (covers FP-only drivers on holding
+// pages) plus the archive doc's result/qualifying rows.
+const refByCode: Record<string, string> = {};
+const teamByCode: Record<string, string> = {};
+const bundlePath = resolve(process.cwd(), 'public', 'data', `${race.year}.json`);
+if (existsSync(bundlePath)) {
+  try {
+    const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
+    for (const d of bundle.drivers || []) {
+      const code = d.code || d.id;
+      if (code && d.jolpicaId) refByCode[code] = d.jolpicaId;
+      if (code && d.team) teamByCode[code] = d.team;
+    }
+  } catch { /* pre-bundle years: fall through to archive rows */ }
+}
+const teamRefs = new Set<string>(Object.values(teamByCode));
+for (const rows of [race.results || [], race.qualifying || [], Array.isArray(race.sprint) ? race.sprint : []]) {
+  for (const r of rows) {
+    if (r.code && r.driverRef && !refByCode[r.code]) refByCode[r.code] = r.driverRef;
+    if (r.constructorRef) teamRefs.add(r.constructorRef);
+    if (r.code && r.constructorRef && !teamByCode[r.code]) teamByCode[r.code] = r.constructorRef;
+  }
+}
+const faces: Record<string, string> = {};
+for (const [code, ref] of Object.entries(refByCode)) {
+  if (hasDriverFace(ref)) faces[code] = `/images/drivers/${ref}.webp`;
+}
+const logos: Record<string, string> = {};
+for (const t of teamRefs) {
+  const p = teamLogoPath(t);
+  if (p) logos[t] = p;
+}
+const assets = { faces, logos, refs: refByCode, teams: teamByCode };
 
 const weekend = {
   year: race.year,
@@ -69,7 +107,7 @@ if (winnerRow?.constructorRef && winnerRow?.constructorName) {
   </div>
 )}
 
-<RaceWeekendIsland client:load race={race} weekend={weekend} />
+<RaceWeekendIsland client:load race={race} weekend={weekend} assets={assets} />
 
 <style>
   /* Key links become a slim horizontal row above the tabs (the island's

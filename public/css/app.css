@@ -5419,7 +5419,12 @@ html.light .rw-pill-purple { background: #F3EEFF; }
 .rw-drv a { color: inherit; }
 .rw-drv a:hover { color: var(--accent-text); }
 .rw-code { font-size: 10px; color: var(--fg-4); }
+.rw-face { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: var(--bg-3); flex-shrink: 0; }
 .rw-team { font-size: 12.5px; color: var(--fg-2); }
+.rw-team-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.rw-logo { width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: #fff; padding: 1px; flex-shrink: 0; }
+.rw-podium-face { width: 44px; height: 44px; object-fit: cover; object-position: top; background: var(--bg-3); flex: none; }
+.rw-podium-team { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .rw-gap { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg-1); }
 .rw-pts { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg-1); }
 .rw-fl { font-size: 10.5px; color: #7C3AED; font-weight: 600; }

@@ -6,24 +6,27 @@ name: Fetch FastF1 Weekend Data
 # FTP-deploys so race pages grow their Weekend Analysis tabs during the
 # weekend itself.
 #
-# Cadence: F1's live-timing archive publishes a session ~30-60 min after it
-# ends, so the crons bracket the usual session windows (UTC). A run where
-# nothing new is available exits in ~1-2 min (pip cache + "Nothing to fetch"),
-# and npm ci / build / FTP are gated on data actually having changed —
-# mirroring refresh-current-season.yml. workflow_dispatch bypasses the gate
-# (use it for backfills after running the script locally, or force-redeploys).
+# Cadence: every 15 minutes across race weekends. F1's live-timing archive
+# publishes a session ~30-60 min after it ends, so this puts charts live
+# within ~15 min of FastF1 having the data. Affordable because of a two-stage
+# gate:
+#   1. scripts/fastf1-pending.mjs (Node built-ins, <1s, no installs) checks
+#      whether any recently-finished session is missing on disk — when not,
+#      the run ends after checkout (~20-30s billed). This is ~90% of polls.
+#   2. npm ci / build / FTP only run when the fetch actually committed new
+#      data — mirroring refresh-current-season.yml.
+# workflow_dispatch bypasses both gates (backfills / force-redeploys).
 #
 # Shares the `deploy` concurrency group with deploy.yml and
 # refresh-current-season.yml so FTP syncs never overlap.
 
 on:
   schedule:
-    # Friday practice/sprint-quali windows
-    - cron: '0 13,15,17,19,21 * * FRI'
-    # Saturday + Sunday: practice/quali/sprint/race windows, incl. late US races
-    - cron: '0 8,11,14,16,18,20,23 * * SAT,SUN'
-    # Monday catch-all for anything the weekend crons missed (e.g. Vegas)
-    - cron: '0 5 * * MON'
+    # Race weekends: Fri through Sun, all day (sessions span ~04:00 UTC
+    # Vegas practice to ~23:00 UTC Americas races), plus early Monday for
+    # anything that publishes late.
+    - cron: '*/15 * * * FRI,SAT,SUN'
+    - cron: '*/15 0-7 * * MON'
   workflow_dispatch:
 
 permissions:
@@ -39,7 +42,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Stage-1 gate: is any recently-finished session missing on disk?
+      - name: Check for pending sessions
+        id: gate
+        run: |
+          PENDING=$(node scripts/fastf1-pending.mjs)
+          echo "pending=$PENDING" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.pending == 'true' || github.event_name == 'workflow_dispatch'
         with:
           python-version: '3.12'
           cache: pip
@@ -48,6 +59,7 @@ jobs:
       # FastF1's raw-response cache: keeps within-weekend reruns fast and
       # avoids re-downloading telemetry for sessions we already saw.
       - name: Cache FastF1 session data
+        if: steps.gate.outputs.pending == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/cache@v4
         with:
           path: .fastf1-cache
@@ -56,13 +68,16 @@ jobs:
             fastf1-cache-
 
       - name: Install FastF1
+        if: steps.gate.outputs.pending == 'true' || github.event_name == 'workflow_dispatch'
         run: pip install -r scripts/requirements-fastf1.txt
 
       - name: Fetch completed sessions
+        if: steps.gate.outputs.pending == 'true' || github.event_name == 'workflow_dispatch'
         run: python scripts/fetch-fastf1.py --auto
 
       - name: Commit data if changed
         id: commit
+        if: steps.gate.outputs.pending == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
