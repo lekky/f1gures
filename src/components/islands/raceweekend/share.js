@@ -20,6 +20,16 @@ const INSET_BG = '#141519';
 const INSET_LINE = '#26272E';
 const RED = '#E8002D';
 const GREY = '#9A9BA3';
+const LOGO_SRC = '/images/logo/f1gures-wordmark-dark.png';
+
+function loadImg(src) {
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => resolve(null);
+    im.src = src;
+  });
+}
 
 function serializeNode(node) {
   // Returns { url, w, h } — an SVG data URI of the chart, declared at a
@@ -92,12 +102,15 @@ export async function renderShareCard(node, fmt, meta) {
   const { w: W, h: H } = SHARE_FORMATS[fmt] || SHARE_FORMATS.sq;
   const { url, w: iw, h: ih } = serializeNode(node);
   try { await document.fonts.ready; } catch { /* older browsers: draw anyway */ }
-  const img = await new Promise((resolve, reject) => {
-    const im = new Image();
-    im.onload = () => resolve(im);
-    im.onerror = reject;
-    im.src = url;
-  });
+  const [img, logo] = await Promise.all([
+    new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = url;
+    }),
+    loadImg(LOGO_SRC),
+  ]);
 
   const cv = document.createElement('canvas');
   cv.width = W * EXPORT_SCALE; cv.height = H * EXPORT_SCALE;
@@ -118,9 +131,14 @@ export async function renderShareCard(node, fmt, meta) {
     // chart is centred inside a full-height framed inset, so wide charts read
     // as a deliberate composition instead of floating in dead space.
     let y = 168;
-    ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 10, y - 18, 10, 0, 7); ctx.fill();
-    ctx.fillStyle = '#FFFFFF'; ctx.font = '800 54px "Barlow Condensed", sans-serif';
-    ctx.fillText('F1GURES', mx + 36, y);
+    if (logo && logo.width) {
+      const lh = 56, lw = (logo.width / logo.height) * lh;
+      ctx.drawImage(logo, mx, y - lh, lw, lh);
+    } else {
+      ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 10, y - 18, 10, 0, 7); ctx.fill();
+      ctx.fillStyle = '#FFFFFF'; ctx.font = '800 54px "Barlow Condensed", sans-serif';
+      ctx.fillText('F1GURES', mx + 36, y);
+    }
     ctx.font = '600 26px "JetBrains Mono", monospace'; ctx.fillStyle = GREY;
     ctx.textAlign = 'right'; ctx.fillText(meta.roundTag, W - mx, y); ctx.textAlign = 'left';
     y += 74;
@@ -168,15 +186,20 @@ export async function renderShareCard(node, fmt, meta) {
 
     const fy = H - 76;
     ctx.font = '700 28px "JetBrains Mono", monospace'; ctx.fillStyle = '#FFFFFF';
-    ctx.fillText('f1gures.app', mx, fy);
+    ctx.fillText('www.f1gures.app', mx, fy);
     return cv.toDataURL('image/png');
   }
 
   // 16:9 wide + 1:1 feed
   let y = wide ? 96 : 110;
-  ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 8, y - 14, 8, 0, 7); ctx.fill();
-  ctx.fillStyle = '#FFFFFF'; ctx.font = '800 42px "Barlow Condensed", sans-serif';
-  ctx.fillText('F1GURES', mx + 28, y);
+  if (logo && logo.width) {
+    const lh = 44, lw = (logo.width / logo.height) * lh;
+    ctx.drawImage(logo, mx, y - lh, lw, lh);
+  } else {
+    ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 8, y - 14, 8, 0, 7); ctx.fill();
+    ctx.fillStyle = '#FFFFFF'; ctx.font = '800 42px "Barlow Condensed", sans-serif';
+    ctx.fillText('F1GURES', mx + 28, y);
+  }
   ctx.font = '600 22px "JetBrains Mono", monospace'; ctx.fillStyle = GREY;
   ctx.textAlign = 'right'; ctx.fillText(meta.roundTag, W - mx, y); ctx.textAlign = 'left';
   y += wide ? 44 : 52;
@@ -205,7 +228,7 @@ export async function renderShareCard(node, fmt, meta) {
 
   const fy = H - (wide ? 44 : 52);
   ctx.font = '700 22px "JetBrains Mono", monospace'; ctx.fillStyle = '#FFFFFF';
-  ctx.fillText('f1gures.app', mx, fy);
+  ctx.fillText('www.f1gures.app', mx, fy);
 
   return cv.toDataURL('image/png');
 }
