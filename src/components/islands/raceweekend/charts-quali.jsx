@@ -1,6 +1,6 @@
 // Qualifying / sprint-quali / practice session charts.
 import React, { useState } from 'react';
-import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors } from './primitives.jsx';
+import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg } from './primitives.jsx';
 import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, compoundOffsets } from './derive.js';
 import { EmptyNote } from './charts-race.jsx';
 
@@ -27,6 +27,7 @@ export function GapLadder({ results, ctx, poleLabel = 'POLE' }) {
   return (
     <Ladder rows={rows.map((r, i) => ({
       pos: `P${i + 1}`, code: r.code, color: ctx.colorOf(r.code),
+      face: ctx.faceImg?.(r.code),
       frac: 0.04 + ((r.t - pole) / maxD) * 0.92,
       txt: i === 0 ? `${fmtLap(pole)} · ${poleLabel}` : `+${(r.t - pole).toFixed(3)}`,
     }))} />
@@ -40,12 +41,15 @@ export function SectorBattle({ sectors, ctx }) {
   const best = [0, 1, 2].map((i) => Math.min(...rows.map((r) => r.s[i])));
   return (
     <div style={{ padding: '6px 4px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr 1fr', gap: 4, fontFamily: COND, fontWeight: 600, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: PANEL.fg3, paddingBottom: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '82px 1fr 1fr 1fr', gap: 4, fontFamily: COND, fontWeight: 600, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: PANEL.fg3, paddingBottom: 6 }}>
         <div></div><div style={{ textAlign: 'center' }}>Sector 1</div><div style={{ textAlign: 'center' }}>Sector 2</div><div style={{ textAlign: 'center' }}>Sector 3</div>
       </div>
       {rows.map((r) => (
-        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr 1fr', gap: 4, marginBottom: 4 }}>
-          <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: ctx.colorOf(r.code), alignSelf: 'center' }}>{r.code}</div>
+        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '82px 1fr 1fr 1fr', gap: 4, marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: ctx.colorOf(r.code) }}>
+            {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
+            {r.code}
+          </div>
           {r.s.map((v, i) => {
             const d = v - best[i];
             let bg = '#141519', fg = '#63646C', txt = `+${d.toFixed(3)}`;
@@ -90,8 +94,9 @@ export function DominanceMap({ dominance, track, ctx }) {
       <text x={sf[0] + 16} y={sf[1] + 5} fontFamily={MONO} fontSize="15" fontWeight="700" fill={PANEL.fg}>S/F</text>
       {codes.map((c, i) => (
         <g key={c}>
-          <rect x={280 + i * 160} y={688} width="18" height="18" fill={colors[c]} />
-          <text x={306 + i * 160} y={703} fontFamily={MONO} fontSize="17" fontWeight="700" fill={PANEL.fg2}>{`${c} × ${counts[c] || 0}`}</text>
+          <FaceImg href={ctx.faceImg?.(c)} x={244 + i * 170} y={682} size={30} />
+          <rect x={282 + i * 170} y={688} width="18" height="18" fill={colors[c]} />
+          <text x={308 + i * 170} y={703} fontFamily={MONO} fontSize="17" fontWeight="700" fill={PANEL.fg2}>{`${c} × ${counts[c] || 0}`}</text>
         </g>
       ))}
     </svg>
@@ -132,6 +137,12 @@ export function PoleTelemetry({ poleTel, ctx }) {
         <g key={i}>
           <rect x={(sx(c.d) - 14).toFixed(1)} y="10" width="28" height="240" fill="#16171D" />
           <text x={sx(c.d).toFixed(1)} y={i % 2 ? 268 : 280} fontFamily={MONO} fontSize="8.5" fill={PANEL.faint} textAnchor="middle">{c.name}</text>
+        </g>
+      ))}
+      {[a, b].map((code, i) => (
+        <g key={code}>
+          <FaceImg href={ctx.faceImg?.(code)} x={720 + i * 130} y={16} size={26} />
+          <text x={752 + i * 130} y={34} fontFamily={MONO} fontSize="13" fontWeight="700" fill={colors[code]}>{code}</text>
         </g>
       ))}
       <YGrid ticks={yTicks} x0={x0} x1={x1} />
@@ -196,8 +207,11 @@ export function TheoreticalBest({ sectors, ctx }) {
   return (
     <div style={{ padding: '4px 2px' }}>
       {rows.map((r) => (
-        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '50px 110px 1fr 120px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
-          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>{r.code}</div>
+        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 110px 1fr 120px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>
+            {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
+            {r.code}
+          </div>
           <div style={{ fontFamily: MONO, fontSize: 10.5, color: PANEL.fg3 }}>{`IDEAL ${fmtLap(r.ideal)}`}</div>
           <div style={{ height: 12, background: '#1F2027' }}>
             <div style={{ height: 12, width: `${Math.min(100, (r.lost / maxLost) * 100).toFixed(0)}%`, background: r.lost < 0.05 ? PANEL.green : '#7C3AED' }} />
@@ -261,8 +275,11 @@ export function SpeedTrapChart({ traps, ctx }) {
   return (
     <div style={{ padding: '4px 2px' }}>
       {rows.map((r) => (
-        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '50px 1fr 90px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
-          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>{r.code}</div>
+        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 1fr 90px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>
+            {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
+            {r.code}
+          </div>
           <div style={{ height: 12, background: '#1F2027' }}>
             <div style={{ height: 12, width: `${(20 + ((r.st - low) / (best - low + 0.001)) * 78).toFixed(0)}%`, background: ctx.colorOf(r.code) }} />
           </div>
@@ -282,8 +299,11 @@ export function LongRunChart({ longRuns, ctx }) {
   return (
     <div style={{ padding: '4px 2px' }}>
       {rows.map((r, i) => (
-        <div key={`${r.code}${i}`} style={{ display: 'grid', gridTemplateColumns: '50px 96px 1fr 96px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
-          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>{r.code}</div>
+        <div key={`${r.code}${i}`} style={{ display: 'grid', gridTemplateColumns: '76px 96px 1fr 96px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>
+            {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
+            {r.code}
+          </div>
           <div style={{ fontFamily: MONO, fontSize: 10, color: PANEL.fg3 }}>{`${COMPOUNDS[r.c]?.name.slice(0, 3) || '?'} · ${r.laps} LAPS`}</div>
           <div style={{ height: 12, background: '#1F2027' }}>
             <div style={{ height: 12, width: `${(18 + (1 - (r.avg - best) / (worst - best + 0.001)) * 80).toFixed(0)}%`, background: ctx.colorOf(r.code) }} />

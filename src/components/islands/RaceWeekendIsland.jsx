@@ -85,6 +85,29 @@ function keyMomentsFrom(sess) {
   return out;
 }
 
+// Preload face/logo images as data URIs. Charts embed these directly in their
+// SVG <image> tags so the share export works: SVG-as-image rasterisation runs
+// in secure mode and silently drops external hrefs — only inline data survives.
+function useInlineImages(urlMap) {
+  const [data, setData] = useState({});
+  useEffect(() => {
+    let dead = false;
+    Object.entries(urlMap || {}).forEach(([key, url]) => {
+      fetch(url)
+        .then((r) => (r.ok ? r.blob() : null))
+        .then((blob) => {
+          if (!blob || dead) return;
+          const fr = new FileReader();
+          fr.onload = () => { if (!dead) setData((d) => ({ ...d, [key]: fr.result })); };
+          fr.readAsDataURL(blob);
+        })
+        .catch(() => {});
+    });
+    return () => { dead = true; };
+  }, [urlMap]);
+  return data;
+}
+
 function useNow(active) {
   const [now, setNow] = useState(null);
   useEffect(() => {
@@ -117,6 +140,8 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
 
   const hasUpcoming = useMemo(() => sessions.some((s) => !available.includes(s.id)), [sessions, available]);
   const now = useNow(hasUpcoming);
+  const faceData = useInlineImages(ax.faces);
+  const logoData = useInlineImages(ax.logos);
 
   // ── data fetch (all sessions with data are small, grab them all) ──
   useEffect(() => {
@@ -175,12 +200,15 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     faceOf: (c) => ax.faces[c] || null,
     logoOf: (c) => ax.logos[meta[c]?.teamId] || ax.logos[ax.teams[c]] || null,
     refOf: (c) => ax.refs[c] || null,
+    // data-URI variants for use INSIDE charts (survive share-card export)
+    faceImg: (c) => faceData[c] || null,
+    logoImgFor: (teamKey) => logoData[teamKey] || null,
     tip: (e, title, lines) => setTt({
       x: Math.min(e.clientX + 16, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 200),
       y: e.clientY + 14, title, lines,
     }),
     leave: () => setTt(null),
-  }), [meta, ax]);
+  }), [meta, ax, faceData, logoData]);
 
   // driver filter (race tab)
   const defaultSel = useMemo(() => {
@@ -272,6 +300,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
       const img = await renderShareCard(node, fmt, {
         raceName: race.name, circuit: race.circuit?.name || '', year,
         roundTag: `R${round} · ${year}`, session: sessLabel, title: cur.title,
+        desc: cur.desc || '',
       });
       setShareImg(img);
     } catch (e) {

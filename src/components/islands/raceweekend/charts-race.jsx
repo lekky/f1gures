@@ -3,7 +3,7 @@
 //   ctx — { colorOf, teamOf, teamNameOf, nameOf, tip(e,title,lines), leave() }
 //   sel — Set of selected driver codes (driver filter)
 import React, { useState } from 'react';
-import { PANEL, MONO, COND, Bands, YGrid, XTicks, scale, niceTicks, lapTickValues, stackLabels, DivergingLadder } from './primitives.jsx';
+import { PANEL, MONO, COND, Bands, YGrid, XTicks, scale, niceTicks, lapTickValues, stackLabels, DivergingLadder, FaceImg } from './primitives.jsx';
 import { COMPOUNDS, fmtLap, duelGap, undercutWindows, fuelCorrectedPace } from './derive.js';
 
 function svgFrac(e) {
@@ -59,7 +59,10 @@ export function RaceTrace({ R, ctx, sel, passLap = null }) {
       {hoverLap != null && <line x1={xl(hoverLap)} x2={xl(hoverLap)} y1="10" y2="374" stroke={PANEL.fg} strokeDasharray="3 3" />}
       {lines.map((ln) => <polyline key={ln.code} points={ln.pts} fill="none" stroke={ln.color} strokeWidth="2.4" strokeLinejoin="round" />)}
       {labels.map((lb) => (
-        <text key={lb.code} x={lb.x.toFixed(1)} y={lb.y.toFixed(1)} fontFamily={MONO} fontSize="11" fontWeight="700" fill={lb.color}>{lb.code}</text>
+        <g key={lb.code}>
+          <FaceImg href={ctx.faceImg?.(lb.code)} x={lb.x} y={lb.y - 12} size={16} />
+          <text x={(lb.x + (ctx.faceImg?.(lb.code) ? 20 : 0)).toFixed(1)} y={lb.y.toFixed(1)} fontFamily={MONO} fontSize="11" fontWeight="700" fill={lb.color}>{lb.code}</text>
+        </g>
       ))}
     </svg>
   );
@@ -98,9 +101,14 @@ export function PositionChart({ R, ctx, sel }) {
       ))}
       {R.finishOrder.map((c) => {
         const arr = R.pos[c];
+        const face = sel.has(c) ? ctx.faceImg?.(c) : null;
+        const ly = py(arr[arr.length - 1]);
         return (
-          <text key={`r${c}`} x="944" y={(py(arr[arr.length - 1]) + 3).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="600"
-            fill={sel.has(c) ? ctx.colorOf(c) : PANEL.faint}>{`P${R.posFinal[c] ?? arr[arr.length - 1]} ${c}`}</text>
+          <g key={`r${c}`}>
+            <FaceImg href={face} x={934} y={ly - 8} size={15} />
+            <text x={face ? 952 : 940} y={(ly + 3).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="600"
+              fill={sel.has(c) ? ctx.colorOf(c) : PANEL.faint}>{`P${R.posFinal[c] ?? arr[arr.length - 1]} ${c}`}</text>
+          </g>
         );
       })}
     </svg>
@@ -122,6 +130,7 @@ export function StintChart({ R, ctx }) {
         const pits = R.pits.filter((p) => p.code === c && p.lap != null);
         return (
           <g key={c}>
+            <FaceImg href={ctx.faceImg?.(c)} x={42} y={y - 1} size={17} />
             <text x="40" y={y + 12} fontFamily={MONO} fontSize="11" fontWeight="600" fill={ctx.colorOf(c)} textAnchor="end">{c}</text>
             {st.map((s, k) => {
               const x = xl(s.from - 1), w = Math.max(3, xl(s.to) - x);
@@ -258,8 +267,11 @@ export function OvertakeMatrix({ R, ctx }) {
   return (
     <div style={{ padding: '4px 2px', maxHeight: 440, overflowY: 'auto' }}>
       {passers.map((c) => (
-        <div key={c} style={{ display: 'grid', gridTemplateColumns: '52px 40px 1fr', gap: 10, alignItems: 'start', padding: '7px 4px', borderBottom: `1px solid #1E1F26` }}>
-          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(c) }}>{c}</div>
+        <div key={c} style={{ display: 'grid', gridTemplateColumns: '76px 40px 1fr', gap: 10, alignItems: 'start', padding: '7px 4px', borderBottom: `1px solid #1E1F26` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(c) }}>
+            {ctx.faceImg?.(c) && <img src={ctx.faceImg(c)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
+            {c}
+          </div>
           <div style={{ fontFamily: MONO, fontSize: 12, color: PANEL.fg2 }}>×{byPasser[c].length}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {byPasser[c].map((p, i) => (
@@ -286,7 +298,8 @@ export function UndercutTable({ R, ctx }) {
     <div style={{ padding: '4px 2px', maxHeight: 440, overflowY: 'auto' }}>
       {wins.map((w, i) => (
         <div key={i} style={{ padding: '8px 4px', borderBottom: '1px solid #1E1F26' }}>
-          <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: ctx.colorOf(w.code) }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: ctx.colorOf(w.code) }}>
+            {ctx.faceImg?.(w.code) && <img src={ctx.faceImg(w.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
             {w.code} <span style={{ color: PANEL.axis, fontWeight: 400 }}>· stops lap {w.lap}</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
@@ -311,7 +324,7 @@ export function UndercutTable({ R, ctx }) {
 
 // ── 9. Lap 1 gains & losses ─────────────────────────────────────
 export function Lap1Chart({ R, ctx }) {
-  const rows = R.lap1.map((r) => ({ code: r.code, color: ctx.colorOf(r.code), value: r.delta }));
+  const rows = R.lap1.map((r) => ({ code: r.code, color: ctx.colorOf(r.code), value: r.delta, face: ctx.faceImg?.(r.code) }));
   return <DivergingLadder rows={rows} width={520} fmt={(v) => (v > 0 ? `+${v}` : `${v}`)} />;
 }
 
@@ -448,6 +461,7 @@ export function DumbbellPairs({ rows: rowsIn, label1, label2, ctx }) {
         const y = 32 + i * rowH;
         return (
           <g key={r.code}>
+            <FaceImg href={ctx.faceImg?.(r.code)} x={62} y={y - 9} size={18} />
             <text x="56" y={y + 4} fontFamily={MONO} fontSize="11" fontWeight="700" fill={ctx.colorOf(r.code)} textAnchor="end">{r.code}</text>
             <line x1={gx(r.a).toFixed(1)} x2={gx(r.b).toFixed(1)} y1={y} y2={y} stroke={ctx.colorOf(r.code)} strokeWidth="2" opacity="0.55" />
             <circle cx={gx(r.a).toFixed(1)} cy={y} r="4.5" fill={PANEL.bg} stroke={ctx.colorOf(r.code)} strokeWidth="1.8" />
