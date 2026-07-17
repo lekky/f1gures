@@ -202,7 +202,7 @@ export function ProgressionChart({ results, ctx, segLabels = ['Q1', 'Q2', 'Q3'] 
 // ── Theoretical best ────────────────────────────────────────────
 export function TheoreticalBest({ sectors, ctx }) {
   const rows = theoreticalBest(sectors).slice(0, 10);
-  if (!rows.length) return <EmptyNote txt="No sector times available." />;
+  if (!rows.length) return <EmptyNote txt="Session-best sector data isn't available for this session." />;
   const maxLost = Math.max(0.05, ...rows.map((r) => r.lost));
   return (
     <div style={{ padding: '4px 2px' }}>
@@ -222,7 +222,7 @@ export function TheoreticalBest({ sectors, ctx }) {
         </div>
       ))}
       <div style={{ fontFamily: MONO, fontSize: 9, color: PANEL.axis, padding: '8px 4px 2px' }}>
-        IDEAL LAP = SUM OF OWN BEST-LAP SECTORS · BAR = TIME LEFT ON THE TABLE VS ACTUAL BEST
+        IDEAL LAP = SUM OF OWN BEST SECTORS FROM ANY LAP · BAR = TIME LEFT ON THE TABLE VS ACTUAL BEST
       </div>
     </div>
   );
@@ -275,7 +275,7 @@ export function SpeedTrapChart({ traps, ctx }) {
   return (
     <div style={{ padding: '4px 2px' }}>
       {rows.map((r) => (
-        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 1fr 90px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 1fr 116px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>
             {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
             {r.code}
@@ -283,7 +283,9 @@ export function SpeedTrapChart({ traps, ctx }) {
           <div style={{ height: 12, background: '#1F2027' }}>
             <div style={{ height: 12, width: `${(20 + ((r.st - low) / (best - low + 0.001)) * 78).toFixed(0)}%`, background: ctx.colorOf(r.code) }} />
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, textAlign: 'right', color: PANEL.fg, fontVariantNumeric: 'tabular-nums' }}>{r.st.toFixed(1)}</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, textAlign: 'right', color: PANEL.fg, fontVariantNumeric: 'tabular-nums' }}>
+            {r.st.toFixed(1)} <span style={{ color: PANEL.fg3, fontSize: 10 }}>km/h</span>
+          </div>
         </div>
       ))}
       <div style={{ fontFamily: MONO, fontSize: 9, color: PANEL.axis, padding: '8px 4px 2px' }}>SPEED-TRAP MAX (KM/H) · LOW WING SHOWS UP HERE FIRST</div>

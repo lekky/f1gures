@@ -17,7 +17,6 @@ const INSET_BG = '#141519';
 const INSET_LINE = '#26272E';
 const RED = '#E8002D';
 const GREY = '#9A9BA3';
-const FOOT = '#63646C';
 
 function serializeNode(node) {
   // Returns { url, w, h } — an SVG data URI of the chart at 2x.
@@ -105,7 +104,9 @@ export async function renderShareCard(node, fmt, meta) {
   const raceLine = `${meta.raceName.toUpperCase()}${meta.circuit ? ' · ' + meta.circuit.toUpperCase() : ''} · ${meta.session.toUpperCase()}`;
 
   if (story) {
-    // 9:16 — scaled-up type, top-anchored chart, description fills the rest.
+    // 9:16 — scaled-up type; the description sits under the title and the
+    // chart is centred inside a full-height framed inset, so wide charts read
+    // as a deliberate composition instead of floating in dead space.
     let y = 168;
     ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 10, y - 18, 10, 0, 7); ctx.fill();
     ctx.fillStyle = '#FFFFFF'; ctx.font = '800 54px "Barlow Condensed", sans-serif';
@@ -125,40 +126,35 @@ export async function renderShareCard(node, fmt, meta) {
     ctx.fillStyle = '#FFFFFF'; ctx.font = `800 ${tPx}px "Barlow Condensed", sans-serif`;
     ctx.fillText(title, mx, y);
     ctx.fillStyle = RED; ctx.fillRect(mx, y + 24, 120, 8);
-    y += 84;
+    y += 88;
 
-    // chart: full width, capped to leave room for the desc; the chart+desc
-    // group is centred in the space between title and footer so wide charts
-    // don't leave one big dead zone at the bottom.
-    const maxH = H - y - 320;
-    const s = Math.min(aw / iw, maxH / ih);
-    const dw = iw * s, dh = ih * s;
     ctx.font = '400 30px "Barlow", sans-serif';
-    const descLines = meta.desc ? wrapText(ctx, meta.desc, aw, 4) : [];
-    const descH = descLines.length ? 76 + descLines.length * 46 : 0;
-    const footerTop = H - 170;
-    const groupH = 14 + dh + 28 + descH;
-    const shift = Math.max(0, (footerTop - y - groupH) / 2);
-    const dx = mx + (aw - dw) / 2, dy = y + 14 + shift;
-    ctx.fillStyle = INSET_BG; ctx.fillRect(dx - 14, dy - 14, dw + 28, dh + 28);
-    ctx.strokeStyle = INSET_LINE; ctx.strokeRect(dx - 14.5, dy - 14.5, dw + 29, dh + 29);
-    ctx.drawImage(img, dx, dy, dw, dh);
-
+    const descLines = meta.desc ? wrapText(ctx, meta.desc, aw, 3) : [];
     if (descLines.length) {
-      ctx.font = '400 30px "Barlow", sans-serif';
       ctx.fillStyle = '#C2C3CA';
-      let ty = dy + dh + 76;
+      let ty = y + 18;
       for (const line of descLines) {
         ctx.fillText(line, mx, ty);
         ty += 46;
       }
+      y = ty + 6;
     }
+
+    // framed inset spans everything down to the footer; chart centred inside
+    // (capped at native scale so upscaled text never looks blown out).
+    const panelTop = y + 16;
+    const panelBottom = H - 150;
+    ctx.fillStyle = INSET_BG; ctx.fillRect(mx, panelTop, aw, panelBottom - panelTop);
+    ctx.strokeStyle = INSET_LINE; ctx.strokeRect(mx + 0.5, panelTop + 0.5, aw - 1, panelBottom - panelTop - 1);
+    const pad = 28;
+    const s = Math.min(1, (aw - 2 * pad) / iw, (panelBottom - panelTop - 2 * pad) / ih);
+    const dw = iw * s, dh = ih * s;
+    const dx = mx + (aw - dw) / 2, dy = panelTop + (panelBottom - panelTop - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
 
     const fy = H - 76;
     ctx.font = '700 28px "JetBrains Mono", monospace'; ctx.fillStyle = '#FFFFFF';
     ctx.fillText('f1gures.app', mx, fy);
-    ctx.textAlign = 'right'; ctx.fillStyle = FOOT; ctx.font = '700 24px "JetBrains Mono", monospace';
-    ctx.fillText('DATA VIA FASTF1', W - mx, fy); ctx.textAlign = 'left';
     return cv.toDataURL('image/png');
   }
 
@@ -196,8 +192,6 @@ export async function renderShareCard(node, fmt, meta) {
   const fy = H - (wide ? 44 : 52);
   ctx.font = '700 22px "JetBrains Mono", monospace'; ctx.fillStyle = '#FFFFFF';
   ctx.fillText('f1gures.app', mx, fy);
-  ctx.textAlign = 'right'; ctx.fillStyle = FOOT;
-  ctx.fillText('DATA VIA FASTF1', W - mx, fy); ctx.textAlign = 'left';
 
   return cv.toDataURL('image/png');
 }

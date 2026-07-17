@@ -5496,7 +5496,6 @@ html.light .rw-q-best { color: #6D28D9 !important; }
 .rw-viz-main { padding: 20px 24px 22px; display: flex; flex-direction: column; min-height: 520px; min-width: 0; }
 .rw-viz-meta-row { display: flex; align-items: center; gap: 14px; }
 .rw-viz-meta { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--vx-fg4); }
-.rw-viz-live { font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.12em; color: #3DDC97; border: 1px solid rgba(61, 220, 151, 0.4); background: rgba(61, 220, 151, 0.1); padding: 3px 10px; }
 .rw-viz-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
 .rw-viz-share {
   cursor: pointer; border: 0; font-family: var(--f-display); font-weight: 700; font-size: 11px;
@@ -5513,7 +5512,6 @@ html.light .rw-q-best { color: #6D28D9 !important; }
 .rw-viz-loading { padding: 60px 20px; text-align: center; font-size: 11px; color: var(--vx-fg4); letter-spacing: 0.1em; }
 .rw-viz-foot { display: flex; align-items: center; gap: 10px; margin-top: auto; padding-top: 14px; }
 .rw-viz-src { font-size: 10px; letter-spacing: 0.1em; color: var(--vx-fg3); background: #1F2027; padding: 6px 10px; }
-.rw-viz-credit { margin-left: auto; font-size: 9.5px; color: var(--vx-fg5); }
 
 /* ── tooltip ── */
 .rw-tooltip {
@@ -5564,6 +5562,16 @@ html.light .rw-q-best { color: #6D28D9 !important; }
   .rw-viz-railitem.is-active { border-top-color: var(--accent); }
   .rw-viz-main { padding: 16px 14px 18px; min-height: 0; }
   .rw-viz-title { font-size: 26px; }
+  /* Dense SVG charts are unreadable scaled to phone width: keep them at a
+     legible size and let the inset pan horizontally instead. HTML-table
+     charts reflow fine and are left alone. */
+  .rw-viz-chart { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .rw-viz-chart svg { min-width: 720px; }
+  .rw-viz-chart:has(svg)::after {
+    content: '◂ drag to explore ▸'; display: block; position: sticky; left: 0;
+    text-align: center; padding-top: 10px; font-family: var(--f-mono);
+    font-size: 9px; letter-spacing: 0.14em; color: var(--vx-fg5);
+  }
   .rw-session-weather { margin-left: 0; }
   .rw-upcoming-cd .countdown-cell { width: 76px; }
   .rw-cd-v { font-size: 32px; }

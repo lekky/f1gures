@@ -112,6 +112,21 @@ not anchors.
   per-image failures but never fails the build, so pages can ship meta
   tags pointing at missing PNGs.
 
+### 6b. FastF1 quali JSONs predating `bs` need a one-off `--force` backfill
+- `fetch-fastf1.py` now writes session-best sectors (`bs`) into each
+  `sectors` entry — the Theoretical Best chart's ideal-lap basis (the old
+  fastest-lap-only sectors always summed to the lap itself, so the chart
+  showed +0.000 for everyone). Committed files fetched before the change
+  lack `bs`, and the chart renders its empty state on those pages.
+- The `fetch-fastf1.yml` workflow only fetches *missing* sessions, so the
+  backfill never happens automatically; the fix sandbox couldn't reach
+  `livetiming.formula1.com` (proxy 403) to do it in-PR.
+- **Fix:** on a machine with normal network, re-fetch the 13 stale files
+  and commit:
+  `for r in 1 2 3 4 5 6 7 8 9; do python scripts/fetch-fastf1.py 2026 $r --session q --force; done`
+  plus `--session sprintQuali` for rounds 2, 4, 5 and 9. Delete this
+  entry once done.
+
 ---
 
 ## P2 — high-friction maintenance hazards

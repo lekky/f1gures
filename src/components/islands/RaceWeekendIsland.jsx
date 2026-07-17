@@ -465,7 +465,6 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
           <div className="rw-viz-main">
             <div className="rw-viz-meta-row">
               <span className="rw-viz-meta t-mono">{sessLabel} · {vi + 1} / {vlist.length}</span>
-              <span className="rw-viz-live">● LIVE</span>
               <span className="rw-viz-actions">
                 <button type="button" className="rw-viz-share" onClick={() => openShare()} disabled={loading}>⤴ Share</button>
                 <button type="button" className="rw-viz-cycle" onClick={() => pickViz(vlist[(vi - 1 + vlist.length) % vlist.length].key)} aria-label="Previous chart">←</button>
@@ -482,7 +481,6 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
             </div>
             <div className="rw-viz-foot">
               <span className="rw-viz-src t-mono">{cur?.src}</span>
-              <span className="rw-viz-credit t-mono">DATA VIA FASTF1</span>
             </div>
           </div>
         </div>
