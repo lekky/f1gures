@@ -419,8 +419,18 @@ def build_quali_session(session):
             continue
         fastest_by[str(code)] = fl
         s = [secs(fl.get("Sector1Time")), secs(fl.get("Sector2Time")), secs(fl.get("Sector3Time"))]
+        # session-best sector times across all non-deleted laps: the "ideal lap"
+        # basis (best-lap sectors alone always sum to the best lap itself)
+        try:
+            valid = dl[dl["Deleted"] != True] if "Deleted" in dl.columns else dl  # noqa: E712 — pandas elementwise
+        except Exception:
+            valid = dl
+        bs = []
+        for col in ("Sector1Time", "Sector2Time", "Sector3Time"):
+            v = valid[col].dropna() if col in valid.columns else []
+            bs.append(secs(v.min()) if len(v) else None)
         sectors.append({
-            "code": str(code), "lap": secs(fl.get("LapTime")), "s": s,
+            "code": str(code), "lap": secs(fl.get("LapTime")), "s": s, "bs": bs,
             "st": r3(fl.get("SpeedST")), "fl": r3(fl.get("SpeedFL")),
         })
     sectors.sort(key=lambda x: (x["lap"] is None, x["lap"]))

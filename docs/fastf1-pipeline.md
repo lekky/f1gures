@@ -67,7 +67,11 @@ to the island as URL maps, so the client never probes for missing images. Race/s
 `pitStops` (pit-lane transit, not stationary time — FastF1 has no stationary
 timing), `trackStatus` bands and `raceControl`. Quali files add `results`
 (Q1-3), `sectors`, `lapsAll`, `poleTel`, `dominance`, `track`. Practice files
-add `order`, `lapsAll`, `longRuns`, `speedTraps`.
+add `order`, `lapsAll`, `longRuns`, `speedTraps`. Each `sectors` entry carries
+the fastest-lap sectors `s` **and** session-best sectors `bs` (best of any
+non-deleted lap — the Theoretical Best chart's ideal-lap basis; files fetched
+before `bs` existed make that chart render its empty state until re-fetched
+with `--force`).
 
 ## The frontend side
 

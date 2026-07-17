@@ -4,6 +4,8 @@
 //   wide  1920×1080  (Reddit / X / link previews)
 //   sq    1080×1080  (Instagram feed)
 //   story 1080×1920  (Instagram / TikTok story)
+// The canvas is supersampled at EXPORT_SCALE, so the downloaded PNG is
+// double those dimensions — crisp after platform re-compression/zoom.
 // Client-only (canvas + XMLSerializer).
 
 export const SHARE_FORMATS = {
@@ -11,30 +13,34 @@ export const SHARE_FORMATS = {
   sq: { w: 1080, h: 1080, label: '1:1 Feed' },
   story: { w: 1080, h: 1920, label: '9:16 Story' },
 };
+export const EXPORT_SCALE = 2;
 
 const CARD_BG = '#0B0C0F';
 const INSET_BG = '#141519';
 const INSET_LINE = '#26272E';
 const RED = '#E8002D';
 const GREY = '#9A9BA3';
-const FOOT = '#63646C';
 
 function serializeNode(node) {
-  // Returns { url, w, h } — an SVG data URI of the chart at 2x.
+  // Returns { url, w, h } — an SVG data URI of the chart, declared at a
+  // resolution ≥ its largest drawn size on the supersampled card (browsers
+  // may rasterise SVG images at intrinsic size before scaling, so a
+  // too-small declaration would soften the export).
   const svg = node.tagName?.toLowerCase() === 'svg' ? node : node.querySelector('svg');
   if (svg && !node.querySelector('select')) {
     const vb = svg.viewBox.baseVal;
+    const k = Math.min(6, Math.max(2, Math.ceil(2100 / vb.width)));
     const clone = svg.cloneNode(true);
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    clone.setAttribute('width', vb.width * 2);
-    clone.setAttribute('height', vb.height * 2);
+    clone.setAttribute('width', vb.width * k);
+    clone.setAttribute('height', vb.height * k);
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     bg.setAttribute('x', 0); bg.setAttribute('y', 0);
     bg.setAttribute('width', vb.width); bg.setAttribute('height', vb.height);
     bg.setAttribute('fill', '#0F1014');
     clone.insertBefore(bg, clone.firstChild);
     const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
-    return { url, w: vb.width * 2, h: vb.height * 2 };
+    return { url, w: vb.width * k, h: vb.height * k };
   }
   // HTML chart (heat tables, bar lists, feeds) → foreignObject wrap.
   // MUST be serialized as XML (XMLSerializer), not outerHTML: HTML void tags
@@ -42,15 +48,16 @@ function serializeNode(node) {
   // whole SVG unparseable (the export image silently error-events).
   const w = node.offsetWidth || 900;
   const h = Math.min(node.scrollHeight || 500, 1100);
+  const k = Math.min(4, Math.max(2, Math.ceil(2100 / w)));
   const xhtml = new XMLSerializer().serializeToString(node).replace(/&nbsp;/g, ' ');
   const html =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${w * 2}" height="${h * 2}">` +
-    `<foreignObject width="100%" height="100%" transform="scale(2)">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w * k}" height="${h * k}">` +
+    `<foreignObject width="100%" height="100%" transform="scale(${k})">` +
     `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;overflow:hidden;background:#0F1014;color:#F2F2F4;` +
     `font-family:'JetBrains Mono',monospace;">` +
     xhtml +
     `</div></foreignObject></svg>`;
-  return { url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(html), w: w * 2, h: h * 2 };
+  return { url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(html), w: w * k, h: h * k };
 }
 
 // Shrink a font size until `text` fits within maxWidth.
@@ -93,8 +100,10 @@ export async function renderShareCard(node, fmt, meta) {
   });
 
   const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
+  cv.width = W * EXPORT_SCALE; cv.height = H * EXPORT_SCALE;
   const ctx = cv.getContext('2d');
+  ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+  ctx.imageSmoothingQuality = 'high';
   ctx.fillStyle = CARD_BG; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = RED; ctx.fillRect(0, 0, W, 12); ctx.fillRect(0, H - 12, W, 12);
 
@@ -105,7 +114,9 @@ export async function renderShareCard(node, fmt, meta) {
   const raceLine = `${meta.raceName.toUpperCase()}${meta.circuit ? ' · ' + meta.circuit.toUpperCase() : ''} · ${meta.session.toUpperCase()}`;
 
   if (story) {
-    // 9:16 — scaled-up type, top-anchored chart, description fills the rest.
+    // 9:16 — scaled-up type; the description sits under the title and the
+    // chart is centred inside a full-height framed inset, so wide charts read
+    // as a deliberate composition instead of floating in dead space.
     let y = 168;
     ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 10, y - 18, 10, 0, 7); ctx.fill();
     ctx.fillStyle = '#FFFFFF'; ctx.font = '800 54px "Barlow Condensed", sans-serif';
@@ -125,40 +136,39 @@ export async function renderShareCard(node, fmt, meta) {
     ctx.fillStyle = '#FFFFFF'; ctx.font = `800 ${tPx}px "Barlow Condensed", sans-serif`;
     ctx.fillText(title, mx, y);
     ctx.fillStyle = RED; ctx.fillRect(mx, y + 24, 120, 8);
-    y += 84;
+    y += 88;
 
-    // chart: full width, capped to leave room for the desc; the chart+desc
-    // group is centred in the space between title and footer so wide charts
-    // don't leave one big dead zone at the bottom.
-    const maxH = H - y - 320;
-    const s = Math.min(aw / iw, maxH / ih);
-    const dw = iw * s, dh = ih * s;
     ctx.font = '400 30px "Barlow", sans-serif';
-    const descLines = meta.desc ? wrapText(ctx, meta.desc, aw, 4) : [];
-    const descH = descLines.length ? 76 + descLines.length * 46 : 0;
-    const footerTop = H - 170;
-    const groupH = 14 + dh + 28 + descH;
-    const shift = Math.max(0, (footerTop - y - groupH) / 2);
-    const dx = mx + (aw - dw) / 2, dy = y + 14 + shift;
-    ctx.fillStyle = INSET_BG; ctx.fillRect(dx - 14, dy - 14, dw + 28, dh + 28);
-    ctx.strokeStyle = INSET_LINE; ctx.strokeRect(dx - 14.5, dy - 14.5, dw + 29, dh + 29);
-    ctx.drawImage(img, dx, dy, dw, dh);
-
+    const descLines = meta.desc ? wrapText(ctx, meta.desc, aw, 3) : [];
     if (descLines.length) {
-      ctx.font = '400 30px "Barlow", sans-serif';
       ctx.fillStyle = '#C2C3CA';
-      let ty = dy + dh + 76;
+      let ty = y + 18;
       for (const line of descLines) {
         ctx.fillText(line, mx, ty);
         ty += 46;
       }
+      y = ty + 6;
     }
+
+    // full-width framed inset that hugs the chart's height; the framed block
+    // centres in the space between description and footer, so wide charts get
+    // clean breathing room instead of acres of empty frame.
+    const availTop = y + 16;
+    const availBottom = H - 150;
+    const pad = 28;
+    const s = Math.min(1, (aw - 2 * pad) / iw, (availBottom - availTop - 2 * pad) / ih);
+    const dw = iw * s, dh = ih * s;
+    const panelH = dh + 2 * pad;
+    // 42/58 split: optically centred, slightly high — dead centre reads as floating
+    const panelTop = availTop + Math.max(0, (availBottom - availTop - panelH) * 0.42);
+    ctx.fillStyle = INSET_BG; ctx.fillRect(mx, panelTop, aw, panelH);
+    ctx.strokeStyle = INSET_LINE; ctx.strokeRect(mx + 0.5, panelTop + 0.5, aw - 1, panelH - 1);
+    const dx = mx + (aw - dw) / 2, dy = panelTop + pad;
+    ctx.drawImage(img, dx, dy, dw, dh);
 
     const fy = H - 76;
     ctx.font = '700 28px "JetBrains Mono", monospace'; ctx.fillStyle = '#FFFFFF';
     ctx.fillText('f1gures.app', mx, fy);
-    ctx.textAlign = 'right'; ctx.fillStyle = FOOT; ctx.font = '700 24px "JetBrains Mono", monospace';
-    ctx.fillText('DATA VIA FASTF1', W - mx, fy); ctx.textAlign = 'left';
     return cv.toDataURL('image/png');
   }
 
@@ -196,8 +206,6 @@ export async function renderShareCard(node, fmt, meta) {
   const fy = H - (wide ? 44 : 52);
   ctx.font = '700 22px "JetBrains Mono", monospace'; ctx.fillStyle = '#FFFFFF';
   ctx.fillText('f1gures.app', mx, fy);
-  ctx.textAlign = 'right'; ctx.fillStyle = FOOT;
-  ctx.fillText('DATA VIA FASTF1', W - mx, fy); ctx.textAlign = 'left';
 
   return cv.toDataURL('image/png');
 }

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg } from './primitives.jsx';
 import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, compoundOffsets } from './derive.js';
 import { EmptyNote } from './charts-race.jsx';
+import { useIsMobile } from '../../../lib/shared.jsx';
 
 function svgFrac(e) {
   const r = e.currentTarget.getBoundingClientRect();
@@ -201,28 +202,50 @@ export function ProgressionChart({ results, ctx, segLabels = ['Q1', 'Q2', 'Q3'] 
 
 // ── Theoretical best ────────────────────────────────────────────
 export function TheoreticalBest({ sectors, ctx }) {
+  const mob = useIsMobile();
   const rows = theoreticalBest(sectors).slice(0, 10);
-  if (!rows.length) return <EmptyNote txt="No sector times available." />;
+  if (!rows.length) return <EmptyNote txt="Session-best sector data isn't available for this session." />;
   const maxLost = Math.max(0.05, ...rows.map((r) => r.lost));
   return (
     <div style={{ padding: '4px 2px' }}>
-      {rows.map((r) => (
-        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 110px 1fr 120px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+      {rows.map((r) => {
+        const nameEl = (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>
             {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
             {r.code}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 10.5, color: PANEL.fg3 }}>{`IDEAL ${fmtLap(r.ideal)}`}</div>
+        );
+        const idealEl = <div style={{ fontFamily: MONO, fontSize: 10.5, color: PANEL.fg3 }}>{`IDEAL ${fmtLap(r.ideal)}`}</div>;
+        const barEl = (
           <div style={{ height: 12, background: '#1F2027' }}>
             <div style={{ height: 12, width: `${Math.min(100, (r.lost / maxLost) * 100).toFixed(0)}%`, background: r.lost < 0.05 ? PANEL.green : '#7C3AED' }} />
           </div>
+        );
+        const valEl = (
           <div style={{ fontFamily: MONO, fontSize: 11.5, fontWeight: 600, textAlign: 'right', color: PANEL.fg, fontVariantNumeric: 'tabular-nums' }}>
             {`+${r.lost.toFixed(3)} LEFT`}
           </div>
-        </div>
-      ))}
+        );
+        if (mob) {
+          // stacked: identity + numbers on one line, full-width bar below —
+          // the desktop 4-column grid leaves the bar ~0 px on a phone
+          return (
+            <div key={r.code} style={{ padding: '8px 4px', borderBottom: '1px solid #1E1F26' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {nameEl}{idealEl}<div style={{ marginLeft: 'auto' }}>{valEl}</div>
+              </div>
+              <div style={{ marginTop: 6 }}>{barEl}</div>
+            </div>
+          );
+        }
+        return (
+          <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 110px 1fr 120px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+            {nameEl}{idealEl}{barEl}{valEl}
+          </div>
+        );
+      })}
       <div style={{ fontFamily: MONO, fontSize: 9, color: PANEL.axis, padding: '8px 4px 2px' }}>
-        IDEAL LAP = SUM OF OWN BEST-LAP SECTORS · BAR = TIME LEFT ON THE TABLE VS ACTUAL BEST
+        IDEAL LAP = SUM OF OWN BEST SECTORS FROM ANY LAP · BAR = TIME LEFT ON THE TABLE VS ACTUAL BEST
       </div>
     </div>
   );
@@ -275,7 +298,7 @@ export function SpeedTrapChart({ traps, ctx }) {
   return (
     <div style={{ padding: '4px 2px' }}>
       {rows.map((r) => (
-        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 1fr 90px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 1fr 116px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>
             {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
             {r.code}
@@ -283,7 +306,9 @@ export function SpeedTrapChart({ traps, ctx }) {
           <div style={{ height: 12, background: '#1F2027' }}>
             <div style={{ height: 12, width: `${(20 + ((r.st - low) / (best - low + 0.001)) * 78).toFixed(0)}%`, background: ctx.colorOf(r.code) }} />
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, textAlign: 'right', color: PANEL.fg, fontVariantNumeric: 'tabular-nums' }}>{r.st.toFixed(1)}</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, textAlign: 'right', color: PANEL.fg, fontVariantNumeric: 'tabular-nums' }}>
+            {r.st.toFixed(1)} <span style={{ color: PANEL.fg3, fontSize: 10 }}>km/h</span>
+          </div>
         </div>
       ))}
       <div style={{ fontFamily: MONO, fontSize: 9, color: PANEL.axis, padding: '8px 4px 2px' }}>SPEED-TRAP MAX (KM/H) · LOW WING SHOWS UP HERE FIRST</div>
@@ -293,24 +318,43 @@ export function SpeedTrapChart({ traps, ctx }) {
 
 // ── Long-run pace (FP) ──────────────────────────────────────────
 export function LongRunChart({ longRuns, ctx }) {
+  const mob = useIsMobile();
   const rows = (longRuns || []).slice(0, 10);
   if (!rows.length) return <EmptyNote txt="No race-sim stints detected (needs ≥ 6 clean laps on one set)." />;
   const best = rows[0].avg, worst = rows[rows.length - 1].avg;
   return (
     <div style={{ padding: '4px 2px' }}>
-      {rows.map((r, i) => (
-        <div key={`${r.code}${i}`} style={{ display: 'grid', gridTemplateColumns: '76px 96px 1fr 96px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+      {rows.map((r, i) => {
+        const nameEl = (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>
             {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
             {r.code}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: PANEL.fg3 }}>{`${COMPOUNDS[r.c]?.name.slice(0, 3) || '?'} · ${r.laps} LAPS`}</div>
+        );
+        const stintEl = <div style={{ fontFamily: MONO, fontSize: 10, color: PANEL.fg3 }}>{`${COMPOUNDS[r.c]?.name.slice(0, 3) || '?'} · ${r.laps} LAPS`}</div>;
+        const barEl = (
           <div style={{ height: 12, background: '#1F2027' }}>
             <div style={{ height: 12, width: `${(18 + (1 - (r.avg - best) / (worst - best + 0.001)) * 80).toFixed(0)}%`, background: ctx.colorOf(r.code) }} />
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, textAlign: 'right', color: PANEL.fg, fontVariantNumeric: 'tabular-nums' }}>{fmtLap(r.avg).slice(0, -1)}</div>
-        </div>
-      ))}
+        );
+        const valEl = <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, textAlign: 'right', color: PANEL.fg, fontVariantNumeric: 'tabular-nums' }}>{fmtLap(r.avg).slice(0, -1)}</div>;
+        if (mob) {
+          // stacked: the desktop grid's fixed columns leave the bar ~40 px
+          return (
+            <div key={`${r.code}${i}`} style={{ padding: '8px 4px', borderBottom: '1px solid #1E1F26' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {nameEl}{stintEl}<div style={{ marginLeft: 'auto' }}>{valEl}</div>
+              </div>
+              <div style={{ marginTop: 6 }}>{barEl}</div>
+            </div>
+          );
+        }
+        return (
+          <div key={`${r.code}${i}`} style={{ display: 'grid', gridTemplateColumns: '76px 96px 1fr 96px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+            {nameEl}{stintEl}{barEl}{valEl}
+          </div>
+        );
+      })}
       <div style={{ fontFamily: MONO, fontSize: 9, color: PANEL.axis, padding: '8px 4px 2px' }}>AVERAGE OF EACH RACE-SIM STINT (≥ 6 CLEAN LAPS)</div>
     </div>
   );
@@ -318,13 +362,14 @@ export function LongRunChart({ longRuns, ctx }) {
 
 // ── Compound offset (FP) ────────────────────────────────────────
 export function CompoundOffsetChart({ longRuns }) {
+  const mob = useIsMobile();
   const rows = compoundOffsets(longRuns || []);
   if (rows.length < 2) return <EmptyNote txt="Needs long runs on at least two compounds." />;
   const maxOff = Math.max(0.2, ...rows.map((r) => r.offset));
   return (
     <div style={{ padding: '10px 2px' }}>
       {rows.map((r) => (
-        <div key={r.c} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 130px', alignItems: 'center', gap: 12, padding: '12px 4px', borderBottom: '1px solid #1E1F26' }}>
+        <div key={r.c} style={{ display: 'grid', gridTemplateColumns: mob ? '78px 1fr 118px' : '110px 1fr 130px', alignItems: 'center', gap: 12, padding: '12px 4px', borderBottom: '1px solid #1E1F26' }}>
           <div style={{ fontFamily: COND, fontSize: 14, fontWeight: 700, letterSpacing: '0.08em', color: COMPOUNDS[r.c]?.color }}>{COMPOUNDS[r.c]?.name}</div>
           <div style={{ height: 16, background: '#1F2027' }}>
             <div style={{ height: 16, width: `${(8 + (r.offset / maxOff) * 88).toFixed(0)}%`, background: COMPOUNDS[r.c]?.color }} />

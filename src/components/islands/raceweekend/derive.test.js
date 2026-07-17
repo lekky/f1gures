@@ -164,14 +164,19 @@ describe('quali helpers', () => {
   it('segmentBests takes the min per segment', () => {
     expect(segmentBests(results)).toEqual({ q1: 89.5, q2: 89, q3: 88 });
   });
-  it('theoreticalBest sums own best sectors and sorts by ideal', () => {
+  it('theoreticalBest sums session-best sectors and sorts by ideal', () => {
     const rows = theoreticalBest([
-      { code: 'AAA', lap: 88, s: [28, 36, 24.2] },
-      { code: 'BBB', lap: 88.5, s: [28, 36, 24] },
+      { code: 'AAA', lap: 88, s: [28, 36, 24], bs: [28, 36, 24.2] },
+      { code: 'BBB', lap: 88.5, s: [28.2, 36.3, 24], bs: [28, 36, 24] },
     ]);
     expect(rows[0].code).toBe('BBB');
     expect(rows[0].ideal).toBeCloseTo(88, 5);
     expect(rows[0].lost).toBeCloseTo(0.5, 5);
+  });
+  it('theoreticalBest skips legacy rows without session-best sectors', () => {
+    // pre-`bs` JSONs only carry best-lap sectors, which always sum to the lap
+    expect(theoreticalBest([{ code: 'AAA', lap: 88, s: [28, 36, 24] }])).toEqual([]);
+    expect(theoreticalBest([{ code: 'AAA', lap: 88, s: [28, 36, 24], bs: [28, null, 24] }])).toEqual([]);
   });
   it('progressionRows keeps nulls for knocked-out segments', () => {
     expect(progressionRows(results)[1].segs).toEqual([89.5, 89.2, null]);

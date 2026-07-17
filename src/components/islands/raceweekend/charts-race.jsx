@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { PANEL, MONO, COND, Bands, YGrid, XTicks, scale, niceTicks, lapTickValues, stackLabels, DivergingLadder, FaceImg } from './primitives.jsx';
 import { COMPOUNDS, fmtLap, duelGap, undercutWindows, fuelCorrectedPace } from './derive.js';
+import { useIsMobile } from '../../../lib/shared.jsx';
 
 function svgFrac(e) {
   const r = e.currentTarget.getBoundingClientRect();
@@ -445,34 +446,39 @@ export function PaceComparison({ laps1, total1, label1, laps2, total2, label2, c
 }
 
 // rows: [{code, a, b}] — hollow dot at a, solid dot at b, sorted by b.
+// Fits the screen on mobile: narrow viewBox, faces dropped, fewer axis ticks.
 export function DumbbellPairs({ rows: rowsIn, label1, label2, ctx }) {
+  const mob = useIsMobile();
   const rows = rowsIn.map((r) => ({ ...r, d: +(r.b - r.a).toFixed(3) })).sort((x, y) => x.b - y.b);
   const all = rows.flatMap((r) => [r.a, r.b]);
   const lo = Math.min(...all) - 0.3, hi = Math.max(...all) + 0.3;
-  const gx = scale(lo, hi, 120, 900);
+  const W = mob ? 420 : 1000;
+  const [x0, x1, xVal] = mob ? [52, 348, 356] : [120, 900, 912];
+  const gx = scale(lo, hi, x0, x1);
   const rowH = 26;
   const height = rows.length * rowH + 40;
+  const legend = mob ? '' : 'FUEL-CORRECTED MEDIAN PACE · ';
   return (
-    <svg viewBox={`0 0 1000 ${height}`} style={{ width: '100%', display: 'block' }}>
-      <text x="120" y="14" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>
-        FUEL-CORRECTED MEDIAN PACE · <tspan fill={PANEL.faint} fontWeight="700">○ {label1.toUpperCase()}</tspan> → <tspan fill={PANEL.fg} fontWeight="700">● {label2.toUpperCase()}</tspan>
+    <svg className="vx-fit" viewBox={`0 0 ${W} ${height}`} style={{ width: '100%', display: 'block' }}>
+      <text x={mob ? 6 : 120} y="14" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>
+        {legend}<tspan fill={PANEL.faint} fontWeight="700">○ {label1.toUpperCase()}</tspan> → <tspan fill={PANEL.fg} fontWeight="700">● {label2.toUpperCase()}</tspan>
       </text>
       {rows.map((r, i) => {
         const y = 32 + i * rowH;
         return (
           <g key={r.code}>
-            <FaceImg href={ctx.faceImg?.(r.code)} x={62} y={y - 9} size={18} />
-            <text x="56" y={y + 4} fontFamily={MONO} fontSize="11" fontWeight="700" fill={ctx.colorOf(r.code)} textAnchor="end">{r.code}</text>
+            {!mob && <FaceImg href={ctx.faceImg?.(r.code)} x={62} y={y - 9} size={18} />}
+            <text x={mob ? 40 : 56} y={y + 4} fontFamily={MONO} fontSize="11" fontWeight="700" fill={ctx.colorOf(r.code)} textAnchor="end">{r.code}</text>
             <line x1={gx(r.a).toFixed(1)} x2={gx(r.b).toFixed(1)} y1={y} y2={y} stroke={ctx.colorOf(r.code)} strokeWidth="2" opacity="0.55" />
             <circle cx={gx(r.a).toFixed(1)} cy={y} r="4.5" fill={PANEL.bg} stroke={ctx.colorOf(r.code)} strokeWidth="1.8" />
             <circle cx={gx(r.b).toFixed(1)} cy={y} r="4.5" fill={ctx.colorOf(r.code)} />
-            <text x="912" y={y + 4} fontFamily={MONO} fontSize="10.5" fill={r.d <= 0 ? PANEL.green : PANEL.fg3}>
+            <text x={xVal} y={y + 4} fontFamily={MONO} fontSize="10.5" fill={r.d <= 0 ? PANEL.green : PANEL.fg3}>
               {`${r.d > 0 ? '+' : ''}${r.d.toFixed(2)}s`}
             </text>
           </g>
         );
       })}
-      {niceTicks(lo, hi, 6).map((t, i) => (
+      {niceTicks(lo, hi, mob ? 3 : 6).map((t, i) => (
         <text key={i} x={gx(t).toFixed(1)} y={height - 8} fontFamily={MONO} fontSize="9" fill={PANEL.axis} textAnchor="middle">{fmtLap(t).slice(0, -2)}</text>
       ))}
     </svg>

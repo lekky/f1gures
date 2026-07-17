@@ -1,7 +1,12 @@
 // Shared SVG primitives + dark-panel palette for the Visualisation Explorer.
 // The explorer card is ALWAYS dark (both site themes) — these hexes are the
 // chart-panel palette from the design handoff, not site theme tokens.
+//
+// Mobile: ladder/row-list charts render a compact narrow viewBox (class
+// `vx-fit`) so they FIT a phone screen at readable size; wide time-series
+// charts instead keep a min-width and pan horizontally (see app.css).
 import React from 'react';
+import { useIsMobile } from '../../../lib/shared.jsx';
 
 export const PANEL = {
   bg: '#0F1014', grid: '#22232A', axis: '#85868E', fg: '#F2F2F4',
@@ -98,20 +103,27 @@ export function FaceImg({ href, x, y, size = 18 }) {
 
 // Ladder: horizontal delta bars (quali gaps, SQ gaps, speed traps…).
 // rows: [{ pos, code, color, frac(0..1), txt, face? (data URI) }]
+// Fits the screen on mobile (narrow viewBox, no pan).
 export function Ladder({ rows, width = 500, rowH = 31, barMax = 310 }) {
+  const mob = useIsMobile();
+  const W = mob ? 420 : width;
+  const bMax = mob ? 190 : barMax;
+  // x anchors: pos label · face · right-aligned code · bar start
+  const [xPos, xFace, xCode, xBar] = mob ? [6, 26, 66, 72] : [12, 36, 88, 96];
+  const face = mob ? 18 : 20;
   const height = rows.length * rowH + 14;
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', display: 'block' }}>
+    <svg className="vx-fit" viewBox={`0 0 ${W} ${height}`} style={{ width: '100%', display: 'block' }}>
       {rows.map((r, i) => {
         const y = 14 + i * rowH;
-        const w = Math.max(4, r.frac * barMax);
+        const w = Math.max(4, r.frac * bMax);
         return (
           <g key={r.code}>
-            <text x="12" y={y + 12.5} fontFamily={MONO} fontSize="11" fill={PANEL.axis}>{r.pos}</text>
-            <FaceImg href={r.face} x={36} y={y - 2} size={20} />
-            <text x="88" y={y + 12.5} fontFamily={MONO} fontSize="11" fontWeight="700" fill={r.color} textAnchor="end">{r.code}</text>
-            <rect x="96" y={y} width={w.toFixed(1)} height="16" fill={r.color} />
-            <text x={(96 + w + 8).toFixed(1)} y={y + 12.5} fontFamily={MONO} fontSize="11" fill={PANEL.fg2}>{r.txt}</text>
+            <text x={xPos} y={y + 12.5} fontFamily={MONO} fontSize="11" fill={PANEL.axis}>{r.pos}</text>
+            <FaceImg href={r.face} x={xFace} y={y - 2} size={face} />
+            <text x={xCode} y={y + 12.5} fontFamily={MONO} fontSize="11" fontWeight="700" fill={r.color} textAnchor="end">{r.code}</text>
+            <rect x={xBar} y={y} width={w.toFixed(1)} height="16" fill={r.color} />
+            <text x={(xBar + w + 8).toFixed(1)} y={y + 12.5} fontFamily={MONO} fontSize="11" fill={PANEL.fg2}>{r.txt}</text>
           </g>
         );
       })}
@@ -121,13 +133,16 @@ export function Ladder({ rows, width = 500, rowH = 31, barMax = 310 }) {
 
 // Diverging ladder centred at 0 (lap-1 gains & losses).
 // rows: [{ code, color, value, face? }]
+// Fits the screen on mobile (narrow viewBox, no pan).
 export function DivergingLadder({ rows, width = 500, rowH = 26, fmt }) {
+  const mob = useIsMobile();
+  const W = mob ? 420 : width;
   const height = rows.length * rowH + 16;
   const maxAbs = Math.max(1, ...rows.map((r) => Math.abs(r.value)));
-  const cx = width / 2 + 20;
-  const span = width / 2 - 110;
+  const cx = W / 2 + 20;
+  const span = W / 2 - (mob ? 92 : 110);
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', display: 'block' }}>
+    <svg className="vx-fit" viewBox={`0 0 ${W} ${height}`} style={{ width: '100%', display: 'block' }}>
       <line x1={cx} x2={cx} y1="6" y2={height - 10} stroke={PANEL.grid} />
       {rows.map((r, i) => {
         const y = 10 + i * rowH;
@@ -135,10 +150,12 @@ export function DivergingLadder({ rows, width = 500, rowH = 26, fmt }) {
         const pos = r.value >= 0;
         return (
           <g key={r.code}>
-            <FaceImg href={r.face} x={cx - span - 56} y={y - 2} size={18} />
-            <text x={cx - span - 14} y={y + 11} fontFamily={MONO} fontSize="11" fontWeight="700" fill={r.color} textAnchor="end">{r.code}</text>
+            <FaceImg href={r.face} x={cx - span - (mob ? 52 : 56)} y={y - 2} size={18} />
+            <text x={cx - span - (mob ? 12 : 14)} y={y + 11} fontFamily={MONO} fontSize="11" fontWeight="700" fill={r.color} textAnchor="end">{r.code}</text>
             <rect x={pos ? cx : cx - w} y={y} width={Math.max(2, w).toFixed(1)} height="13" fill={pos ? r.color : PANEL.dim} stroke={pos ? 'none' : r.color} strokeWidth={pos ? 0 : 1} />
-            <text x={pos ? cx + w + 8 : cx - w - 8} y={y + 11} fontFamily={MONO} fontSize="10.5" fill={PANEL.fg2} textAnchor={pos ? 'start' : 'end'}>
+            {/* negative labels sit right of the axis (always empty there) —
+                at the bar tip they collide with the code on full-span bars */}
+            <text x={pos ? cx + w + 8 : cx + 8} y={y + 11} fontFamily={MONO} fontSize="10.5" fill={PANEL.fg2} textAnchor="start">
               {fmt ? fmt(r.value) : (r.value > 0 ? `+${r.value}` : r.value)}
             </text>
           </g>

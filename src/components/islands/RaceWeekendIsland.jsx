@@ -17,7 +17,7 @@ import {
   fastestLap, lap1Gains, degSeries, teamPace, fmtLap,
 } from './raceweekend/derive.js';
 import { vizListFor } from './raceweekend/vizdefs.jsx';
-import { renderShareCard, shareFileName, SHARE_FORMATS } from './raceweekend/share.js';
+import { renderShareCard, shareFileName, SHARE_FORMATS, EXPORT_SCALE } from './raceweekend/share.js';
 import {
   SessionHeader, RacePodium3, StatChips, RaceClassification, KeyMoments,
   DriverFilter, QualiTable, SprintTable, FastF1SegTable, PracticeTimes,
@@ -465,7 +465,6 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
           <div className="rw-viz-main">
             <div className="rw-viz-meta-row">
               <span className="rw-viz-meta t-mono">{sessLabel} · {vi + 1} / {vlist.length}</span>
-              <span className="rw-viz-live">● LIVE</span>
               <span className="rw-viz-actions">
                 <button type="button" className="rw-viz-share" onClick={() => openShare()} disabled={loading}>⤴ Share</button>
                 <button type="button" className="rw-viz-cycle" onClick={() => pickViz(vlist[(vi - 1 + vlist.length) % vlist.length].key)} aria-label="Previous chart">←</button>
@@ -482,7 +481,6 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
             </div>
             <div className="rw-viz-foot">
               <span className="rw-viz-src t-mono">{cur?.src}</span>
-              <span className="rw-viz-credit t-mono">DATA VIA FASTF1</span>
             </div>
           </div>
         </div>
@@ -550,7 +548,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
               <button type="button" className="btn btn-secondary" onClick={() => { setShare(null); setShareImg(null); }}>Close</button>
             </div>
             <div className="rw-share-note t-mono">
-              Branded card · {SHARE_FORMATS[shareFmt].w} × {SHARE_FORMATS[shareFmt].h} · f1gures.app watermark baked in
+              Branded card · {SHARE_FORMATS[shareFmt].w * EXPORT_SCALE} × {SHARE_FORMATS[shareFmt].h * EXPORT_SCALE} · f1gures.app watermark baked in
             </div>
           </div>
         </div>

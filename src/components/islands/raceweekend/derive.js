@@ -254,16 +254,16 @@ export function segmentBests(results) {
   return best;
 }
 
-// Theoretical best: sum of each driver's best sectors vs their actual best lap.
-// Needs per-lap sector times; we only ship best-lap sectors, so this compares
-// best-lap sectors vs the field and ideal lap = own best sectors (from the
-// sectors payload, which is per fastest lap — the honest caveat is stated in
-// the chart description).
+// Theoretical best: sum of each driver's session-best sectors (`bs` — best of
+// any non-deleted lap) vs their actual best lap. Older session JSONs only ship
+// best-lap sectors (`s`), which by construction sum to the best lap itself
+// (lost = 0.000 for everyone) — those rows are skipped so the chart shows an
+// honest empty state instead.
 export function theoreticalBest(sectors) {
   return sectors
-    .filter((s) => s.s && s.s.every((v) => v != null) && s.lap != null)
+    .filter((s) => s.lap != null && Array.isArray(s.bs) && s.bs.every((v) => v != null))
     .map((s) => {
-      const ideal = +(s.s[0] + s.s[1] + s.s[2]).toFixed(3);
+      const ideal = +(s.bs[0] + s.bs[1] + s.bs[2]).toFixed(3);
       return { code: s.code, actual: s.lap, ideal, lost: +(s.lap - ideal).toFixed(3) };
     })
     .sort((a, b) => a.ideal - b.ideal);
