@@ -548,7 +548,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
               <button type="button" className="btn btn-secondary" onClick={() => { setShare(null); setShareImg(null); }}>Close</button>
             </div>
             <div className="rw-share-note t-mono">
-              Branded card · {SHARE_FORMATS[shareFmt].w * EXPORT_SCALE} × {SHARE_FORMATS[shareFmt].h * EXPORT_SCALE} · f1gures.app watermark baked in
+              Branded card · {SHARE_FORMATS[shareFmt].w * EXPORT_SCALE} × {SHARE_FORMATS[shareFmt].h * EXPORT_SCALE} · www.f1gures.app watermark baked in
             </div>
           </div>
         </div>
