@@ -50,15 +50,21 @@ try {
   # 2. fetch any finished-but-missing session
   python scripts/fetch-fastf1.py --auto 2>&1 | Tee-Object -FilePath $log -Append
 
-  # 3. commit + push + deploy only if new session data appeared
+  # 3. commit + push + deploy only if new session data appeared.
+  # `git diff --cached --quiet` exits 0 when there is nothing staged, 1 when
+  # there is — capture that before running anything else that resets $LASTEXITCODE.
   git add public/data/fastf1
-  if (git diff --cached --quiet; $LASTEXITCODE -eq 0) {
-    Log "no new session data — nothing to deploy"
+  git diff --cached --quiet
+  $noChanges = ($LASTEXITCODE -eq 0)
+  if ($noChanges) {
+    Log "no new session data - nothing to deploy"
   } else {
     $stamp = [DateTime]::UtcNow.ToString('yyyy-MM-dd HH:mm')
-    git -c user.name='f1gures-fastf1-bot' -c user.email='rotsmane@gmail.com' commit -q -m "chore(data): FastF1 session data ($stamp UTC, local fetch)"
+    $msg = "chore(data): FastF1 session data ($stamp UTC, local fetch)"
+    git -c user.name='f1gures-fastf1-bot' -c user.email='rotsmane@gmail.com' commit -q -m $msg
     git push origin main --quiet
-    Log "pushed new data: $(git rev-parse --short HEAD)"
+    $head = git rev-parse --short HEAD
+    Log "pushed new data: $head"
     gh workflow run deploy.yml 2>&1 | Tee-Object -FilePath $log -Append
     Log "dispatched deploy.yml"
   }
