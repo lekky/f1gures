@@ -807,7 +807,16 @@ def main():
     args = ap.parse_args()
 
     CACHE_DIR.mkdir(exist_ok=True)
-    fastf1.Cache.enable_cache(str(CACHE_DIR))
+    # force_renew bypasses FastF1's HTTP cache for the sessions we actually
+    # fetch. This is essential on --auto (and honoured on --force): when a
+    # session is polled BEFORE F1 publishes its timing archive, FastF1 caches
+    # the empty "not ready" API responses. Without renewal, every later run
+    # (including CI, which restores .fastf1-cache from a persistent Actions
+    # cache) re-serves that stale empty and the session never loads even once
+    # its data goes live — the poll gets stuck forever. We only load sessions
+    # not already on disk, so renewing costs nothing for already-fetched ones.
+    fresh = args.auto or args.force
+    fastf1.Cache.enable_cache(str(CACHE_DIR), force_renew=fresh)
 
     if args.auto:
         year, rounds = auto_rounds()
