@@ -42,3 +42,6 @@ src/data/climate/
 # rewrite rules for legacy ?id= URLs, rebuilt from _driver-codes.json.
 public/.htaccess
 
+
+# FastF1 raw-response cache (scripts/fetch-fastf1.py)
+.fastf1-cache/

@@ -1,0 +1,117 @@
+---
+// Body for race weekends that have FastF1 data on disk
+// (public/data/fastf1/<year>/<round>/). Renders the intro row (summary + key
+// links) server-side, then mounts the RaceWeekendIsland: session tabs →
+// per-session results → the Visualisation Explorer.
+//
+// Mounted by RacePage.astro only when the FastF1 manifest exists, so pages
+// without data keep the plain server-rendered body.
+
+interface Props {
+  race: any;
+}
+
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { buildRaceSummary } from '../lib/buildRaceSummary.js';
+import { hasDriverFace } from '../lib/driverFaceExists.js';
+import { teamLogoPath } from '../lib/teamLogo.js';
+import RaceWeekendIsland from './islands/RaceWeekendIsland.jsx';
+
+const { race } = Astro.props;
+
+// NOTE: resolve(process.cwd(), ...) — not import.meta.url — see CLAUDE.md
+// (Vite bundles frontmatter, import.meta.url points at the bundle).
+const manifestPath = resolve(process.cwd(), 'public', 'data', 'fastf1', String(race.year), String(race.round), 'index.json');
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+
+// Driver faces + team logos are resolved at build time (file-existence checks
+// are server-only) and shipped to the island as URL maps — no client 404s.
+// Codes come from the season bundle roster (covers FP-only drivers on holding
+// pages) plus the archive doc's result/qualifying rows.
+const refByCode: Record<string, string> = {};
+const teamByCode: Record<string, string> = {};
+const bundlePath = resolve(process.cwd(), 'public', 'data', `${race.year}.json`);
+if (existsSync(bundlePath)) {
+  try {
+    const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
+    for (const d of bundle.drivers || []) {
+      const code = d.code || d.id;
+      if (code && d.jolpicaId) refByCode[code] = d.jolpicaId;
+      if (code && d.team) teamByCode[code] = d.team;
+    }
+  } catch { /* pre-bundle years: fall through to archive rows */ }
+}
+const teamRefs = new Set<string>(Object.values(teamByCode));
+for (const rows of [race.results || [], race.qualifying || [], Array.isArray(race.sprint) ? race.sprint : []]) {
+  for (const r of rows) {
+    if (r.code && r.driverRef && !refByCode[r.code]) refByCode[r.code] = r.driverRef;
+    if (r.constructorRef) teamRefs.add(r.constructorRef);
+    if (r.code && r.constructorRef && !teamByCode[r.code]) teamByCode[r.code] = r.constructorRef;
+  }
+}
+const faces: Record<string, string> = {};
+for (const [code, ref] of Object.entries(refByCode)) {
+  if (hasDriverFace(ref)) faces[code] = `/images/drivers/${ref}.webp`;
+}
+const logos: Record<string, string> = {};
+for (const t of teamRefs) {
+  const p = teamLogoPath(t);
+  if (p) logos[t] = p;
+}
+const assets = { faces, logos, refs: refByCode, teams: teamByCode };
+
+const weekend = {
+  year: race.year,
+  round: race.round,
+  name: race.name,
+  circuitName: race.circuit?.name || null,
+  sprintWeekend: !!manifest.sprintWeekend,
+  sessions: manifest.sessions.map((s: any) => ({ id: s.id, label: s.label, start: s.start })),
+  available: manifest.sessions.filter((s: any) => s.hasData).map((s: any) => s.id),
+  summary: buildRaceSummary(race) || null,
+};
+
+const winnerRow = race.results.find((r: any) => r.position === 1) || null;
+const poleQualifying = race.qualifying?.[0] || null;
+
+interface KeyLink { label: string; href: string; text: string; }
+const keyLinks: KeyLink[] = [];
+if (winnerRow?.driverRef && winnerRow?.driverName) {
+  keyLinks.push({ label: 'Winner', href: `/drivers/${winnerRow.driverRef}/`, text: winnerRow.driverName });
+}
+if (poleQualifying?.driverRef && poleQualifying?.driverName && poleQualifying.driverRef !== winnerRow?.driverRef) {
+  keyLinks.push({ label: 'Pole', href: `/drivers/${poleQualifying.driverRef}/`, text: poleQualifying.driverName });
+}
+if (race.circuit?.circuitRef && race.circuit?.name) {
+  keyLinks.push({ label: 'Circuit', href: `/circuits/${race.circuit.circuitRef}/`, text: race.circuit.name });
+}
+if (winnerRow?.constructorRef && winnerRow?.constructorName) {
+  keyLinks.push({ label: 'Winning team', href: `/teams/${winnerRow.constructorRef}/`, text: winnerRow.constructorName });
+}
+---
+
+{keyLinks.length > 0 && (
+  <div class="race-intro rw-intro">
+    <div class="panel race-keylinks-card">
+      <span class="t-eyebrow race-keylinks-title">Key Links</span>
+    <ul>
+        {keyLinks.map((l) => (
+          <li>
+            <span class="t-mono race-keylinks-lbl">{l.label}</span>
+            <a href={l.href} class="inline-link">{l.text}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+)}
+
+<RaceWeekendIsland client:load race={race} weekend={weekend} assets={assets} />
+
+<style>
+  /* Key links become a slim horizontal row above the tabs (the island's
+     summary card carries the prose). */
+  .rw-intro { grid-template-columns: 1fr; margin-bottom: 12px; }
+  .rw-intro .race-keylinks-card ul { flex-direction: row; flex-wrap: wrap; gap: 10px 28px; }
+</style>
