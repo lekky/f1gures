@@ -5562,12 +5562,13 @@ html.light .rw-q-best { color: #6D28D9 !important; }
   .rw-viz-railitem.is-active { border-top-color: var(--accent); }
   .rw-viz-main { padding: 16px 14px 18px; min-height: 0; }
   .rw-viz-title { font-size: 26px; }
-  /* Dense SVG charts are unreadable scaled to phone width: keep them at a
-     legible size and let the inset pan horizontally instead. HTML-table
-     charts reflow fine and are left alone. */
+  /* Dense time-series SVGs are unreadable scaled to phone width: keep them
+     at a legible size and let the inset pan horizontally instead. Row-list
+     charts render a compact mobile viewBox (.vx-fit) and fit the screen;
+     HTML-table charts reflow fine and are left alone. */
   .rw-viz-chart { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .rw-viz-chart svg { min-width: 720px; }
-  .rw-viz-chart:has(svg)::after {
+  .rw-viz-chart svg:not(.vx-fit) { min-width: 720px; }
+  .rw-viz-chart:has(svg:not(.vx-fit))::after {
     content: '◂ drag to explore ▸'; display: block; position: sticky; left: 0;
     text-align: center; padding-top: 10px; font-family: var(--f-mono);
     font-size: 9px; letter-spacing: 0.14em; color: var(--vx-fg5);

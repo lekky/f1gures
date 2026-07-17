@@ -17,7 +17,7 @@ import {
   fastestLap, lap1Gains, degSeries, teamPace, fmtLap,
 } from './raceweekend/derive.js';
 import { vizListFor } from './raceweekend/vizdefs.jsx';
-import { renderShareCard, shareFileName, SHARE_FORMATS } from './raceweekend/share.js';
+import { renderShareCard, shareFileName, SHARE_FORMATS, EXPORT_SCALE } from './raceweekend/share.js';
 import {
   SessionHeader, RacePodium3, StatChips, RaceClassification, KeyMoments,
   DriverFilter, QualiTable, SprintTable, FastF1SegTable, PracticeTimes,
@@ -548,7 +548,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
               <button type="button" className="btn btn-secondary" onClick={() => { setShare(null); setShareImg(null); }}>Close</button>
             </div>
             <div className="rw-share-note t-mono">
-              Branded card · {SHARE_FORMATS[shareFmt].w} × {SHARE_FORMATS[shareFmt].h} · f1gures.app watermark baked in
+              Branded card · {SHARE_FORMATS[shareFmt].w * EXPORT_SCALE} × {SHARE_FORMATS[shareFmt].h * EXPORT_SCALE} · f1gures.app watermark baked in
             </div>
           </div>
         </div>
