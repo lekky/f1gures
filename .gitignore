@@ -45,3 +45,6 @@ public/.htaccess
 
 # FastF1 raw-response cache (scripts/fetch-fastf1.py)
 .fastf1-cache/
+
+# Python bytecode (scripts/fetch-fastf1.py)
+__pycache__/
