@@ -49,16 +49,13 @@ try {
 
   # 2. fetch any finished-but-missing session.
   # FastF1 logs its progress ("Loading data for … - Practice 3") to stderr at
-  # INFO level. With `2>&1` merging that into the pipeline AND
-  # $ErrorActionPreference = 'Stop', Windows PowerShell promotes the first
-  # stderr line into a terminating NativeCommandError — the run dies the moment
-  # FastF1 prints anything, before a single session is fetched. Drop to
-  # 'Continue' around the native call and gate on the real exit code instead.
-  $prevEAP = $ErrorActionPreference
-  $ErrorActionPreference = 'Continue'
-  python scripts/fetch-fastf1.py --auto 2>&1 | Tee-Object -FilePath $log -Append
+  # INFO level — none of it is an error. If PowerShell does the `2>&1` merge,
+  # Windows PowerShell wraps that first stderr line into a NativeCommandError
+  # (terminating under 'Stop', merely noisy under 'Continue'). Do the merge
+  # INSIDE cmd instead, so PowerShell only ever sees plain stdout strings and
+  # never wraps anything. Gate on the real exit code, which cmd /c propagates.
+  cmd /c "python scripts/fetch-fastf1.py --auto 2>&1" | Tee-Object -FilePath $log -Append
   $pyExit = $LASTEXITCODE
-  $ErrorActionPreference = $prevEAP
   if ($pyExit -ne 0) { throw "fetch-fastf1.py exited with code $pyExit" }
 
   # 3. commit + push + deploy only if new session data appeared.
@@ -81,12 +78,9 @@ try {
     git push origin main --quiet
     $head = git rev-parse --short HEAD
     Log "pushed new data: $head"
-    # gh also writes progress to stderr — same NativeCommandError trap as above.
-    $prevEAP = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    gh workflow run deploy.yml 2>&1 | Tee-Object -FilePath $log -Append
+    # gh can write progress to stderr too — merge inside cmd for the same reason.
+    cmd /c "gh workflow run deploy.yml 2>&1" | Tee-Object -FilePath $log -Append
     $ghExit = $LASTEXITCODE
-    $ErrorActionPreference = $prevEAP
     if ($ghExit -ne 0) { throw "gh workflow run deploy.yml exited with code $ghExit" }
     Log "dispatched deploy.yml"
   }
