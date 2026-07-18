@@ -67,9 +67,14 @@ try {
   git add public/data/fastf1
   git diff --cached --quiet
   $noChanges = ($LASTEXITCODE -eq 0)
+  # List the staged session files so the log states plainly what was (or was
+  # not) downloaded this run, not just whether a deploy happened.
+  $changed = @(git diff --cached --name-only -- public/data/fastf1 | Where-Object { $_ })
   if ($noChanges) {
-    Log "no new session data - nothing to deploy"
+    Log "DATA: none downloaded this run - nothing to deploy"
   } else {
+    Log "DATA: downloaded $($changed.Count) session file(s):"
+    foreach ($f in $changed) { Log "  + $f" }
     $stamp = [DateTime]::UtcNow.ToString('yyyy-MM-dd HH:mm')
     $msg = "chore(data): FastF1 session data ($stamp UTC, local fetch)"
     git -c user.name='f1gures-fastf1-bot' -c user.email='rotsmane@gmail.com' commit -q -m $msg
