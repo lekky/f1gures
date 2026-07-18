@@ -15,12 +15,13 @@ export const SHARE_FORMATS = {
 };
 export const EXPORT_SCALE = 2;
 
-const CARD_BG = '#0B0C0F';
-const INSET_BG = '#141519';
-const INSET_LINE = '#26272E';
 const RED = '#E8002D';
-const GREY = '#9A9BA3';
-const LOGO_SRC = '/images/logo/f1gures-wordmark-dark.png';
+// The branded card follows the site theme so it matches the live chart it
+// serialises (which is drawn in the active theme). The red frame is constant.
+const THEMES = {
+  dark: { card: '#0B0C0F', inset: '#141519', insetLine: '#26272E', fg: '#FFFFFF', grey: '#9A9BA3', desc: '#C2C3CA', chartBg: '#0F1014', logo: '/images/logo/f1gures-wordmark-dark.png' },
+  light: { card: '#FFFFFF', inset: '#F4F4F6', insetLine: '#D4D5DC', fg: '#15161A', grey: '#5C5D65', desc: '#3A3B42', chartBg: '#FFFFFF', logo: '/images/logo/f1gures-wordmark-light.png' },
+};
 
 function loadImg(src) {
   return new Promise((resolve) => {
@@ -31,7 +32,7 @@ function loadImg(src) {
   });
 }
 
-function serializeNode(node) {
+function serializeNode(node, chartBg, chartFg) {
   // Returns { url, w, h } — an SVG data URI of the chart, declared at a
   // resolution ≥ its largest drawn size on the supersampled card (browsers
   // may rasterise SVG images at intrinsic size before scaling, so a
@@ -47,7 +48,7 @@ function serializeNode(node) {
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     bg.setAttribute('x', 0); bg.setAttribute('y', 0);
     bg.setAttribute('width', vb.width); bg.setAttribute('height', vb.height);
-    bg.setAttribute('fill', '#0F1014');
+    bg.setAttribute('fill', chartBg);
     clone.insertBefore(bg, clone.firstChild);
     const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
     return { url, w: vb.width * k, h: vb.height * k };
@@ -63,7 +64,7 @@ function serializeNode(node) {
   const html =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w * k}" height="${h * k}">` +
     `<foreignObject width="100%" height="100%" transform="scale(${k})">` +
-    `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;overflow:hidden;background:#0F1014;color:#F2F2F4;` +
+    `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;overflow:hidden;background:${chartBg};color:${chartFg};` +
     `font-family:'JetBrains Mono',monospace;">` +
     xhtml +
     `</div></foreignObject></svg>`;
@@ -99,8 +100,11 @@ function wrapText(ctx, text, maxWidth, maxLines) {
 
 // meta: { raceName, circuit, roundTag ("R9 · 2026"), session, title, desc }
 export async function renderShareCard(node, fmt, meta) {
+  const T = THEMES[meta.light ? 'light' : 'dark'];
+  const CARD_BG = T.card, INSET_BG = T.inset, INSET_LINE = T.insetLine;
+  const FG = T.fg, GREY = T.grey, DESC = T.desc;
   const { w: W, h: H } = SHARE_FORMATS[fmt] || SHARE_FORMATS.sq;
-  const { url, w: iw, h: ih } = serializeNode(node);
+  const { url, w: iw, h: ih } = serializeNode(node, T.chartBg, FG);
   try { await document.fonts.ready; } catch { /* older browsers: draw anyway */ }
   const [img, logo] = await Promise.all([
     new Promise((resolve, reject) => {
@@ -109,7 +113,7 @@ export async function renderShareCard(node, fmt, meta) {
       im.onerror = reject;
       im.src = url;
     }),
-    loadImg(LOGO_SRC),
+    loadImg(T.logo),
   ]);
 
   const cv = document.createElement('canvas');
@@ -136,7 +140,7 @@ export async function renderShareCard(node, fmt, meta) {
       ctx.drawImage(logo, mx, y - lh, lw, lh);
     } else {
       ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 10, y - 18, 10, 0, 7); ctx.fill();
-      ctx.fillStyle = '#FFFFFF'; ctx.font = '800 54px "Barlow Condensed", sans-serif';
+      ctx.fillStyle = FG; ctx.font = '800 54px "Barlow Condensed", sans-serif';
       ctx.fillText('F1GURES', mx + 36, y);
     }
     ctx.font = '600 26px "JetBrains Mono", monospace'; ctx.fillStyle = GREY;
@@ -151,7 +155,7 @@ export async function renderShareCard(node, fmt, meta) {
 
     const title = meta.title.toUpperCase();
     const tPx = fitFont(ctx, title, '800', '"Barlow Condensed", sans-serif', 88, 56, aw);
-    ctx.fillStyle = '#FFFFFF'; ctx.font = `800 ${tPx}px "Barlow Condensed", sans-serif`;
+    ctx.fillStyle = FG; ctx.font = `800 ${tPx}px "Barlow Condensed", sans-serif`;
     ctx.fillText(title, mx, y);
     ctx.fillStyle = RED; ctx.fillRect(mx, y + 24, 120, 8);
     y += 88;
@@ -159,7 +163,7 @@ export async function renderShareCard(node, fmt, meta) {
     ctx.font = '400 30px "Barlow", sans-serif';
     const descLines = meta.desc ? wrapText(ctx, meta.desc, aw, 3) : [];
     if (descLines.length) {
-      ctx.fillStyle = '#C2C3CA';
+      ctx.fillStyle = DESC;
       let ty = y + 18;
       for (const line of descLines) {
         ctx.fillText(line, mx, ty);
@@ -185,7 +189,7 @@ export async function renderShareCard(node, fmt, meta) {
     ctx.drawImage(img, dx, dy, dw, dh);
 
     const fy = H - 76;
-    ctx.font = '700 28px "JetBrains Mono", monospace'; ctx.fillStyle = '#FFFFFF';
+    ctx.font = '700 28px "JetBrains Mono", monospace'; ctx.fillStyle = FG;
     ctx.fillText('www.f1gures.app', mx, fy);
     return cv.toDataURL('image/png');
   }
@@ -197,7 +201,7 @@ export async function renderShareCard(node, fmt, meta) {
     ctx.drawImage(logo, mx, y - lh, lw, lh);
   } else {
     ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 8, y - 14, 8, 0, 7); ctx.fill();
-    ctx.fillStyle = '#FFFFFF'; ctx.font = '800 42px "Barlow Condensed", sans-serif';
+    ctx.fillStyle = FG; ctx.font = '800 42px "Barlow Condensed", sans-serif';
     ctx.fillText('F1GURES', mx + 28, y);
   }
   ctx.font = '600 22px "JetBrains Mono", monospace'; ctx.fillStyle = GREY;
@@ -212,7 +216,7 @@ export async function renderShareCard(node, fmt, meta) {
 
   const title = meta.title.toUpperCase();
   const tPx = fitFont(ctx, title, '800', '"Barlow Condensed", sans-serif', 56, 40, aw);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = `800 ${tPx}px "Barlow Condensed", sans-serif`;
+  ctx.fillStyle = FG; ctx.font = `800 ${tPx}px "Barlow Condensed", sans-serif`;
   ctx.fillText(title, mx, y);
   ctx.fillStyle = RED; ctx.fillRect(mx, y + 18, 90, 6);
 
@@ -227,7 +231,7 @@ export async function renderShareCard(node, fmt, meta) {
   ctx.drawImage(img, dx, dy, dw, dh);
 
   const fy = H - (wide ? 44 : 52);
-  ctx.font = '700 22px "JetBrains Mono", monospace'; ctx.fillStyle = '#FFFFFF';
+  ctx.font = '700 22px "JetBrains Mono", monospace'; ctx.fillStyle = FG;
   ctx.fillText('www.f1gures.app', mx, fy);
 
   return cv.toDataURL('image/png');

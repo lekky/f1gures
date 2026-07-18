@@ -26,7 +26,7 @@ const RACE_VIZ = [
     desc: 'Grid to flag for the whole field. Filtered drivers highlighted; hover for the running order at any lap.',
     render: (a) => <PositionChart R={a.R} ctx={a.ctx} sel={a.sel} /> },
   { key: 'stints', tag: 'STINTS', title: 'Tyre strategy', src: 'laps["Compound","Stint","TyreLife"]',
-    desc: 'Every stint as a compound-coloured bar in finish order. White ticks are pit stops.',
+    desc: 'Every stint as a compound-coloured bar in finish order. Ticks mark pit stops.',
     render: (a) => <StintChart R={a.R} ctx={a.ctx} /> },
   { key: 'pits', tag: 'SEC', title: 'Pit stop timeline', src: 'laps["PitInTime","PitOutTime"]',
     desc: 'Pit-lane time by lap. Diamonds mark cheap stops under SC/VSC — strategy luck, quantified.',

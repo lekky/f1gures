@@ -17,6 +17,7 @@ import {
   fastestLap, lap1Gains, degSeries, teamPace, fmtLap,
 } from './raceweekend/derive.js';
 import { vizListFor } from './raceweekend/vizdefs.jsx';
+import { setPanelTheme } from './raceweekend/primitives.jsx';
 import { renderShareCard, shareFileName, SHARE_FORMATS, EXPORT_SCALE } from './raceweekend/share.js';
 import {
   SessionHeader, RacePodium3, StatChips, RaceClassification, KeyMoments,
@@ -119,6 +120,21 @@ function useNow(active) {
   return now;
 }
 
+// Mirrors the site theme (html.light) into the chart palette. Returns `light`
+// so the island re-renders (and every chart redraws) when the theme toggles.
+function useSiteTheme() {
+  const read = () => typeof document !== 'undefined' && document.documentElement.classList.contains('light');
+  const [light, setLight] = useState(read);
+  useEffect(() => {
+    const apply = () => { const l = read(); setPanelTheme(l); setLight(l); };
+    apply();
+    const mo = new MutationObserver(apply);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => mo.disconnect();
+  }, []);
+  return light;
+}
+
 const NO_ASSETS = { faces: {}, logos: {}, refs: {}, teams: {} };
 
 export default function RaceWeekendIsland({ race, weekend, assets }) {
@@ -137,6 +153,9 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   const [shareImg, setShareImg] = useState(null);
   const [shareBusy, setShareBusy] = useState(false);
   const chartRef = useRef(null);
+
+  const light = useSiteTheme();
+  setPanelTheme(light); // keep the palette in sync before charts render this pass
 
   const hasUpcoming = useMemo(() => sessions.some((s) => !available.includes(s.id)), [sessions, available]);
   const now = useNow(hasUpcoming);
@@ -333,7 +352,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
       const img = await renderShareCard(node, fmt, {
         raceName: race.name, circuit: race.circuit?.name || '', year,
         roundTag: `R${round} · ${year}`, session: sessLabel, title: openViz.title,
-        desc: openViz.desc || '',
+        desc: openViz.desc || '', light,
       });
       setShareImg(img);
     } catch (e) {

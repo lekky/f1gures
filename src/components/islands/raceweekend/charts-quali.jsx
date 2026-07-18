@@ -1,6 +1,6 @@
 // Qualifying / sprint-quali / practice session charts.
 import React, { useState } from 'react';
-import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg } from './primitives.jsx';
+import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg, compoundColor } from './primitives.jsx';
 import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, compoundOffsets } from './derive.js';
 import { EmptyNote } from './charts-race.jsx';
 import { useIsMobile } from '../../../lib/shared.jsx';
@@ -53,10 +53,10 @@ export function SectorBattle({ sectors, ctx }) {
           </div>
           {r.s.map((v, i) => {
             const d = v - best[i];
-            let bg = '#141519', fg = '#63646C', txt = `+${d.toFixed(3)}`;
+            let bg = PANEL.panel, fg = PANEL.fg4, txt = `+${d.toFixed(3)}`;
             if (d === 0) { bg = '#7C3AED'; fg = '#fff'; txt = v.toFixed(3); }
-            else if (d < 0.08) { bg = 'rgba(61,220,151,0.12)'; fg = PANEL.green; }
-            else if (d < 0.2) { bg = '#1B1C22'; fg = PANEL.fg2; }
+            else if (d < 0.08) { bg = PANEL.bandGreen; fg = PANEL.green; }
+            else if (d < 0.2) { bg = PANEL.hover; fg = PANEL.fg2; }
             return (
               <div key={i} style={{ textAlign: 'center', fontFamily: MONO, fontSize: 11, fontWeight: 600, fontVariantNumeric: 'tabular-nums', padding: '6px 0', background: bg, color: fg }}>
                 {txt}
@@ -87,7 +87,7 @@ export function DominanceMap({ dominance, track, ctx }) {
   const sf = pts[0];
   return (
     <svg viewBox="0 0 1000 720" style={{ width: '78%', display: 'block', margin: '0 auto' }}>
-      <polyline points={pts.map((p) => `${p[0]},${p[1]}`).join(' ')} fill="none" stroke="#26272E" strokeWidth="22" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={pts.map((p) => `${p[0]},${p[1]}`).join(' ')} fill="none" stroke={PANEL.line} strokeWidth="22" strokeLinejoin="round" strokeLinecap="round" />
       {segs.map((sg, i) => (
         <polyline key={i} points={sg.pts.map((p) => `${p[0]},${p[1]}`).join(' ')} fill="none" stroke={colors[sg.owner]} strokeWidth="12" strokeLinejoin="round" strokeLinecap="round" />
       ))}
@@ -136,7 +136,7 @@ export function PoleTelemetry({ poleTel, ctx }) {
       onMouseMove={onMove} onMouseLeave={() => { setHoverX(null); ctx.leave(); }}>
       {(corners || []).map((c, i) => (
         <g key={i}>
-          <rect x={(sx(c.d) - 14).toFixed(1)} y="10" width="28" height="240" fill="#16171D" />
+          <rect x={(sx(c.d) - 14).toFixed(1)} y="10" width="28" height="240" fill={PANEL.inset2} />
           <text x={sx(c.d).toFixed(1)} y={i % 2 ? 268 : 280} fontFamily={MONO} fontSize="8.5" fill={PANEL.faint} textAnchor="middle">{c.name}</text>
         </g>
       ))}
@@ -150,7 +150,7 @@ export function PoleTelemetry({ poleTel, ctx }) {
       {hoverX != null && <line x1={hoverX} x2={hoverX} y1="10" y2="390" stroke={PANEL.fg} strokeDasharray="3 3" />}
       <polyline points={speedA.map((v, i) => `${sx(i * step).toFixed(1)},${svy(v).toFixed(1)}`).join(' ')} fill="none" stroke={colors[a]} strokeWidth="2.6" strokeLinejoin="round" />
       <polyline points={speedB.map((v, i) => `${sx(i * step).toFixed(1)},${svy(v).toFixed(1)}`).join(' ')} fill="none" stroke={colors[b]} strokeWidth="2.4" strokeLinejoin="round" />
-      <line x1={x0} x2={x1} y1={dvy(0).toFixed(1)} y2={dvy(0).toFixed(1)} stroke="#44454E" strokeDasharray="4 3" />
+      <line x1={x0} x2={x1} y1={dvy(0).toFixed(1)} y2={dvy(0).toFixed(1)} stroke={PANEL.line4} strokeDasharray="4 3" />
       <polyline points={delta.map((v, i) => `${sx(i * step).toFixed(1)},${dvy(Math.max(-dmax, Math.min(dmax, v))).toFixed(1)}`).join(' ')} fill="none" stroke={PANEL.fg} strokeWidth="2" />
       <text x={x0} y="296" fontFamily={MONO} fontSize="9" fill={PANEL.fg3}>
         DELTA ({b} vs {a}) — above line = {b} losing time · <tspan fill={colors[a]} fontWeight="700">{a}</tspan> vs <tspan fill={colors[b]} fontWeight="700">{b}</tspan>
@@ -217,7 +217,7 @@ export function TheoreticalBest({ sectors, ctx }) {
         );
         const idealEl = <div style={{ fontFamily: MONO, fontSize: 10.5, color: PANEL.fg3 }}>{`IDEAL ${fmtLap(r.ideal)}`}</div>;
         const barEl = (
-          <div style={{ height: 12, background: '#1F2027' }}>
+          <div style={{ height: 12, background: PANEL.pill }}>
             <div style={{ height: 12, width: `${Math.min(100, (r.lost / maxLost) * 100).toFixed(0)}%`, background: r.lost < 0.05 ? PANEL.green : '#7C3AED' }} />
           </div>
         );
@@ -230,7 +230,7 @@ export function TheoreticalBest({ sectors, ctx }) {
           // stacked: identity + numbers on one line, full-width bar below —
           // the desktop 4-column grid leaves the bar ~0 px on a phone
           return (
-            <div key={r.code} style={{ padding: '8px 4px', borderBottom: '1px solid #1E1F26' }}>
+            <div key={r.code} style={{ padding: '8px 4px', borderBottom: `1px solid ${PANEL.line2}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {nameEl}{idealEl}<div style={{ marginLeft: 'auto' }}>{valEl}</div>
               </div>
@@ -239,7 +239,7 @@ export function TheoreticalBest({ sectors, ctx }) {
           );
         }
         return (
-          <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 110px 1fr 120px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+          <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 110px 1fr 120px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: `1px solid ${PANEL.line2}` }}>
             {nameEl}{idealEl}{barEl}{valEl}
           </div>
         );
@@ -276,7 +276,7 @@ export function LapScatter({ lapsAll, ctx, showDeleted = false }) {
       <XTicks ticks={niceTicks(m0, m1, 6).map((m) => ({ x: gx(m).toFixed(1), label: `${Math.round(m - m0)}m` }))} y={372} />
       {shown.map((p, i) => (
         <circle key={i} cx={gx(p.min).toFixed(1)} cy={gy(p.t).toFixed(1)} r="4.2"
-          fill={p.del ? 'none' : (COMPOUNDS[p.c]?.color || PANEL.faint)}
+          fill={p.del ? 'none' : compoundColor(p.c)}
           stroke={p.del ? PANEL.faint : ctx.colorOf(p.code)} strokeWidth="1.6"
           strokeDasharray={p.del ? '2 2' : undefined}
           onMouseMove={(e) => ctx.tip(e, `${p.code} · ${COMPOUNDS[p.c]?.name || '?'}${p.del ? ' · DELETED' : ''}`, [
@@ -298,12 +298,12 @@ export function SpeedTrapChart({ traps, ctx }) {
   return (
     <div style={{ padding: '4px 2px' }}>
       {rows.map((r) => (
-        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 1fr 116px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+        <div key={r.code} style={{ display: 'grid', gridTemplateColumns: '76px 1fr 116px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: `1px solid ` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(r.code) }}>
             {ctx.faceImg?.(r.code) && <img src={ctx.faceImg(r.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
             {r.code}
           </div>
-          <div style={{ height: 12, background: '#1F2027' }}>
+          <div style={{ height: 12, background: PANEL.pill }}>
             <div style={{ height: 12, width: `${(20 + ((r.st - low) / (best - low + 0.001)) * 78).toFixed(0)}%`, background: ctx.colorOf(r.code) }} />
           </div>
           <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, textAlign: 'right', color: PANEL.fg, fontVariantNumeric: 'tabular-nums' }}>
@@ -333,7 +333,7 @@ export function LongRunChart({ longRuns, ctx }) {
         );
         const stintEl = <div style={{ fontFamily: MONO, fontSize: 10, color: PANEL.fg3 }}>{`${COMPOUNDS[r.c]?.name.slice(0, 3) || '?'} · ${r.laps} LAPS`}</div>;
         const barEl = (
-          <div style={{ height: 12, background: '#1F2027' }}>
+          <div style={{ height: 12, background: PANEL.pill }}>
             <div style={{ height: 12, width: `${(18 + (1 - (r.avg - best) / (worst - best + 0.001)) * 80).toFixed(0)}%`, background: ctx.colorOf(r.code) }} />
           </div>
         );
@@ -341,7 +341,7 @@ export function LongRunChart({ longRuns, ctx }) {
         if (mob) {
           // stacked: the desktop grid's fixed columns leave the bar ~40 px
           return (
-            <div key={`${r.code}${i}`} style={{ padding: '8px 4px', borderBottom: '1px solid #1E1F26' }}>
+            <div key={`${r.code}${i}`} style={{ padding: '8px 4px', borderBottom: `1px solid ` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {nameEl}{stintEl}<div style={{ marginLeft: 'auto' }}>{valEl}</div>
               </div>
@@ -350,7 +350,7 @@ export function LongRunChart({ longRuns, ctx }) {
           );
         }
         return (
-          <div key={`${r.code}${i}`} style={{ display: 'grid', gridTemplateColumns: '76px 96px 1fr 96px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: '1px solid #1E1F26' }}>
+          <div key={`${r.code}${i}`} style={{ display: 'grid', gridTemplateColumns: '76px 96px 1fr 96px', alignItems: 'center', gap: 10, padding: '7px 4px', borderBottom: `1px solid ` }}>
             {nameEl}{stintEl}{barEl}{valEl}
           </div>
         );
@@ -369,10 +369,10 @@ export function CompoundOffsetChart({ longRuns }) {
   return (
     <div style={{ padding: '10px 2px' }}>
       {rows.map((r) => (
-        <div key={r.c} style={{ display: 'grid', gridTemplateColumns: mob ? '78px 1fr 118px' : '110px 1fr 130px', alignItems: 'center', gap: 12, padding: '12px 4px', borderBottom: '1px solid #1E1F26' }}>
-          <div style={{ fontFamily: COND, fontSize: 14, fontWeight: 700, letterSpacing: '0.08em', color: COMPOUNDS[r.c]?.color }}>{COMPOUNDS[r.c]?.name}</div>
-          <div style={{ height: 16, background: '#1F2027' }}>
-            <div style={{ height: 16, width: `${(8 + (r.offset / maxOff) * 88).toFixed(0)}%`, background: COMPOUNDS[r.c]?.color }} />
+        <div key={r.c} style={{ display: 'grid', gridTemplateColumns: mob ? '78px 1fr 118px' : '110px 1fr 130px', alignItems: 'center', gap: 12, padding: '12px 4px', borderBottom: `1px solid ` }}>
+          <div style={{ fontFamily: COND, fontSize: 14, fontWeight: 700, letterSpacing: '0.08em', color: compoundColor(r.c) }}>{COMPOUNDS[r.c]?.name}</div>
+          <div style={{ height: 16, background: PANEL.pill }}>
+            <div style={{ height: 16, width: `${(8 + (r.offset / maxOff) * 88).toFixed(0)}%`, background: compoundColor(r.c) }} />
           </div>
           <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, textAlign: 'right', color: PANEL.fg }}>
             {r.offset === 0 ? 'BASELINE' : `+${r.offset.toFixed(3)}s/lap`} <span style={{ color: PANEL.axis, fontSize: 10 }}>({r.n})</span>

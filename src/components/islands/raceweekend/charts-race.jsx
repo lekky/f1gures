@@ -3,7 +3,7 @@
 //   ctx — { colorOf, teamOf, teamNameOf, nameOf, tip(e,title,lines), leave() }
 //   sel — Set of selected driver codes (driver filter)
 import React, { useState } from 'react';
-import { PANEL, MONO, COND, Bands, YGrid, XTicks, scale, niceTicks, lapTickValues, stackLabels, DivergingLadder, FaceImg } from './primitives.jsx';
+import { PANEL, MONO, COND, Bands, YGrid, XTicks, scale, niceTicks, lapTickValues, stackLabels, DivergingLadder, FaceImg, compoundColor } from './primitives.jsx';
 import { COMPOUNDS, fmtLap, duelGap, undercutWindows, fuelCorrectedPace } from './derive.js';
 import { useIsMobile } from '../../../lib/shared.jsx';
 
@@ -136,7 +136,7 @@ export function StintChart({ R, ctx }) {
             {st.map((s, k) => {
               const x = xl(s.from - 1), w = Math.max(3, xl(s.to) - x);
               return (
-                <rect key={k} x={x.toFixed(1)} y={y} width={w.toFixed(1)} height="15" fill={COMPOUNDS[s.compound]?.color || PANEL.faint}
+                <rect key={k} x={x.toFixed(1)} y={y} width={w.toFixed(1)} height="15" fill={compoundColor(s.compound)}
                   onMouseMove={(e) => ctx.tip(e, `${c} · ${COMPOUNDS[s.compound]?.name || s.compound}${s.used ? ' (USED)' : ''}`, [
                     { color: COMPOUNDS[s.compound]?.color, txt: `L${s.from}–L${s.to} (${s.to - s.from + 1} laps)` },
                     { color: ctx.colorOf(c), txt: ctx.teamNameOf(c) },
@@ -268,7 +268,7 @@ export function OvertakeMatrix({ R, ctx }) {
   return (
     <div style={{ padding: '4px 2px', maxHeight: 440, overflowY: 'auto' }}>
       {passers.map((c) => (
-        <div key={c} style={{ display: 'grid', gridTemplateColumns: '76px 40px 1fr', gap: 10, alignItems: 'start', padding: '7px 4px', borderBottom: `1px solid #1E1F26` }}>
+        <div key={c} style={{ display: 'grid', gridTemplateColumns: '76px 40px 1fr', gap: 10, alignItems: 'start', padding: '7px 4px', borderBottom: `1px solid ${PANEL.line2}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: ctx.colorOf(c) }}>
             {ctx.faceImg?.(c) && <img src={ctx.faceImg(c)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
             {c}
@@ -277,7 +277,7 @@ export function OvertakeMatrix({ R, ctx }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {byPasser[c].map((p, i) => (
               <span key={i} title={`Passed ${p.on} on lap ${p.lap}`} style={{
-                fontFamily: MONO, fontSize: 10, padding: '3px 6px', background: '#1B1C22',
+                fontFamily: MONO, fontSize: 10, padding: '3px 6px', background: PANEL.hover,
                 borderLeft: `3px solid ${COMPOUNDS[p.tyre]?.color || PANEL.faint}`, color: PANEL.fg2,
               }}>{`${p.on} · L${p.lap}`}</span>
             ))}
@@ -298,7 +298,7 @@ export function UndercutTable({ R, ctx }) {
   return (
     <div style={{ padding: '4px 2px', maxHeight: 440, overflowY: 'auto' }}>
       {wins.map((w, i) => (
-        <div key={i} style={{ padding: '8px 4px', borderBottom: '1px solid #1E1F26' }}>
+        <div key={i} style={{ padding: '8px 4px', borderBottom: `1px solid ${PANEL.line2}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: ctx.colorOf(w.code) }}>
             {ctx.faceImg?.(w.code) && <img src={ctx.faceImg(w.code)} alt="" style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }} />}
             {w.code} <span style={{ color: PANEL.axis, fontWeight: 400 }}>· stops lap {w.lap}</span>
@@ -306,9 +306,9 @@ export function UndercutTable({ R, ctx }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
             {w.rivals.map((r, k) => {
               const gained = r.gained > 0.05 ? `+${r.gained.toFixed(1)}s` : r.gained < -0.05 ? `${r.gained.toFixed(1)}s` : '±0.0s';
-              const col = r.gained > 0.05 ? PANEL.green : r.gained < -0.05 ? '#FF6B81' : PANEL.fg3;
+              const col = r.gained > 0.05 ? PANEL.green : r.gained < -0.05 ? PANEL.pink : PANEL.fg3;
               return (
-                <span key={k} style={{ fontFamily: MONO, fontSize: 10.5, padding: '3px 7px', background: '#1B1C22', color: PANEL.fg2 }}>
+                <span key={k} style={{ fontFamily: MONO, fontSize: 10.5, padding: '3px 7px', background: PANEL.hover, color: PANEL.fg2 }}>
                   vs <b style={{ color: ctx.colorOf(r.code) }}>{r.code}</b>{r.rivalStop ? ` (stops L${r.rivalStop})` : ' (stays out)'} → <b style={{ color: col }}>{gained}</b>
                 </span>
               );
@@ -343,7 +343,7 @@ export function DuelChart({ R, ctx }) {
   const stopsA = R.pits.filter((p) => p.code === a && p.lap != null);
   const stopsB = R.pits.filter((p) => p.code === b && p.lap != null);
   const selStyle = {
-    background: '#1B1C22', color: PANEL.fg, border: '1px solid #33343C', fontFamily: MONO,
+    background: PANEL.hover, color: PANEL.fg, border: `1px solid ${PANEL.line3}`, fontFamily: MONO,
     fontSize: 12, padding: '5px 8px',
   };
   return (
@@ -363,7 +363,7 @@ export function DuelChart({ R, ctx }) {
       <svg viewBox="0 0 1000 372" style={{ width: '100%', display: 'block' }}>
         <Bands bands={R.bands} xl={xl} y={10} h={344} labels={false} />
         <YGrid ticks={yTicks} x0={x0} x1={x1} />
-        <line x1={x0} x2={x1} y1={gy(0).toFixed(1)} y2={gy(0).toFixed(1)} stroke="#44454E" strokeDasharray="4 3" />
+        <line x1={x0} x2={x1} y1={gy(0).toFixed(1)} y2={gy(0).toFixed(1)} stroke={PANEL.line4} strokeDasharray="4 3" />
         <polyline points={gaps.map((g, i) => `${xl(i + 1).toFixed(1)},${gy(Math.max(-maxAbs, Math.min(maxAbs, g))).toFixed(1)}`).join(' ')}
           fill="none" stroke={ctx.colorOf(b)} strokeWidth="2.6" strokeLinejoin="round" />
         {stopsA.map((p, i) => <path key={`a${i}`} d={`M ${xl(p.lap)} 352 l -5 9 l 10 0 z`} fill={ctx.colorOf(a)} />)}
@@ -398,11 +398,11 @@ export function WeatherStrip({ weather }) {
       ) : null)}
       <YGrid ticks={yTicks} x0={x0} x1={x1} />
       <polyline points={mk(2)} fill="none" stroke={PANEL.amber} strokeWidth="2.4" strokeLinejoin="round" />
-      <polyline points={mk(1)} fill="none" stroke="#64C4FF" strokeWidth="2" strokeLinejoin="round" />
+      <polyline points={mk(1)} fill="none" stroke={PANEL.blue} strokeWidth="2" strokeLinejoin="round" />
       <polyline points={s.filter((x) => x[3] != null).map((x) => `${gx(x[0] - t0).toFixed(1)},${wy(x[3]).toFixed(1)}`).join(' ')}
         fill="none" stroke={PANEL.fg3} strokeWidth="1.6" strokeDasharray="4 3" />
       <text x={x0} y="14" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>
-        <tspan fill={PANEL.amber} fontWeight="700">TRACK</tspan> · <tspan fill="#64C4FF" fontWeight="700">AIR</tspan> °C · <tspan fill={PANEL.fg3} fontWeight="700">WIND</tspan> (LOWER STRIP, MAX {wmax.toFixed(0)} KM/H) · BLUE BANDS = RAIN
+        <tspan fill={PANEL.amber} fontWeight="700">TRACK</tspan> · <tspan fill={PANEL.blue} fontWeight="700">AIR</tspan> °C · <tspan fill={PANEL.fg3} fontWeight="700">WIND</tspan> (LOWER STRIP, MAX {wmax.toFixed(0)} KM/H) · BLUE BANDS = RAIN
       </text>
       <XTicks ticks={[0, 0.25, 0.5, 0.75, 1].map((f) => ({ x: gx(f * span).toFixed(1), label: `+${Math.round(f * span)}m` }))} y={352} />
     </svg>
@@ -410,21 +410,21 @@ export function WeatherStrip({ weather }) {
 }
 
 // ── 12. Race control feed ───────────────────────────────────────
-const RC_COLORS = { SafetyCar: '#E3B341', Flag: '#C2C3CA', Drs: '#64C4FF', CarEvent: '#FF6B81', Other: '#9A9BA3' };
+const RC_COLOR_KEYS = { SafetyCar: 'amber', Flag: 'fg2', Drs: 'blue', CarEvent: 'pink', Other: 'fg3' };
 export function RaceControlFeed({ raceControl }) {
   const msgs = (raceControl || []).filter((m) => m.msg);
   if (!msgs.length) return <EmptyNote txt="No race control messages." />;
   const color = (m) => {
-    if (m.flag === 'RED' || /PENALTY|INVESTIGAT/i.test(m.msg)) return '#FF6B81';
+    if (m.flag === 'RED' || /PENALTY|INVESTIGAT/i.test(m.msg)) return PANEL.pink;
     if (/SAFETY CAR|VIRTUAL/i.test(m.msg) || m.cat === 'SafetyCar') return PANEL.amber;
-    if (m.flag === 'YELLOW' || m.flag === 'DOUBLE YELLOW') return '#F5C518';
+    if (m.flag === 'YELLOW' || m.flag === 'DOUBLE YELLOW') return PANEL.yellow;
     if (m.flag === 'GREEN' || m.flag === 'CLEAR') return PANEL.green;
-    return RC_COLORS[m.cat] || PANEL.fg3;
+    return PANEL[RC_COLOR_KEYS[m.cat] || 'fg3'];
   };
   return (
     <div style={{ padding: '2px', maxHeight: 460, overflowY: 'auto' }}>
       {msgs.map((m, i) => (
-        <div key={i} style={{ display: 'grid', gridTemplateColumns: '58px 44px 1fr', gap: 10, padding: '6px 4px', borderBottom: '1px solid #1E1F26', alignItems: 'baseline' }}>
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '58px 44px 1fr', gap: 10, padding: '6px 4px', borderBottom: `1px solid ${PANEL.line2}`, alignItems: 'baseline' }}>
           <span style={{ fontFamily: MONO, fontSize: 10, color: PANEL.axis }}>{m.time || ''}</span>
           <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: color(m) }}>{m.lap != null ? `L${m.lap}` : '—'}</span>
           <span style={{ fontFamily: MONO, fontSize: 11, color: PANEL.fg2, lineHeight: 1.45 }}>{m.msg}</span>
