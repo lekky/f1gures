@@ -153,6 +153,12 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   const [shareImg, setShareImg] = useState(null);
   const [shareBusy, setShareBusy] = useState(false);
   const chartRef = useRef(null);
+  // Back-button handling for the chart modal (esp. mobile): openKeyRef lets the
+  // stable popstate listener read the live modal state; modalHistRef tracks the
+  // dedicated history entry we push so Back closes the modal instead of leaving.
+  const openKeyRef = useRef(null);
+  openKeyRef.current = openKey;
+  const modalHistRef = useRef(false);
 
   const light = useSiteTheme();
   setPanelTheme(light); // keep the palette in sync before charts render this pass
@@ -181,7 +187,12 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     const v = p.get('viz');
     if (s && sessions.some((x) => x.id === s)) {
       setTab(s);
-      if (v && vizListFor(s).some((d) => d.key === v)) setOpenKey(v);
+      if (v && vizListFor(s).some((d) => d.key === v)) {
+        setOpenKey(v);
+        // deep-linked open: seed a history entry so Back closes the modal
+        window.history.pushState({ rwViz: true }, '');
+        modalHistRef.current = true;
+      }
     }
   }, []);
   const syncUrl = useCallback((sid, vkey) => {
@@ -299,19 +310,53 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   const vizArgs = { sess: activeSess, R: activeR, deg, pace, ctx, sel, raceSess, raceR };
 
   const openVizModal = (key) => {
+    const wasClosed = !openKeyRef.current;
     setOpenKey(key);
     setTt(null);
+    // On the first open (not when stepping between charts) push a dedicated
+    // history entry, so the browser/OS Back button pops it and closes the modal
+    // instead of navigating off the page.
+    if (wasClosed && !modalHistRef.current) {
+      window.history.pushState({ rwViz: true }, '');
+      modalHistRef.current = true;
+    }
     syncUrl(tab, key);
   };
   const closeVizModal = () => {
     setOpenKey(null);
     setTt(null);
-    syncUrl(tab, null);
+    if (modalHistRef.current) {
+      // pop our own entry — the popstate handler no-ops since we've cleared state
+      modalHistRef.current = false;
+      window.history.back();
+    } else {
+      syncUrl(tab, null);
+    }
   };
   const stepViz = (dir) => {
     if (openIdx < 0 || !vlist.length) return;
     openVizModal(vlist[(openIdx + dir + vlist.length) % vlist.length].key);
   };
+
+  // Back button (popstate) closes the modal/share sheet rather than leaving the
+  // page. Bound once; reads live state through openKeyRef.
+  useEffect(() => {
+    const onPop = () => {
+      if (!openKeyRef.current) return;
+      modalHistRef.current = false; // the entry we pushed has just been popped
+      setOpenKey(null);
+      setTt(null);
+      setShare(null);
+      setShareImg(null);
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('viz')) {
+        p.delete('viz');
+        window.history.replaceState(null, '', `${window.location.pathname}?${p.toString()}`);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   // Esc closes, arrows cycle — only while the modal (not the share sheet) is up.
   useEffect(() => {
