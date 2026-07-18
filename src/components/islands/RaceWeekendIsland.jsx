@@ -18,7 +18,7 @@ import {
 } from './raceweekend/derive.js';
 import { vizListFor } from './raceweekend/vizdefs.jsx';
 import { setPanelTheme } from './raceweekend/primitives.jsx';
-import { renderShareCard, shareFileName, SHARE_FORMATS, EXPORT_SCALE } from './raceweekend/share.js';
+import { renderShareCard, shareFileName, SHARE_FORMATS } from './raceweekend/share.js';
 import {
   SessionHeader, RacePodium3, StatChips, RaceClassification, KeyMoments,
   QualiTable, SprintTable, FastF1SegTable, PracticeTimes,
@@ -725,9 +725,6 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
                 download={shareFileName({ raceName: race.name, year }, share.key, shareFmt)}
                 aria-disabled={!shareImg}>⤓ Download PNG</a>
               <button type="button" className="btn btn-secondary" onClick={() => { setShare(null); setShareImg(null); }}>Close</button>
-            </div>
-            <div className="rw-share-note t-mono">
-              Branded card · {SHARE_FORMATS[shareFmt].w * EXPORT_SCALE} × {SHARE_FORMATS[shareFmt].h * EXPORT_SCALE} · www.f1gures.app watermark baked in
             </div>
           </div>
         </div>
