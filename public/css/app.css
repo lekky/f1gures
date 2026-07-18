@@ -5602,11 +5602,23 @@ html.light .rw-tooltip { background: #FFFFFF; border-color: #DEDEE3; color: #151
   .rw-filter-presets { margin-left: 0; }
   .rw-gal { padding: 14px; }
   .rw-gal-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .rw-mviz-overlay { padding: 0; }
-  .rw-mviz { width: 100%; min-height: 100vh; border: 0; }
-  .rw-mviz-body { padding: 16px 14px 22px; }
+  /* Block layout + min-width:0 so the modal fits the viewport instead of
+     growing to its content's min-width (the wide chart / long source string
+     otherwise force horizontal overflow and push the top-bar buttons off-screen). */
+  .rw-mviz-overlay { display: block; padding: 0; width: 100vw; max-width: 100vw; overflow-x: hidden; }
+  .rw-mviz { width: 100%; max-width: 100%; min-width: 0; min-height: 100vh; border: 0; overflow-x: hidden; }
+  .rw-mviz-body { padding: 16px 14px 22px; min-width: 0; }
   .rw-mviz-title { font-size: 26px; }
   .rw-mviz-presets { margin-left: 0; }
+  /* Top bar must fit: let the counter shrink/ellipsis and tighten the actions
+     so Close · Share · ‹ › all stay on-screen and tappable. */
+  .rw-mviz-bar { gap: 8px; padding: 11px 12px; }
+  .rw-mviz-count { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rw-mviz-baractions { gap: 5px; flex: none; }
+  .rw-mviz-share { padding: 8px 12px; }
+  .rw-mviz-nav { padding: 7px 11px; }
+  /* Long mono source string must wrap, not force the modal wider. */
+  .rw-mviz-src { white-space: normal; word-break: break-word; }
   /* Dense time-series SVGs are unreadable scaled to phone width: keep them
      at a legible size and let the inset pan horizontally instead. Row-list
      charts render a compact mobile viewBox (.vx-fit) and fit the screen;

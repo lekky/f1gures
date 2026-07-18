@@ -135,6 +135,20 @@ function useSiteTheme() {
   return light;
 }
 
+// GA4: fire when a visualisation opens, carrying its name so popularity per
+// chart is reportable. `method` distinguishes a card tap from arrow-stepping
+// or a deep link, so a "true taps" report can filter to method = card.
+function trackVizOpen({ key, title, session, race, method }) {
+  if (typeof window === 'undefined' || typeof window.gtag !== 'function') return;
+  window.gtag('event', 'visualisation_open', {
+    viz_key: key,
+    viz_name: title || key,
+    session: session || '',
+    race_name: race || '',
+    method: method || 'card',
+  });
+}
+
 const NO_ASSETS = { faces: {}, logos: {}, refs: {}, teams: {} };
 
 export default function RaceWeekendIsland({ race, weekend, assets }) {
@@ -187,11 +201,16 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     const v = p.get('viz');
     if (s && sessions.some((x) => x.id === s)) {
       setTab(s);
-      if (v && vizListFor(s).some((d) => d.key === v)) {
+      const vdef = v && vizListFor(s).find((d) => d.key === v);
+      if (vdef) {
         setOpenKey(v);
         // deep-linked open: seed a history entry so Back closes the modal
         window.history.pushState({ rwViz: true }, '');
         modalHistRef.current = true;
+        trackVizOpen({
+          key: v, title: vdef.title, race: race.name, method: 'deeplink',
+          session: (sessions.find((x) => x.id === s)?.label) || s,
+        });
       }
     }
   }, []);
@@ -309,7 +328,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
 
   const vizArgs = { sess: activeSess, R: activeR, deg, pace, ctx, sel, raceSess, raceR };
 
-  const openVizModal = (key) => {
+  const openVizModal = (key, method = 'card') => {
     const wasClosed = !openKeyRef.current;
     setOpenKey(key);
     setTt(null);
@@ -321,6 +340,8 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
       modalHistRef.current = true;
     }
     syncUrl(tab, key);
+    const def = vlist.find((d) => d.key === key);
+    trackVizOpen({ key, title: def?.title, session: sessLabel, race: race.name, method });
   };
   const closeVizModal = () => {
     setOpenKey(null);
@@ -335,7 +356,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   };
   const stepViz = (dir) => {
     if (openIdx < 0 || !vlist.length) return;
-    openVizModal(vlist[(openIdx + dir + vlist.length) % vlist.length].key);
+    openVizModal(vlist[(openIdx + dir + vlist.length) % vlist.length].key, 'nav');
   };
 
   // Back button (popstate) closes the modal/share sheet rather than leaving the
