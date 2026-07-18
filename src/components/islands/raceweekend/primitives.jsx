@@ -1,19 +1,53 @@
-// Shared SVG primitives + dark-panel palette for the Visualisation Explorer.
-// The explorer card is ALWAYS dark (both site themes) — these hexes are the
-// chart-panel palette from the design handoff, not site theme tokens.
+// Shared SVG primitives + theme-aware chart palette for the Visualisation
+// Explorer. The explorer follows the site theme (light + dark). Charts read
+// colours through `PANEL`, whose getters resolve to the active theme; the
+// island calls `setPanelTheme()` on load and on every theme toggle, so a
+// re-render redraws every chart in the right palette. Concrete hex is
+// returned (not CSS vars) so the share-card export — which serialises the
+// live SVG — captures resolved colours.
 //
 // Mobile: ladder/row-list charts render a compact narrow viewBox (class
 // `vx-fit`) so they FIT a phone screen at readable size; wide time-series
 // charts instead keep a min-width and pan horizontally (see app.css).
 import React from 'react';
 import { useIsMobile } from '../../../lib/shared.jsx';
+import { COMPOUNDS } from './derive.js';
 
-export const PANEL = {
-  bg: '#0F1014', grid: '#22232A', axis: '#85868E', fg: '#F2F2F4',
-  fg2: '#C2C3CA', fg3: '#9A9BA3', dim: '#2A2B33', faint: '#565760',
-  amber: '#E3B341', purple: '#A78BFA', red: '#E8002D', green: '#3DDC97',
-  bandSC: 'rgba(227,179,65,0.10)', bandVSC: 'rgba(227,179,65,0.05)',
+const DARK = {
+  bg: '#0F1014', panel: '#141519', hover: '#1B1C22', inset2: '#16171D', pill: '#1F2027',
+  grid: '#22232A', line: '#26272E', line2: '#1E1F26', line3: '#33343C', line4: '#44454E',
+  axis: '#85868E', fg: '#F2F2F4', fg2: '#C2C3CA', fg3: '#9A9BA3', fg4: '#63646C',
+  dim: '#2A2B33', faint: '#565760',
+  amber: '#E3B341', purple: '#A78BFA', red: '#E8002D', green: '#3DDC97', blue: '#64C4FF', pink: '#FF6B81', yellow: '#F5C518',
+  bandSC: 'rgba(227,179,65,0.10)', bandVSC: 'rgba(227,179,65,0.05)', bandGreen: 'rgba(61,220,151,0.12)',
 };
+const LIGHT = {
+  bg: '#FFFFFF', panel: '#F4F4F6', hover: '#EAEAEE', inset2: '#F0F0F3', pill: '#ECECEF',
+  grid: '#E6E6EA', line: '#E1E1E6', line2: '#ECECF0', line3: '#D4D5DC', line4: '#C2C3CA',
+  axis: '#6B6C74', fg: '#15161A', fg2: '#3A3B42', fg3: '#6B6C74', fg4: '#8A8B93',
+  dim: '#D2D3DA', faint: '#A9AAB2',
+  amber: '#B45309', purple: '#7C3AED', red: '#E8002D', green: '#0F9D58', blue: '#2563EB', pink: '#E11D48', yellow: '#CA8A04',
+  bandSC: 'rgba(180,83,9,0.12)', bandVSC: 'rgba(180,83,9,0.06)', bandGreen: 'rgba(15,157,88,0.14)',
+};
+
+let _light = false;
+// Called by the island from the site theme; charts re-read PANEL on re-render.
+export function setPanelTheme(light) { _light = !!light; }
+export function panelIsLight() { return _light; }
+
+// PANEL.* getters resolve to the active theme at read time.
+export const PANEL = {};
+for (const key of Object.keys(DARK)) {
+  Object.defineProperty(PANEL, key, { enumerable: true, get() { return _light ? LIGHT[key] : DARK[key]; } });
+}
+
+// Tyre-compound fill for marks drawn on the chart background. HARD is white
+// (#EDEDED) — invisible on the light theme's white inset — so it's darkened to
+// a readable silver there; every other compound reads on both backgrounds.
+export function compoundColor(key) {
+  if (_light && key === 'H') return '#B9BAC0';
+  return COMPOUNDS[key]?.color || PANEL.faint;
+}
 
 export const MONO = 'JetBrains Mono, monospace';
 export const COND = 'Barlow Condensed, sans-serif';

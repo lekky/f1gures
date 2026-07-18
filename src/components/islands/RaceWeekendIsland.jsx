@@ -17,10 +17,11 @@ import {
   fastestLap, lap1Gains, degSeries, teamPace, fmtLap,
 } from './raceweekend/derive.js';
 import { vizListFor } from './raceweekend/vizdefs.jsx';
+import { setPanelTheme } from './raceweekend/primitives.jsx';
 import { renderShareCard, shareFileName, SHARE_FORMATS, EXPORT_SCALE } from './raceweekend/share.js';
 import {
   SessionHeader, RacePodium3, StatChips, RaceClassification, KeyMoments,
-  DriverFilter, QualiTable, SprintTable, FastF1SegTable, PracticeTimes,
+  QualiTable, SprintTable, FastF1SegTable, PracticeTimes,
   SectionRule, LocalTime,
 } from './raceweekend/results.jsx';
 
@@ -119,6 +120,21 @@ function useNow(active) {
   return now;
 }
 
+// Mirrors the site theme (html.light) into the chart palette. Returns `light`
+// so the island re-renders (and every chart redraws) when the theme toggles.
+function useSiteTheme() {
+  const read = () => typeof document !== 'undefined' && document.documentElement.classList.contains('light');
+  const [light, setLight] = useState(read);
+  useEffect(() => {
+    const apply = () => { const l = read(); setPanelTheme(l); setLight(l); };
+    apply();
+    const mo = new MutationObserver(apply);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => mo.disconnect();
+  }, []);
+  return light;
+}
+
 const NO_ASSETS = { faces: {}, logos: {}, refs: {}, teams: {} };
 
 export default function RaceWeekendIsland({ race, weekend, assets }) {
@@ -127,7 +143,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   const defaultTab = available.length ? available[available.length - 1] : sessions[sessions.length - 1]?.id;
 
   const [tab, setTab] = useState(defaultTab);
-  const [viz, setViz] = useState({});
+  const [openKey, setOpenKey] = useState(null);
   const [selArr, setSelArr] = useState(null);
   const [allRows, setAllRows] = useState(false);
   const [data, setData] = useState({});
@@ -137,6 +153,9 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   const [shareImg, setShareImg] = useState(null);
   const [shareBusy, setShareBusy] = useState(false);
   const chartRef = useRef(null);
+
+  const light = useSiteTheme();
+  setPanelTheme(light); // keep the palette in sync before charts render this pass
 
   const hasUpcoming = useMemo(() => sessions.some((s) => !available.includes(s.id)), [sessions, available]);
   const now = useNow(hasUpcoming);
@@ -162,7 +181,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     const v = p.get('viz');
     if (s && sessions.some((x) => x.id === s)) {
       setTab(s);
-      if (v && vizListFor(s).some((d) => d.key === v)) setViz((m) => ({ ...m, [s]: v }));
+      if (v && vizListFor(s).some((d) => d.key === v)) setOpenKey(v);
     }
   }, []);
   const syncUrl = useCallback((sid, vkey) => {
@@ -263,32 +282,65 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
 
   const pickTab = (sid) => {
     setTab(sid);
+    setOpenKey(null);
     setTt(null);
-    syncUrl(sid, viz[sid] || null);
+    syncUrl(sid, null);
   };
 
   const isUpcoming = !available.includes(tab);
   const activeSchedule = sessions.find((s) => s.id === tab);
 
-  // ── viz explorer state ──
+  // ── viz gallery + modal state ──
   const vlist = vizListFor(tab);
-  const activeKey = viz[tab] && vlist.some((d) => d.key === viz[tab]) ? viz[tab] : vlist[0]?.key;
-  const vi = Math.max(0, vlist.findIndex((d) => d.key === activeKey));
-  const cur = vlist[vi];
-  const pickViz = (key) => {
-    setViz((m) => ({ ...m, [tab]: key }));
-    setTt(null);
-    syncUrl(tab, key);
-  };
+  const openIdx = openKey ? vlist.findIndex((d) => d.key === openKey) : -1;
+  const openViz = openIdx >= 0 ? vlist[openIdx] : null;
   const sessLabel = (activeSchedule?.label || tab).toUpperCase();
 
   const vizArgs = { sess: activeSess, R: activeR, deg, pace, ctx, sel, raceSess, raceR };
 
+  const openVizModal = (key) => {
+    setOpenKey(key);
+    setTt(null);
+    syncUrl(tab, key);
+  };
+  const closeVizModal = () => {
+    setOpenKey(null);
+    setTt(null);
+    syncUrl(tab, null);
+  };
+  const stepViz = (dir) => {
+    if (openIdx < 0 || !vlist.length) return;
+    openVizModal(vlist[(openIdx + dir + vlist.length) % vlist.length].key);
+  };
+
+  // Esc closes, arrows cycle — only while the modal (not the share sheet) is up.
+  useEffect(() => {
+    if (!openKey) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        if (share) { setShare(null); setShareImg(null); } else closeVizModal();
+      } else if (!share && e.key === 'ArrowRight') stepViz(1);
+      else if (!share && e.key === 'ArrowLeft') stepViz(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openKey, share, openIdx, vlist]);
+
+  // Lock body scroll while any overlay is up.
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const lock = !!openKey || !!share;
+    const prev = document.body.style.overflow;
+    if (lock) document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [openKey, share]);
+
   // ── share flow ──
-  const openShare = (fmtKeep) => {
-    if (!cur) return;
-    setShare({ key: cur.key, title: cur.title });
-    if (!fmtKeep) setShareImg(null);
+  const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const openShare = () => {
+    if (!openViz) return;
+    setShare({ key: openViz.key, title: openViz.title });
+    setShareImg(null);
     setTimeout(() => makeShare(shareFmt), 40);
   };
   const makeShare = async (fmt) => {
@@ -299,8 +351,8 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     try {
       const img = await renderShareCard(node, fmt, {
         raceName: race.name, circuit: race.circuit?.name || '', year,
-        roundTag: `R${round} · ${year}`, session: sessLabel, title: cur.title,
-        desc: cur.desc || '',
+        roundTag: `R${round} · ${year}`, session: sessLabel, title: openViz.title,
+        desc: openViz.desc || '', light,
       });
       setShareImg(img);
     } catch (e) {
@@ -309,6 +361,24 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     setShareBusy(false);
   };
   const setFmt = (f) => { setShareFmt(f); makeShare(f); };
+  // Share the generated PNG straight to the OS share sheet (mobile + supported
+  // desktops); falls back to a text share where files aren't shareable.
+  const nativeShare = async () => {
+    if (!shareImg || !share) return;
+    const fileName = shareFileName({ raceName: race.name, year }, share.key, shareFmt);
+    try {
+      const blob = await (await fetch(shareImg)).blob();
+      const file = new File([blob], fileName, { type: 'image/png' });
+      const title = `${share.title} — ${race.name} ${year}`;
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title, text: `${title} · f1gures.app` });
+      } else if (navigator.share) {
+        await navigator.share({ title, text: `${title} · f1gures.app` });
+      }
+    } catch (e) {
+      // user dismissed the sheet, or the platform refused — nothing to do
+    }
+  };
 
   // ── per-session results block ──
   const stopsOf = useCallback((code) => {
@@ -351,14 +421,6 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
           {raceChips && <StatChips chips={raceChips} />}
           <RaceClassification results={race.results || []} stopsOf={raceR ? stopsOf : null} allRows={allRows} onToggle={() => setAllRows(!allRows)} ctx={ctx} />
           <KeyMoments moments={keyMomentsFrom(raceSess)} />
-          <DriverFilter order={raceR?.finishOrder || (race.results || []).filter((r) => r.code).map((r) => r.code)}
-            colorOf={ctx.colorOf} sel={sel}
-            onToggle={(code) => {
-              const next = new Set(sel);
-              if (next.has(code)) next.delete(code); else next.add(code);
-              setSelArr([...next]);
-            }}
-            presets={filterPresets} />
         </>
       );
     }
@@ -440,47 +502,92 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     );
   };
 
-  // ── explorer ──
+  // ── gallery of chart cards ──
   const explorer = () => {
     if (isUpcoming || !vlist.length) return null;
     const loading = !activeSess;
     return (
-      <div className="rw-viz">
-        <div className="rw-viz-head">
-          <div className="rw-viz-head-title">Visualisations</div>
-          <div className="rw-viz-head-count t-mono">{sessLabel} · {vlist.length} charts</div>
-          <div className="rw-viz-head-rule" />
+      <div className="rw-gal">
+        <div className="rw-gal-head">
+          <div className="rw-gal-head-title">Visualisations</div>
+          <div className="rw-gal-head-count t-mono">{sessLabel} · {vlist.length} charts</div>
+          <div className="rw-gal-head-rule" />
         </div>
-        <div className="rw-viz-body">
-          <div className="rw-viz-rail">
-            {vlist.map((d) => (
-              <button type="button" key={d.key}
-                className={`rw-viz-railitem${d.key === activeKey ? ' is-active' : ''}`}
-                onClick={() => pickViz(d.key)}>
-                <span className="rw-viz-dot" />
-                <span className="rw-viz-railtitle">{d.title}</span>
-              </button>
-            ))}
+        <div className="rw-gal-grid">
+          {vlist.map((d, i) => (
+            <button type="button" key={d.key} className="rw-gal-card" onClick={() => openVizModal(d.key)}>
+              <div className="rw-gal-cardtop">
+                <span className="rw-gal-num t-mono">{String(i + 1).padStart(2, '0')}</span>
+                <span className="rw-gal-tag t-mono">{d.tag}</span>
+              </div>
+              <div className="rw-gal-thumb" aria-hidden="true">
+                {loading
+                  ? <div className="rw-gal-thumb-load t-mono">…</div>
+                  : <div className="rw-gal-thumb-inner">{d.render(vizArgs)}</div>}
+              </div>
+              <div className="rw-gal-cardtitle">{d.title}</div>
+              <div className="rw-gal-carddesc">{d.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // ── expanded chart modal ──
+  const toggleDriver = (code) => {
+    const next = new Set(sel);
+    if (next.has(code)) next.delete(code); else next.add(code);
+    setSelArr([...next]);
+  };
+  const vizModal = () => {
+    if (!openViz) return null;
+    const loading = !activeSess;
+    const showFilter = !!openViz.filter && (tab === 'race' || tab === 'sprint');
+    const filterOrder = raceR?.finishOrder || (race.results || []).filter((r) => r.code).map((r) => r.code);
+    return (
+      <div className="rw-mviz-overlay" onClick={closeVizModal} role="dialog" aria-modal="true">
+        <div className="rw-mviz" onClick={(e) => e.stopPropagation()}>
+          <div className="rw-mviz-bar">
+            <button type="button" className="rw-mviz-x" onClick={closeVizModal} aria-label="Close">✕</button>
+            <span className="rw-mviz-count t-mono">{sessLabel} · {openIdx + 1} / {vlist.length}</span>
+            <div className="rw-mviz-baractions">
+              <button type="button" className="rw-mviz-share" onClick={openShare} disabled={loading}>⤴ Share</button>
+              <button type="button" className="rw-mviz-nav" onClick={() => stepViz(-1)} aria-label="Previous chart">←</button>
+              <button type="button" className="rw-mviz-nav" onClick={() => stepViz(1)} aria-label="Next chart">→</button>
+            </div>
           </div>
-          <div className="rw-viz-main">
-            <div className="rw-viz-meta-row">
-              <span className="rw-viz-meta t-mono">{sessLabel} · {vi + 1} / {vlist.length}</span>
-              <span className="rw-viz-actions">
-                <button type="button" className="rw-viz-share" onClick={() => openShare()} disabled={loading}>⤴ Share</button>
-                <button type="button" className="rw-viz-cycle" onClick={() => pickViz(vlist[(vi - 1 + vlist.length) % vlist.length].key)} aria-label="Previous chart">←</button>
-                <button type="button" className="rw-viz-cycle" onClick={() => pickViz(vlist[(vi + 1) % vlist.length].key)} aria-label="Next chart">→</button>
-              </span>
-            </div>
-            <div className="rw-viz-title">{cur?.title}</div>
-            <div className="rw-viz-titlerule" />
-            <div className="rw-viz-desc">{cur?.desc}</div>
-            <div className="rw-viz-chart" ref={chartRef} id={`rw-chart-${tab}-${activeKey}`}>
+          <div className="rw-mviz-body">
+            <div className="rw-mviz-title">{openViz.title}</div>
+            <div className="rw-mviz-titlerule" />
+            <div className="rw-mviz-desc">{openViz.desc}</div>
+            {showFilter && (
+              <div className="rw-mviz-filter">
+                <span className="rw-mviz-filter-label">Driver filter</span>
+                <div className="rw-mviz-chips">
+                  {filterOrder.map((code) => (
+                    <button type="button" key={code}
+                      className={`rw-mviz-chip${sel.has(code) ? ' is-on' : ''}`}
+                      style={{ borderLeftColor: ctx.colorOf(code) }}
+                      onClick={() => toggleDriver(code)}>{code}</button>
+                  ))}
+                </div>
+                <div className="rw-mviz-presets">
+                  {filterPresets.map((p) => (
+                    <button type="button" key={p.label}
+                      className={`rw-mviz-preset${p.primary ? ' is-primary' : ''}`}
+                      onClick={p.apply}>{p.label}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="rw-mviz-chart" ref={chartRef} id={`rw-chart-${tab}-${openViz.key}`}>
               {loading
-                ? <div className="rw-viz-loading t-mono">LOADING SESSION DATA…</div>
-                : cur?.render(vizArgs)}
+                ? <div className="rw-mviz-loading t-mono">LOADING SESSION DATA…</div>
+                : openViz.render(vizArgs)}
             </div>
-            <div className="rw-viz-foot">
-              <span className="rw-viz-src t-mono">{cur?.src}</span>
+            <div className="rw-mviz-foot">
+              <span className="rw-mviz-src t-mono">{openViz.src}</span>
             </div>
           </div>
         </div>
@@ -510,6 +617,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
 
       {isUpcoming ? upcomingView() : renderSessionBlock()}
       {explorer()}
+      {vizModal()}
 
       {tt && (
         <div className="rw-tooltip" style={{ left: tt.x, top: tt.y }}>
@@ -542,7 +650,12 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
               {shareBusy && <div className="t-mono rw-share-busy">RENDERING…</div>}
             </div>
             <div className="rw-share-actions">
-              <a className="btn btn-primary rw-share-dl" href={shareImg || '#'}
+              {canNativeShare && (
+                <button type="button" className="btn btn-primary rw-share-native" onClick={nativeShare} disabled={!shareImg}>
+                  ⤴ Share image
+                </button>
+              )}
+              <a className={`btn rw-share-dl ${canNativeShare ? 'btn-secondary' : 'btn-primary'}`} href={shareImg || '#'}
                 download={shareFileName({ raceName: race.name, year }, share.key, shareFmt)}
                 aria-disabled={!shareImg}>⤓ Download PNG</a>
               <button type="button" className="btn btn-secondary" onClick={() => { setShare(null); setShareImg(null); }}>Close</button>
