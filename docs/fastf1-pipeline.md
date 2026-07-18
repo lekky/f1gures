@@ -66,7 +66,14 @@ to the island as URL maps, so the client never probes for missing images. Race/s
 `[lap, t, pos, compound, tyreLife, stint, pit, neutral, green]` plus `stints`,
 `pitStops` (pit-lane transit, not stationary time — FastF1 has no stationary
 timing), `trackStatus` bands and `raceControl`. Quali files add `results`
-(Q1-3), `sectors`, `lapsAll`, `poleTel`, `dominance`, `track`. Practice files
+(Q1-3), `sectors`, `lapsAll`, `poleTel`, `dominance`, `track`. `poleTel` carries
+`a`/`b` (the front-row default pair), `codes` (sector-ranked driver order) and a
+`drivers` map — per driver, a resampled `speed` trace, a cumulative `t` (time)
+trace normalised to lap start, and the fastest-lap time `lap` — so the Pole-lap
+chart can compare **any two drivers** and recompute the time-delta strip
+client-side (`deltaTrace` in `raceweekend/derive.js`). Files fetched before the
+`drivers` map existed only carry the fixed front-two `speedA`/`speedB`/`delta`
+arrays and render without the picker until re-fetched with `--force`. Practice files
 add `order`, `lapsAll`, `longRuns`, `speedTraps`. Each `sectors` entry carries
 the fastest-lap sectors `s` **and** session-best sectors `bs` (best of any
 non-deleted lap — the Theoretical Best chart's ideal-lap basis; files fetched

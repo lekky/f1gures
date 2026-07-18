@@ -3,7 +3,7 @@ import {
   decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount,
   fastestLap, lap1Gains, duelGap, teamPace, degSeries, undercutWindows,
   segmentBests, theoreticalBest, progressionRows, compoundOffsets,
-  fuelCorrectedPace, fmtLap,
+  fuelCorrectedPace, fmtLap, deltaTrace,
 } from './derive.js';
 
 // Compact-laps rows: [lap, t, pos, comp, tyreLife, stint, pit, neutral, green]
@@ -180,6 +180,28 @@ describe('quali helpers', () => {
   });
   it('progressionRows keeps nulls for knocked-out segments', () => {
     expect(progressionRows(results)[1].segs).toEqual([89.5, 89.2, null]);
+  });
+});
+
+describe('deltaTrace', () => {
+  it('returns tB - tA before anchoring when lap times are absent', () => {
+    const d = deltaTrace([0, 1, 2], [0, 1.2, 2.5], null, null);
+    expect(d[0]).toBeCloseTo(0, 5);
+    expect(d[1]).toBeCloseTo(0.2, 5);
+    expect(d[2]).toBeCloseTo(0.5, 5);
+  });
+  it('anchors the final delta to the official lap-time gap', () => {
+    // raw end delta is 0.5, official gap is 0.8 → +0.3 drift spread over distance
+    const d = deltaTrace([0, 1, 2], [0, 1.2, 2.5], 89.0, 89.8);
+    expect(d[0]).toBeCloseTo(0, 5);
+    expect(d[1]).toBeCloseTo(0.35, 5); // 0.2 + 0.3 * (1/2)
+    expect(d[d.length - 1]).toBeCloseTo(0.8, 5);
+  });
+  it('handles ragged arrays by using the shorter length', () => {
+    const d = deltaTrace([0, 1], [0, 1, 2], null, null);
+    expect(d).toHaveLength(2);
+    expect(d[0]).toBeCloseTo(0, 5);
+    expect(d[1]).toBeCloseTo(0, 5);
   });
 });
 

@@ -168,6 +168,26 @@ export function duelGap(cum, a, b) {
   return out;
 }
 
+// Time delta between two pole-lap traces, resampled on a shared distance grid.
+// `tA`/`tB` are each driver's cumulative lap time (seconds) vs. that grid,
+// normalised to start at 0. Returns tB - tA (positive = B losing time to A),
+// anchored so the final value equals the official lap-time gap (lapB - lapA):
+// distance-integrated time drifts a tenth or two between cars because sampling
+// starts before/after the line, so a linear-in-distance correction pins the end
+// to the timing screen. Mirrors the front-two computation in fetch-fastf1.py so
+// any picked pair reads consistently. Grid step cancels out, so only the point
+// index matters here.
+export function deltaTrace(tA, tB, lapA, lapB) {
+  const n = Math.min(tA?.length ?? 0, tB?.length ?? 0);
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) out[i] = tB[i] - tA[i];
+  if (lapA != null && lapB != null && n > 1) {
+    const drift = (lapB - lapA) - out[n - 1];
+    for (let i = 0; i < n; i++) out[i] = +(out[i] + (drift * i) / (n - 1)).toFixed(3);
+  }
+  return out;
+}
+
 // Team race pace quartiles over green-flag laps.
 export function teamPace(laps, teamOf) {
   const byTeam = {};

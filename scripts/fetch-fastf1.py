@@ -461,9 +461,12 @@ def build_quali_session(session):
     }
 
     # --- telemetry-derived extras: pole-lap traces + minisector dominance + track outline
+    # Collect fastest-lap telemetry for EVERY driver who set one, so the site's
+    # Pole-lap chart can compare any two (not just the front row). Dominance/track
+    # still use the top 3 only.
     top = [s["code"] for s in sectors[:3]]
     tel = {}
-    for code in top:
+    for code in fastest_by:
         fl = fastest_by.get(code)
         if fl is None:
             continue
@@ -476,11 +479,14 @@ def build_quali_session(session):
         tel[code] = t
 
     if len(tel) >= 2:
+        # sector-ranked order (fastest first) among drivers that have telemetry
+        trace_order = [s["code"] for s in sectors if s["code"] in tel]
         codes = [c for c in top if c in tel][:3]
+        # grid anchored to the front runners' lap length (keeps the default
+        # front-two chart identical); other drivers' traces are clamped by interp
         lap_len = float(min(tel[c]["Distance"].max() for c in codes))
 
-        # pole lap speed traces: front two, resampled on a common distance grid
-        a, b = codes[0], codes[1]
+        a, b = trace_order[0], trace_order[1]
         step = max(10.0, lap_len / 400.0)
         grid = np.arange(0.0, lap_len, step)
 
@@ -493,22 +499,19 @@ def build_quali_session(session):
             ok = ~np.isnan(d) & ~np.isnan(v)
             return np.interp(grid, d[ok], v[ok])
 
-        spd_a = resample(a, "Speed")
-        spd_b = resample(b, "Speed")
-        t_a = resample(a, "Time")
-        t_b = resample(b, "Time")
-        t_a -= t_a[0]
-        t_b -= t_b[0]
-        delta = t_b - t_a  # positive: b behind a
-        # Distance integration drifts a tenth or two between cars (sampling
-        # starts before/after the line) — anchor the end of the delta trace to
-        # the official lap-time difference with a linear-in-distance correction.
-        lap_a = secs(fastest_by[a].get("LapTime"))
-        lap_b = secs(fastest_by[b].get("LapTime"))
-        if lap_a is not None and lap_b is not None and len(delta) > 1:
-            target = lap_b - lap_a
-            drift = target - float(delta[-1])
-            delta = delta + drift * (grid / grid[-1])
+        # per-driver resampled speed + cumulative time (normalised to lap start);
+        # the b-vs-a delta strip is recomputed client-side per picked pair, so we
+        # store raw (uncorrected) time traces here plus each driver's lap time.
+        drivers = {}
+        for code in trace_order:
+            spd = resample(code, "Speed")
+            tt = resample(code, "Time")
+            tt = tt - tt[0]
+            drivers[code] = {
+                "speed": [round(float(x), 1) for x in spd],
+                "t": [round(float(x), 3) for x in tt],
+                "lap": r3(secs(fastest_by[code].get("LapTime"))),
+            }
 
         corners = []
         try:
@@ -525,9 +528,8 @@ def build_quali_session(session):
 
         out["poleTel"] = {
             "a": a, "b": b, "step": r3(step), "len": r3(lap_len),
-            "speedA": [round(float(x), 1) for x in spd_a],
-            "speedB": [round(float(x), 1) for x in spd_b],
-            "delta": [round(float(x), 3) for x in delta],
+            "codes": trace_order,
+            "drivers": drivers,
             "corners": corners,
         }
 

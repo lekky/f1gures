@@ -1,7 +1,7 @@
 // Qualifying / sprint-quali / practice session charts.
 import React, { useState } from 'react';
 import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg, compoundColor } from './primitives.jsx';
-import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, compoundOffsets } from './derive.js';
+import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, compoundOffsets, deltaTrace } from './derive.js';
 import { EmptyNote } from './charts-race.jsx';
 import { useIsMobile } from '../../../lib/shared.jsx';
 
@@ -107,8 +107,29 @@ export function DominanceMap({ dominance, track, ctx }) {
 // ── Pole lap telemetry ──────────────────────────────────────────
 export function PoleTelemetry({ poleTel, ctx }) {
   const [hoverX, setHoverX] = useState(null);
+  // Defaults to the front row (P1 vs P2) — poleTel.a / poleTel.b. Newer session
+  // JSONs also carry a `drivers` map (speed + time trace per driver) and a
+  // `codes` order, so any two drivers who set a lap can be compared; the delta
+  // strip is recomputed client-side for the picked pair. Older JSONs only have
+  // the fixed front-two arrays (speedA/speedB/delta) and render without a picker.
+  const map = poleTel?.drivers || null;
+  const codes = poleTel?.codes || (poleTel ? [poleTel.a, poleTel.b] : []);
+  const [slotA, setSlotA] = useState(poleTel?.a);
+  const [slotB, setSlotB] = useState(poleTel?.b);
   if (!poleTel) return <EmptyNote txt="No telemetry available for this session." />;
-  const { a, b, speedA, speedB, delta, corners, len, step } = poleTel;
+  const { corners, len, step } = poleTel;
+  // fall back to the front two if a selection is stale (e.g. after switching
+  // sessions) or missing from this session's trace map
+  const a = map ? (map[slotA] ? slotA : poleTel.a) : poleTel.a;
+  const b = map ? (map[slotB] ? slotB : poleTel.b) : poleTel.b;
+  const speedA = map ? map[a].speed : poleTel.speedA;
+  const speedB = map ? map[b].speed : poleTel.speedB;
+  const delta = map ? deltaTrace(map[a].t, map[b].t, map[a].lap, map[b].lap) : poleTel.delta;
+  const showPicker = !!map && codes.length > 2;
+  const selStyle = {
+    background: PANEL.hover, color: PANEL.fg, border: `1px solid ${PANEL.line3}`,
+    fontFamily: MONO, fontSize: 12, padding: '5px 8px',
+  };
   const colors = distinctColors([a, b], ctx.colorOf, ctx.teamOf);
   const x0 = 44, x1 = 985;
   const sx = (d) => x0 + (d / len) * (x1 - x0);
@@ -131,7 +152,7 @@ export function PoleTelemetry({ poleTel, ctx }) {
       { color: PANEL.fg, txt: `Δ ${delta[i] >= 0 ? '+' : ''}${delta[i].toFixed(3)}s` },
     ]);
   };
-  return (
+  const svg = (
     <svg viewBox="0 0 1000 400" style={{ width: '100%', display: 'block', cursor: 'crosshair' }}
       onMouseMove={onMove} onMouseLeave={() => { setHoverX(null); ctx.leave(); }}>
       {(corners || []).map((c, i) => (
@@ -160,6 +181,24 @@ export function PoleTelemetry({ poleTel, ctx }) {
       </text>
       <text x={x0} y="398" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>SPEED (KM/H) OVER THE LAP · SHADED BANDS = CORNERS</text>
     </svg>
+  );
+  if (!showPicker) return svg;
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', padding: '2px 2px 10px' }}>
+        <select value={a} onChange={(e) => setSlotA(e.target.value)} style={selStyle} aria-label="Driver A">
+          {codes.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <span style={{ fontFamily: COND, fontWeight: 800, fontSize: 13, color: PANEL.red, letterSpacing: '0.08em' }}>VS</span>
+        <select value={b} onChange={(e) => setSlotB(e.target.value)} style={selStyle} aria-label="Driver B">
+          {codes.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: PANEL.axis }}>
+          each driver’s fastest lap · pick any two
+        </span>
+      </div>
+      {svg}
+    </div>
   );
 }
 

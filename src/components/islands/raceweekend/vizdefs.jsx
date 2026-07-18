@@ -68,7 +68,7 @@ const QUALI_VIZ = [
     desc: 'The circuit coloured by who was fastest in each mini-sector, among the top three.',
     render: (a) => <DominanceMap dominance={a.sess.dominance} track={a.sess.track} ctx={a.ctx} /> },
   { key: 'poletel', tag: 'TEL', title: 'Pole lap telemetry', src: 'car_data["Speed"] + computed delta',
-    desc: 'The front row’s speed traces with a live time-delta strip and corner bands. Hover anywhere on the lap.',
+    desc: 'Speed traces with a live time-delta strip and corner bands — defaults to the front row, or pick any two drivers. Hover anywhere on the lap.',
     render: (a) => <PoleTelemetry poleTel={a.sess.poleTel} ctx={a.ctx} /> },
   { key: 'progression', tag: 'SLOPE', title: 'Q1→Q3 progression', src: 'laps per Q segment',
     desc: 'Slope chart of each driver’s best across the segments — who found pace, who peaked early.',
