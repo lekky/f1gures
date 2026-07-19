@@ -9,6 +9,10 @@
 // Client-only (canvas + XMLSerializer).
 
 export const SHARE_FORMATS = {
+  // 'fit' (Auto) has no fixed height — the card is feed-width and its height
+  // follows the chart's own aspect ratio, so a wide chart gets a short card and
+  // a tall one a taller card, with no letterbox padding around the chart.
+  fit: { w: 1080, h: null, label: 'Auto' },
   wide: { w: 1920, h: 1080, label: '16:9 Wide' },
   sq: { w: 1080, h: 1080, label: '1:1 Feed' },
   story: { w: 1080, h: 1920, label: '9:16 Story' },
@@ -103,8 +107,20 @@ export async function renderShareCard(node, fmt, meta) {
   const T = THEMES[meta.light ? 'light' : 'dark'];
   const CARD_BG = T.card, INSET_BG = T.inset, INSET_LINE = T.insetLine;
   const FG = T.fg, GREY = T.grey, DESC = T.desc;
-  const { w: W, h: H } = SHARE_FORMATS[fmt] || SHARE_FORMATS.sq;
+  const fmtDef = SHARE_FORMATS[fmt] || SHARE_FORMATS.sq;
+  const W = fmtDef.w;
   const { url, w: iw, h: ih } = serializeNode(node, T.chartBg, FG);
+  // 'fit' (Auto): keep the feed width and derive the height from the chart's own
+  // aspect so it fills the card edge-to-edge (no letterbox). Uses the 1:1 header
+  // geometry — top of the chart area lands at y=276 (see the wide/sq branch) and
+  // the footer reserves the same ~110px below. Clamp so extreme aspects stay
+  // sane (a very wide chart floors the height; a very tall one caps it).
+  let H = fmtDef.h;
+  if (H == null) {
+    const mxA = 64, topA = 276, awA = W - 2 * mxA;
+    const dh = Math.max(280, Math.min(1500, (awA * ih) / iw));
+    H = Math.round(topA + dh + 110);
+  }
   try { await document.fonts.ready; } catch { /* older browsers: draw anyway */ }
   const [img, logo] = await Promise.all([
     new Promise((resolve, reject) => {
@@ -239,6 +255,6 @@ export async function renderShareCard(node, fmt, meta) {
 
 export function shareFileName(meta, chartKey, fmt) {
   const slug = (s) => String(s || '').toLowerCase().replace(/grand prix/g, 'gp').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const dims = { wide: '16x9', sq: '1x1', story: '9x16' }[fmt] || fmt;
+  const dims = { fit: 'auto', wide: '16x9', sq: '1x1', story: '9x16' }[fmt] || fmt;
   return `f1gures-${slug(meta.raceName)}-${meta.year}-${slug(chartKey)}-${dims}.png`;
 }

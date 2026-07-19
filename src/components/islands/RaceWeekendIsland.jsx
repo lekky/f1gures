@@ -163,7 +163,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   const [data, setData] = useState({});
   const [tt, setTt] = useState(null);
   const [share, setShare] = useState(null);
-  const [shareFmt, setShareFmt] = useState('wide');
+  const [shareFmt, setShareFmt] = useState('fit');
   const [shareImg, setShareImg] = useState(null);
   const [shareBusy, setShareBusy] = useState(false);
   const chartRef = useRef(null);
