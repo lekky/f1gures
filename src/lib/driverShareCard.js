@@ -14,6 +14,10 @@
 // Consumed by DriverSectionShare.jsx via the share modal.
 
 export const DRIVER_SHARE_FORMATS = {
+  // 'fit' has no fixed height — the card grows to exactly hold the driver's
+  // data, so a light career (few teammates / seasons) gets a compact card and a
+  // long one (Hamilton) gets a tall one, both at the same comfortable density.
+  fit: { w: 1080, h: null, label: 'Auto' },
   sq: { w: 1080, h: 1080, label: '1:1 Feed' },
   wide: { w: 1920, h: 1080, label: '16:9 Wide' },
   story: { w: 1080, h: 1920, label: '9:16 Story' },
@@ -116,6 +120,54 @@ function drawLegend(ctx, PAL, counts, x, y, maxW, sw = 15, rowH = 30, fontPx = 2
   return cy;
 }
 
+// How many rows drawLegend would wrap `counts` into at width `maxW` — mirrors
+// its chip-width maths so measure and draw stay in lock-step.
+function measureLegendRows(ctx, counts, maxW, sw = 15, fontPx = 20) {
+  let cx = 0, rows = 1;
+  const gap = 22, textGap = 9, countGap = 8;
+  for (const c of counts) {
+    ctx.font = `600 ${fontPx}px ${DISPLAY}`;
+    const lblW = ctx.measureText(c.label).width;
+    ctx.font = `400 ${fontPx - 2}px ${MONO}`;
+    const cntW = ctx.measureText(String(c.count)).width;
+    const chipW = sw + textGap + lblW + countGap + cntW;
+    if (cx + chipW > maxW && cx > 0) { cx = 0; rows++; }
+    cx += chipW + gap;
+  }
+  return rows;
+}
+
+const DUEL_BAR_H = 46;
+const DUEL_MATE_ROW_H = 74;
+const LEGEND_ROW_H = 30;
+const OUTCOME_ROW_H = 46;
+const MOSAIC_TILE = 30;
+const MOSAIC_GAP = 5;
+
+// Natural (comfortable-density) height the section's body needs, in CSS px.
+// Drives the 'fit' format's canvas height and the vertical centring in the
+// fixed formats. Kept in step with the painters below.
+function measureBody(section, ctx, PAL, payload, w) {
+  if (section === 'duels') {
+    const modes = [payload.quali, payload.race].filter((d) => d && (d.wins + d.losses) > 0).length;
+    const rows = Math.ceil((payload.mates || []).length / 2);
+    let h = modes * (DUEL_BAR_H + 60) + 28 + rows * DUEL_MATE_ROW_H;
+    if ((payload.restCount || 0) > 0) h += 24;
+    return h + 10;
+  }
+  if (section === 'mosaic') {
+    const counts = payload.counts || [];
+    const total = counts.reduce((s, c) => s + c.count, 0) || payload.total || 1;
+    const legendH = (measureLegendRows(ctx, counts, w) - 1) * LEGEND_ROW_H;
+    const cols = Math.max(1, Math.floor((w + MOSAIC_GAP) / (MOSAIC_TILE + MOSAIC_GAP)));
+    const gridH = Math.ceil(total / cols) * (MOSAIC_TILE + MOSAIC_GAP) - MOSAIC_GAP;
+    return 8 + legendH + 28 + gridH + 8;
+  }
+  const counts = payload.counts || [];
+  const legendH = (measureLegendRows(ctx, counts, w) - 1) * LEGEND_ROW_H;
+  return 8 + legendH + 26 + (payload.seasons || []).length * OUTCOME_ROW_H + 8;
+}
+
 function pct(w, l) {
   const n = w + l;
   return n > 0 ? Math.round((w / n) * 100) : 0;
@@ -127,13 +179,16 @@ function pct(w, l) {
 
 function paintDuels(ctx, PAL, payload, box, teamCol) {
   const { x, w } = box;
-  let y = box.y;
+  // Centre the whole block when the box is taller than the content needs
+  // (fixed formats with a light career); it fills exactly under 'fit'.
+  const naturalH = measureBody('duels', ctx, PAL, payload, w);
+  let y = box.y + Math.max(0, (box.h - naturalH) / 2);
   const modes = [
     { label: 'QUALIFYING', d: payload.quali },
     { label: 'RACE', d: payload.race },
   ].filter((m) => m.d && (m.d.wins + m.d.losses) > 0);
 
-  const barH = Math.min(52, Math.max(34, box.h * 0.09));
+  const barH = DUEL_BAR_H;
   const surname = (payload.surname || '').toUpperCase();
 
   for (const m of modes) {
@@ -373,15 +428,39 @@ function paintOutcomes(ctx, PAL, payload, box) {
 const PAINTERS = { duels: paintDuels, mosaic: paintMosaic, outcomes: paintOutcomes };
 
 // ── the branded card scaffold ────────────────────────────────────
-export async function renderDriverCard(section, payload, { fmt = 'sq', light = false } = {}) {
+export async function renderDriverCard(section, payload, { fmt = 'fit', light = false } = {}) {
   const PAL = THEMES[light ? 'light' : 'dark'];
   const meta = SECTIONS[section] || SECTIONS.duels;
-  const { w: W, h: H } = DRIVER_SHARE_FORMATS[fmt] || DRIVER_SHARE_FORMATS.sq;
+  const fmtDef = DRIVER_SHARE_FORMATS[fmt] || DRIVER_SHARE_FORMATS.fit;
+  const auto = fmtDef.h == null;
+  const W = fmtDef.w;
   const wide = fmt === 'wide', story = fmt === 'story';
   const teamCol = teamHex(payload, PAL);
 
+  const padX = wide ? 84 : 64;
+  const padTop = story ? 84 : 56;
+  const bodyGap = story ? 30 : 20;
+  const footBelow = story ? 92 : wide ? 72 : 78;
+
+  // Header geometry is deterministic (one-line kicker/name/blurb), so the body
+  // top is known before the canvas height — which is what lets 'fit' size the
+  // card to the data (header + measured body + footer).
+  const kickerY = padTop + (story ? 84 : 66);
+  const nameY = kickerY + (story ? 66 : 56);
+  let afterName = nameY + 20;
+  let blurbY = null;
+  if (payload.blurb) { afterName += story ? 24 : 20; blurbY = afterName; afterName += 6; }
+  const dividerY = afterName + 20;
+  const bodyTop = dividerY + (story ? 46 : 34);
+
   const wordmark = await loadImg(PAL.logo);
   try { await document.fonts.ready; } catch { /* draw anyway */ }
+
+  let H = fmtDef.h;
+  if (auto) {
+    const mctx = document.createElement('canvas').getContext('2d');
+    H = bodyTop + measureBody(section, mctx, PAL, payload, W - padX * 2) + bodyGap + footBelow;
+  }
 
   const canvas = document.createElement('canvas');
   canvas.width = W * EXPORT_SCALE;
@@ -396,9 +475,6 @@ export async function renderDriverCard(section, payload, { fmt = 'sq', light = f
   ctx.strokeStyle = PAL.twill;
   ctx.lineWidth = 1;
   for (let i = -H; i < W; i += 8) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke(); }
-
-  const padX = wide ? 84 : 64;
-  const padTop = story ? 84 : 56;
 
   // ── masthead: wordmark + "DRIVER PROFILE" tag ──
   ctx.textBaseline = 'alphabetic';
@@ -418,41 +494,30 @@ export async function renderDriverCard(section, payload, { fmt = 'sq', light = f
   ctx.fillText('DRIVER PROFILE', W - padX, padTop);
 
   // ── kicker (accent) + driver name + section blurb ──
-  let y = padTop + (story ? 84 : 66);
+  const nameMax = W - padX * 2;
   ctx.textAlign = 'left';
   ctx.fillStyle = PAL.accent;
   ctx.font = `800 ${story ? 30 : 26}px ${DISPLAY}`;
-  ctx.fillText(meta.kicker, padX, y);
-  y += story ? 66 : 56;
+  ctx.fillText(meta.kicker, padX, kickerY);
   const name = (payload.driverName || '').toUpperCase();
-  const nameMax = W - padX * 2;
   const namePx = fitFont(ctx, name, nameMax, story ? 84 : wide ? 76 : 64);
   ctx.fillStyle = PAL.fg;
   ctx.font = `800 ${namePx}px ${DISPLAY}`;
-  ctx.fillText(name, padX, y);
-  y += 20;
-  if (payload.blurb) {
-    y += story ? 24 : 20;
+  ctx.fillText(name, padX, nameY);
+  if (blurbY != null) {
     ctx.fillStyle = PAL.fg3;
     ctx.font = `400 ${story ? 21 : 18}px ${MONO}`;
-    ctx.fillText(ellipsize(ctx, payload.blurb, nameMax), padX, y);
-    y += 6;
+    ctx.fillText(ellipsize(ctx, payload.blurb, nameMax), padX, blurbY);
   }
 
   // divider
-  const dividerY = y + 20;
   ctx.strokeStyle = PAL.line;
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(padX, dividerY); ctx.lineTo(W - padX, dividerY); ctx.stroke();
 
   // ── body ──
-  const footerLineY = H - (story ? 92 : wide ? 72 : 78);
-  const box = {
-    x: padX,
-    y: dividerY + (story ? 46 : 34),
-    w: W - padX * 2,
-    h: footerLineY - (dividerY + (story ? 46 : 34)) - (story ? 30 : 20),
-  };
+  const footerLineY = H - footBelow;
+  const box = { x: padX, y: bodyTop, w: W - padX * 2, h: footerLineY - bodyTop - bodyGap };
   (PAINTERS[section] || paintDuels)(ctx, PAL, payload, box, teamCol);
 
   // ── footer ──
@@ -480,6 +545,6 @@ export async function buildDriverBlob(section, payload, opts) {
 /** Deterministic download filename for a section export. */
 export function driverShareFileName(section, driverRef, fmt) {
   const meta = SECTIONS[section] || SECTIONS.duels;
-  const dims = { sq: '1x1', wide: '16x9', story: '9x16' }[fmt] || fmt;
+  const dims = { fit: 'auto', sq: '1x1', wide: '16x9', story: '9x16' }[fmt] || fmt;
   return `f1gures-${driverRef}-${meta.slug}-${dims}.png`;
 }

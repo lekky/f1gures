@@ -17,7 +17,7 @@ import {
 
 export default function DriverSectionShare({ section, driverRef, driverName, payload }) {
   const [open, setOpen] = useState(false);
-  const [fmt, setFmt] = useState('sq');
+  const [fmt, setFmt] = useState('fit');
   const [light, setLight] = useState(false);
   const [img, setImg] = useState(null);
   const [busy, setBusy] = useState(false);
