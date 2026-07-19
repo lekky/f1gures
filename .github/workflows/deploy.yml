@@ -125,6 +125,15 @@ jobs:
             echo "::error::SSH_PRIVATE_KEY secret is not set - add it before deploying (see docs/deploy-ssh.md)."
             exit 1
           fi
+          # Safety net for --delete: never mirror a broken/empty build over the
+          # live site. The real dist/ has ~5,000 files; anything under 1,000
+          # means the build misfired, so refuse rather than prune production.
+          FILES=$(find ./dist -type f | wc -l)
+          echo "dist/ contains $FILES files"
+          if [ "$FILES" -lt 1000 ]; then
+            echo "::error::dist/ has only $FILES files (<1000) - refusing to rsync --delete against the live site."
+            exit 1
+          fi
           PORT="${SSH_PORT:-22}"
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
