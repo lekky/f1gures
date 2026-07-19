@@ -285,7 +285,7 @@ export function OvertakeMatrix({ R, ctx }) {
         </div>
       ))}
       <div style={{ fontFamily: MONO, fontSize: 9, color: PANEL.axis, padding: '8px 4px 2px' }}>
-        CHIP EDGE = TYRE THE PASSER WAS ON · EXCLUDES LAP 1, PIT SWAPS AND SC/VSC LAPS
+        CHIP EDGE = TYRE THE PASSER WAS ON · NET RACING PASSES, EXCL. LAP 1, PIT SWAPS AND SC/VSC LAPS
       </div>
     </div>
   );
