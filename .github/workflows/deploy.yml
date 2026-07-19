@@ -144,8 +144,13 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           # TOFU: pin the host key on first connect (avoids a MITM window
           # without hand-maintaining known_hosts across runner images).
+          # cPanel jailed shells often don't have rsync on PATH (it lives at
+          # /usr/bin/rsync but the restricted login shell drops it). --rsync-path
+          # prepends the usual locations so the remote rsync is found regardless.
+          # Single-quoted so $PATH expands on the SERVER, not on the runner.
           rsync -rlz --checksum --delete --verbose \
             --exclude='.well-known' --exclude='cgi-bin' \
             --no-perms --no-owner --no-group \
+            --rsync-path='PATH=$PATH:/usr/bin:/usr/local/bin:/bin rsync' \
             -e "ssh -i ~/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new" \
             ./dist/ "$SSH_USER@$SSH_HOST:$REMOTE_DIR/"
