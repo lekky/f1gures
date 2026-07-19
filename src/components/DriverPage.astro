@@ -79,6 +79,7 @@ import Flag from './Flag.astro';
 import StatusIcon from './StatusIcon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 import CompareCta from './islands/CompareCta.jsx';
+import DriverSectionShare from './islands/DriverSectionShare.jsx';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 import { teamLogoPath } from '../lib/teamLogo.js';
 
@@ -371,6 +372,40 @@ const showDuels = !!tm && (qualiTotal + raceTotal) >= 6;
 const duelMates = tm ? tm.byMate.slice(0, DUEL_MATE_CAP) : [];
 const duelMatesRest = tm ? tm.byMate.length - duelMates.length : 0;
 const duelSurname = driver.surname;
+
+// ── Share-card payloads for the three visual sections ────────────
+// Compact, serialisable snapshots handed to the DriverSectionShare islands,
+// which draw a branded PNG (aspect ratio + theme picker) from them client-side.
+const duelsShare = {
+  surname: driver.surname,
+  teamColor,
+  quali: tm ? { wins: tm.quali.wins, losses: tm.quali.losses } : null,
+  race: tm ? { wins: tm.race.wins, losses: tm.race.losses } : null,
+  mates: duelMates.map(m => ({
+    name: m.name,
+    years: m.firstYear === m.lastYear ? String(m.firstYear) : `${m.firstYear}–${m.lastYear}`,
+    quali: { wins: m.quali.wins, losses: m.quali.losses },
+    race: { wins: m.race.wins, losses: m.race.losses },
+  })),
+  restCount: duelMatesRest,
+  blurb: 'Career vs all teammates · qualifying + race',
+};
+const mosaicShare = {
+  teamColor,
+  counts: waffleCounts,
+  total: waffleTotal,
+  blurb: `Every start as a tile · ${waffleTotal} races`,
+};
+const outcomesShare = {
+  teamColor,
+  counts: waffleCounts,
+  seasons: outcomeSeasons.map(s => ({
+    year: s.year,
+    team: s.team?.name ?? null,
+    segments: s.segments.map(seg => ({ kind: seg.kind, pct: seg.pct, count: seg.count })),
+  })),
+  blurb: 'Outcome mix by season · 100% stacked',
+};
 ---
 
 <div class="page">
@@ -678,6 +713,9 @@ const duelSurname = driver.surname;
           <div class="duel-more t-mono">+{duelMatesRest} earlier teammate{duelMatesRest > 1 ? 's' : ''}</div>
         )}
         <p class="duel-note">Qualifying head-to-head by grid slot; race by classified finish. Only weekends where both cars were classified count.</p>
+        <div class="dv-share-row">
+          <DriverSectionShare client:visible section="duels" driverRef={driver.driverRef} driverName={fullName} payload={duelsShare} />
+        </div>
       </div>
     </>
   )}
@@ -708,6 +746,9 @@ const duelSurname = driver.surname;
               ? <a class={`waffle-tile w-${t.kind}`} href={t.href} title={t.title} aria-label={t.title}></a>
               : <span class={`waffle-tile w-${t.kind}`} title={t.title}></span>
           ))}
+        </div>
+        <div class="dv-share-row">
+          <DriverSectionShare client:visible section="mosaic" driverRef={driver.driverRef} driverName={fullName} payload={mosaicShare} />
         </div>
       </div>
     </div>
@@ -752,6 +793,9 @@ const duelSurname = driver.surname;
               </div>
             </div>
           ))}
+        </div>
+        <div class="dv-share-row">
+          <DriverSectionShare client:visible section="outcomes" driverRef={driver.driverRef} driverName={fullName} payload={outcomesShare} />
         </div>
       </div>
     </div>
@@ -1353,6 +1397,11 @@ const duelSurname = driver.surname;
   .duel-rec.lose .w { color: var(--fg-1); font-weight: 600; }
   .duel-more { font-size: 11px; letter-spacing: 0.04em; color: var(--fg-4); margin-top: 12px; }
   .duel-note { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--line-1); color: var(--fg-4); font-size: 12px; line-height: 1.5; text-wrap: pretty; }
+
+  /* Share-image entry point under each visual section (Teammate Duels, Career
+     Mosaic, Season Outcomes) — right-aligned, matching the Compare panel foot. */
+  .dv-share-row { display: flex; justify-content: flex-end; margin-top: 14px; }
+  .waffle-panel .dv-share-row, .outcome-panel .dv-share-row { padding-top: 14px; border-top: 1px solid var(--line-1); }
 
   /* Band section heads need breathing room above on these detail pages
      (the global .section-head-band resets margin-top for the home bands). */
