@@ -72,23 +72,24 @@ not anchors.
   archive build output is unchanged today (ERGAST_MAX_YEAR === 2024).
 
 ### 4. FTP deploy: no retry, and likely plaintext FTP
-- **`deploy.yml`: addressed.** The upload now uses `lftp` over FTPS
-  (`ftp:ssl-force`) with `--parallel=10` and built-in reconnect
-  (`net:max-retries 3`), replacing the single-connection plaintext
-  FTP-Deploy-Action. This encrypts credentials + payload and cut the
-  worst-case full re-upload from ~34 min to a few minutes (the old
-  action ran one file at a time at ~189 kB/s, so a CSS cache-bust that
-  re-hashes every page's `?v=` re-uploaded all ~2,300 files serially).
+- **`deploy.yml`: addressed.** The upload now uses **rsync over SSH**
+  (`-rlz --checksum --delete`, `.well-known`/`cgi-bin` excluded),
+  replacing the single-connection plaintext FTP-Deploy-Action. rsync
+  transfers only content-changed files (checksum, so fresh build mtimes
+  don't force a full resend), over one encrypted pipelined connection
+  with on-wire compression. Normal deploys take seconds; a full CSS
+  cache-bust re-upload runs ~1-2 min (was ~34 min at ~189 kB/s,
+  one file at a time). Setup: `docs/deploy-ssh.md`.
+  - Interim history: a first pass used `lftp`/FTPS with `--parallel=10`,
+    but lftp mirror can't diff by content (fresh build timestamps) so it
+    re-uploaded all ~5,000 files every run (~20 min) and its blunt
+    `--delete` pruned stale server files. rsync fixes both.
 - **Still open:** `refresh-current-season.yml` still uses the plaintext
   FTP-Deploy-Action (fine for now - it uploads only the few data-changed
   pages per run, so it's not slow, but it's still cleartext). The
-  `SFTP_*` secret names remain misleading (now FTPS, still not SFTP).
-- **Why it's debt:** deploy credentials on the wire in cleartext (the
-  refresh path); no whole-step retry beyond lftp's own reconnect.
+  `SFTP_*` secret names remain misleading (host/user now feed SSH).
 - **Fix (remaining):** move `refresh-current-season.yml` to the same
-  lftp/FTPS step; rename the secrets to `FTP_*` to match reality. A true
-  SSH-SFTP move would need SSH enabled on the host + the web-root path
-  (SFTP lands in the SSH home dir, not the FTP web root).
+  rsync/SSH step; rename `SFTP_*` secrets to match reality.
 
 ### 5. Feedback worker: committed code ≠ deployed code, no tests
 - `feedback-worker/` is deployed manually via `npx wrangler deploy` from
