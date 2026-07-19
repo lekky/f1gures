@@ -114,7 +114,11 @@ jobs:
       - name: Deploy via rsync over SSH
         if: steps.decide.outputs.deploy == 'true'
         env:
-          SSH_HOST: ${{ secrets.SFTP_HOST }}
+          # SSH host/port default to the FTP host on 22, but cPanel shared hosts
+          # often run SSH on a non-standard port and/or a different hostname than
+          # FTP. Set the optional SSH_HOST / SSH_PORT secrets to override without
+          # a code change.
+          SSH_HOST: ${{ secrets.SSH_HOST || secrets.SFTP_HOST }}
           SSH_USER: helloweb
           SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
