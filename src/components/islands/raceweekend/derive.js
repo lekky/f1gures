@@ -76,8 +76,9 @@ export function gapByLap(laps, cum) {
 }
 
 // Positions per lap from the timing feed, index 0 = grid slot.
-// { code: [grid, posL1, posL2, ...] } — falls back to cumulative-time order
-// when the feed's Position column is null.
+// { code: [grid, posL1, posL2, ...] }. Prefers the feed's Position column and
+// only ranks by cumulative time for cars whose position is null — a single
+// null (typically a retiree) must not discard the whole lap's reliable order.
 export function posByLap(laps, cum, gridOf) {
   const codes = Object.keys(laps);
   const maxLap = Math.max(0, ...codes.map((c) => laps[c].length));
@@ -85,12 +86,27 @@ export function posByLap(laps, cum, gridOf) {
   for (const c of codes) out[c] = [gridOf(c) ?? codes.length];
   for (let i = 0; i < maxLap; i++) {
     const running = codes.filter((c) => i < laps[c].length);
-    const withPos = running.filter((c) => laps[c][i].pos != null);
-    if (withPos.length === running.length) {
+    const known = running.filter((c) => laps[c][i].pos != null);
+    if (known.length === running.length) {
+      // Every running car has a feed position — trust it verbatim.
       for (const c of running) out[c].push(laps[c][i].pos);
+    } else if (known.length === 0) {
+      // No feed positions at all — rank the whole field by cumulative time.
+      [...running].sort((a, b) => cum[a][i] - cum[b][i]).forEach((c, k) => out[c].push(k + 1));
     } else {
-      const order = [...running].sort((a, b) => cum[a][i] - cum[b][i]);
-      order.forEach((c, k) => out[c].push(k + 1));
+      // Mixed: keep the reliable feed order and slot the null car(s) in by
+      // cumulative time, then re-rank 1..N so the output stays contiguous.
+      // (Cum time on a null-laptime lap is median-patched and unreliable, so
+      // discarding every feed position over one null would jitter the field —
+      // e.g. an early SC pitter spiking to the front on lap 1.)
+      const merged = [...known].sort((a, b) => laps[a][i].pos - laps[b][i].pos);
+      const missing = running.filter((c) => laps[c][i].pos == null).sort((a, b) => cum[a][i] - cum[b][i]);
+      for (const u of missing) {
+        let idx = merged.findIndex((c) => cum[c][i] > cum[u][i]);
+        if (idx < 0) idx = merged.length;
+        merged.splice(idx, 0, u);
+      }
+      merged.forEach((c, k) => out[c].push(k + 1));
     }
   }
   return out;

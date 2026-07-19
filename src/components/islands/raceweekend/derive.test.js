@@ -59,6 +59,22 @@ describe('posByLap', () => {
     expect(pos.AAA[1]).toBe(2);
     expect(pos.BBB[1]).toBe(1);
   });
+  it('one null-position car (a retiree) does not corrupt the rest of the lap order', () => {
+    // PIT pitted on lap 1 (null lap time → median-patched to an unreliably
+    // fast cumulative time) but the feed still has it P4; RET is a retiree
+    // with a null feed position. The old all-or-nothing fallback re-ranked the
+    // whole field by that patched time and spiked PIT to the front — regression.
+    const green = (pos, t) => [[1, t, pos, 'M', 1, 1, 0, 0, 1]];
+    const laps = decodeLaps({
+      P1: green(1, 100), P2: green(2, 100), P3: green(3, 100),
+      PIT: [[1, null, 4, 'M', 1, 1, 1, 0, 0]], // pitted: null lap time, feed pos 4
+      RET: green(null, 100),                   // retiree: null feed position
+    });
+    const grid = { P1: 1, P2: 2, P3: 3, PIT: 4, RET: 5 };
+    const pos = posByLap(laps, cumTimes(laps), (c) => grid[c]);
+    expect(pos.PIT[1]).toBe(4); // kept its feed position, not spiked to the front
+    expect([pos.P1[1], pos.P2[1], pos.P3[1]]).toEqual([1, 2, 3]);
+  });
 });
 
 describe('overtakes', () => {
