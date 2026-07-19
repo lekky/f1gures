@@ -33,18 +33,21 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 | `SSH_PRIVATE_KEY` | The private key text copied above. |
 | `SSH_PORT` | The SSH port (cPanel default `22`; some hosts use a custom port — check **SSH Access**). Omit only if it's 22. |
 
-The workflow reuses the existing `SFTP_HOST` (as the SSH host) and `SFTP_USER`
-(as the SSH user). If SSH uses a different hostname than FTP, change the
-`SSH_HOST` env line in `deploy.yml` to a dedicated secret.
+The workflow reuses the existing `SFTP_HOST` as the SSH host. The SSH **user**
+is hardcoded to `helloweb` (the cPanel main account, home `/home/helloweb`),
+**not** `SFTP_USER` — that secret is a scoped FTP account rooted at the
+f1gures.app docroot and is only used by the FTP deploy path. If SSH uses a
+different hostname than FTP, change the `SSH_HOST` env line in `deploy.yml` to a
+dedicated secret.
 
-### 3. Confirm the web root
+### 3. Web root (already set)
 
-The `REMOTE_DIR` env in the deploy step is the site's document root **relative
-to the SSH home directory** (`/home/<user>`). For a primary cPanel domain this
-is `public_html`. If f1gures.app is an addon/subdomain, it may be
-`public_html/<something>` — check cPanel → **Domains** for the exact "Document
-Root". A wrong value here combined with `--delete` would mirror into the wrong
-folder, so verify it before the first deploy.
+`REMOTE_DIR` is the site's document root **relative to the SSH home dir**
+(`/home/helloweb`). f1gures.app is an **addon domain**, so its docroot is the
+`f1gures.app` folder — **not** `public_html` (that's the main HelloWebDesign
+site; deploying there with `--delete` would wipe it). This is set to
+`f1gures.app` in `deploy.yml`; leave it unless the domain's document root
+changes in cPanel → **Domains**.
 
 ## Testing
 

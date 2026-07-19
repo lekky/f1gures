@@ -102,18 +102,23 @@ jobs:
       # did), but .well-known and cgi-bin are excluded so we never remove the
       # hosting-managed dirs (cPanel AutoSSL validation, CGI).
       #
-      # REMOTE_DIR is the site's web root RELATIVE TO THE SSH HOME dir. cPanel
-      # SSH lands in /home/<user>, so the primary domain's docroot is normally
-      # "public_html". CONFIRM this before first deploy - a wrong path here
-      # combined with --delete would mirror into (and prune) the wrong folder.
+      # REMOTE_DIR is the site's web root RELATIVE TO THE SSH HOME dir. SSH lands
+      # in /home/helloweb; f1gures.app is an addon domain whose docroot is the
+      # "f1gures.app" folder there (NOT public_html - that's the main
+      # HelloWebDesign site). A wrong path here combined with --delete would
+      # mirror into (and prune) the wrong folder, so this is deliberately exact.
+      #
+      # SSH_USER is the cPanel main account (helloweb), whose authorized key we
+      # imported - not the scoped FTP account in SFTP_USER (which is rooted at
+      # the f1gures.app docroot and used by the FTP deploy path only).
       - name: Deploy via rsync over SSH
         if: steps.decide.outputs.deploy == 'true'
         env:
           SSH_HOST: ${{ secrets.SFTP_HOST }}
-          SSH_USER: ${{ secrets.SFTP_USER }}
+          SSH_USER: helloweb
           SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_DIR: public_html
+          REMOTE_DIR: f1gures.app
         run: |
           set -euo pipefail
           if [ -z "${SSH_KEY:-}" ]; then
