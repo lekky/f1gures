@@ -3,4 +3,4 @@ Allow: /
 Disallow: /scripts/
 Disallow: /docs/
 
-Sitemap: https://f1gures.app/sitemap.xml
+Sitemap: https://f1gures.app/sitemap-index.xml
