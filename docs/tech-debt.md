@@ -72,17 +72,23 @@ not anchors.
   archive build output is unchanged today (ERGAST_MAX_YEAR === 2024).
 
 ### 4. FTP deploy: no retry, and likely plaintext FTP
-- `deploy.yml` / `refresh-current-season.yml` use FTP-Deploy-Action with
-  no `protocol:` (defaults to plaintext `ftp`) and no retry/timeout — even
-  though the deploy.yml header documents transient failures and CLAUDE.md
-  documents the 20-minute `ECONNRESET` failure mode. The secrets are
-  named `SFTP_*` but the action cannot do SFTP — misleading.
-- **Why it's debt:** deploy credentials on the wire in cleartext; the
-  only mitigation for known flakiness is a human re-running the workflow,
-  so a committed race-weekend bundle can silently never reach production.
-- **Fix:** set `protocol: ftps` (verify host support), rename the
-  secrets, and wrap the deploy step in a retry action (e.g.
-  `nick-fields/retry`, 3 attempts).
+- **`deploy.yml`: addressed.** The upload now uses `lftp` over FTPS
+  (`ftp:ssl-force`) with `--parallel=10` and built-in reconnect
+  (`net:max-retries 3`), replacing the single-connection plaintext
+  FTP-Deploy-Action. This encrypts credentials + payload and cut the
+  worst-case full re-upload from ~34 min to a few minutes (the old
+  action ran one file at a time at ~189 kB/s, so a CSS cache-bust that
+  re-hashes every page's `?v=` re-uploaded all ~2,300 files serially).
+- **Still open:** `refresh-current-season.yml` still uses the plaintext
+  FTP-Deploy-Action (fine for now - it uploads only the few data-changed
+  pages per run, so it's not slow, but it's still cleartext). The
+  `SFTP_*` secret names remain misleading (now FTPS, still not SFTP).
+- **Why it's debt:** deploy credentials on the wire in cleartext (the
+  refresh path); no whole-step retry beyond lftp's own reconnect.
+- **Fix (remaining):** move `refresh-current-season.yml` to the same
+  lftp/FTPS step; rename the secrets to `FTP_*` to match reality. A true
+  SSH-SFTP move would need SSH enabled on the host + the web-root path
+  (SFTP lands in the SSH home dir, not the FTP web root).
 
 ### 5. Feedback worker: committed code ≠ deployed code, no tests
 - `feedback-worker/` is deployed manually via `npx wrangler deploy` from
