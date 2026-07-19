@@ -88,14 +88,41 @@ jobs:
         if: steps.decide.outputs.deploy == 'true'
         run: npm run build
 
-      - name: Deploy via FTP
+      # Upload dist/ with lftp instead of FTP-Deploy-Action. Two wins over the
+      # old action, which uploaded one file at a time on a single plaintext
+      # connection (measured at ~189 kB/s - latency-bound, not bandwidth-bound,
+      # so a full ~2,300-page re-upload after a CSS cache-bust took ~34 min):
+      #   1. --parallel=10 runs ten transfers at once, so the per-file round-
+      #      trip cost overlaps. A full re-upload drops to a few minutes; the
+      #      worst case is capped instead of scaling linearly with page count.
+      #   2. ftp:ssl-force upgrades the control + data channels to TLS (FTPS /
+      #      "AUTH TLS"), so the login and payload are no longer sent in clear.
+      # This targets the SAME server directory the FTP account already lands in
+      # (remote './', matching the old action's default server-dir), so it is a
+      # drop-in for the existing credentials - no SSH, no new secrets, no path
+      # change. lftp mirrors dist/ exactly (--delete prunes stale files, as the
+      # old action did). cPanel/Pure-FTPd usually presents a shared cert that
+      # won't match the login host, so certificate verification is disabled -
+      # the channel is still encrypted; this only forgoes MITM protection.
+      - name: Deploy via FTPS (parallel)
         if: steps.decide.outputs.deploy == 'true'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.SFTP_HOST }}
-          username: ${{ secrets.SFTP_USER }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          local-dir: ./dist/
-          # First deploy from dist/ uploads ~110 files and removes the legacy
-          # repo-root files. Reset state so the diff is computed from scratch.
-          state-name: .ftp-deploy-sync-state-dist.json
+        env:
+          FTP_HOST: ${{ secrets.SFTP_HOST }}
+          FTP_USER: ${{ secrets.SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -c "
+            set cmd:fail-exit true;
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ssl:verify-certificate no;
+            set ftp:list-options -a;
+            set net:max-retries 3;
+            set net:reconnect-interval-base 5;
+            set net:timeout 30;
+            set mirror:parallel-transfer-count 10;
+            open --env-password -u \"$FTP_USER\" \"$FTP_HOST\";
+            mirror --reverse --delete --parallel=10 --verbose ./dist/ ./;
+          "
