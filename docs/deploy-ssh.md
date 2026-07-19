@@ -1,11 +1,17 @@
-# Deploy over SSH (rsync)
+# Deploy over SSH
 
-`deploy.yml` and (optionally) `refresh-current-season.yml` upload the built
-`dist/` to the live server with **rsync over SSH**. rsync only sends files
-whose content changed, reuses one encrypted connection, and compresses on the
-wire — so a normal deploy takes seconds and even a full re-upload (e.g. a CSS
-cache-bust that rewrites every page) finishes in ~1–2 min. This replaced a
-single-connection FTP upload that took ~34 min on a full re-upload.
+`deploy.yml` uploads the built `dist/` to the live server over **SFTP**
+(`lftp`, 10 parallel transfers) via the account's SSH access. SFTP is served by
+the SSH server's own subsystem, so it needs nothing installed in the cPanel
+jailed shell — which is why it's the default here (the Hostmedia jail has no
+`rsync`). The whole channel is SSH-encrypted; a full re-upload runs in a few
+minutes, versus the ~34 min the old single-connection FTP took.
+
+**Optional upgrade — rsync (only-changed-files):** if Hostmedia adds `rsync` to
+the account's jailed shell (a support request), switch the deploy step to
+`rsync -rlz --checksum --delete` over the same SSH. rsync then transfers only
+content-changed files (seconds per deploy) instead of re-uploading the tree.
+The SSH key/port setup below is identical either way.
 
 ## One-time setup (cPanel + GitHub)
 
