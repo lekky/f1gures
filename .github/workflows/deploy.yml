@@ -111,13 +111,27 @@ jobs:
       # SSH_USER is the cPanel main account (helloweb), whose authorized key we
       # imported - not the scoped FTP account in SFTP_USER (which is rooted at
       # the f1gures.app docroot and used by the FTP deploy path only).
-      - name: Deploy via rsync over SSH
+      # Upload dist/ over SFTP with lftp. SFTP is served by the SSH server's own
+      # sftp subsystem, so - unlike rsync - it needs nothing installed in the
+      # account's jailed (CageFS) shell, which is why this works where rsync's
+      # "command not found". Auth reuses the same key + port that SSH already
+      # authenticates with; lftp drives it via sftp:connect-program (plain ssh).
+      # 10 parallel transfers keep it to a few minutes, and the whole channel is
+      # SSH-encrypted.
+      #
+      # Trade-off vs rsync: SFTP has no content-diff, so lftp mirror re-uploads
+      # the tree each run (fresh build mtimes defeat its size+time check). That's
+      # acceptable over one multiplexed, parallel, encrypted connection; the fix
+      # for only-changed-file deploys is rsync (needs the host to add it to the
+      # jail) - see docs/deploy-ssh.md.
+      #
+      # REMOTE_DIR/SSH_USER are exact on purpose: helloweb's SSH lands in
+      # /home/helloweb and f1gures.app is the addon-domain docroot there - NOT
+      # public_html (the main HelloWebDesign site). .well-known/cgi-bin are
+      # excluded so --delete never prunes the hosting-managed dirs.
+      - name: Deploy via SFTP (parallel)
         if: steps.decide.outputs.deploy == 'true'
         env:
-          # SSH host/port default to the FTP host on 22, but cPanel shared hosts
-          # often run SSH on a non-standard port and/or a different hostname than
-          # FTP. Set the optional SSH_HOST / SSH_PORT secrets to override without
-          # a code change.
           SSH_HOST: ${{ secrets.SSH_HOST || secrets.SFTP_HOST }}
           SSH_USER: helloweb
           SSH_PORT: ${{ secrets.SSH_PORT }}
@@ -135,22 +149,21 @@ jobs:
           FILES=$(find ./dist -type f | wc -l)
           echo "dist/ contains $FILES files"
           if [ "$FILES" -lt 1000 ]; then
-            echo "::error::dist/ has only $FILES files (<1000) - refusing to rsync --delete against the live site."
+            echo "::error::dist/ has only $FILES files (<1000) - refusing to mirror --delete against the live site."
             exit 1
           fi
           PORT="${SSH_PORT:-22}"
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # TOFU: pin the host key on first connect (avoids a MITM window
-          # without hand-maintaining known_hosts across runner images).
-          # cPanel jailed shells often don't have rsync on PATH (it lives at
-          # /usr/bin/rsync but the restricted login shell drops it). --rsync-path
-          # prepends the usual locations so the remote rsync is found regardless.
-          # Single-quoted so $PATH expands on the SERVER, not on the runner.
-          rsync -rlz --checksum --delete --verbose \
-            --exclude='.well-known' --exclude='cgi-bin' \
-            --no-perms --no-owner --no-group \
-            --rsync-path='PATH=$PATH:/usr/bin:/usr/local/bin:/bin rsync' \
-            -e "ssh -i ~/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new" \
-            ./dist/ "$SSH_USER@$SSH_HOST:$REMOTE_DIR/"
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -c "
+            set cmd:fail-exit true;
+            set sftp:auto-confirm yes;
+            set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new';
+            set net:max-retries 3;
+            set net:timeout 30;
+            set mirror:parallel-transfer-count 10;
+            open sftp://$SSH_USER@$SSH_HOST;
+            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin --verbose ./dist/ $REMOTE_DIR/;
+          "
