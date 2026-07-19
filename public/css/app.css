@@ -5160,6 +5160,32 @@ html.light .cmp-f-flagwash { opacity: 0.1; }
 .cmp-toast { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--pos); padding: 5px 9px; border: 1px solid color-mix(in srgb, var(--pos) 45%, var(--line-2)); white-space: nowrap; }
 .cmp-panel-foot { flex-wrap: wrap; }
 
+/* clickable fighter headers → tap through to the full driver/team profile */
+.cmp-fighter { text-decoration: none; color: inherit; }
+.cmp-fighter-link { cursor: pointer; }
+.cmp-fighter-link:hover .cmp-f-name { color: var(--accent-text); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.cmp-fighter-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Compare Mode — share/export modal (mirrors the Visualisation Explorer's) */
+.cmp-share-overlay { position: fixed; inset: 0; z-index: 260; background: rgba(5, 5, 5, 0.72); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.cmp-share-modal { background: var(--bg-2); border: 1px solid var(--line-1); width: 720px; max-width: 100%; max-height: 92vh; overflow: auto; padding: 20px 22px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5); }
+.cmp-share-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cmp-share-title { font-family: var(--f-display); font-weight: 800; font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--fg-1); }
+.cmp-share-segs { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.cmp-share-seg { display: flex; border: 1px solid var(--line-2); }
+.cmp-share-opt { cursor: pointer; border: 0; background: transparent; color: var(--fg-3); font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 12px; padding: 6px 12px; }
+.cmp-share-opt + .cmp-share-opt { border-left: 1px solid var(--line-2); }
+.cmp-share-opt:hover:not(.is-active) { color: var(--fg-1); }
+.cmp-share-opt.is-active { background: var(--fg-1); color: var(--bg-2); }
+.cmp-share-close { cursor: pointer; border: 0; font-family: var(--f-mono); font-size: 13px; font-weight: 700; padding: 4px 8px; background: var(--bg-3); color: var(--fg-1); }
+.cmp-share-preview { margin-top: 14px; background: var(--bg-3); display: flex; align-items: center; justify-content: center; padding: 14px; min-height: 320px; }
+.cmp-share-preview img { max-width: 100%; max-height: 62vh; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25); }
+.cmp-share-busy { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--fg-3); }
+.cmp-share-foot { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.cmp-share-grow { flex: 1; min-width: 132px; text-align: center; }
+a.cmp-foot-btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.cmp-foot-btn.is-disabled { pointer-events: none; opacity: 0.55; }
+
 /* Compare Mode — standalone /compare/ launcher (CompareLauncher.jsx) */
 .cmp-launch { display: flex; flex-direction: column; gap: 16px; }
 .cmp-launch .cmp-panel { max-width: none; }

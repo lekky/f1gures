@@ -6,8 +6,9 @@
 // this file is presentation + data-fetching only.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { fmtVal } from '../../lib/compareStats.js';
-import { buildShareBlob } from '../../lib/compareShareCard.js';
+import { renderCompareCard, buildCompareBlob, compareShareFileName, CMP_SHARE_FORMATS } from '../../lib/compareShareCard.js';
 import { NATIONALITY } from '../../lib/nationality.js';
 import { track } from '../../lib/analytics.js';
 
@@ -308,8 +309,15 @@ function Fighter({ side, id, kind, color }) {
   const cc = flagCc(id.nationality);
   const logoRef = kind === 'team' ? null : id.teamRef;
   const teamLabel = kind === 'team' ? (id.nationality || '') : (id.team || id.nationality || '');
+  // Tap-through to the full profile page (drivers/<ref>/ or teams/<ref>/).
+  const href = id.ref ? (kind === 'team' ? `/teams/${id.ref}/` : `/drivers/${id.ref}/`) : null;
+  const label = `View ${id.name || id.surname}${kind === 'team' ? '' : ' profile'}`;
   return (
-    <div className={`cmp-fighter cmp-${side}`}>
+    <a
+      className={`cmp-fighter cmp-${side}${href ? ' cmp-fighter-link' : ''}`}
+      href={href || undefined}
+      aria-label={href ? label : undefined}
+    >
       {cc && <span className="cmp-f-flagwash" style={{ backgroundImage: `url(/images/flags/${cc}.svg)` }} aria-hidden="true" />}
       <FaceImg kind={kind} id={id} color={color} />
       <div className="cmp-f-text">
@@ -321,7 +329,7 @@ function Fighter({ side, id, kind, color }) {
         <div className="cmp-f-sub">{id.code ? `${id.code} · ` : ''}{id.span || ''}</div>
         <div className="cmp-f-strip" style={{ background: color }} />
       </div>
-    </div>
+    </a>
   );
 }
 
@@ -439,6 +447,12 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
   const [live, setLive] = useState(false);
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState('');
+  // share modal state
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareFmt, setShareFmt] = useState('sq');
+  const [shareLight, setShareLight] = useState(false);
+  const [shareImg, setShareImg] = useState(null);
+  const [shareBusy, setShareBusy] = useState(false);
   useEffect(() => { const id = requestAnimationFrame(() => setLive(true)); return () => cancelAnimationFrame(id); }, [cmp]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 1800); return () => clearTimeout(t); }, [toast]);
 
@@ -458,42 +472,64 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
 
   const cardBColor = B.color && B.color[0] === '#' ? B.color : '#FF3B57';
   const shareTitle = `${A.name} vs ${B.name} · F1gures`;
-  const fileName = `f1gures-${A.ref}-vs-${B.ref}.png`;
-  const makeBlob = () => buildShareBlob(cmp, { bColor: cardBColor });
+  const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const shareEvent = (method) => track('compare_share', {
     method, compare_type: kind, entity_a: A.ref, entity_b: B.ref,
   });
 
-  async function onSave() {
-    if (busy) return; setBusy('save');
-    try {
-      const blob = await makeBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setToast('Image saved');
-      shareEvent('save_png');
-    } catch { setToast('Save failed'); }
-    setBusy('');
+  // Open the export modal, defaulting the card theme to the site's current one.
+  function openShare() {
+    if (typeof document !== 'undefined') {
+      setShareLight(document.documentElement.classList.contains('light'));
+    }
+    setShareImg(null);
+    setShareOpen(true);
   }
+  function closeShare() { setShareOpen(false); setShareImg(null); }
+
+  // Re-render the preview whenever the modal opens or a format/theme changes.
+  useEffect(() => {
+    if (!shareOpen) return undefined;
+    let alive = true;
+    setShareBusy(true);
+    setShareImg(null);
+    renderCompareCard(cmp, { bColor: cardBColor, fmt: shareFmt, light: shareLight })
+      .then((url) => { if (alive) { setShareImg(url); setShareBusy(false); } })
+      .catch(() => { if (alive) { setShareBusy(false); setToast('Preview failed'); } });
+    return () => { alive = false; };
+  }, [shareOpen, shareFmt, shareLight, cmp, cardBColor]);
+
+  // Escape closes the modal (capture-phase + stopPropagation so it doesn't also
+  // trip the underlying overlay's Escape handler); lock scroll while it's open.
+  useEffect(() => {
+    if (!shareOpen || typeof document === 'undefined') return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeShare(); } };
+    window.addEventListener('keydown', onKey, true);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [shareOpen]);
+
   async function onCopy() {
-    if (busy) return; setBusy('copy');
+    if (busy || !shareImg) return; setBusy('copy');
     try {
-      const blob = await makeBlob();
+      const blob = await buildCompareBlob(cmp, { bColor: cardBColor, fmt: shareFmt, light: shareLight });
       if (navigator.clipboard && window.ClipboardItem) {
         await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })]);
         setToast('Image copied');
         shareEvent('copy_image');
       } else { throw new Error('no clipboard'); }
-    } catch { setToast('Copy unsupported — use Save'); }
+    } catch { setToast('Copy unsupported — use Download'); }
     setBusy('');
   }
-  async function onShare() {
-    if (busy) return; setBusy('share');
+  async function onNativeShare() {
+    if (busy || !shareImg) return; setBusy('share');
     try {
-      const blob = await makeBlob();
-      const file = new File([blob], fileName, { type: 'image/png' });
+      const blob = await buildCompareBlob(cmp, { bColor: cardBColor, fmt: shareFmt, light: shareLight });
+      const file = new File([blob], compareShareFileName(cmp, shareFmt), { type: 'image/png' });
       const data = { title: shareTitle, text: shareTitle, url: window.location.href };
       if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ ...data, files: [file] }); shareEvent('web_share_file'); }
       else if (navigator.share) { await navigator.share(data); shareEvent('web_share'); }
@@ -501,6 +537,7 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
     } catch (e) { if (e && e.name !== 'AbortError') setToast('Share unavailable'); }
     setBusy('');
   }
+  const onDownload = () => { if (shareImg) shareEvent('save_png'); };
 
   return (
     <div className="cmp-panel">
@@ -539,11 +576,55 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
         {footerLeft || <span />}
         <div className="cmp-share-actions">
           {toast && <span className="cmp-toast" role="status">{toast}</span>}
-          <button className="cmp-foot-btn" onClick={onSave} disabled={!!busy} title="Save as PNG">{busy === 'save' ? '…' : '↓'} Save image</button>
-          <button className="cmp-foot-btn" onClick={onCopy} disabled={!!busy} title="Copy image to clipboard">{busy === 'copy' ? '…' : '⧉'} Copy</button>
-          <button className="cmp-foot-btn cmp-foot-btn-primary" onClick={onShare} disabled={!!busy} title="Share to Reddit, WhatsApp…">{busy === 'share' ? '…' : '↗'} Share</button>
+          <button className="cmp-foot-btn cmp-foot-btn-primary" onClick={openShare} title="Export a share image">↗ Share image</button>
         </div>
       </div>
+
+      {shareOpen && typeof document !== 'undefined' && createPortal(
+        <div className="cmp-share-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) closeShare(); }}>
+          <div className="cmp-share-modal" role="dialog" aria-modal="true" aria-label="Share this comparison">
+            <div className="cmp-share-head">
+              <div className="cmp-share-title">Share image</div>
+              <div className="cmp-share-segs">
+                <div className="cmp-share-seg" role="group" aria-label="Aspect ratio">
+                  {Object.entries(CMP_SHARE_FORMATS).map(([k, f]) => (
+                    <button type="button" key={k} className={`cmp-share-opt${shareFmt === k ? ' is-active' : ''}`} onClick={() => setShareFmt(k)}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="cmp-share-seg" role="group" aria-label="Theme">
+                  <button type="button" className={`cmp-share-opt${!shareLight ? ' is-active' : ''}`} onClick={() => setShareLight(false)}>Dark</button>
+                  <button type="button" className={`cmp-share-opt${shareLight ? ' is-active' : ''}`} onClick={() => setShareLight(true)}>Light</button>
+                </div>
+              </div>
+              <button type="button" className="cmp-share-close" onClick={closeShare} aria-label="Close">✕</button>
+            </div>
+            <div className={`cmp-share-preview cmp-share-preview-${shareFmt}`}>
+              {shareImg && <img src={shareImg} alt="Share preview" />}
+              {shareBusy && <div className="cmp-share-busy">RENDERING…</div>}
+            </div>
+            <div className="cmp-share-foot">
+              {toast && <span className="cmp-toast" role="status">{toast}</span>}
+              {canNativeShare && (
+                <button type="button" className="cmp-foot-btn cmp-foot-btn-primary cmp-share-grow" onClick={onNativeShare} disabled={!shareImg || !!busy}>
+                  {busy === 'share' ? '…' : '↗'} Share image
+                </button>
+              )}
+              <a
+                className={`cmp-foot-btn cmp-share-grow ${canNativeShare ? '' : 'cmp-foot-btn-primary'} ${shareImg ? '' : 'is-disabled'}`}
+                href={shareImg || undefined}
+                download={compareShareFileName(cmp, shareFmt)}
+                onClick={onDownload}
+                aria-disabled={!shareImg}
+              >⤓ Download PNG</a>
+              <button type="button" className="cmp-foot-btn" onClick={onCopy} disabled={!shareImg || !!busy}>{busy === 'copy' ? '…' : '⧉'} Copy</button>
+              <button type="button" className="cmp-foot-btn" onClick={closeShare}>Close</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
