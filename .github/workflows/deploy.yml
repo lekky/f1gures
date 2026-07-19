@@ -164,6 +164,6 @@ jobs:
             set net:max-retries 3;
             set net:timeout 30;
             set mirror:parallel-transfer-count 10;
-            open sftp://$SSH_USER@$SSH_HOST;
+            open -u \"$SSH_USER,\" sftp://$SSH_HOST;
             mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin --verbose ./dist/ $REMOTE_DIR/;
           "
