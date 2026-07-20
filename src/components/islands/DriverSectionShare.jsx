@@ -19,18 +19,25 @@ export default function DriverSectionShare({ section, driverRef, driverName, pay
   const [open, setOpen] = useState(false);
   const [fmt, setFmt] = useState('fit');
   const [light, setLight] = useState(false);
+  // Mosaic tile order, read from the page toggle when the modal opens so the
+  // exported card matches whichever order the user is looking at.
+  const [order, setOrder] = useState('outcome');
   const [img, setImg] = useState(null);
   const [busy, setBusy] = useState(false);
   const [action, setAction] = useState('');
   const [toast, setToast] = useState('');
 
-  const full = { ...payload, driverName };
+  const full = { ...payload, driverName, order };
   const shareTitle = `${driverName} · F1gures`;
   const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const shareEvent = (method) => track('driver_section_share', { method, section, driver: driverRef });
 
   function openShare() {
-    if (typeof document !== 'undefined') setLight(document.documentElement.classList.contains('light'));
+    if (typeof document !== 'undefined') {
+      setLight(document.documentElement.classList.contains('light'));
+      const grid = document.querySelector('.waffle-grid');
+      setOrder(grid && grid.classList.contains('waffle-grid--chrono') ? 'chrono' : 'outcome');
+    }
     setImg(null);
     setOpen(true);
     shareEvent('open');

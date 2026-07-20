@@ -329,9 +329,16 @@ function paintMosaic(ctx, PAL, payload, box) {
   y = drawLegend(ctx, PAL, payload.counts || [], x, y, w);
   y += 28;
 
-  // Reconstruct the outcome-sorted tile list from the (ordered) legend counts.
-  const tiles = [];
-  for (const c of payload.counts || []) for (let i = 0; i < c.count; i++) tiles.push(c.kind);
+  // Tile order follows whatever the user picked on the page. Chronological is
+  // carried as a packed one-char-per-tile string (see WAFFLE_CODE in
+  // DriverPage.astro); outcome order is reconstructed from the legend counts.
+  const CODE_KIND = { w: 'win', p: 'podium', o: 'points', f: 'finished', m: 'mech', c: 'crash', d: 'dsq' };
+  let tiles = [];
+  if (payload.order === 'chrono' && payload.chrono) {
+    tiles = payload.chrono.split('').map((ch) => CODE_KIND[ch]).filter(Boolean);
+  } else {
+    for (const c of payload.counts || []) for (let i = 0; i < c.count; i++) tiles.push(c.kind);
+  }
   const total = tiles.length || payload.total || 1;
   const gridTop = y;
   const gridH = box.y + box.h - gridTop;

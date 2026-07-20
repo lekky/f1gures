@@ -393,10 +393,18 @@ const duelsShare = {
   restCount: duelMatesRest,
   blurb: 'Career vs all teammates · qualifying + race',
 };
+// Chronological tile sequence for the share card, packed as one-char codes to
+// keep the serialised payload small (a long career is hundreds of tiles). The
+// share painter reconstructs the outcome order from `counts`; this carries the
+// alternative order so the exported card can match whichever the user selected.
+const WAFFLE_CODE: Record<WaffleKind, string> = {
+  win: 'w', podium: 'p', points: 'o', finished: 'f', mech: 'm', crash: 'c', dsq: 'd',
+};
 const mosaicShare = {
   teamColor,
   counts: waffleCounts,
   total: waffleTotal,
+  chrono: waffleTiles.map(t => WAFFLE_CODE[t.kind]).join(''),
   blurb: `Every start as a tile · ${waffleTotal} races`,
 };
 const outcomesShare = {
@@ -734,9 +742,12 @@ const outcomesShare = {
           <span class="waffle-head-count t-mono">{waffleTotal} tiles</span>
         </div>
         <p class="waffle-blurb">One square per race across the whole career. Sort by <strong>outcome</strong> for the block of gold wins tapering to the red corner of retirements, or by <strong>chronological</strong> order to read the career start-to-finish.</p>
-        <div class="waffle-order-toggle" role="group" aria-label="Mosaic tile order">
-          <button type="button" class="active" data-waffle-order="outcome" aria-pressed="true">Outcome</button>
-          <button type="button" data-waffle-order="chrono" aria-pressed="false">Chronological</button>
+        <div class="waffle-order">
+          <span class="waffle-order-lbl">Sort by</span>
+          <div class="waffle-order-toggle" role="group" aria-label="Mosaic tile order">
+            <button type="button" class="active" data-waffle-order="outcome" aria-pressed="true">Outcome</button>
+            <button type="button" data-waffle-order="chrono" aria-pressed="false">Chronological</button>
+          </div>
         </div>
         <div class="waffle-legend">
           {waffleCounts.map(c => (
@@ -1348,17 +1359,27 @@ const outcomesShare = {
      .waffle-grid--chrono flips every tile to its chronological rank via CSS
      `order` (grid auto-placement honours `order`), so the switch is a pure
      reorder — no re-render, no island. */
+  /* The label spells out that this is a sort control; the active segment is a
+     solid ink chip (fg-on-bg) so "which order is on" reads at a glance — the
+     same active treatment as the mobile records era-toggle. */
+  .waffle-order { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0; }
+  .waffle-order-lbl {
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--fg-4);
+  }
   .waffle-order-toggle {
-    display: inline-flex; gap: 0; margin: 0;
-    border: 1px solid var(--line-1); border-radius: 6px; overflow: hidden;
+    display: inline-flex; gap: 0;
+    border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
   }
   .waffle-order-toggle button {
-    background: transparent; border: 0; padding: 7px 13px;
+    background: transparent; border: 0; padding: 7px 14px;
     font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.06em;
     text-transform: uppercase; color: var(--fg-3); cursor: pointer;
+    transition: background .12s ease, color .12s ease;
   }
-  .waffle-order-toggle button + button { border-left: 1px solid var(--line-1); }
-  .waffle-order-toggle button.active { background: var(--bg-2); color: var(--fg-1); }
+  .waffle-order-toggle button + button { border-left: 1px solid var(--line-2); }
+  .waffle-order-toggle button:hover:not(.active) { background: var(--bg-2); color: var(--fg-1); }
+  .waffle-order-toggle button.active { background: var(--fg-1); color: var(--bg-1); }
   .waffle-grid--chrono .waffle-tile { order: var(--chrono); }
 
   /* Clickability hint — the tiles are links, but a bare grid of squares
