@@ -742,7 +742,7 @@ const outcomesShare = {
           <span class="waffle-head-count t-mono">{waffleTotal} tiles</span>
         </div>
         <p class="waffle-blurb">One square per race across the whole career. Sort by <strong>outcome</strong> for the block of gold wins tapering to the red corner of retirements, or by <strong>chronological</strong> order to read the career start-to-finish.</p>
-        <div class="waffle-order">
+        <div class="waffle-controls">
           <span class="waffle-order-lbl">Sort by</span>
           <div class="waffle-order-toggle" role="group" aria-label="Mosaic tile order">
             <button type="button" class="active" data-waffle-order="outcome" aria-pressed="true">Outcome</button>
@@ -750,15 +750,17 @@ const outcomesShare = {
           </div>
         </div>
         <div class="waffle-legend">
-          {waffleCounts.map(c => (
-            <span class="waffle-key">
-              <span class={`waffle-swatch w-${c.kind}`} aria-hidden="true"></span>
-              <span class="waffle-key-lbl">{c.label}</span>
-              <span class="waffle-key-count t-mono">{c.count}</span>
-            </span>
-          ))}
+          <span class="waffle-legend-lbl">Key</span>
+          <div class="waffle-legend-keys">
+            {waffleCounts.map(c => (
+              <span class="waffle-key">
+                <span class={`waffle-swatch w-${c.kind}`} aria-hidden="true"></span>
+                <span class="waffle-key-lbl">{c.label}</span>
+                <span class="waffle-key-count t-mono">{c.count}</span>
+              </span>
+            ))}
+          </div>
         </div>
-        <p class="waffle-hint"><span class="waffle-hint-icon" aria-hidden="true">↗</span> Every tile is a clickable link — select one to open that race.</p>
         <div class="waffle-grid" role="img" aria-label={`${fullName}'s ${waffleTotal} career races by outcome — each tile links to that race`}>
           {waffleSorted.map(t => (
             t.href
@@ -766,6 +768,7 @@ const outcomesShare = {
               : <span class={`waffle-tile w-${t.kind}`} style={`--chrono:${t.chrono}`} title={t.title}></span>
           ))}
         </div>
+        <p class="waffle-hint"><span class="waffle-hint-icon" aria-hidden="true">↗</span> Every tile is a clickable link — select one to open that race.</p>
         <div class="dv-share-row">
           <DriverSectionShare client:visible section="mosaic" driverRef={driver.driverRef} driverName={fullName} payload={mosaicShare} />
         </div>
@@ -1375,10 +1378,16 @@ const outcomesShare = {
      .waffle-grid--chrono flips every tile to its chronological rank via CSS
      `order` (grid auto-placement honours `order`), so the switch is a pure
      reorder — no re-render, no island. */
-  /* The label spells out that this is a sort control; the active segment is a
-     solid ink chip (fg-on-bg) so "which order is on" reads at a glance — the
-     same active treatment as the mobile records era-toggle. */
-  .waffle-order { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0; }
+  /* The sort control sits in its own hairline-ruled bar so it reads as a
+     distinct toolbar, not a run-on of the descriptive copy above it. The label
+     spells out that this is a sort; the active segment is a solid ink chip
+     (fg-on-bg) so "which order is on" reads at a glance — same treatment as the
+     mobile records era-toggle. */
+  .waffle-controls {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+    margin: 4px 0 16px; padding: 12px 0;
+    border-top: 1px solid var(--line-1); border-bottom: 1px solid var(--line-1);
+  }
   .waffle-order-lbl {
     font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--fg-4);
@@ -1399,19 +1408,35 @@ const outcomesShare = {
   .waffle-grid--chrono .waffle-tile { order: var(--chrono); }
 
   /* Clickability hint — the tiles are links, but a bare grid of squares
-     doesn't read as tappable, so spell it out right above the grid. */
+     doesn't read as tappable, so spell it out. Sits below the grid as a
+     closing note. */
   .waffle-hint {
     display: flex; align-items: center; gap: 7px;
-    margin: 0 0 12px; font-size: 12.5px; color: var(--fg-3);
+    margin: 14px 0 0; font-size: 12.5px; color: var(--fg-3);
     letter-spacing: 0.01em;
   }
   .waffle-hint-icon { color: var(--accent); font-weight: 700; font-size: 14px; line-height: 1; }
 
+  /* Base legend (shared by Season Outcomes): a wrapping row of key chips. */
   .waffle-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 16px; margin-bottom: 16px; }
   .waffle-key { display: inline-flex; align-items: center; gap: 7px; }
   .waffle-swatch { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; }
   .waffle-key-lbl { font-size: 12px; color: var(--fg-2); }
   .waffle-key-count { font-size: 12px; color: var(--fg-4); font-variant-numeric: tabular-nums; }
+
+  /* Mosaic legend is boxed on its own inset background so the key reads as a
+     contained unit, distinct from the grid below. (Scoped to .waffle-panel so
+     the Season Outcomes legend keeps the plain inline layout.) */
+  .waffle-panel .waffle-legend {
+    align-items: center; gap: 10px 16px; margin: 0 0 16px;
+    padding: 11px 14px; background: var(--bg-2);
+    border: 1px solid var(--line-1); border-radius: 8px;
+  }
+  .waffle-legend-lbl {
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--fg-4); flex-shrink: 0;
+  }
+  .waffle-legend-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 
   /* ── Season outcomes (100% stacked, shares .outcome-ramp) ───────── */
   /* Career Mosaic + Season Outcomes pairing. .mo-stack renders them full-width
