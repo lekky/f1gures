@@ -86,6 +86,18 @@ export function PositionChart({ R, ctx, sel }) {
       .map((o) => ({ color: ctx.colorOf(o.c), txt: `P${o.p}  ${o.c}` }));
     ctx.tip(e, lap === 0 ? 'GRID' : `LAP ${lap}`, lines);
   };
+  // Right-edge labels sit at the driver's CLASSIFIED finishing rank, not their
+  // line-end position — a lap-1 DNF (line ends up front) still labels down where
+  // its P-number belongs. finishOrder is already in classification order, so
+  // evenly spacing by index gives a clean, collision-free column.
+  const rightY = Object.fromEntries(R.finishOrder.map((c, i) => [c, py(i + 1)]));
+  // Left labels sit at each car's grid slot; grid positions are unique, but a
+  // pit-lane start can duplicate one, so de-collide as a safety net.
+  const leftPlaced = stackLabels(
+    R.finishOrder.map((c) => ({ c, y: py(R.pos[c][0]) })).sort((a, b) => a.y - b.y),
+    12, 12, 528,
+  );
+  const leftY = Object.fromEntries(leftPlaced.map((it) => [it.c, it.y]));
   return (
     <svg viewBox="0 0 1000 540" style={{ width: '100%', display: 'block', cursor: 'crosshair' }} onMouseMove={onMove} onMouseLeave={ctx.leave}>
       <Bands bands={R.bands} xl={xl} y={12} h={506} labels={false} />
@@ -97,13 +109,13 @@ export function PositionChart({ R, ctx, sel }) {
         <polyline key={c} points={mk(c)} fill="none" stroke={ctx.colorOf(c)} strokeWidth="3" strokeLinejoin="round" />
       ))}
       {R.finishOrder.map((c) => (
-        <text key={`l${c}`} x="34" y={(py(R.pos[c][0]) + 3).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="600"
+        <text key={`l${c}`} x="34" y={(leftY[c] + 3).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="600"
           fill={sel.has(c) ? ctx.colorOf(c) : PANEL.faint} textAnchor="end">{c}</text>
       ))}
       {R.finishOrder.map((c) => {
         const arr = R.pos[c];
         const face = sel.has(c) ? ctx.faceImg?.(c) : null;
-        const ly = py(arr[arr.length - 1]);
+        const ly = rightY[c];
         return (
           <g key={`r${c}`}>
             <FaceImg href={face} x={934} y={ly - 8} size={15} />
