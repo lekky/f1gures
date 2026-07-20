@@ -1369,25 +1369,16 @@ const outcomesShare = {
   .waffle-tile:hover { transform: scale(1.28); outline-color: var(--line-3); z-index: 1; }
   a.waffle-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
   .w-win { background: var(--w-win); }
-  /* Wins get a gentle sparkle — two ✦ glints twinkling out of phase, drawn as
-     pseudo-elements so no extra DOM lands on the hundreds of tiles. The share
-     card draws a static version of this (see drawSparkle in driverShareCard).
-     Honoured only where motion is welcome. */
-  .waffle-tile.w-win { position: relative; }
-  .waffle-tile.w-win::before,
-  .waffle-tile.w-win::after {
-    content: "✦"; position: absolute; color: #fff7db; line-height: 1;
-    pointer-events: none; opacity: 0; text-shadow: 0 0 2px rgba(120, 74, 0, 0.5);
-    animation: winTwinkle 2.6s ease-in-out infinite;
-  }
-  .waffle-tile.w-win::before { top: 0; left: 2px; font-size: 9px; }
-  .waffle-tile.w-win::after { bottom: 0; right: 2px; font-size: 7px; animation-delay: 1.3s; }
-  @keyframes winTwinkle {
-    0%, 100% { opacity: 0; transform: scale(0.35); }
-    45%, 65% { opacity: 1; transform: scale(1); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .waffle-tile.w-win::before, .waffle-tile.w-win::after { animation: none; opacity: 0.9; transform: none; }
+  /* Wins carry a small trophy so the rarest, best result stands out from the
+     block of gold. Drawn as a background-image (one shared inline-SVG data URI —
+     no extra DOM across the hundreds of tiles); the share card paints the same
+     shape via drawTrophy in driverShareCard. Ink is a dark gold-brown that
+     holds contrast on the gold tile in both themes. */
+  .waffle-tile.w-win {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23492f04' d='M6 4H18V7A6 6 0 0 1 6 7Z'/%3E%3Cpath fill='%23492f04' d='M10.6 11H13.4V15.4H16V18H8V15.4H10.6Z'/%3E%3Cpath fill='none' stroke='%23492f04' stroke-width='1.6' d='M6 5A3.2 3.2 0 0 0 6 10'/%3E%3Cpath fill='none' stroke='%23492f04' stroke-width='1.6' d='M18 5A3.2 3.2 0 0 1 18 10'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 74%;
   }
   .w-podium { background: var(--w-podium); }
   .w-points { background: var(--w-points); }
