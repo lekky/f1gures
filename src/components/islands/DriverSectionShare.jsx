@@ -27,7 +27,7 @@ export default function DriverSectionShare({ section, driverRef, driverName, pay
   const [action, setAction] = useState('');
   const [toast, setToast] = useState('');
 
-  const full = { ...payload, driverName, order };
+  const full = { ...payload, driverName, order, driverRef };
   const shareTitle = `${driverName} · F1gures`;
   const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const shareEvent = (method) => track('driver_section_share', { method, section, driver: driverRef });
