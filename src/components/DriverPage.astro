@@ -1513,8 +1513,11 @@ const outcomesShare = {
   .duel-break-lbl { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); margin: 22px 0 12px; }
   /* Per-rival breakdown in two columns — the mini-bars leave the headline
      verdict bars full-width above but stop the rival list running long. */
-  .duel-mates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 32px; }
-  .duel-mate { margin-bottom: 0; }
+  .duel-mates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* Each rival is inset into its own card so the eye can separate them at a
+     glance — panel is --bg-2, so the card drops to --bg-3 with a hairline
+     border and hard corners (design-system default). */
+  .duel-mate { background: var(--bg-3); border: 1px solid var(--line-1); padding: 12px 14px; }
   .duel-mate-name { font-family: var(--f-display); font-weight: 700; font-size: 14.5px; letter-spacing: 0.02em; margin-bottom: 6px; display: flex; align-items: center; gap: 7px; }
   .duel-mate-name .v { color: var(--fg-4); font-weight: 600; }
   /* Round headshot (or team-tinted silhouette fallback) leading each rival row.
@@ -1527,7 +1530,7 @@ const outcomesShare = {
   .duel-mate-yrs { margin-left: auto; font-size: 10.5px; letter-spacing: 0.04em; color: var(--fg-4); }
   .duel-row { display: grid; grid-template-columns: 14px 1fr 66px; align-items: center; gap: 9px; margin-bottom: 4px; }
   .duel-row-tag { font-size: 11px; color: var(--fg-4); }
-  .duel-mini { height: 10px; background: var(--bg-3); position: relative; overflow: hidden; border: 1px solid var(--line-1); }
+  .duel-mini { height: 10px; background: var(--bg-2); position: relative; overflow: hidden; border: 1px solid var(--line-1); }
   .duel-mini-fill { position: absolute; inset: 0 auto 0 0; background: var(--team-color); }
   .duel-mini.lose .duel-mini-fill { background: var(--duel-them); }
   .duel-rec { font-size: 12px; color: var(--fg-2); text-align: right; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
