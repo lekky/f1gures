@@ -1303,24 +1303,28 @@ const outcomesShare = {
   /* ── Career outcome waffle ──────────────────────────────────── */
   /* Outcome ramp defined as scoped custom properties so both themes stay in
      parity (no hardcoded hex reaching the DOM) - remapped for light below.
-     Win reuses the F1 accent red; the rest are a legend-driven semantic ramp.
+     Gold/silver/bronze medal metaphor for win/podium/points; grey for a plain
+     finish; a muted-red ramp for the DNFs (kept off the brand --accent, which
+     is reserved as the "now/active/leader" signal). DNF tiles also carry a
+     diagonal hatch (below) so "did not finish" reads by texture, not just hue.
      Shared by the Career Mosaic tiles and the Season Outcomes stacked bars. */
   .outcome-ramp {
     --w-win: var(--gold);        /* gold */
-    --w-podium: #c9cdd6;         /* silver */
-    --w-points: #e8722e;         /* orange */
+    --w-podium: #aeb6c4;         /* silver — toned down from wispy #c9cdd6 */
+    --w-points: #e8722e;         /* bronze/orange */
     --w-finished: #62656e;       /* grey */
-    --w-mech: var(--accent);     /* red — DNF (mechanical) */
-    --w-crash: #a8102a;          /* deep red — DNF (crash) */
-    --w-dsq: #6e1420;            /* maroon — DSQ */
+    --w-mech: #cf463d;           /* muted red — DNF (mechanical) */
+    --w-crash: #97302f;          /* deep red — DNF (crash) */
+    --w-dsq: #611a22;            /* maroon — DSQ */
   }
   html.light .outcome-ramp {
     --w-win: #cf9a1f;            /* deeper gold for contrast on light */
-    --w-podium: #aab0bb;         /* silver */
-    --w-points: #d8611f;         /* orange */
+    --w-podium: #8c94a3;         /* silver with real presence on white */
+    --w-points: #d8611f;         /* bronze/orange */
     --w-finished: #797c85;       /* grey */
-    --w-crash: #9e0f26;          /* deep red */
-    --w-dsq: #6e1420;            /* maroon */
+    --w-mech: #bb3f36;           /* muted red */
+    --w-crash: #8a2a2a;          /* deep red */
+    --w-dsq: #5e1620;            /* maroon */
   }
   .waffle-panel { padding: 18px 20px 16px; }
   .waffle-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
@@ -1351,9 +1355,21 @@ const outcomesShare = {
   .w-podium { background: var(--w-podium); }
   .w-points { background: var(--w-points); }
   .w-finished { background: var(--w-finished); }
-  .w-mech { background: var(--w-mech); }
-  .w-crash { background: var(--w-crash); }
-  .w-dsq { background: var(--w-dsq); }
+  /* DNF kinds: solid base colour + a diagonal hatch so a "did not finish" tile
+     reads as incomplete at a glance (texture carries the meaning, the red hue
+     just grades mech → crash → DSQ). The hatch also shows on the legend swatch
+     so the pattern is decoded there. Season-outcome bars override with a solid
+     `background` shorthand, so they stay unhatched. */
+  .w-mech { background-color: var(--w-mech); }
+  .w-crash { background-color: var(--w-crash); }
+  .w-dsq { background-color: var(--w-dsq); }
+  .w-mech, .w-crash, .w-dsq {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.34) 0, rgba(255, 255, 255, 0.34) 1px,
+      transparent 1px, transparent 4px
+    );
+  }
 
   /* Order toggle. The default DOM order is outcome-sorted; adding
      .waffle-grid--chrono flips every tile to its chronological rank via CSS
