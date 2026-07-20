@@ -645,37 +645,49 @@ def build_practice_session(session):
 # ---------------------------------------------------------------- orchestration
 
 
+SESSION_ORDER = ("fp1", "fp2", "fp3", "sprintQuali", "sprint", "q", "race")
+
+
 def session_schedule(bundle_entry, year, rnd):
-    """[(session_id, start_datetime_utc)] for the weekend, from the season bundle
-    (falls back to the FastF1 event schedule)."""
-    out = []
+    """[(session_id, start_datetime_utc)] for the weekend, in canonical order.
+
+    Bundle session times are authoritative (they match the site's session
+    tables). Any session the bundle leaves without a usable date+time is filled
+    from the FastF1 event schedule — so a *partial* bundle no longer suppresses
+    the fetch of the sessions it omits. Older bundles (2020-2021) carry
+    practice/quali dates but no times; without this merge only the race entered
+    the schedule and every practice/quali session was silently skipped."""
+    times = {}
     sess = (bundle_entry or {}).get("sessions") or {}
-    for sid in ("fp1", "fp2", "fp3", "sprintQuali", "sprint", "q", "race"):
+    for sid in SESSION_ORDER:
         v = sess.get(sid)
         if v and v.get("date") and v.get("time"):
             t = str(v["time"]).replace("Z", "+00:00")
             try:
-                out.append((sid, datetime.fromisoformat(f'{v["date"]}T{t}')))
+                times[sid] = datetime.fromisoformat(f'{v["date"]}T{t}')
             except ValueError:
                 pass
-    if out:
-        return out
-    # fallback: fastf1 event schedule
-    ev = fastf1.get_event(year, rnd)
-    n_sessions = 5
-    f1_to_bundle = {"Practice 1": "fp1", "Practice 2": "fp2", "Practice 3": "fp3",
-                    "Sprint Qualifying": "sprintQuali", "Sprint Shootout": "sprintQuali",
-                    "Sprint": "sprint", "Qualifying": "q", "Race": "race"}
-    for i in range(1, n_sessions + 1):
+    # Fill any session the bundle didn't fully specify from the FastF1 schedule.
+    if len(times) < len(SESSION_ORDER):
+        f1_to_bundle = {"Practice 1": "fp1", "Practice 2": "fp2", "Practice 3": "fp3",
+                        "Sprint Qualifying": "sprintQuali", "Sprint Shootout": "sprintQuali",
+                        "Sprint": "sprint", "Qualifying": "q", "Race": "race"}
         try:
-            name = ev.get(f"Session{i}")
-            date = ev.get(f"Session{i}DateUtc")
+            ev = fastf1.get_event(year, rnd)
         except Exception:
-            continue
-        sid = f1_to_bundle.get(str(name))
-        if sid and pd.notna(date):
-            out.append((sid, date.to_pydatetime().replace(tzinfo=timezone.utc)))
-    return out
+            ev = None
+        for i in range(1, 6):
+            if ev is None:
+                break
+            try:
+                name = ev.get(f"Session{i}")
+                date = ev.get(f"Session{i}DateUtc")
+            except Exception:
+                continue
+            sid = f1_to_bundle.get(str(name))
+            if sid and sid not in times and pd.notna(date):
+                times[sid] = date.to_pydatetime().replace(tzinfo=timezone.utc)
+    return [(sid, times[sid]) for sid in SESSION_ORDER if sid in times]
 
 
 def is_finished(start_utc, sid, now):
