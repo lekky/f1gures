@@ -109,6 +109,31 @@ function drawTrophy(ctx, x, y, s, color = '#492F04') {
   ctx.restore();
 }
 
+// Draw the driver headshot as a circular avatar with a team-coloured ring.
+// The webp portraits are head-and-shoulders on a transparent ground, so a
+// panel-coloured backing shows through and the crop biases upward to keep the
+// face centred rather than the chest.
+function drawAvatar(ctx, img, cx, cy, r, ring, PAL) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fillStyle = PAL.panel;
+  ctx.fill();
+  ctx.clip();
+  const scale = Math.max((2 * r) / img.width, (2 * r) / img.height);
+  const dw = img.width * scale, dh = img.height * scale;
+  const dx = cx - dw / 2;
+  const dy = cy - dh / 2 + (dh / 2 - r) * 0.58; // bias toward the face
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.lineWidth = Math.max(2, r * 0.06);
+  ctx.strokeStyle = ring;
+  ctx.stroke();
+}
+
 // Per-section chrome: the accent kicker, the mono footer tag, and the file slug.
 const SECTIONS = {
   duels: { kicker: 'TEAMMATE DUELS', tag: 'TEAMMATE DUELS', slug: 'teammate-duels' },
@@ -525,6 +550,7 @@ export async function renderDriverCard(section, payload, { fmt = 'fit', light = 
   const bodyTop = dividerY + (story ? 46 : 34);
 
   const wordmark = await loadImg(PAL.logo);
+  const face = await loadImg(payload.driverRef ? `/images/drivers/${encodeURIComponent(payload.driverRef)}.webp` : null);
   try { await document.fonts.ready; } catch { /* draw anyway */ }
 
   let H = fmtDef.h;
@@ -564,8 +590,18 @@ export async function renderDriverCard(section, payload, { fmt = 'fit', light = 
   ctx.font = `400 ${story ? 19 : 17}px ${MONO}`;
   ctx.fillText('DRIVER PROFILE', W - padX, padTop);
 
+  // ── driver headshot (circular, team-ringed) on the right of the header ──
+  let nameMax = W - padX * 2;
+  if (face && face.width) {
+    const R = story ? 82 : wide ? 78 : 70;
+    const cx = W - padX - R;
+    const centreRef = blurbY != null ? blurbY : nameY;
+    const cy = ((kickerY - (story ? 26 : 22)) + centreRef) / 2;
+    drawAvatar(ctx, face, cx, cy, R, teamCol, PAL);
+    nameMax = (cx - R - 28) - padX; // keep the name clear of the avatar
+  }
+
   // ── kicker (accent) + driver name + section blurb ──
-  const nameMax = W - padX * 2;
   ctx.textAlign = 'left';
   ctx.fillStyle = PAL.accent;
   ctx.font = `800 ${story ? 30 : 26}px ${DISPLAY}`;
