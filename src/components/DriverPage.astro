@@ -733,7 +733,7 @@ const outcomesShare = {
           <span class="waffle-head-title">Every start as a tile</span>
           <span class="waffle-head-count t-mono">{waffleTotal} tiles</span>
         </div>
-        <p class="waffle-blurb">One square per race across the whole career — tap a tile to open that race. Sort by <strong>outcome</strong> for the block of gold wins tapering to the red corner of retirements, or by <strong>chronological</strong> order to read the career start-to-finish.</p>
+        <p class="waffle-blurb">One square per race across the whole career. Sort by <strong>outcome</strong> for the block of gold wins tapering to the red corner of retirements, or by <strong>chronological</strong> order to read the career start-to-finish.</p>
         <div class="waffle-order-toggle" role="group" aria-label="Mosaic tile order">
           <button type="button" class="active" data-waffle-order="outcome" aria-pressed="true">Outcome</button>
           <button type="button" data-waffle-order="chrono" aria-pressed="false">Chronological</button>
@@ -747,7 +747,8 @@ const outcomesShare = {
             </span>
           ))}
         </div>
-        <div class="waffle-grid" role="img" aria-label={`${fullName}'s ${waffleTotal} career races by outcome`}>
+        <p class="waffle-hint"><span class="waffle-hint-icon" aria-hidden="true">↗</span> Every tile is a clickable link — select one to open that race.</p>
+        <div class="waffle-grid" role="img" aria-label={`${fullName}'s ${waffleTotal} career races by outcome — each tile links to that race`}>
           {waffleSorted.map(t => (
             t.href
               ? <a class={`waffle-tile w-${t.kind}`} style={`--chrono:${t.chrono}`} href={t.href} title={t.title} aria-label={t.title}></a>
@@ -1359,6 +1360,15 @@ const outcomesShare = {
   .waffle-order-toggle button + button { border-left: 1px solid var(--line-1); }
   .waffle-order-toggle button.active { background: var(--bg-2); color: var(--fg-1); }
   .waffle-grid--chrono .waffle-tile { order: var(--chrono); }
+
+  /* Clickability hint — the tiles are links, but a bare grid of squares
+     doesn't read as tappable, so spell it out right above the grid. */
+  .waffle-hint {
+    display: flex; align-items: center; gap: 7px;
+    margin: 0 0 12px; font-size: 12.5px; color: var(--fg-3);
+    letter-spacing: 0.01em;
+  }
+  .waffle-hint-icon { color: var(--accent); font-weight: 700; font-size: 14px; line-height: 1; }
 
   .waffle-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 16px; margin-bottom: 16px; }
   .waffle-key { display: inline-flex; align-items: center; gap: 7px; }
