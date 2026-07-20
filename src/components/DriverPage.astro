@@ -82,6 +82,7 @@ import CompareCta from './islands/CompareCta.jsx';
 import DriverSectionShare from './islands/DriverSectionShare.jsx';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 import { teamLogoPath } from '../lib/teamLogo.js';
+import { hasDriverFace } from '../lib/driverFaceExists.js';
 
 const { driver } = Astro.props;
 const fullName = `${driver.forename} ${driver.surname}`;
@@ -696,9 +697,21 @@ const outcomesShare = {
           const rN = m.race.wins + m.race.losses;
           const qWin = m.quali.wins >= m.quali.losses;
           const rWin = m.race.wins >= m.race.losses;
+          const mateFace = hasDriverFace(m.driverRef);
           return (
             <div class="duel-mate">
               <div class="duel-mate-name">
+                <a href={`/drivers/${m.driverRef}/`} class="duel-mate-face" aria-hidden="true" tabindex="-1">
+                  {mateFace ? (
+                    <img src={`/images/drivers/${m.driverRef}.webp`} alt="" loading="lazy" width="30" height="30" />
+                  ) : (
+                    <span class="silhouette">
+                      <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M50 12 C28 12 18 28 18 46 L18 60 L14 70 L14 82 L20 88 L20 120 L80 120 L80 88 L86 82 L86 70 L82 60 L82 46 C82 28 72 12 50 12 Z" fill="var(--team-color)" />
+                      </svg>
+                    </span>
+                  )}
+                </a>
                 <span class="v">v</span><a href={`/drivers/${m.driverRef}/`} class="inline-link">{m.name}</a>
                 <span class="duel-mate-yrs t-mono">{m.firstYear === m.lastYear ? m.firstYear : `${m.firstYear}–${m.lastYear}`}</span>
               </div>
@@ -1501,8 +1514,15 @@ const outcomesShare = {
      verdict bars full-width above but stop the rival list running long. */
   .duel-mates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 32px; }
   .duel-mate { margin-bottom: 0; }
-  .duel-mate-name { font-family: var(--f-display); font-weight: 700; font-size: 14.5px; letter-spacing: 0.02em; margin-bottom: 6px; display: flex; align-items: baseline; gap: 7px; }
+  .duel-mate-name { font-family: var(--f-display); font-weight: 700; font-size: 14.5px; letter-spacing: 0.02em; margin-bottom: 6px; display: flex; align-items: center; gap: 7px; }
   .duel-mate-name .v { color: var(--fg-4); font-weight: 600; }
+  /* Round headshot (or team-tinted silhouette fallback) leading each rival row.
+     Neutral plate background — never the panel; the only team colour is the
+     silhouette fill, matching the hero portrait. */
+  .duel-mate-face { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; overflow: hidden; background: var(--bg-3); border: 1px solid var(--line-2); display: flex; align-items: flex-end; justify-content: center; }
+  .duel-mate-face img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+  .duel-mate-face .silhouette { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 100%; }
+  .duel-mate-face .silhouette svg { width: 22px; height: 26px; opacity: 0.55; }
   .duel-mate-yrs { margin-left: auto; font-size: 10.5px; letter-spacing: 0.04em; color: var(--fg-4); }
   .duel-row { display: grid; grid-template-columns: 14px 1fr 66px; align-items: center; gap: 9px; margin-bottom: 4px; }
   .duel-row-tag { font-size: 11px; color: var(--fg-4); }
