@@ -701,6 +701,7 @@ const outcomesShare = {
           return (
             <div class="duel-mate">
               <div class="duel-mate-name">
+                <span class="v">v</span>
                 <a href={`/drivers/${m.driverRef}/`} class="duel-mate-face" aria-hidden="true" tabindex="-1">
                   {mateFace ? (
                     <img src={`/images/drivers/${m.driverRef}.webp`} alt="" loading="lazy" width="30" height="30" />
@@ -712,7 +713,7 @@ const outcomesShare = {
                     </span>
                   )}
                 </a>
-                <span class="v">v</span><a href={`/drivers/${m.driverRef}/`} class="inline-link">{m.name}</a>
+                <a href={`/drivers/${m.driverRef}/`} class="inline-link">{m.name}</a>
                 <span class="duel-mate-yrs t-mono">{m.firstYear === m.lastYear ? m.firstYear : `${m.firstYear}–${m.lastYear}`}</span>
               </div>
               {qN > 0 && (
