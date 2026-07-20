@@ -1369,6 +1369,26 @@ const outcomesShare = {
   .waffle-tile:hover { transform: scale(1.28); outline-color: var(--line-3); z-index: 1; }
   a.waffle-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
   .w-win { background: var(--w-win); }
+  /* Wins get a gentle sparkle — two ✦ glints twinkling out of phase, drawn as
+     pseudo-elements so no extra DOM lands on the hundreds of tiles. The share
+     card draws a static version of this (see drawSparkle in driverShareCard).
+     Honoured only where motion is welcome. */
+  .waffle-tile.w-win { position: relative; }
+  .waffle-tile.w-win::before,
+  .waffle-tile.w-win::after {
+    content: "✦"; position: absolute; color: #fff7db; line-height: 1;
+    pointer-events: none; opacity: 0; text-shadow: 0 0 2px rgba(120, 74, 0, 0.5);
+    animation: winTwinkle 2.6s ease-in-out infinite;
+  }
+  .waffle-tile.w-win::before { top: 0; left: 2px; font-size: 9px; }
+  .waffle-tile.w-win::after { bottom: 0; right: 2px; font-size: 7px; animation-delay: 1.3s; }
+  @keyframes winTwinkle {
+    0%, 100% { opacity: 0; transform: scale(0.35); }
+    45%, 65% { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .waffle-tile.w-win::before, .waffle-tile.w-win::after { animation: none; opacity: 0.9; transform: none; }
+  }
   .w-podium { background: var(--w-podium); }
   .w-points { background: var(--w-points); }
   .w-finished { background: var(--w-finished); }

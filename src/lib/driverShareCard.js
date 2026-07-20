@@ -71,6 +71,31 @@ function drawHatch(ctx, x, y, w, h, gap = 4) {
   ctx.restore();
 }
 
+// A static 4-point sparkle — the frozen version of the page's twinkling win
+// tiles (which animate via CSS and so can't survive a PNG). Two glints per
+// tile mirror the ::before/::after pair. `r` is the main glint's reach.
+function drawSparkle(ctx, cx, cy, r, color = '#FFF7DB') {
+  const star = (sx, sy, sr) => {
+    const waist = sr * 0.16;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy - sr);
+    ctx.lineTo(sx + waist, sy - waist);
+    ctx.lineTo(sx + sr, sy);
+    ctx.lineTo(sx + waist, sy + waist);
+    ctx.lineTo(sx, sy + sr);
+    ctx.lineTo(sx - waist, sy + waist);
+    ctx.lineTo(sx - sr, sy);
+    ctx.lineTo(sx - waist, sy - waist);
+    ctx.closePath();
+    ctx.fill();
+  };
+  ctx.save();
+  ctx.fillStyle = color;
+  star(cx - r * 0.42, cy - r * 0.42, r);        // main glint, upper-left
+  star(cx + r * 0.6, cy + r * 0.6, r * 0.5);    // small glint, lower-right
+  ctx.restore();
+}
+
 // Per-section chrome: the accent kicker, the mono footer tag, and the file slug.
 const SECTIONS = {
   duels: { kicker: 'TEAMMATE DUELS', tag: 'TEAMMATE DUELS', slug: 'teammate-duels' },
@@ -387,6 +412,7 @@ function paintMosaic(ctx, PAL, payload, box) {
     ctx.fillStyle = PAL.waffle[kind] || PAL.fg4;
     ctx.fillRect(tx, ty, tile, tile);
     if (HATCH_KINDS.has(kind)) drawHatch(ctx, tx, ty, tile, tile, Math.max(3, tile / 5));
+    if (kind === 'win') drawSparkle(ctx, tx + tile * 0.5, ty + tile * 0.5, tile * 0.3);
   });
 }
 
