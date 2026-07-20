@@ -36,7 +36,7 @@ const THEMES = {
     accent: '#E8002D', accentText: '#FF3B57', gold: '#E0A82E',
     bandInk: '#0C0C0D', duelThem: '#484C56',
     twill: 'rgba(255,255,255,0.02)', logo: '/images/logo/f1gures-wordmark-dark.png',
-    waffle: { win: '#E0A82E', podium: '#C9CDD6', points: '#E8722E', finished: '#62656E', mech: '#E8002D', crash: '#A8102A', dsq: '#6E1420' },
+    waffle: { win: '#E0A82E', podium: '#4C90D0', points: '#E8722E', finished: '#62656E', mech: '#CF463D', crash: '#97302F', dsq: '#611A22' },
   },
   light: {
     bg: '#FFFFFF', panel: '#F4F4F6', line: '#DADBE1', track: '#E6E7EC',
@@ -44,9 +44,32 @@ const THEMES = {
     accent: '#E8002D', accentText: '#C8002A', gold: '#CF9A1F',
     bandInk: '#0C0C0D', duelThem: '#AAB0BC',
     twill: 'rgba(0,0,0,0.025)', logo: '/images/logo/f1gures-wordmark-light.png',
-    waffle: { win: '#CF9A1F', podium: '#AAB0BB', points: '#D8611F', finished: '#797C85', mech: '#E8002D', crash: '#9E0F26', dsq: '#6E1420' },
+    waffle: { win: '#CF9A1F', podium: '#3B80C0', points: '#D8611F', finished: '#797C85', mech: '#BB3F36', crash: '#8A2A2A', dsq: '#5E1620' },
   },
 };
+
+// DNF kinds render with a diagonal hatch (both on the tiles and the legend
+// swatch) so "did not finish" reads by texture, mirroring the mosaic on the
+// page. Keep this set in sync with the .w-mech/.w-crash/.w-dsq CSS.
+const HATCH_KINDS = new Set(['mech', 'crash', 'dsq']);
+
+// Overlay a 45° hatch of faint light lines onto the rect just filled — matches
+// the repeating-linear-gradient used by the page tiles.
+function drawHatch(ctx, x, y, w, h, gap = 4) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,0.34)';
+  ctx.lineWidth = Math.max(1, gap / 4);
+  for (let d = -h; d < w; d += gap) {
+    ctx.beginPath();
+    ctx.moveTo(x + d, y + h);
+    ctx.lineTo(x + d + h, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 
 // Per-section chrome: the accent kicker, the mono footer tag, and the file slug.
 const SECTIONS = {
@@ -107,6 +130,7 @@ function drawLegend(ctx, PAL, counts, x, y, maxW, sw = 15, rowH = 30, fontPx = 2
     if (cx + chipW > x + maxW && cx > x) { cx = x; cy += rowH; }
     ctx.fillStyle = PAL.waffle[c.kind] || PAL.fg3;
     ctx.fillRect(cx, cy - sw + 2, sw, sw);
+    if (HATCH_KINDS.has(c.kind)) drawHatch(ctx, cx, cy - sw + 2, sw, sw, 4);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = PAL.fg2;
@@ -329,9 +353,16 @@ function paintMosaic(ctx, PAL, payload, box) {
   y = drawLegend(ctx, PAL, payload.counts || [], x, y, w);
   y += 28;
 
-  // Reconstruct the outcome-sorted tile list from the (ordered) legend counts.
-  const tiles = [];
-  for (const c of payload.counts || []) for (let i = 0; i < c.count; i++) tiles.push(c.kind);
+  // Tile order follows whatever the user picked on the page. Chronological is
+  // carried as a packed one-char-per-tile string (see WAFFLE_CODE in
+  // DriverPage.astro); outcome order is reconstructed from the legend counts.
+  const CODE_KIND = { w: 'win', p: 'podium', o: 'points', f: 'finished', m: 'mech', c: 'crash', d: 'dsq' };
+  let tiles = [];
+  if (payload.order === 'chrono' && payload.chrono) {
+    tiles = payload.chrono.split('').map((ch) => CODE_KIND[ch]).filter(Boolean);
+  } else {
+    for (const c of payload.counts || []) for (let i = 0; i < c.count; i++) tiles.push(c.kind);
+  }
   const total = tiles.length || payload.total || 1;
   const gridTop = y;
   const gridH = box.y + box.h - gridTop;
@@ -355,6 +386,7 @@ function paintMosaic(ctx, PAL, payload, box) {
     const ty = top + r * (tile + gap);
     ctx.fillStyle = PAL.waffle[kind] || PAL.fg4;
     ctx.fillRect(tx, ty, tile, tile);
+    if (HATCH_KINDS.has(kind)) drawHatch(ctx, tx, ty, tile, tile, Math.max(3, tile / 5));
   });
 }
 
