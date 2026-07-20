@@ -420,4 +420,82 @@ const flagWashSrc = washCc
     font-size: 14px;
     line-height: 1.5;
   }
+
+  /* ── Upcoming: animated track-map panel (top-right of the grid) ─────
+     Mirrors the circuit page's .circuit-hero-map; the .ct-* line paint is
+     global (app.css). The <svg> is pinned absolutely below the head so its
+     intrinsic viewBox ratio can't stretch the panel. */
+  .race-track-panel {
+    position: relative;
+    overflow: hidden;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 260px;
+    background:
+      radial-gradient(120% 120% at 75% 18%, rgba(232,0,45,0.10), transparent 60%),
+      repeating-linear-gradient(135deg, var(--bg-3) 0 1px, transparent 1px 11px),
+      var(--bg-2);
+  }
+  .race-track-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; position: relative; z-index: 1; }
+  .race-track-meta { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); }
+  .race-track-mono { font-family: var(--f-display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--fg-3); opacity: 0.6; }
+  .race-track-panel .ct-svg,
+  .race-track-panel .circuit-track {
+    position: absolute;
+    top: 42px; left: 14px;
+    width: calc(100% - 28px);
+    height: calc(100% - 74px);
+    min-height: 0; display: block;
+  }
+  .race-track-link { position: relative; z-index: 1; margin-top: auto; align-self: flex-start; font-size: 12px; }
+
+  /* ── Upcoming: track characteristics + lap record grid ─────────────── */
+  .race-track-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+  .race-track-col { min-width: 0; }
+  .race-bars-panel { padding: 18px 20px; }
+  .bar-row-divide { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line-1); }
+  .race-track-blurb { margin: 16px 0 0; color: var(--fg-2); font-size: 13px; line-height: 1.6; text-wrap: pretty; }
+
+  .race-laprec { position: relative; padding: 20px 22px; overflow: hidden; border-left: 3px solid var(--accent); }
+  .race-laprec-eyebrow { color: var(--accent); display: block; margin-bottom: 10px; }
+  .race-laprec-time {
+    font-family: var(--f-display); font-weight: 800; font-size: 46px; line-height: 1;
+    color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  }
+  .race-laprec-holder { display: flex; align-items: center; gap: 12px; margin-top: 14px; position: relative; z-index: 1; }
+  .race-laprec-face { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--bg-3); flex-shrink: 0; border: 2px solid var(--accent); }
+  .race-laprec-face-fallback {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--f-display); font-weight: 800; font-size: 14px; color: var(--fg-3); border-color: var(--line-2);
+  }
+  .race-laprec-holder-text { min-width: 0; }
+  .race-laprec-driver { font-family: var(--f-display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .race-laprec-sub { font-family: var(--f-mono); font-size: 12px; color: var(--fg-3); margin-top: 4px; }
+  .race-laprec-clock {
+    position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+    font-size: 150px; line-height: 1; color: var(--fg-1); opacity: 0.05; pointer-events: none;
+  }
+
+  /* ── Upcoming: championship-going-in panels ────────────────────────── */
+  .race-champ-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; --card-accent: var(--accent); }
+  .race-champ-panel { padding: 16px 18px; }
+  .race-champ-head { margin-bottom: 12px; }
+  /* card-bar-name is a link here — keep the leaderboard look, drop underline. */
+  .race-champ-link { text-decoration: none; }
+  .race-champ-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .race-champ-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* ── Upcoming: "At <circuit>" venue history ────────────────────────── */
+  .race-venue-note { margin: 0 0 14px; color: var(--fg-3); font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.02em; }
+  .race-venue-records { margin-bottom: 4px; }
+  .race-venue-last { margin-top: 18px; }
+  .race-venue-last-head { display: block; margin-bottom: 10px; }
+
+  @media (max-width: 820px) {
+    .race-track-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .race-champ-grid { grid-template-columns: 1fr; }
+  }
 </style>

@@ -4240,6 +4240,15 @@ html.light .card-bar-fill { opacity: 0.35; }
 html.light .card-bar-lead .card-bar-fill { opacity: 1; }
 html.light .records-hero-mark { color: rgba(255,255,255,0.04); }
 
+/* Animated track-map racing line — shared by the circuit detail page
+   (.circuit-hero-map) and the upcoming-race track panel (.race-track-panel).
+   The panel container + <svg> positioning stay page-scoped; these rules are
+   just the line/glow/dot paint so both surfaces draw the identical racing line. */
+.ct-glow { fill: none; stroke: var(--accent); stroke-width: 16; stroke-linejoin: round; stroke-linecap: round; opacity: 0.16; }
+.ct-line { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
+.ct-start { fill: var(--fg-1); opacity: 0.55; }
+.ct-dot { fill: var(--accent); filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 12px rgba(232,0,45,0.6)); }
+
 /* Sub-page era toggle */
 .records-era-toggle {
   display: inline-flex; gap: 0;

@@ -39,7 +39,7 @@ interface Props {
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { circuitProfiles } from '../data/circuitProfiles.js';
+import { getCircuitProfile, getTrackMap, buildCharacteristics, getLapRecord, RATING_FILL, PROFILE_FOR_REF } from '../lib/circuitTrack.js';
 import MobileTableCards from './MobileTableCards.astro';
 import currentSeason from '../data/currentSeason.js';
 import { fmtDateLong } from '../lib/shared.jsx';
@@ -65,83 +65,12 @@ const yearsLabel = circuit.firstYear === circuit.lastYear
   ? `${circuit.firstYear}`
   : `${circuit.firstYear}–${circuit.lastYear}`;
 
-// Track-map SVGs in public/images/circuits/{black,white}-outline/ use the
-// site's internal ids (albert, marina, lasvegas, …) which diverge from
-// Ergast's circuitRef in a handful of cases. Map known equivalents; for
-// circuits without a curated SVG (the historic 50+) skip the map entirely.
-const SVG_FOR_REF: Record<string, string> = {
-  albert_park: 'albert',
-  americas: 'cota',
-  bahrain: 'bahrain',
-  baku: 'baku',
-  catalunya: 'catalunya',
-  hungaroring: 'hungaroring',
-  imola: 'imola',
-  interlagos: 'interlagos',
-  jeddah: 'jeddah',
-  losail: 'losail',
-  marina_bay: 'marina',
-  miami: 'miami',
-  monaco: 'monaco',
-  monza: 'monza',
-  red_bull_ring: 'spielberg',
-  rodriguez: 'rodriguez',
-  shanghai: 'shanghai',
-  silverstone: 'silverstone',
-  spa: 'spa',
-  suzuka: 'suzuka',
-  vegas: 'lasvegas',
-  villeneuve: 'montreal',
-  yas_marina: 'yas',
-  zandvoort: 'zandvoort',
-};
-const svgName = SVG_FOR_REF[circuit.circuitRef];
-const svgPath = svgName
-  ? resolve(process.cwd(), 'public', 'images', 'circuits', 'black-outline', `${svgName}.svg`)
-  : null;
-const hasMap = !!svgPath && existsSync(svgPath);
-
-// Pull the main racing-line path out of the curated SVG so we can re-draw it
-// inline (themed red line + a dot lapping the circuit) rather than swapping a
-// flat black/white <img>. The first <path> in every track SVG is the outline;
-// the rest are start/finish-line ticks. Falls back to the flat <img> swap if
-// extraction fails for any reason.
-let trackD = '';
-let trackVB = '0 0 500 500';
-let trackStart: { x: number; y: number } | null = null;
-if (hasMap && svgPath) {
-  try {
-    const raw = readFileSync(svgPath, 'utf8');
-    const dMatch = raw.match(/<path[^>]*\sd="([^"]+)"/);
-    if (dMatch) trackD = dMatch[1];
-    const vb = raw.match(/viewBox="([^"]+)"/);
-    const w = raw.match(/\bwidth="(\d+)"/);
-    const h = raw.match(/\bheight="(\d+)"/);
-    if (vb) trackVB = vb[1];
-    else if (w && h) trackVB = `0 0 ${w[1]} ${h[1]}`;
-    const m = trackD.match(/^[Mm]\s*(-?[\d.]+)[ ,]+(-?[\d.]+)/);
-    if (m) trackStart = { x: parseFloat(m[1]), y: parseFloat(m[2]) };
-  } catch {
-    // leave trackD empty → flat-img fallback below
-  }
-}
-const hasTrackPath = hasMap && !!trackD;
-
-// Curated track characteristics + blurb live in src/data/circuitProfiles.js.
-// Profile keys are the short ids the 2026 fallback grid uses (bahrain,
-// albert, marina, …); inverse of HAND_CIRCUIT_ALIAS in
-// scripts/build-archive.mjs maps back from Ergast circuitRefs.
-const PROFILE_FOR_REF: Record<string, string> = {
-  albert_park: 'albert',
-  americas: 'cota',
-  marina_bay: 'marina',
-  red_bull_ring: 'spielberg',
-  vegas: 'lasvegas',
-  villeneuve: 'montreal',
-  yas_marina: 'yas',
-};
-const profileKey = PROFILE_FOR_REF[circuit.circuitRef] || circuit.circuitRef;
-const profile = (circuitProfiles as any)[profileKey] || null;
+// Track-map extraction + curated profile lookup live in src/lib/circuitTrack.js
+// (shared with RaceUpcomingBody.astro so the ref→id alias maps stay in one
+// place). Circuits without a curated SVG (the historic 50+) return hasMap:false.
+const { svgName, hasMap, hasTrackPath, trackD, trackVB, trackStart } = getTrackMap(circuit.circuitRef);
+const profile = getCircuitProfile(circuit.circuitRef);
+const profileKey = (PROFILE_FOR_REF as Record<string, string>)[circuit.circuitRef] || circuit.circuitRef;
 // Next-race lookup against the real current-season bundle (synced by
 // prebuild): this circuit's calendar entry, but only while the race hasn't
 // been run - once results exist it's history, not "Next Race".
@@ -201,35 +130,9 @@ const WEATHER_ICON: Record<string, string> = {
   'Mild Night':     '🌙',
   'Wet & Variable': '🌧',
 };
-const RATING_FILL: Record<string, number> = { Low: 33, Medium: 66, High: 100 };
-
-// Proportional fill for the value bars - each metric scaled against a rough
-// real-world maximum so the bar lengths read meaningfully against each other
-// (a 7 km lap looks long, a 14-corner circuit looks short, etc).
-const BAR_MAX: Record<string, number> = {
-  Length: 7.1, Laps: 78, Corners: 27, 'Longest Straight': 2200, 'DRS Zones': 4,
-};
-function barPct(lbl: string, v: number): number {
-  const max = BAR_MAX[lbl] || v || 1;
-  return Math.max(10, Math.min(100, (v / max) * 100));
-}
-
-type StatRow =
-  | { lbl: string; val: string | number; fill: number; type: 'val' }
-  | { lbl: string; val: 'Low' | 'Medium' | 'High'; type: 'rating' };
-
-const stats: StatRow[] = profile ? ([
-  profile.length          && { lbl: 'Length',           val: `${profile.length.toFixed(3)} km`, fill: barPct('Length', profile.length),                   type: 'val' as const },
-  profile.laps            && { lbl: 'Laps',             val: profile.laps,                       fill: barPct('Laps', profile.laps),                       type: 'val' as const },
-  profile.corners         && { lbl: 'Corners',          val: profile.corners,                    fill: barPct('Corners', profile.corners),                 type: 'val' as const },
-  profile.longestStraight && { lbl: 'Longest Straight', val: `${profile.longestStraight} m`,     fill: barPct('Longest Straight', profile.longestStraight),type: 'val' as const },
-  profile.drsZones        && { lbl: 'DRS Zones',        val: profile.drsZones,                   fill: barPct('DRS Zones', profile.drsZones),              type: 'val' as const },
-  RATING_FILL[profile.tyreDeg]    && { lbl: 'Tyre Degradation', val: profile.tyreDeg,        type: 'rating' as const },
-  RATING_FILL[profile.overtaking] && { lbl: 'Overtaking',       val: profile.overtaking,     type: 'rating' as const },
-].filter(Boolean) as StatRow[]) : [];
-const firstRatingIdx = stats.findIndex(s => s.type === 'rating');
-
-const lapRecord = profile && profile.lapRecord && profile.lapRecord.driver !== '-' ? profile.lapRecord : null;
+// Track-characteristics bars + outright lap record (shared builders).
+const { stats, firstRatingIdx } = buildCharacteristics(profile);
+const lapRecord = getLapRecord(profile);
 
 // Resolve driver headshots for card-accent holders. Falls back to a
 // striped chip when no .webp exists (most historic drivers).
@@ -654,10 +557,8 @@ const recordCards: CircuitRecordCard[] = [
     min-height: 0; flex: none; display: block;
   }
 
-  .ct-glow { fill: none; stroke: var(--accent); stroke-width: 16; stroke-linejoin: round; stroke-linecap: round; opacity: 0.16; }
-  .ct-line { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
-  .ct-start { fill: var(--fg-1); opacity: 0.55; }
-  .ct-dot { fill: var(--accent); filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 12px rgba(232,0,45,0.6)); }
+  /* .ct-glow / .ct-line / .ct-start / .ct-dot paint is now global (app.css),
+     shared with the upcoming-race track panel. Container positioning stays here. */
 
   /* Flat-img fallback (circuits whose SVG path couldn't be parsed). */
   .circuit-hero-map .circuit-track { flex: 1; min-height: 0; }

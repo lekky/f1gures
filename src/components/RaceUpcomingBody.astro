@@ -1,21 +1,36 @@
 ---
 // Server-rendered body for upcoming/un-run races. Receives the holding-page
 // race prop emitted by build-archive.mjs (results: [], sessions populated,
-// lastHeldHere optional, circuitFirstTime optional). Renders next-session
-// panel + last-held-here panel.
+// lastHeldHere optional, circuitFirstTime optional).
 //
-// The shell (RacePage.astro) owns the hero, breadcrumb, prev/next nav.
+// Beyond the next-session countdown, the page enriches the wait with real
+// preview material already sitting in the archive/bundles:
+//   - an animated track map + "track characteristics" bars + lap record
+//     (shared with the circuit detail page via src/lib/circuitTrack.js),
+//   - the championship "as it stands" going into the weekend (computed from
+//     the season bundle's completed rounds via seasonStats),
+//   - all-time wins/poles at this venue + the last podium here.
+//
+// The shell (RacePage.astro) owns the hero, breadcrumb, prev/next nav, and the
+// shared styles for the classes below (.race-track-*, .race-champ-*, etc.).
 
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import RaceCountdownIsland from './islands/RaceCountdown.jsx';
 import RaceQualifyingTable from './RaceQualifyingTable.astro';
 import RaceResultsTable from './RaceResultsTable.astro';
+import {
+  getCircuitProfile, getTrackMap, buildCharacteristics, getLapRecord, RATING_FILL,
+} from '../lib/circuitTrack.js';
+import { computeStandings } from '../lib/seasonStats.mjs';
+import { hasDriverFace } from '../lib/driverFaceExists.js';
 
 interface Session { date: string; time: string }
 interface RaceProp {
   year: number;
   round: number;
   name: string;
-  circuit: { circuitRef: string; circuitId?: string; name: string; flag: string; location: string; countryName: string };
+  circuit: { circuitRef: string; circuitId?: string; name: string; flag: string; location: string; country?: string; countryName: string };
   sessions: Record<string, Session | null>;
   sprint: boolean;
   lastHeldHere: { year: number; round: number; podium: any[] } | null;
@@ -29,10 +44,9 @@ interface RaceProp {
 interface Props { race: RaceProp }
 
 const { race } = Astro.props;
+const circuitRef = race.circuit.circuitRef;
 
-// Build an ordered list of sessions for rendering. Keys come from the bundle
-// shape: fp1, fp2, fp3, q, sprintQuali, sprint, race. Each entry's iso UTC
-// is `<date>T<time>` where time already ends in 'Z' (per the bundle format).
+// ── Session schedule (unchanged) ─────────────────────────────────────
 const SESSION_LABELS: Record<string, string> = {
   fp1:         'Practice 1',
   fp2:         'Practice 2',
@@ -42,7 +56,6 @@ const SESSION_LABELS: Record<string, string> = {
   q:           'Qualifying',
   race:        'Race',
 };
-
 const SESSION_KEYS_ORDER = ['fp1', 'fp2', 'fp3', 'sprintQuali', 'sprint', 'q', 'race'];
 
 const sessionRows = SESSION_KEYS_ORDER
@@ -54,22 +67,100 @@ const sessionRows = SESSION_KEYS_ORDER
   })
   .filter(Boolean) as Array<{ key: string; label: string; iso: string; date: string; time: string }>;
 
-// Sort by ISO ascending (ensures FP1 → race even if bundle ordering ever drifts).
 sessionRows.sort((a, b) => a.iso.localeCompare(b.iso));
 
 // Build-time "next session" pick - first session with start >= now. Hydration
-// will re-pick client-side once the page loads, but this gives us a sensible
-// default for no-JS visitors.
+// re-picks client-side; this is the sensible default for no-JS visitors.
 const buildNow = new Date().toISOString();
 const nextIdx = sessionRows.findIndex(r => r.iso >= buildNow);
 const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
+
+// ── Track map + characteristics + lap record (shared with circuit page) ──
+const profile = getCircuitProfile(circuitRef);
+const track = getTrackMap(circuitRef);
+const { stats, firstRatingIdx } = buildCharacteristics(profile);
+const lapRecord = getLapRecord(profile);
+const monogram = (race.circuit.country || circuitRef || '').slice(0, 2).toUpperCase();
+const trackMeta = [
+  profile && profile.type && profile.type !== '-' ? profile.type : null,
+  profile && profile.corners ? `${profile.corners} corners` : null,
+].filter(Boolean).join(' · ') || 'Track Map';
+
+function driverFace(ref: string | null | undefined): string | null {
+  return ref && hasDriverFace(ref) ? `/images/drivers/${ref}.webp` : null;
+}
+function initials(name: string | null | undefined): string {
+  if (!name) return '–';
+  return name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+// ── All-time records at this circuit (from the circuit archive doc) ──
+let circuitDoc: any = null;
+try {
+  const p = resolve(process.cwd(), 'public', 'data', 'archive', 'circuits', `${circuitRef}.json`);
+  if (existsSync(p)) circuitDoc = JSON.parse(readFileSync(p, 'utf8'));
+} catch { /* no circuit doc → records section simply hides */ }
+const mostWins = (circuitDoc?.mostWins || []).slice(0, 5);
+const mostPoles = (circuitDoc?.mostPoles || []).slice(0, 5);
+const circuitRaceCount = circuitDoc?.raceCount || null;
+const circuitFirstYear = circuitDoc?.firstYear || null;
+
+interface RecordCard { id: string; title: string; unit: string; top: Array<{ driverRef: string; count: number; name: string }> }
+const recordCards: RecordCard[] = [
+  mostWins.length  ? { id: 'wins',  title: 'Most Wins',  unit: 'win', top: mostWins }  : null,
+  mostPoles.length ? { id: 'poles', title: 'Most Poles', unit: 'pol', top: mostPoles } : null,
+].filter(Boolean) as RecordCard[];
+
+// ── Championship as it stands going into the weekend ─────────────────
+// Read the season bundle and compute standings from its completed rounds.
+// Only rounds already run are in `results`, so for the *next* race this is
+// literally "going into this round"; for a later upcoming round it's the
+// current championship - labelled by the last completed round either way.
+interface ChampRow { pos: number; ref: string | null; name: string; flag?: string; color: string; points: number; gap: number }
+let champ: { lastRound: number | null; drivers: ChampRow[]; teams: ChampRow[] } | null = null;
+try {
+  const bp = resolve(process.cwd(), 'public', 'data', `${race.year}.json`);
+  if (existsSync(bp)) {
+    const bundle = JSON.parse(readFileSync(bp, 'utf8'));
+    const completed = Object.keys(bundle.results || {}).length;
+    const totalDriverPts = (bundle.drivers || []).length > 0;
+    if (completed > 0 && totalDriverPts) {
+      const s = computeStandings({ drivers: bundle.drivers, teams: bundle.teams, results: bundle.results });
+      const teamColorById: Record<string, string> = {};
+      (bundle.teams || []).forEach((t: any) => { teamColorById[t.id] = t.color; });
+      const dLead = s.drivers[0]?.points || 0;
+      const tLead = s.teams[0]?.points || 0;
+      const dRows: ChampRow[] = s.drivers.slice(0, 5).map((r: any) => ({
+        pos: r.position,
+        ref: r.driver.jolpicaId || null,
+        name: `${r.driver.first} ${r.driver.last}`,
+        flag: r.driver.flag,
+        color: teamColorById[r.driver.team] || 'var(--accent)',
+        points: r.points,
+        gap: dLead - r.points,
+      }));
+      const tRows: ChampRow[] = s.teams.slice(0, 5).map((r: any) => ({
+        pos: r.position,
+        ref: r.team.jolpicaId || null,
+        name: r.team.name,
+        color: r.team.color || 'var(--accent)',
+        points: r.points,
+        gap: tLead - r.points,
+      }));
+      // Only meaningful once someone has scored.
+      if (dRows.some(r => r.points > 0)) {
+        champ = { lastRound: s.lastRound, drivers: dRows, teams: tRows };
+      }
+    }
+  }
+} catch { /* no bundle / parse issue → championship section hides */ }
 ---
 
 <div class="race-upcoming-grid">
   <div class="panel race-upcoming-next">
     <div class="t-eyebrow">Next session</div>
     <race-countdown
-      data-circuit-id={race.circuit.circuitId || race.circuit.circuitRef}
+      data-circuit-id={race.circuit.circuitId || circuitRef}
       data-initial-next-key={initialNextKey || ''}
     >
       <div class="next-session-headline">
@@ -104,47 +195,70 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
     </race-countdown>
   </div>
 
-  <div class="panel race-upcoming-history">
-    {race.lastHeldHere && race.lastHeldHere.podium.length > 0 ? (
-      <>
-        <div class="t-eyebrow">Last held here - {race.lastHeldHere.year}</div>
-        <div class="race-upcoming-podium">
-          {race.lastHeldHere.podium.map(p => (
-            <div class={`podium-step podium-${p.position}`}>
-              <div class="podium-pos">P{p.position}</div>
-              <div class="podium-name">
-                {p.driverRef ? <a href={`/drivers/${p.driverRef}/`}>{p.driverName}</a> : p.driverName}
-              </div>
-              <div class="podium-team">
-                {p.constructorRef ? <a href={`/teams/${p.constructorRef}/`}>{p.constructorName}</a> : p.constructorName}
-              </div>
-            </div>
-          ))}
+  {track.hasMap ? (
+    <div class="panel race-track-panel">
+      <div class="race-track-head">
+        <span class="t-mono race-track-meta">{trackMeta}</span>
+        <span class="race-track-mono" aria-hidden="true">{monogram}</span>
+      </div>
+      {track.hasTrackPath ? (
+        <svg class="ct-svg" viewBox={track.trackVB} preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${race.circuit.name} track map`}>
+          <path class="ct-glow" d={track.trackD} />
+          <path class="ct-line" d={track.trackD} />
+          {track.trackStart && <circle class="ct-start" cx={track.trackStart.x} cy={track.trackStart.y} r="9" />}
+          <circle class="ct-dot" r="8">
+            <animateMotion dur="11s" repeatCount="indefinite" rotate="auto" path={track.trackD} />
+          </circle>
+        </svg>
+      ) : (
+        <div class="circuit-track" aria-hidden="true">
+          <img class="circuit-track-dark" src={`/images/circuits/white-outline/${track.svgName}.svg`} alt="" loading="lazy" />
+          <img class="circuit-track-light" src={`/images/circuits/black-outline/${track.svgName}.svg`} alt="" loading="lazy" />
         </div>
-        <a class="inline-link race-upcoming-history-link" href={`/races/${race.lastHeldHere.year}/${race.lastHeldHere.round}/`}>
-          → {race.lastHeldHere.year} {race.name}
-        </a>
-      </>
-    ) : race.circuitFirstTime ? (
-      <>
-        <div class="t-eyebrow">First time at this venue</div>
-        <p class="race-upcoming-firsttime">
-          {race.circuit.name} hosts a Formula 1 race for the first time.
-          {(race.circuit.location || race.circuit.countryName) && (
-            <> Located in {race.circuit.location ? `${race.circuit.location}, ` : ''}{race.circuit.countryName || race.circuit.country}.</>
-          )}
-        </p>
-        <a class="inline-link" href={`/circuits/${race.circuit.circuitRef}/`}>
-          → Circuit page
-        </a>
-      </>
-    ) : (
-      <>
-        <div class="t-eyebrow">No prior data</div>
-        <p>No previous results available for this venue.</p>
-      </>
-    )}
-  </div>
+      )}
+      <a class="inline-link race-track-link" href={`/circuits/${circuitRef}/`}>→ Circuit profile</a>
+    </div>
+  ) : (
+    <div class="panel race-upcoming-history">
+      {race.lastHeldHere && race.lastHeldHere.podium.length > 0 ? (
+        <>
+          <div class="t-eyebrow">Last held here - {race.lastHeldHere.year}</div>
+          <div class="race-upcoming-podium">
+            {race.lastHeldHere.podium.map((p: any) => (
+              <div class={`podium-step podium-${p.position}`}>
+                <div class="podium-pos">P{p.position}</div>
+                <div class="podium-name">
+                  {p.driverRef ? <a href={`/drivers/${p.driverRef}/`}>{p.driverName}</a> : p.driverName}
+                </div>
+                <div class="podium-team">
+                  {p.constructorRef ? <a href={`/teams/${p.constructorRef}/`}>{p.constructorName}</a> : p.constructorName}
+                </div>
+              </div>
+            ))}
+          </div>
+          <a class="inline-link race-upcoming-history-link" href={`/races/${race.lastHeldHere.year}/${race.lastHeldHere.round}/`}>
+            → {race.lastHeldHere.year} {race.name}
+          </a>
+        </>
+      ) : race.circuitFirstTime ? (
+        <>
+          <div class="t-eyebrow">First time at this venue</div>
+          <p class="race-upcoming-firsttime">
+            {race.circuit.name} hosts a Formula 1 race for the first time.
+            {(race.circuit.location || race.circuit.countryName) && (
+              <> Located in {race.circuit.location ? `${race.circuit.location}, ` : ''}{race.circuit.countryName || race.circuit.country}.</>
+            )}
+          </p>
+          <a class="inline-link" href={`/circuits/${circuitRef}/`}>→ Circuit page</a>
+        </>
+      ) : (
+        <>
+          <div class="t-eyebrow">No prior data</div>
+          <p>No previous results available for this venue.</p>
+        </>
+      )}
+    </div>
+  )}
 </div>
 
 {race.qualifying && race.qualifying.length > 0 && (
@@ -158,6 +272,205 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
   <>
     <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Sprint</h2><div class="section-rule"></div></div>
     <RaceResultsTable rows={race.sprint_results} kind="sprint" id="rr-sprint" />
+  </>
+)}
+
+{(stats.length > 0 || lapRecord) && (
+  <div class="race-track-grid">
+    {stats.length > 0 && (
+      <div class="race-track-col">
+        <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Track Characteristics</h2><div class="section-rule"></div></div>
+        <div class="panel race-bars-panel">
+          <div class="barset">
+            {stats.map((s: any, i: number) => (
+              <div class={`bar-row${i === firstRatingIdx ? ' bar-row-divide' : ''}`}>
+                <div class="bar-lbl">{s.lbl}</div>
+                {s.type === 'rating' ? (
+                  <>
+                    <div class="bar-track"><div class="bar-fill" style={`width: ${RATING_FILL[s.val]}%; background: ${s.val === 'High' ? 'var(--neg)' : s.val === 'Medium' ? 'var(--warn)' : 'var(--pos)'}`}></div></div>
+                    <div class={`bar-rating ${s.val.toLowerCase()}`}>{s.val}</div>
+                  </>
+                ) : (
+                  <>
+                    <div class="bar-track"><div class="bar-fill" style={`width: ${s.fill}%`}></div></div>
+                    <div class="bar-val t-mono">{s.val}</div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+          {profile && profile.blurb && <p class="race-track-blurb">{profile.blurb}</p>}
+        </div>
+      </div>
+    )}
+
+    {lapRecord && (
+      <div class="race-track-col">
+        <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Lap Record</h2><div class="section-rule"></div></div>
+        <div class="panel race-laprec">
+          <span class="t-eyebrow race-laprec-eyebrow">Outright Lap Record</span>
+          <div class="race-laprec-time">{lapRecord.time}</div>
+          <div class="race-laprec-holder">
+            {driverFace(lapRecord.driverRef)
+              ? <img class="race-laprec-face" src={driverFace(lapRecord.driverRef)} alt={lapRecord.driver} width="44" height="44" loading="lazy" />
+              : <span class="race-laprec-face race-laprec-face-fallback" aria-hidden="true">{initials(lapRecord.driver)}</span>}
+            <div class="race-laprec-holder-text">
+              <div class="race-laprec-driver">
+                {lapRecord.driverRef
+                  ? <a href={`/drivers/${lapRecord.driverRef}/`} class="inline-link">{lapRecord.driver}</a>
+                  : lapRecord.driver}
+              </div>
+              <div class="race-laprec-sub">Set in {lapRecord.year}</div>
+            </div>
+          </div>
+          <span class="race-laprec-clock" aria-hidden="true">◷</span>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+{champ && (
+  <>
+    <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Championship {champ.lastRound != null ? `· after Round ${champ.lastRound}` : ''}</h2><div class="section-rule"></div></div>
+    <div class="race-champ-grid">
+      <div class="panel race-champ-panel">
+        <div class="race-champ-head"><span class="t-eyebrow">Drivers' Championship</span></div>
+        <ol class="card-bars">
+          {champ.drivers.map((r, i) => {
+            const width = champ!.drivers[0].points > 0 ? (r.points / champ!.drivers[0].points) * 100 : 0;
+            return (
+              <li class={`card-bar${i === 0 ? ' card-bar-lead' : ''}`}>
+                <span class="card-bar-rank">{r.pos}</span>
+                <span class="card-bar-cc">{r.flag}</span>
+                <div class="card-bar-track">
+                  <span class="card-bar-fill" style={`width:${Math.max(width, 3)}%; background:${r.color};`}></span>
+                  {r.ref
+                    ? <a class="card-bar-name race-champ-link" href={`/drivers/${r.ref}/`}>{r.name}</a>
+                    : <span class="card-bar-name">{r.name}</span>}
+                </div>
+                <span class="card-bar-value">
+                  <span class="card-bar-num">{r.points}</span>
+                  <span class="card-bar-unit"> {i === 0 ? 'pts' : `-${r.gap}`}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      <div class="panel race-champ-panel">
+        <div class="race-champ-head"><span class="t-eyebrow">Constructors' Championship</span></div>
+        <ol class="card-bars">
+          {champ.teams.map((r, i) => {
+            const width = champ!.teams[0].points > 0 ? (r.points / champ!.teams[0].points) * 100 : 0;
+            return (
+              <li class={`card-bar${i === 0 ? ' card-bar-lead' : ''}`}>
+                <span class="card-bar-rank">{r.pos}</span>
+                <span class="card-bar-cc"><span class="race-champ-dot" style={`background:${r.color};`}></span></span>
+                <div class="card-bar-track">
+                  <span class="card-bar-fill" style={`width:${Math.max(width, 3)}%; background:${r.color};`}></span>
+                  {r.ref
+                    ? <a class="card-bar-name race-champ-link" href={`/teams/${r.ref}/`}>{r.name}</a>
+                    : <span class="card-bar-name">{r.name}</span>}
+                </div>
+                <span class="card-bar-value">
+                  <span class="card-bar-num">{r.points}</span>
+                  <span class="card-bar-unit"> {i === 0 ? 'pts' : `-${r.gap}`}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </div>
+  </>
+)}
+
+{(recordCards.length > 0 || (race.lastHeldHere && race.lastHeldHere.podium.length > 0)) && (
+  <>
+    <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>At {race.circuit.name}</h2><div class="section-rule"></div></div>
+
+    {(circuitRaceCount || circuitFirstYear) && (
+      <p class="race-venue-note">
+        {circuitFirstYear && <>Host since {circuitFirstYear}. </>}
+        {circuitRaceCount && <>{circuitRaceCount} F1 {circuitRaceCount === 1 ? 'race' : 'races'} held here.</>}
+      </p>
+    )}
+
+    {recordCards.length > 0 && (
+      <div class="records-grid race-venue-records">
+        {recordCards.map(card => {
+          const leader = card.top[0];
+          const leaderImg = driverFace(leader.driverRef);
+          const maxValue = Math.max(...card.top.map(e => e.count), 1);
+          return (
+            <a class="card-accent" href={`/drivers/${leader.driverRef}/`}>
+              <header class="card-accent-head">
+                <span class="card-accent-eyebrow">{card.title} · Here</span>
+                <span class="card-accent-arrow" aria-hidden="true">↗</span>
+              </header>
+              <div class="card-accent-value">
+                <span class="card-accent-num">{leader.count}</span>
+                <span class="card-accent-unit">{leader.count === 1 ? card.unit : card.unit + 's'}</span>
+              </div>
+              <div class="card-accent-holder">
+                <div class={`card-accent-avatar${leaderImg ? ' card-accent-avatar-image' : ''}`}>
+                  {leaderImg
+                    ? <img src={leaderImg} alt="" loading="lazy" />
+                    : <span class="card-accent-avatar-tag">DRIVER</span>}
+                </div>
+                <div class="card-accent-holder-text">
+                  <div class="card-accent-holder-name"><span>{leader.name}</span></div>
+                  <div class="card-accent-holder-ctx">All-time leader at this circuit</div>
+                </div>
+              </div>
+              <ol class="card-bars">
+                {card.top.map((e, i) => {
+                  const width = (e.count / maxValue) * 100;
+                  return (
+                    <li class={`card-bar${i === 0 ? ' card-bar-lead' : ''}`}>
+                      <span class="card-bar-rank">{i + 1}</span>
+                      <span class="card-bar-cc"></span>
+                      <div class="card-bar-track">
+                        <span class="card-bar-fill" style={`width:${width}%;`}></span>
+                        <span class="card-bar-name">{e.name}</span>
+                      </div>
+                      <span class="card-bar-value">
+                        <span class="card-bar-num">{e.count}</span>
+                        <span class="card-bar-unit"> {card.unit}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </a>
+          );
+        })}
+      </div>
+    )}
+
+    {race.lastHeldHere && race.lastHeldHere.podium.length > 0 && (
+      <div class="race-venue-last">
+        <div class="t-eyebrow race-venue-last-head">Last podium here · {race.lastHeldHere.year}</div>
+        <div class="race-upcoming-podium">
+          {race.lastHeldHere.podium.map((p: any) => (
+            <div class={`podium-step podium-${p.position}`}>
+              <div class="podium-pos">P{p.position}</div>
+              <div class="podium-name">
+                {p.driverRef ? <a href={`/drivers/${p.driverRef}/`}>{p.driverName}</a> : p.driverName}
+              </div>
+              <div class="podium-team">
+                {p.constructorRef ? <a href={`/teams/${p.constructorRef}/`}>{p.constructorName}</a> : p.constructorName}
+              </div>
+            </div>
+          ))}
+        </div>
+        <a class="inline-link race-upcoming-history-link" href={`/races/${race.lastHeldHere.year}/${race.lastHeldHere.round}/`}>
+          → Full {race.lastHeldHere.year} result
+        </a>
+      </div>
+    )}
   </>
 )}
 
@@ -175,6 +488,17 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
         btn.textContent = collapsed ? btn.getAttribute('data-less') : btn.getAttribute('data-more');
       });
     });
+  </script>
+)}
+
+{track.hasTrackPath && (
+  <script is:inline>
+    // Respect reduced-motion: pause the SMIL dot-lap animation on the track map.
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('svg.ct-svg').forEach(function (s) {
+        if (s.pauseAnimations) s.pauseAnimations();
+      });
+    }
   </script>
 )}
 
