@@ -161,8 +161,10 @@ html.light .topbar-mobile {
   transition: background .15s, color .15s;
 }
 .theme-opt:first-child { border-right: 1px solid var(--line-2); }
-.theme-opt.active { background: var(--bg-3); color: var(--fg-1); }
-.theme-opt:hover:not(.active) { background: var(--bg-hover); color: var(--fg-2); }
+/* Solid ink chip for the active segment (fg-on-bg) — matches the Career
+   Mosaic sort toggle so "which is selected" reads at a glance. */
+.theme-opt.active { background: var(--fg-1); color: var(--bg-1); }
+.theme-opt:hover:not(.active) { background: var(--bg-2); color: var(--fg-1); }
 
 /* Drivers/Constructors switcher (mobile standings pages) */
 .standings-toggle {
