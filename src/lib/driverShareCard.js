@@ -36,7 +36,7 @@ const THEMES = {
     accent: '#E8002D', accentText: '#FF3B57', gold: '#E0A82E',
     bandInk: '#0C0C0D', duelThem: '#484C56',
     twill: 'rgba(255,255,255,0.02)', logo: '/images/logo/f1gures-wordmark-dark.png',
-    waffle: { win: '#E0A82E', podium: '#AEB6C4', points: '#E8722E', finished: '#62656E', mech: '#CF463D', crash: '#97302F', dsq: '#611A22' },
+    waffle: { win: '#E0A82E', podium: '#4C90D0', points: '#E8722E', finished: '#62656E', mech: '#CF463D', crash: '#97302F', dsq: '#611A22' },
   },
   light: {
     bg: '#FFFFFF', panel: '#F4F4F6', line: '#DADBE1', track: '#E6E7EC',
@@ -44,7 +44,7 @@ const THEMES = {
     accent: '#E8002D', accentText: '#C8002A', gold: '#CF9A1F',
     bandInk: '#0C0C0D', duelThem: '#AAB0BC',
     twill: 'rgba(0,0,0,0.025)', logo: '/images/logo/f1gures-wordmark-light.png',
-    waffle: { win: '#CF9A1F', podium: '#8C94A3', points: '#D8611F', finished: '#797C85', mech: '#BB3F36', crash: '#8A2A2A', dsq: '#5E1620' },
+    waffle: { win: '#CF9A1F', podium: '#3B80C0', points: '#D8611F', finished: '#797C85', mech: '#BB3F36', crash: '#8A2A2A', dsq: '#5E1620' },
   },
 };
 
