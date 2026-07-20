@@ -292,11 +292,14 @@ function waffleKind(r: Props['driver']['perRace'][number]): WaffleKind {
   if (/(accident|collision|spun|crash|punctur|debris|contact|damage)/.test(t)) return 'crash';
   return 'mech';
 }
-const waffleTiles = driver.perRace.map(r => {
+// perRace is sorted oldest→newest (build-archive), so the map index doubles as
+// the chronological rank — carried on each tile so the mosaic can flip between
+// outcome order (source order below) and chronological order via CSS `order`.
+const waffleTiles = driver.perRace.map((r, i) => {
   const kind = waffleKind(r);
   const finish = r.position != null ? `P${r.position}` : (r.positionText || 'DNF');
   const title = `${(r.raceName || 'Race').replace(/ grand prix$/i, ' GP')} ${r.year} · ${finish}${r.status ? ` · ${r.status}` : ''}`;
-  return { kind, title, href: raceUrl(r.year, r.round) };
+  return { kind, title, href: raceUrl(r.year, r.round), chrono: i };
 });
 const waffleRank: Record<WaffleKind, number> = Object.fromEntries(
   WAFFLE_ORDER.map((k, i) => [k, i])
@@ -730,7 +733,11 @@ const outcomesShare = {
           <span class="waffle-head-title">Every start as a tile</span>
           <span class="waffle-head-count t-mono">{waffleTotal} tiles</span>
         </div>
-        <p class="waffle-blurb">One square per race across the whole career, sorted by outcome — tap a tile to open that race. The block of gold wins, the long tail of points, the small red corner of retirements.</p>
+        <p class="waffle-blurb">One square per race across the whole career — tap a tile to open that race. Sort by <strong>outcome</strong> for the block of gold wins tapering to the red corner of retirements, or by <strong>chronological</strong> order to read the career start-to-finish.</p>
+        <div class="waffle-order-toggle" role="group" aria-label="Mosaic tile order">
+          <button type="button" class="active" data-waffle-order="outcome" aria-pressed="true">Outcome</button>
+          <button type="button" data-waffle-order="chrono" aria-pressed="false">Chronological</button>
+        </div>
         <div class="waffle-legend">
           {waffleCounts.map(c => (
             <span class="waffle-key">
@@ -743,8 +750,8 @@ const outcomesShare = {
         <div class="waffle-grid" role="img" aria-label={`${fullName}'s ${waffleTotal} career races by outcome`}>
           {waffleSorted.map(t => (
             t.href
-              ? <a class={`waffle-tile w-${t.kind}`} href={t.href} title={t.title} aria-label={t.title}></a>
-              : <span class={`waffle-tile w-${t.kind}`} title={t.title}></span>
+              ? <a class={`waffle-tile w-${t.kind}`} style={`--chrono:${t.chrono}`} href={t.href} title={t.title} aria-label={t.title}></a>
+              : <span class={`waffle-tile w-${t.kind}`} style={`--chrono:${t.chrono}`} title={t.title}></span>
           ))}
         </div>
         <div class="dv-share-row">
@@ -801,6 +808,27 @@ const outcomesShare = {
     </div>
   )}
   </div>
+
+  {showWaffle && (
+    <script is:inline>
+      (function () {
+        var grid = document.querySelector('.waffle-grid');
+        var toggle = document.querySelector('.waffle-order-toggle');
+        if (!grid || !toggle) return;
+        toggle.querySelectorAll('[data-waffle-order]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var chrono = btn.getAttribute('data-waffle-order') === 'chrono';
+            grid.classList.toggle('waffle-grid--chrono', chrono);
+            toggle.querySelectorAll('[data-waffle-order]').forEach(function (b) {
+              var active = b === btn;
+              b.classList.toggle('active', active);
+              b.setAttribute('aria-pressed', String(active));
+            });
+          });
+        });
+      })();
+    </script>
+  )}
 
   {driver.perSeason.length > 0 && (
     <>
@@ -1314,6 +1342,23 @@ const outcomesShare = {
   .w-mech { background: var(--w-mech); }
   .w-crash { background: var(--w-crash); }
   .w-dsq { background: var(--w-dsq); }
+
+  /* Order toggle. The default DOM order is outcome-sorted; adding
+     .waffle-grid--chrono flips every tile to its chronological rank via CSS
+     `order` (grid auto-placement honours `order`), so the switch is a pure
+     reorder — no re-render, no island. */
+  .waffle-order-toggle {
+    display: inline-flex; gap: 0; margin: 0;
+    border: 1px solid var(--line-1); border-radius: 6px; overflow: hidden;
+  }
+  .waffle-order-toggle button {
+    background: transparent; border: 0; padding: 7px 13px;
+    font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--fg-3); cursor: pointer;
+  }
+  .waffle-order-toggle button + button { border-left: 1px solid var(--line-1); }
+  .waffle-order-toggle button.active { background: var(--bg-2); color: var(--fg-1); }
+  .waffle-grid--chrono .waffle-tile { order: var(--chrono); }
 
   .waffle-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 16px; margin-bottom: 16px; }
   .waffle-key { display: inline-flex; align-items: center; gap: 7px; }
