@@ -71,6 +71,44 @@ function drawHatch(ctx, x, y, w, h, gap = 4) {
   ctx.restore();
 }
 
+// A small trophy stamped on win tiles — mirrors the CSS background-image on
+// .waffle-tile.w-win, so the exported card marks wins the same way the page
+// does. (x,y) is the tile's top-left; s is the tile size. The 24-unit paths
+// match the inline SVG in DriverPage.astro.
+function drawTrophy(ctx, x, y, s, color = '#492F04') {
+  const pad = s * 0.14;
+  const u = (s - 2 * pad) / 24;
+  const ox = x + pad, oy = y + pad;
+  const px = (n) => ox + n * u, py = (n) => oy + n * u;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineJoin = 'round';
+  // Cup: flat rim then a bowl arc.
+  ctx.beginPath();
+  ctx.moveTo(px(6), py(4));
+  ctx.lineTo(px(18), py(4));
+  ctx.lineTo(px(18), py(7));
+  ctx.arc(px(12), py(7), 6 * u, 0, Math.PI, false);
+  ctx.closePath();
+  ctx.fill();
+  // Stem + pedestal base.
+  ctx.beginPath();
+  const base = [[10.6, 11], [13.4, 11], [13.4, 15.4], [16, 15.4], [16, 18], [8, 18], [8, 15.4], [10.6, 15.4]];
+  base.forEach(([bx, by], i) => (i ? ctx.lineTo(px(bx), py(by)) : ctx.moveTo(px(bx), py(by))));
+  ctx.closePath();
+  ctx.fill();
+  // Side handles.
+  ctx.lineWidth = Math.max(1, 1.6 * u);
+  ctx.beginPath();
+  ctx.arc(px(6), py(7.5), 2.5 * u, -Math.PI / 2, Math.PI / 2, true);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(px(18), py(7.5), 2.5 * u, -Math.PI / 2, Math.PI / 2, false);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // Per-section chrome: the accent kicker, the mono footer tag, and the file slug.
 const SECTIONS = {
   duels: { kicker: 'TEAMMATE DUELS', tag: 'TEAMMATE DUELS', slug: 'teammate-duels' },
@@ -387,6 +425,7 @@ function paintMosaic(ctx, PAL, payload, box) {
     ctx.fillStyle = PAL.waffle[kind] || PAL.fg4;
     ctx.fillRect(tx, ty, tile, tile);
     if (HATCH_KINDS.has(kind)) drawHatch(ctx, tx, ty, tile, tile, Math.max(3, tile / 5));
+    if (kind === 'win') drawTrophy(ctx, tx, ty, tile);
   });
 }
 
