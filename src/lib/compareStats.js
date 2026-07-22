@@ -312,22 +312,29 @@ export function fmtVal(v, fmt) {
 /** Headline metrics shown on the canvas, in display order. All are
  *  higher-is-better, so the longest bar always wins — reads cleanly with
  *  N stacked bars. `unit` is the lowercase caption under the label. */
+// Every metric here is higher-is-better and all-era-safe (nothing that
+// silently reads 0 for pre-2004 drivers — fastest laps stay off the canvas
+// for that reason). A null value simply draws no bar.
 export const DRIVER_CANVAS_METRICS = [
   { key: 'championships', label: 'Championships', unit: 'world titles', fmt: 'int' },
   { key: 'wins', label: 'Career wins', unit: 'grands prix', fmt: 'int' },
   { key: 'podiums', label: 'Podiums', unit: 'top three', fmt: 'int' },
   { key: 'poles', label: 'Pole positions', unit: 'P1 starts', fmt: 'int' },
+  { key: 'frontRow', label: 'Front-row starts', unit: 'grid P1–P2', fmt: 'int' },
   { key: 'points', label: 'Career points', unit: 'all-time', fmt: 'int' },
   { key: 'winRate', label: 'Win rate', unit: '% of starts', fmt: 'pct' },
+  { key: 'teammateQuali', label: 'Teammate quali', unit: '% duels won', fmt: 'pct' },
 ];
 
 export const TEAM_CANVAS_METRICS = [
   { key: 'championships', label: 'Championships', unit: 'constructors', fmt: 'int' },
   { key: 'wins', label: 'Race wins', unit: 'grands prix', fmt: 'int' },
   { key: 'podiums', label: 'Podiums', unit: 'top three', fmt: 'int' },
+  { key: 'winningSeasons', label: 'Winning seasons', unit: 'with a win', fmt: 'int' },
   { key: 'points', label: 'Points', unit: 'all-time', fmt: 'int' },
   { key: 'seasons', label: 'Seasons', unit: 'in F1', fmt: 'int' },
   { key: 'winRate', label: 'Win rate', unit: '% of races', fmt: 'pct' },
+  { key: 'winsPerSeason', label: 'Wins / season', unit: 'average', fmt: 'dec1' },
 ];
 
 /** Every headline value for one driver doc — same math as driverRows. */
@@ -335,13 +342,18 @@ function driverMetricVals(d) {
   const c = d.career || {};
   const pts = sum(d.perSeason || [], (s) => s.points);
   const races = num(c.races);
+  const tq = (d.teammates || {}).quali || {};
+  const tqN = num(tq.wins) + num(tq.losses);
+  const frontRow = (d.perRace || []).filter((r) => r.grid === 1 || r.grid === 2).length;
   return {
     championships: num(c.championships),
     wins: num(c.wins),
     podiums: num(c.podiums),
     poles: num(c.poles),
+    frontRow,
     points: pts,
     winRate: rate(num(c.wins), races),
+    teammateQuali: tqN > 0 ? rate(num(tq.wins), tqN) : null,
   };
 }
 
@@ -350,13 +362,16 @@ function teamMetricVals(t) {
   const c = t.career || {};
   const pts = sum(t.perSeason || [], (s) => s.points);
   const races = num(c.races);
+  const winningSeasons = (t.perSeason || []).filter((s) => num(s.wins) > 0).length;
   return {
     championships: num(c.championships),
     wins: num(c.wins),
     podiums: num(c.podiums),
+    winningSeasons,
     points: pts,
     seasons: num(c.seasons),
     winRate: rate(num(c.wins), races),
+    winsPerSeason: num(c.seasons) ? num(c.wins) / num(c.seasons) : null,
   };
 }
 
