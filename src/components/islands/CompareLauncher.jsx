@@ -24,17 +24,28 @@ import {
 const MAX = 6;
 
 // Distinct fallbacks used only when two entities would otherwise share a hue
-// (two McLaren drivers, say) — so every bar stays tellable apart.
-const FALLBACK_COLORS = ['#E8002D', '#3671C6', '#FF8000', '#27F4D2', '#8B5CF6', '#FFD700'];
+// (two McLaren drivers, say). Led by colours unlikely to collide with a real
+// team fill, so the shifted entity stays clearly apart.
+const FALLBACK_COLORS = ['#8B5CF6', '#EC4899', '#FFD700', '#27F4D2', '#3671C6', '#FF8000'];
 
-/** Keep each entity's own team colour where it's unique; shift only the
+const hexRgb = (h) => { const s = h.replace('#', ''); return [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16)); };
+/** Perceptually close? Catches near-duplicate reds/blues (Ferrari vs a red
+ *  fallback, Williams vs Racing Bulls) that an exact-match test would miss. */
+const tooClose = (a, b) => {
+  if (!a || !b || a[0] !== '#' || b[0] !== '#') return false;
+  const A = hexRgb(a), B = hexRgb(b);
+  return Math.abs(A[0] - B[0]) + Math.abs(A[1] - B[1]) + Math.abs(A[2] - B[2]) < 64;
+};
+
+/** Keep each entity's own team colour where it's distinct; shift only the
  *  collisions onto a distinct fallback, so N bars never blur together. */
 function assignColors(picks) {
-  const used = new Set();
+  const used = [];
   return picks.map((p, i) => {
     let c = p.color && p.color[0] === '#' ? p.color.toUpperCase() : null;
-    if (!c || used.has(c)) c = FALLBACK_COLORS.find((f) => !used.has(f)) || c || FALLBACK_COLORS[i % FALLBACK_COLORS.length];
-    used.add(c);
+    const clashes = (col) => !col || used.some((u) => tooClose(u, col));
+    if (clashes(c)) c = FALLBACK_COLORS.find((f) => !clashes(f)) || c || FALLBACK_COLORS[i % FALLBACK_COLORS.length];
+    used.push(c);
     return c;
   });
 }
@@ -167,42 +178,40 @@ export default function CompareLauncher() {
         )}
       </div>
 
-      <div className="cvs-stage">
-        <div className="cvs-side">
-          {picks.map((p, i) => (
-            <EntityCard
-              key={p.ref}
-              pick={p}
-              kind={type}
-              color={canvas?.colors?.[i] || p.color}
-              info={canvas?.entities?.[i] || null}
-              onReplace={() => setPicking({ mode: 'replace', index: i })}
-              onRemove={() => removeAt(i)}
-            />
-          ))}
-          {picks.length < MAX && (
-            <button className="cvs-add" onClick={() => setPicking({ mode: 'add' })} type="button">
-              <span className="cvs-add-plus" aria-hidden="true">+</span>
-              <span className="cvs-add-hint">Add {noun}</span>
-            </button>
-          )}
-        </div>
+      <div className="cvs-cards">
+        {picks.map((p, i) => (
+          <EntityCard
+            key={p.ref}
+            pick={p}
+            kind={type}
+            color={canvas?.colors?.[i] || p.color}
+            info={canvas?.entities?.[i] || null}
+            onReplace={() => setPicking({ mode: 'replace', index: i })}
+            onRemove={() => removeAt(i)}
+          />
+        ))}
+        {picks.length < MAX && (
+          <button className="cvs-add" onClick={() => setPicking({ mode: 'add' })} type="button">
+            <span className="cvs-add-plus" aria-hidden="true">+</span>
+            <span className="cvs-add-hint">Add {noun}</span>
+          </button>
+        )}
+      </div>
 
-        <div className="cvs-main">
-          {status === 'loading' && (
-            <div className="cvs-panel cvs-panel-empty"><span className="cmp-spin" aria-hidden="true" />Building the canvas…</div>
-          )}
-          {status === 'error' && (
-            <div className="cvs-panel cvs-panel-empty">Couldn’t load one of those. Try another pick.</div>
-          )}
-          {status === '' && canvas && <CanvasPanel canvas={canvas} />}
-          {status === '' && picks.length < 2 && (
-            <div className="cvs-panel cvs-panel-empty cvs-prompt">
-              <span className="cvs-prompt-vs" aria-hidden="true">VS</span>
-              Pin any two {noun}s to open the canvas — titles, wins, poles, points and more, side by side. Add a third or fourth to turn it into a shoot-out.
-            </div>
-          )}
-        </div>
+      <div className="cvs-main">
+        {status === 'loading' && (
+          <div className="cvs-panel cvs-panel-empty"><span className="cmp-spin" aria-hidden="true" />Building the canvas…</div>
+        )}
+        {status === 'error' && (
+          <div className="cvs-panel cvs-panel-empty">Couldn’t load one of those. Try another pick.</div>
+        )}
+        {status === '' && canvas && <CanvasPanel canvas={canvas} />}
+        {status === '' && picks.length < 2 && (
+          <div className="cvs-panel cvs-panel-empty cvs-prompt">
+            <span className="cvs-prompt-vs" aria-hidden="true">VS</span>
+            Pin any two {noun}s to open the canvas — titles, wins, poles, points and more, side by side. Add a third or fourth to turn it into a shoot-out.
+          </div>
+        )}
       </div>
 
       {canvas && (
@@ -319,14 +328,13 @@ function CanvasPanel({ canvas }) {
                 const e = canvas.entities[i];
                 const frac = max > 0 && val != null ? val / max : 0;
                 const lead = m.leaders.length >= 1 && m.leaders.includes(i);
+                const label = canvas.kind === 'team' ? e.name : surnameOf(e.name);
                 return (
                   <div className={`cvs-bar ${lead ? 'is-lead' : ''}`} key={e.ref} style={{ '--cc': canvas.colors[i] }}>
-                    <span className="cvs-bar-id">
-                      <EntityFace kind={canvas.kind} refId={e.ref} color={canvas.colors[i]} name={e.name} sm />
-                      <span className="cvs-bar-code">{tagOf(e)}</span>
-                    </span>
+                    <EntityFace kind={canvas.kind} refId={e.ref} color={canvas.colors[i]} name={e.name} sm />
                     <span className="cvs-track">
                       <span className="cvs-fill" style={{ width: live ? `${Math.max(frac * 100, val ? 2 : 0)}%` : '0%' }} />
+                      <span className="cvs-bar-name">{label}</span>
                     </span>
                     <span className={`cvs-val ${lead ? 'is-lead' : ''}`}>{fmtVal(val, m.fmt)}</span>
                   </div>
