@@ -76,17 +76,17 @@ function scoreHay(hay, tokens) {
 }
 
 /** Current grid first (drivers racing this season / teams active latest year),
- *  minus an optional excluded ref. */
-function gridSeed(kind, list, excludeRef) {
+ *  minus any excluded refs (the entities already in play). */
+function gridSeed(kind, list, exclude) {
   if (kind === 'team') {
     const maxYear = Math.max(...list.map((t) => t.lastYear || 0));
     return list
-      .filter((t) => t.lastYear === maxYear && t.constructorRef !== excludeRef)
+      .filter((t) => t.lastYear === maxYear && !exclude.has(t.constructorRef))
       .sort((a, b) => (b.championships || 0) - (a.championships || 0) || (b.wins || 0) - (a.wins || 0));
   }
   const maxYear = Math.max(...list.map((d) => d.currentSeasonYear || 0));
   return list
-    .filter((d) => d.currentSeasonYear === maxYear && d.driverRef !== excludeRef)
+    .filter((d) => d.currentSeasonYear === maxYear && !exclude.has(d.driverRef))
     .sort((a, b) => (b.currentSeasonPoints || 0) - (a.currentSeasonPoints || 0));
 }
 
@@ -130,7 +130,7 @@ function CountVal({ value, fmt, live, className }) {
 }
 
 // ── rival picker body (search + list; loads its own index) ───────
-export function PickerBody({ kind, excludeRef = null, onPick, autoFocus = true, placeholder }) {
+export function PickerBody({ kind, excludeRef = null, excludeRefs = null, onPick, autoFocus = true, placeholder }) {
   const [list, setList] = useState(null);
   const [status, setStatus] = useState('');
   const [query, setQuery] = useState('');
@@ -139,14 +139,19 @@ export function PickerBody({ kind, excludeRef = null, onPick, autoFocus = true, 
   useEffect(() => { setList(null); loadIndex(kind).then(setList).catch(() => setStatus('error')); }, [kind]);
   useEffect(() => { if (autoFocus) requestAnimationFrame(() => inputRef.current?.focus()); }, [autoFocus, kind]);
 
+  const exclude = useMemo(
+    () => new Set([...(excludeRefs || []), excludeRef].filter(Boolean)),
+    [excludeRef, excludeRefs],
+  );
+
   const results = useMemo(() => {
     if (!list) return [];
     const q = query.trim().toLowerCase();
-    if (!q) return gridSeed(kind, list, excludeRef).slice(0, 24);
+    if (!q) return gridSeed(kind, list, exclude).slice(0, 24);
     const tokens = q.split(/\s+/).filter(Boolean);
     const scored = [];
     for (const e of list) {
-      if (entryRef(kind, e) === excludeRef) continue;
+      if (exclude.has(entryRef(kind, e))) continue;
       const s = scoreHay(entryHay(kind, e), tokens);
       if (s >= 0) scored.push({ s, e });
     }
@@ -154,7 +159,7 @@ export function PickerBody({ kind, excludeRef = null, onPick, autoFocus = true, 
       b.s - a.s ||
       ((kind === 'team' ? b.e.championships : b.e.wins) || 0) - ((kind === 'team' ? a.e.championships : a.e.wins) || 0));
     return scored.slice(0, 24).map((x) => x.e);
-  }, [list, query, kind, excludeRef]);
+  }, [list, query, kind, exclude]);
 
   const seededLabel = query.trim() ? 'Best matches' : (kind === 'team' ? 'Current grid' : 'On the grid now');
 

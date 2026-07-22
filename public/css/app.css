@@ -5288,6 +5288,119 @@ a.cmp-foot-btn { text-decoration: none; display: inline-flex; align-items: cente
 }
 
 /* ============================================================
+   COMPARE CANVAS  (CompareLauncher.jsx — the /compare/ page)
+   Multi-entity head-to-head: photo cards + a shared metric-bars
+   panel (one bar per pinned entity per metric) + a compare tray.
+   The 2-way overlay (.cmp-* above) still powers the rivalry/share
+   card for pairs. Colours come in as the --cc entity var.
+   ============================================================ */
+.cvs { display: flex; flex-direction: column; gap: 16px; }
+
+/* entity photo cards + drop slot */
+.cvs-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.cvs-card {
+  position: relative; display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 18px 12px 12px; background: var(--bg-2); border: 1px solid var(--line-2);
+  text-align: center; min-width: 0;
+}
+.cvs-card-rule { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--cc, var(--accent)); }
+.cvs-card-x {
+  position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; display: flex;
+  align-items: center; justify-content: center; background: transparent; border: 1px solid var(--line-1);
+  color: var(--fg-4); cursor: pointer; font-size: 11px; transition: color var(--mo, 120ms) ease, border-color var(--mo, 120ms) ease;
+}
+.cvs-card-x:hover { color: var(--neg); border-color: var(--neg); }
+.cvs-card-face-btn { padding: 0; background: none; border: none; cursor: pointer; line-height: 0; }
+.cvs-face {
+  width: 84px; height: 84px; object-fit: cover; object-position: top center;
+  background: color-mix(in srgb, var(--cc, var(--line-3)) 16%, var(--bg-3));
+  border: 1px solid var(--line-1);
+}
+.cvs-face.is-team { object-fit: contain; padding: 10px; background: #fff; }
+.cvs-face.is-mono {
+  display: flex; align-items: center; justify-content: center; font-family: var(--f-display);
+  font-weight: 800; font-size: 30px; color: var(--fg-1);
+}
+.cvs-card-face-btn:hover .cvs-face { border-color: var(--cc, var(--line-3)); }
+.cvs-card-name {
+  font-family: var(--f-display); font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em;
+  font-size: 18px; color: var(--fg-1); line-height: 1; max-width: 100%;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none;
+}
+.cvs-card-name:hover { color: var(--accent-text); }
+.cvs-card-sub {
+  display: flex; align-items: center; gap: 6px; min-height: 14px;
+  font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3);
+}
+.cvs-card-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.cvs-card-swap {
+  margin-top: 2px; font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--fg-4); background: transparent; border: none; cursor: pointer; transition: color var(--mo, 120ms) ease;
+}
+.cvs-card-swap:hover { color: var(--accent-text); }
+
+.cvs-drop {
+  justify-content: center; gap: 10px; min-height: 152px; cursor: pointer; color: var(--fg-3);
+  border-style: dashed; transition: border-color var(--mo, 120ms) ease, color var(--mo, 120ms) ease;
+}
+.cvs-drop:hover { border-color: var(--accent); color: var(--fg-1); }
+.cvs-drop-plus { font-family: var(--f-display); font-weight: 800; font-size: 30px; line-height: 1; }
+.cvs-drop-hint { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; }
+
+/* metric bars panel */
+.cvs-panel { background: var(--bg-2); border: 1px solid var(--line-2); }
+.cvs-panel-empty {
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 160px;
+  padding: 24px; color: var(--fg-3); font-family: var(--f-display); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; font-size: 13px;
+}
+.cvs-metric { display: grid; grid-template-columns: 168px 1fr; gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line-1); }
+.cvs-metric:last-of-type { border-bottom: none; }
+.cvs-metric-label { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 13px; color: var(--fg-2); line-height: 1.2; }
+.cvs-metric-unit { display: block; font-family: var(--f-mono); font-weight: 400; font-size: 9px; letter-spacing: 0.1em; color: var(--fg-4); margin-top: 3px; text-transform: uppercase; }
+.cvs-bars { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cvs-bar { display: grid; grid-template-columns: 1fr 56px; align-items: center; gap: 10px; }
+.cvs-track { position: relative; height: 12px; background: var(--bg-3); overflow: hidden; }
+.cvs-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); transition: width 0.6s ease; }
+.cvs-val { font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; color: var(--fg-3); }
+.cvs-val.is-lead { color: var(--fg-1); font-weight: 600; }
+
+.cvs-verdict { display: flex; align-items: baseline; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line-2); background: var(--bg-3); flex-wrap: wrap; }
+.cvs-verdict-kick { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); }
+.cvs-verdict-txt { font-family: var(--f-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; font-size: 14px; color: var(--fg-2); }
+.cvs-verdict-txt b { color: var(--fg-1); }
+
+/* compare tray */
+.cvs-tray { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; background: var(--bg-2); border: 1px solid var(--line-2); }
+.cvs-tray-lbl { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); flex: none; }
+.cvs-tray-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.cvs-chip {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 5px 8px 5px 12px;
+  background: var(--bg-3); border: 1px solid var(--line-1); font-family: var(--f-display); font-weight: 700;
+  letter-spacing: 0.03em; font-size: 12px; color: var(--fg-1);
+}
+.cvs-chip::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--cc, var(--accent)); }
+.cvs-chip-x { background: transparent; border: none; color: var(--fg-4); cursor: pointer; font-size: 10px; line-height: 1; padding: 2px; transition: color var(--mo, 120ms) ease; }
+.cvs-chip-x:hover { color: var(--neg); }
+.cvs-chip-add { padding: 6px 12px; color: var(--fg-3); cursor: pointer; }
+.cvs-chip-add::before { display: none; }
+.cvs-chip-add:hover { color: var(--fg-1); border-color: var(--line-3); }
+.cvs-tray-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+
+.cvs-launch-hint {
+  color: var(--fg-3); font-size: 14px; line-height: 1.6; padding: 22px 24px;
+  border: 1px dashed var(--line-2); background: var(--bg-2); text-align: center;
+}
+
+@media (max-width: 720px) {
+  .cvs-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .cvs-metric { grid-template-columns: 1fr; gap: 8px; padding: 12px; }
+  .cvs-bar { grid-template-columns: 1fr 48px; }
+  .cvs-tray-actions { margin-left: 0; width: 100%; }
+  .cvs-face { width: 70px; height: 70px; }
+}
+
+/* ============================================================
    SITE FOOTER  (Footer.astro, global via Chrome)
    Desktop = records-style branded footer; mobile collapses
    (CSS-only) to the minimal treatment "B" and clears the fixed
