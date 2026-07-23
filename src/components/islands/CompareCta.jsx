@@ -13,13 +13,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { compareDrivers, compareTeams } from '../../lib/compareStats.js';
 import {
-  loadDoc, loadIndex, entryRef, entryColor, readableText, PickerBody, CompareView,
+  loadDoc, loadIndex, entryRef, entryName, entryColor, readableText, PickerBody, CompareView,
 } from './compareShared.jsx';
+
+const surnameOf = (n) => (n || '').trim().split(/\s+/).slice(-1)[0] || n;
 
 export default function CompareCta({ kind = 'driver', refId, name, teamColor }) {
   const [mode, setMode] = useState('idle');   // idle | pick | overlay
   const [cmp, setCmp] = useState(null);
   const [status, setStatus] = useState('');    // '', 'loading', 'error'
+  const [examples, setExamples] = useState([]); // a few suggested opponents
 
   const open = mode === 'pick' || mode === 'overlay';
 
@@ -57,6 +60,32 @@ export default function CompareCta({ kind = 'driver', refId, name, teamColor }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // a few one-tap example opponents: two current-grid names + the all-time
+  // greats, deduped and minus this page's own entity.
+  useEffect(() => {
+    let alive = true;
+    loadIndex(kind).then((list) => {
+      if (!alive) return;
+      const notSelf = list.filter((e) => entryRef(kind, e) !== refId);
+      const maxYear = kind === 'team'
+        ? Math.max(0, ...list.map((t) => t.lastYear || 0))
+        : Math.max(0, ...list.map((d) => d.currentSeasonYear || 0));
+      const current = notSelf
+        .filter((e) => (kind === 'team' ? e.lastYear === maxYear : e.currentSeasonYear === maxYear))
+        .sort((a, b) => (kind === 'team' ? (b.wins || 0) - (a.wins || 0) : (b.currentSeasonPoints || 0) - (a.currentSeasonPoints || 0)));
+      const greats = notSelf.slice().sort((a, b) => (b.championships || 0) - (a.championships || 0) || (b.wins || 0) - (a.wins || 0));
+      const out = []; const seen = new Set();
+      const push = (e) => {
+        const r = entryRef(kind, e);
+        if (r && !seen.has(r) && out.length < 4) { seen.add(r); out.push({ ref: r, name: entryName(kind, e), color: entryColor(kind, e) }); }
+      };
+      current.slice(0, 2).forEach(push);
+      greats.forEach(push);
+      setExamples(out);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [kind, refId]);
+
   function setVs(rref) {
     try {
       const url = new URL(window.location.href);
@@ -70,19 +99,38 @@ export default function CompareCta({ kind = 'driver', refId, name, teamColor }) 
 
   return (
     <>
-      <button
-        type="button"
-        className="cmp-cta"
-        style={{ '--cmp-team': teamColor || 'var(--accent)', '--cmp-fg': readableText(teamColor) }}
-        onClick={() => setMode('pick')}
-        aria-haspopup="dialog"
-      >
-        <span className="cmp-cta-vs" aria-hidden="true">VS</span>
-        <span className="cmp-cta-txt">Compare</span>
-        <span className="cmp-cta-sub">{name} against any {kind === 'team' ? 'constructor' : 'driver'} in history</span>
-        <span className="cmp-cta-arrow" aria-hidden="true">→</span>
-        <span className="cmp-cta-shine" aria-hidden="true" />
-      </button>
+      <div className="cmp-cta-wrap">
+        <button
+          type="button"
+          className="cmp-cta"
+          style={{ '--cmp-team': teamColor || 'var(--accent)', '--cmp-fg': readableText(teamColor) }}
+          onClick={() => setMode('pick')}
+          aria-haspopup="dialog"
+        >
+          <span className="cmp-cta-vs" aria-hidden="true">VS</span>
+          <span className="cmp-cta-txt">Compare</span>
+          <span className="cmp-cta-sub">{name} against any {kind === 'team' ? 'constructor' : 'driver'} in history</span>
+          <span className="cmp-cta-arrow" aria-hidden="true">→</span>
+          <span className="cmp-cta-shine" aria-hidden="true" />
+        </button>
+        {examples.length > 0 && (
+          <div className="cmp-cta-egs">
+            <span className="cmp-cta-egs-lbl">Try</span>
+            {examples.map((e) => (
+              <button
+                key={e.ref}
+                type="button"
+                className="cmp-cta-eg"
+                style={{ '--cc': e.color }}
+                onClick={() => pick(e.ref)}
+              >
+                <span className="cmp-cta-eg-vs" aria-hidden="true">vs</span>
+                {kind === 'team' ? e.name : surnameOf(e.name)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {mode === 'pick' && createPortal(
         <div className="cmp-back" role="dialog" aria-modal="true" aria-label={`Compare ${name} with…`}

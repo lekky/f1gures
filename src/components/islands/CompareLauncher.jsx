@@ -20,6 +20,9 @@ import {
   loadDoc, loadIndex, entryRef, entryName, entryColor,
   PickerBody, CompareView, SuggestedMatchups, LOGO_ALIAS,
 } from './compareShared.jsx';
+import {
+  renderCanvasCard, buildCanvasBlob, canvasShareFileName, CANVAS_SHARE_FORMATS,
+} from '../../lib/compareCanvasCard.js';
 
 const MAX = 6;
 
@@ -51,8 +54,6 @@ function assignColors(picks) {
 }
 
 const surnameOf = (name) => (name || '').trim().split(/\s+/).slice(-1)[0] || name;
-/** Short bar tag: driver code / team short, falling back to the surname. */
-const tagOf = (e) => (e.code || e.short || surnameOf(e.name) || '').toUpperCase();
 
 export default function CompareLauncher() {
   const [type, setType] = useState('driver');     // 'driver' | 'team'
@@ -63,6 +64,13 @@ export default function CompareLauncher() {
   const [picking, setPicking] = useState(null);     // null | { mode:'add' } | { mode:'replace', index }
   const [rivalry, setRivalry] = useState(false);    // 2-way overlay open?
   const [toast, setToast] = useState('');
+  // share-image modal
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareFmt, setShareFmt] = useState('sq');
+  const [shareLight, setShareLight] = useState(false);
+  const [shareImg, setShareImg] = useState(null);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [busy, setBusy] = useState('');
 
   // deep-link: /compare/?type=&e=ref1,ref2  (legacy ?a=&b= still works)
   useEffect(() => {
@@ -146,11 +154,55 @@ export default function CompareLauncher() {
   function removeAt(i) { setPicks((cur) => cur.filter((_, idx) => idx !== i)); }
   function pickMatchup(sa, sb) { setPicks([sa, sb]); }
 
-  function shareCanvas() {
-    const url = window.location.href;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url).then(() => setToast('Canvas link copied')).catch(() => setToast('Copy the URL from the address bar'));
-    } else setToast('Copy the URL from the address bar');
+  // ── share-image modal (mirrors the 2-way CompareView share flow) ──
+  function openShare() {
+    if (typeof document !== 'undefined') setShareLight(document.documentElement.classList.contains('light'));
+    setShareImg(null);
+    setShareOpen(true);
+  }
+  function closeShare() { setShareOpen(false); setShareImg(null); }
+
+  useEffect(() => {
+    if (!shareOpen || !canvas) return undefined;
+    let alive = true;
+    setShareBusy(true); setShareImg(null);
+    renderCanvasCard(canvas, { fmt: shareFmt, light: shareLight })
+      .then((url) => { if (alive) { setShareImg(url); setShareBusy(false); } })
+      .catch(() => { if (alive) { setShareBusy(false); setToast('Preview failed'); } });
+    return () => { alive = false; };
+  }, [shareOpen, shareFmt, shareLight, canvas]);
+
+  useEffect(() => {
+    if (!shareOpen || typeof document === 'undefined') return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeShare(); } };
+    window.addEventListener('keydown', onKey, true);
+    const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey, true); document.body.style.overflow = prev; };
+  }, [shareOpen]);
+
+  const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  async function onCopy() {
+    if (busy || !shareImg) return; setBusy('copy');
+    try {
+      const blob = await buildCanvasBlob(canvas, { fmt: shareFmt, light: shareLight });
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })]);
+        setToast('Image copied');
+      } else throw new Error('no clipboard');
+    } catch { setToast('Copy unsupported — use Download'); }
+    setBusy('');
+  }
+  async function onNativeShare() {
+    if (busy || !shareImg) return; setBusy('share');
+    try {
+      const blob = await buildCanvasBlob(canvas, { fmt: shareFmt, light: shareLight });
+      const file = new File([blob], canvasShareFileName(canvas, shareFmt), { type: 'image/png' });
+      const data = { title: 'F1gures Compare Canvas', text: 'F1gures Compare Canvas', url: window.location.href };
+      if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ ...data, files: [file] });
+      else if (navigator.share) await navigator.share(data);
+      else { await navigator.clipboard.writeText(window.location.href); setToast('Link copied'); }
+    } catch (e) { if (e && e.name !== 'AbortError') setToast('Share unavailable'); }
+    setBusy('');
   }
 
   const excludeRefs = picks.map((p) => p.ref);
@@ -171,8 +223,8 @@ export default function CompareLauncher() {
                 <span aria-hidden="true">⚔</span> Head-to-head
               </button>
             )}
-            <button className="cmp-foot-btn cmp-foot-btn-primary" onClick={shareCanvas} type="button">
-              <span aria-hidden="true">↗</span> Share
+            <button className="cmp-foot-btn cmp-foot-btn-primary" onClick={openShare} type="button">
+              <span aria-hidden="true">↗</span> Share image
             </button>
           </div>
         )}
@@ -214,23 +266,6 @@ export default function CompareLauncher() {
         )}
       </div>
 
-      {canvas && (
-        <div className="cvs-tray">
-          <span className="cvs-tray-lbl">Compare tray</span>
-          <div className="cvs-tray-chips">
-            {picks.map((p, i) => (
-              <span className="cvs-chip" key={p.ref} style={{ '--cc': canvas.colors?.[i] || p.color }}>
-                {tagOf(canvas.entities?.[i] || p)}
-                <button className="cvs-chip-x" onClick={() => removeAt(i)} aria-label={`Remove ${p.name}`} type="button">✕</button>
-              </span>
-            ))}
-            {picks.length < MAX && (
-              <button className="cvs-chip cvs-chip-add" onClick={() => setPicking({ mode: 'add' })} type="button">+ Add {noun}</button>
-            )}
-          </div>
-        </div>
-      )}
-
       <SuggestedMatchups kind={type} onPick={pickMatchup} />
 
       {picking && createPortal(
@@ -255,6 +290,49 @@ export default function CompareLauncher() {
         <div className="cmp-back cmp-back-overlay" role="dialog" aria-modal="true" aria-label="Rivalry"
              onMouseDown={(e) => { if (e.target === e.currentTarget) setRivalry(false); }}>
           <CompareView cmp={pair} kind={type} onClose={() => setRivalry(false)} />
+        </div>,
+        document.body,
+      )}
+
+      {shareOpen && canvas && typeof document !== 'undefined' && createPortal(
+        <div className="cmp-share-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) closeShare(); }}>
+          <div className="cmp-share-modal" role="dialog" aria-modal="true" aria-label="Share this canvas">
+            <div className="cmp-share-head">
+              <div className="cmp-share-title">Share canvas</div>
+              <div className="cmp-share-segs">
+                <div className="cmp-share-seg" role="group" aria-label="Aspect ratio">
+                  {Object.entries(CANVAS_SHARE_FORMATS).map(([k, f]) => (
+                    <button type="button" key={k} className={`cmp-share-opt${shareFmt === k ? ' is-active' : ''}`} onClick={() => setShareFmt(k)}>{f.label}</button>
+                  ))}
+                </div>
+                <div className="cmp-share-seg" role="group" aria-label="Theme">
+                  <button type="button" className={`cmp-share-opt${!shareLight ? ' is-active' : ''}`} onClick={() => setShareLight(false)}>Dark</button>
+                  <button type="button" className={`cmp-share-opt${shareLight ? ' is-active' : ''}`} onClick={() => setShareLight(true)}>Light</button>
+                </div>
+              </div>
+              <button type="button" className="cmp-share-close" onClick={closeShare} aria-label="Close">✕</button>
+            </div>
+            <div className={`cmp-share-preview cmp-share-preview-${shareFmt}`}>
+              {shareImg && <img src={shareImg} alt="Share preview" />}
+              {shareBusy && <div className="cmp-share-busy">RENDERING…</div>}
+            </div>
+            <div className="cmp-share-foot">
+              {toast && <span className="cmp-toast" role="status">{toast}</span>}
+              {canNativeShare && (
+                <button type="button" className="cmp-foot-btn cmp-foot-btn-primary cmp-share-grow" onClick={onNativeShare} disabled={!shareImg || !!busy}>
+                  {busy === 'share' ? '…' : '↗'} Share image
+                </button>
+              )}
+              <a
+                className={`cmp-foot-btn cmp-share-grow ${canNativeShare ? '' : 'cmp-foot-btn-primary'} ${shareImg ? '' : 'is-disabled'}`}
+                href={shareImg || undefined}
+                download={canvasShareFileName(canvas, shareFmt)}
+                aria-disabled={!shareImg}
+              >⤓ Download PNG</a>
+              <button type="button" className="cmp-foot-btn" onClick={onCopy} disabled={!shareImg || !!busy}>{busy === 'copy' ? '…' : '⧉'} Copy</button>
+              <button type="button" className="cmp-foot-btn" onClick={closeShare}>Close</button>
+            </div>
+          </div>
         </div>,
         document.body,
       )}
@@ -331,10 +409,12 @@ function CanvasPanel({ canvas }) {
                 const label = canvas.kind === 'team' ? e.name : surnameOf(e.name);
                 return (
                   <div className={`cvs-bar ${lead ? 'is-lead' : ''}`} key={e.ref} style={{ '--cc': canvas.colors[i] }}>
-                    <EntityFace kind={canvas.kind} refId={e.ref} color={canvas.colors[i]} name={e.name} sm />
+                    <span className="cvs-bar-id">
+                      <EntityFace kind={canvas.kind} refId={e.ref} color={canvas.colors[i]} name={e.name} sm />
+                      <span className="cvs-bar-name">{label}</span>
+                    </span>
                     <span className="cvs-track">
                       <span className="cvs-fill" style={{ width: live ? `${Math.max(frac * 100, val ? 2 : 0)}%` : '0%' }} />
-                      <span className="cvs-bar-name">{label}</span>
                     </span>
                     <span className={`cvs-val ${lead ? 'is-lead' : ''}`}>{fmtVal(val, m.fmt)}</span>
                   </div>
