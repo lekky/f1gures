@@ -187,7 +187,9 @@ const description = "Sorry, we couldn't find that page. Search the archive, or b
               }
               return { item: i, score: best };
             })
-            .filter(function (x) { return x.score >= 0.45; })
+            // Genuine matches score 0.82+; the next band down is noise
+            // ("Vic Elford" at 0.46 for "crawfordd"). 0.6 splits them cleanly.
+            .filter(function (x) { return x.score >= 0.6; })
             .sort(function (a, b) {
               // Near-identical scores are common ("hamiltonn" matches both
               // Hamiltons). Break those ties on prominence, which is almost
@@ -262,6 +264,11 @@ const description = "Sorry, we couldn't find that page. Search the archive, or b
     color: var(--fg-1);
     border-left: 3px solid transparent;
   }
+  /* `display: grid` above is a class selector and so outranks the user-agent
+     `[hidden] { display: none }`. Without this the unfilled slots render as
+     empty rows containing just an arrow. */
+  .p404-sug[hidden] { display: none; }
+  .p404-panel[hidden] { display: none; }
   .p404-sug:first-child { border-top: none; }
   .p404-sug:hover { background: var(--bg-3); border-left-color: var(--accent); }
   .p404-sug-name { font-weight: 600; font-size: 15px; }
