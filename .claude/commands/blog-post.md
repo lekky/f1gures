@@ -205,21 +205,25 @@ layout will never come back accurate.
 ### Fixed style DNA (weave into every prompt)
 
 > Painterly editorial illustration, cinematic light, a muted palette lifted by a
-> single vivid racing red (#E10600) accent. Bodywork is plain and unmarked in
-> solid block colour, the surfaces clean and free of lettering. Every trackside
-> surface - barriers, gantries, pit walls, garage fascias, grandstand banners,
-> flags - is plain unbranded colour. Illustrated and painterly rather than
-> photographic.
+> single vivid racing red (#E10600) accent, bodywork in clean solid block
+> colour. Illustrated and painterly rather than photographic.
 
-**The unbranded instruction must cover the whole frame, not just the cars.**
-Asking only for "plain unmarked bodywork" gets you a clean car parked in front
-of a wall of rendered Pirelli boards and F1 logos - it happened on the first
-Barcelona recap hero. Trackside signage, pit gantries, garage fascias and
-grandstand banners are exactly where an image model reaches for real
-trademarks, because that is what its training images look like. Name those
-surfaces as plain, positively, in every prompt that shows a circuit
-environment. Then **check the generated image for lettering before shipping
-it** - a hero with a real sponsor's wordmark in it does not go on the site.
+**Sponsor boards and trackside branding are fine.** An image model will fill
+gantries, pit walls and grandstand banners with plausible sponsor signage, and
+that reads as a real racing scene - a scrubbed, unbranded paddock looks sterile
+and faintly uncanny. This is painterly editorial illustration on a fan stats
+site, not merchandise or passing-off, so incidental trademarks are not a
+problem. (An older version of this skill banned them outright; the real reason
+was that models used to garble text, which is no longer reliably true.)
+
+Two things that *are* problems, both checked by looking at the finished image:
+
+- **Garbled or misspelled lettering.** A warped wordmark looks cheap. If the
+  text came out mangled, regenerate rather than ship it.
+- **Wrong team identity.** A car in another team's colours, or a livery
+  attributed to the wrong constructor, is a factual error in a post otherwise
+  full of real results. Team colours come from the bundle `teams[]`, and any
+  depicted running order must match `d.results[<round>].order`.
 
 ### Anti-samey check (do this BEFORE writing the prompt)
 
@@ -351,9 +355,9 @@ Verify it serves as `image/jpeg` at a sane size before finishing.
 
 **Then look at the image** (Read the file) and check three things:
 
-1. **No real trademarks.** Sponsor wordmarks, series logos, team badges. If any
-   appear, regenerate with the trackside surfaces named as plain - do not try to
-   paint them out.
+1. **Lettering is clean and team identity is right.** Sponsor boards are fine;
+   garbled or misspelled ones are not, and neither is a car wearing the wrong
+   constructor's colours. Regenerate if either is off.
 2. **No generator watermark.** Gemini stamps a sparkle glyph into the
    bottom-right corner on some export paths. **Crop it, never inpaint it** - a
    sampled patch over a gradient background leaves a worse artefact than the
