@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount,
   fastestLap, lap1Gains, duelGap, teamPace, degSeries, undercutWindows,
-  segmentBests, theoreticalBest, progressionRows, compoundOffsets,
+  segmentBests, theoreticalBest, progressionRows, spreadLabels, compoundOffsets,
   fuelCorrectedPace, fmtLap,
 } from './derive.js';
 
@@ -196,6 +196,61 @@ describe('quali helpers', () => {
   });
   it('progressionRows keeps nulls for knocked-out segments', () => {
     expect(progressionRows(results)[1].segs).toEqual([89.5, 89.2, null]);
+  });
+});
+
+describe('spreadLabels', () => {
+  const gaps = (out) => out.slice(1).map((o, i) => +(o.y - out[i].y).toFixed(6));
+
+  it('leaves already-separated labels untouched', () => {
+    const out = spreadLabels([{ code: 'A', y: 50 }, { code: 'B', y: 200 }], 11, 30, 470);
+    expect(out.map((o) => o.y)).toEqual([50, 200]);
+  });
+
+  it('pushes apart labels closer than minGap', () => {
+    // the Hungary 2026 case: pole and P2 0.012s apart land on the same pixel
+    const out = spreadLabels([{ code: 'NOR', y: 100 }, { code: 'HAM', y: 100.4 }], 11, 30, 470);
+    expect(out.map((o) => o.code)).toEqual(['NOR', 'HAM']);
+    expect(gaps(out)).toEqual([11]);
+  });
+
+  it('returns copies sorted top-down without mutating the input', () => {
+    const input = [{ code: 'B', y: 300 }, { code: 'A', y: 40 }];
+    const out = spreadLabels(input, 11, 30, 470);
+    expect(out.map((o) => o.code)).toEqual(['A', 'B']);
+    expect(input[0]).toEqual({ code: 'B', y: 300 });
+  });
+
+  it('walks back up when a cluster spills past the bottom', () => {
+    const out = spreadLabels(
+      [{ code: 'A', y: 465 }, { code: 'B', y: 466 }, { code: 'C', y: 467 }], 11, 30, 470,
+    );
+    expect(out[out.length - 1].y).toBe(470);
+    expect(gaps(out)).toEqual([11, 11]);
+    expect(out[0].y).toBeGreaterThanOrEqual(30);
+  });
+
+  it('keeps every label inside the axis when the column is full', () => {
+    const out = spreadLabels(
+      Array.from({ length: 10 }, (_, i) => ({ code: `D${i}`, y: 250 })), 11, 30, 470,
+    );
+    expect(gaps(out)).toEqual(Array(9).fill(11));
+    expect(out[0].y).toBeGreaterThanOrEqual(30);
+    expect(out[out.length - 1].y).toBeLessThanOrEqual(470);
+  });
+
+  it('pins the top and overflows downward when labels outnumber the space', () => {
+    // 50 labels × 11px needs 539px of a 440px axis — nothing can fit, but they
+    // must still read top-down from the axis start rather than off the chart
+    const out = spreadLabels(
+      Array.from({ length: 50 }, (_, i) => ({ code: `D${i}`, y: 250 })), 11, 30, 470,
+    );
+    expect(out[0].y).toBe(30);
+    expect(gaps(out)).toEqual(Array(49).fill(11));
+  });
+
+  it('handles an empty column', () => {
+    expect(spreadLabels([], 11, 30, 470)).toEqual([]);
   });
 });
 

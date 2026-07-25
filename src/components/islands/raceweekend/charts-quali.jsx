@@ -1,7 +1,7 @@
 // Qualifying / sprint-quali / practice session charts.
 import React, { useState } from 'react';
 import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg, compoundColor } from './primitives.jsx';
-import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, compoundOffsets } from './derive.js';
+import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, spreadLabels, compoundOffsets } from './derive.js';
 import { EmptyNote } from './charts-race.jsx';
 import { useIsMobile } from '../../../lib/shared.jsx';
 
@@ -175,6 +175,19 @@ export function ProgressionChart({ results, ctx, segLabels = ['Q1', 'Q2', 'Q3'] 
     const lo = Math.min(...vals), hi = Math.max(...vals);
     return scale(lo, hi === lo ? lo + 0.5 : hi, 30, 470);
   });
+  const lines = rows
+    .map((r) => {
+      const pts = r.segs.map((v, i) => (v != null ? [colX[i], colScales[i](v)] : null)).filter(Boolean);
+      return pts.length < 2 ? null : { code: r.code, pts, end: pts[pts.length - 1] };
+    })
+    .filter(Boolean);
+  // Each label sits at its driver's last point, so drivers knocked out in the
+  // same segment share an x — spread within each column, not across the chart.
+  const labelY = new Map();
+  for (const x of new Set(lines.map((l) => l.end[0]))) {
+    const col = lines.filter((l) => l.end[0] === x).map((l) => ({ code: l.code, y: l.end[1] }));
+    for (const it of spreadLabels(col, 11, 30, 470)) labelY.set(it.code, it.y);
+  }
   return (
     <svg viewBox="0 0 1000 520" style={{ width: '100%', display: 'block' }}>
       {colX.map((x, i) => (
@@ -183,19 +196,21 @@ export function ProgressionChart({ results, ctx, segLabels = ['Q1', 'Q2', 'Q3'] 
           <text x={x} y="500" fontFamily={COND} fontSize="14" fontWeight="700" letterSpacing="2" fill={PANEL.fg3} textAnchor="middle">{segLabels[i]}</text>
         </g>
       ))}
-      {rows.map((r) => {
-        const pts = r.segs.map((v, i) => (v != null ? [colX[i], colScales[i](v)] : null)).filter(Boolean);
-        if (pts.length < 2) return null;
-        const last = pts[pts.length - 1];
+      {lines.map((l) => {
+        const color = ctx.colorOf(l.code);
+        const ly = labelY.get(l.code) ?? l.end[1];
         return (
-          <g key={r.code}>
-            <polyline points={pts.map((p) => `${p[0]},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={ctx.colorOf(r.code)} strokeWidth="2" opacity="0.85" />
-            {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1].toFixed(1)} r="3.4" fill={ctx.colorOf(r.code)} />)}
-            <text x={last[0] + 10} y={(last[1] + 4).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="700" fill={ctx.colorOf(r.code)}>{r.code}</text>
+          <g key={l.code}>
+            <polyline points={l.pts.map((p) => `${p[0]},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={color} strokeWidth="2" opacity="0.85" />
+            {l.pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1].toFixed(1)} r="3.4" fill={color} />)}
+            {Math.abs(ly - l.end[1]) > 1.5 && (
+              <line x1={l.end[0] + 4} y1={l.end[1].toFixed(1)} x2={l.end[0] + 9} y2={ly.toFixed(1)} stroke={color} strokeWidth="1" opacity="0.45" />
+            )}
+            <text x={l.end[0] + 10} y={(ly + 3.5).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="700" fill={color}>{l.code}</text>
           </g>
         );
       })}
-      <text x="150" y="14" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>EACH COLUMN RANKED FASTEST (TOP) → SLOWEST · LINE = ONE DRIVER ACROSS SEGMENTS</text>
+      <text x="150" y="14" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>EACH COLUMN SCALED BY TIME · FASTEST (TOP) → SLOWEST · LINE = ONE DRIVER</text>
     </svg>
   );
 }

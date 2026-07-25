@@ -292,6 +292,38 @@ export function progressionRows(results) {
     .map((r) => ({ code: r.code, segs: [r.q1, r.q2 ?? null, r.q3 ?? null] }));
 }
 
+// Nudge a column of end-of-line labels apart so none overlap. Charts that place
+// a label at each driver's data point collide whenever two drivers are close on
+// the value axis — on a tight session that is exactly the pair worth reading
+// (Hungary 2026 quali put pole and P2 0.012s apart, so NOR and HAM printed on
+// the same pixel). Takes `{ y }` items, returns copies sorted top-down with at
+// least `minGap` between them, kept inside [lo, hi].
+export function spreadLabels(items, minGap, lo, hi) {
+  const out = items.map((o) => ({ ...o })).sort((a, b) => a.y - b.y);
+  if (!out.length) return out;
+  const push = (from, to, step) => {
+    for (let i = from; step > 0 ? i < to : i >= to; i += step) {
+      const prev = out[i - step];
+      if (step > 0 ? out[i].y - prev.y < minGap : prev.y - out[i].y < minGap) {
+        out[i].y = prev.y + step * minGap;
+      }
+    }
+  };
+  push(1, out.length, 1);
+  // Spilled past the bottom — pin the last one and walk back up.
+  if (out[out.length - 1].y > hi) {
+    out[out.length - 1].y = hi;
+    push(out.length - 2, 0, -1);
+  }
+  // More labels than the axis can hold: pin the top and accept the overflow
+  // downward rather than letting them stack off the top of the chart.
+  if (out[0].y < lo) {
+    out[0].y = lo;
+    push(1, out.length, 1);
+  }
+  return out;
+}
+
 // FP long-run compound offsets: median avg per compound, expressed vs SOFT
 // (or the fastest compound present).
 export function compoundOffsets(longRuns) {
