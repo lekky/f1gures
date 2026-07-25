@@ -301,3 +301,114 @@ export function fmtVal(v, fmt) {
   if (fmt === 'dec1') return v.toFixed(1);
   return v >= 10000 ? v.toLocaleString('en-US') : String(Math.round(v));
 }
+
+// ── N-way canvas comparison ──────────────────────────────────────
+// The 2-way functions above stay the source of truth for the rich
+// head-to-head (rivalry context + share card). The canvas below compares
+// ANY number of entities across a compact set of headline metrics: one
+// value per entity per metric, the leader flagged, and a "leads X of Y"
+// verdict. It reuses the exact same per-doc formulas as the 2-way rows.
+
+/** Headline metrics shown on the canvas, in display order. All are
+ *  higher-is-better, so the longest bar always wins — reads cleanly with
+ *  N stacked bars. `unit` is the lowercase caption under the label. */
+// Every metric here is higher-is-better and all-era-safe (nothing that
+// silently reads 0 for pre-2004 drivers — fastest laps stay off the canvas
+// for that reason). A null value simply draws no bar.
+export const DRIVER_CANVAS_METRICS = [
+  { key: 'championships', label: 'Championships', unit: 'world titles', fmt: 'int' },
+  { key: 'wins', label: 'Career wins', unit: 'grands prix', fmt: 'int' },
+  { key: 'podiums', label: 'Podiums', unit: 'top three', fmt: 'int' },
+  { key: 'poles', label: 'Pole positions', unit: 'P1 starts', fmt: 'int' },
+  { key: 'frontRow', label: 'Front-row starts', unit: 'grid P1–P2', fmt: 'int' },
+  { key: 'points', label: 'Career points', unit: 'all-time', fmt: 'int' },
+  { key: 'winRate', label: 'Win rate', unit: '% of starts', fmt: 'pct' },
+  { key: 'teammateQuali', label: 'Teammate quali', unit: '% duels won', fmt: 'pct' },
+];
+
+export const TEAM_CANVAS_METRICS = [
+  { key: 'championships', label: 'Championships', unit: 'constructors', fmt: 'int' },
+  { key: 'wins', label: 'Race wins', unit: 'grands prix', fmt: 'int' },
+  { key: 'podiums', label: 'Podiums', unit: 'top three', fmt: 'int' },
+  { key: 'winningSeasons', label: 'Winning seasons', unit: 'with a win', fmt: 'int' },
+  { key: 'points', label: 'Points', unit: 'all-time', fmt: 'int' },
+  { key: 'seasons', label: 'Seasons', unit: 'in F1', fmt: 'int' },
+  { key: 'winRate', label: 'Win rate', unit: '% of races', fmt: 'pct' },
+  { key: 'winsPerSeason', label: 'Wins / season', unit: 'average', fmt: 'dec1' },
+];
+
+/** Every headline value for one driver doc — same math as driverRows. */
+function driverMetricVals(d) {
+  const c = d.career || {};
+  const pts = sum(d.perSeason || [], (s) => s.points);
+  const races = num(c.races);
+  const tq = (d.teammates || {}).quali || {};
+  const tqN = num(tq.wins) + num(tq.losses);
+  const frontRow = (d.perRace || []).filter((r) => r.grid === 1 || r.grid === 2).length;
+  return {
+    championships: num(c.championships),
+    wins: num(c.wins),
+    podiums: num(c.podiums),
+    poles: num(c.poles),
+    frontRow,
+    points: pts,
+    winRate: rate(num(c.wins), races),
+    teammateQuali: tqN > 0 ? rate(num(tq.wins), tqN) : null,
+  };
+}
+
+/** Every headline value for one team doc — same math as teamRows. */
+function teamMetricVals(t) {
+  const c = t.career || {};
+  const pts = sum(t.perSeason || [], (s) => s.points);
+  const races = num(c.races);
+  const winningSeasons = (t.perSeason || []).filter((s) => num(s.wins) > 0).length;
+  return {
+    championships: num(c.championships),
+    wins: num(c.wins),
+    podiums: num(c.podiums),
+    winningSeasons,
+    points: pts,
+    seasons: num(c.seasons),
+    winRate: rate(num(c.wins), races),
+    winsPerSeason: num(c.seasons) ? num(c.wins) / num(c.seasons) : null,
+  };
+}
+
+/** Compare 2+ full docs across the canvas metrics. Returns per-entity identity
+ *  + value arrays aligned to entity order, each metric's leader index(es), and
+ *  a verdict tallying which entity leads the most metrics. Colours are left to
+ *  the caller (presentation), like the 2-way path. */
+export function compareCanvas(docs, kind) {
+  const config = kind === 'team' ? TEAM_CANVAS_METRICS : DRIVER_CANVAS_METRICS;
+  const valsFn = kind === 'team' ? teamMetricVals : driverMetricVals;
+  const entities = docs.map((d) => ({ ...identity(d, kind), vals: valsFn(d) }));
+  const counts = entities.map(() => 0);
+
+  const metrics = config.map((m) => {
+    const values = entities.map((e) => (e.vals[m.key] == null ? null : e.vals[m.key]));
+    const present = values.map((v, i) => ({ v, i })).filter((x) => x.v != null);
+    let leaders = [];
+    if (present.length) {
+      const best = Math.max(...present.map((x) => x.v));
+      leaders = present.filter((x) => x.v === best).map((x) => x.i);
+    }
+    // Only a *unique* leader with a non-zero best scores the verdict — an
+    // all-zero row (two winless drivers) or a tie stays uncredited.
+    if (leaders.length === 1 && values[leaders[0]] > 0) counts[leaders[0]] += 1;
+    return { key: m.key, label: m.label, unit: m.unit, fmt: m.fmt, values, leaders };
+  });
+
+  const of = counts.reduce((s, c) => s + c, 0);
+  const top = Math.max(0, ...counts);
+  const topIdxs = counts.map((c, i) => ({ c, i })).filter((x) => x.c === top && x.c > 0).map((x) => x.i);
+  const verdict = {
+    counts,
+    of,
+    lead: top,
+    leaderIdx: topIdxs.length === 1 ? topIdxs[0] : null,
+    tie: topIdxs.length !== 1,
+  };
+
+  return { kind, entities, metrics, verdict };
+}

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   compareDrivers, compareTeams, driverContext, teamContext, isClassified, fmtVal,
+  compareCanvas, DRIVER_CANVAS_METRICS,
 } from './compareStats.js';
 
 // ── minimal driver-doc factory ───────────────────────────────────
@@ -134,6 +135,43 @@ describe('compareTeams', () => {
     expect(cmp.kind).toBe('team');
     expect(cmp.groups[0].rows.length).toBeGreaterThan(0);
     expect(cmp.verdict).toHaveProperty('of');
+  });
+});
+
+describe('compareCanvas — N-way', () => {
+  const a = driver('alpha', { career: { seasons: 7, firstYear: 2010, lastYear: 2016, races: 120, wins: 40, podiums: 70, poles: 35, fastestLaps: 20, championships: 4 } });
+  const b = driver('bravo', { career: { seasons: 5, firstYear: 2012, lastYear: 2016, races: 90, wins: 20, podiums: 40, poles: 15, fastestLaps: 10, championships: 1 } });
+  const c = driver('charlie', { career: { seasons: 3, firstYear: 2014, lastYear: 2016, races: 50, wins: 5, podiums: 12, poles: 6, fastestLaps: 3, championships: 0 } });
+
+  it('produces one value per entity per canvas metric', () => {
+    const cvs = compareCanvas([a, b, c], 'driver');
+    expect(cvs.entities).toHaveLength(3);
+    expect(cvs.metrics).toHaveLength(DRIVER_CANVAS_METRICS.length);
+    const wins = cvs.metrics.find((m) => m.key === 'wins');
+    expect(wins.values).toEqual([40, 20, 5]);
+  });
+
+  it('flags the leader index per metric', () => {
+    const cvs = compareCanvas([a, b, c], 'driver');
+    const wins = cvs.metrics.find((m) => m.key === 'wins');
+    expect(wins.leaders).toEqual([0]); // alpha
+  });
+
+  it('tallies a verdict for the dominant entity', () => {
+    const cvs = compareCanvas([a, b, c], 'driver');
+    expect(cvs.verdict.leaderIdx).toBe(0);
+    expect(cvs.verdict.lead).toBe(cvs.verdict.of); // alpha sweeps
+    expect(cvs.verdict.tie).toBe(false);
+  });
+
+  it('does not credit an all-zero (tied) metric to anyone', () => {
+    const z1 = driver('z1', { career: { races: 30, wins: 0, podiums: 0, poles: 0, championships: 0 }, perSeason: [] });
+    const z2 = driver('z2', { career: { races: 40, wins: 0, podiums: 0, poles: 0, championships: 0 }, perSeason: [] });
+    const cvs = compareCanvas([z1, z2], 'driver');
+    const champs = cvs.metrics.find((m) => m.key === 'championships');
+    expect(champs.leaders.length).not.toBe(1); // 0 vs 0 → tie, uncredited
+    expect(cvs.verdict.counts).toEqual([0, 0]);
+    expect(cvs.verdict.leaderIdx).toBe(null);
   });
 });
 

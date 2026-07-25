@@ -4914,6 +4914,21 @@ a.guide-pg:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-ho
   64% { opacity: 1; }
   92%, 100% { transform: translateX(360%); opacity: 0; }
 }
+/* one-tap example opponents under the CTA */
+.cmp-cta-wrap { margin: 0 0 24px; }
+.cmp-cta-wrap .cmp-cta { margin: 0; }
+.cmp-cta-egs { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.cmp-cta-egs-lbl { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); }
+.cmp-cta-eg {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px 5px 13px;
+  background: var(--bg-2); border: 1px solid var(--line-2); color: var(--fg-1);
+  font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; font-size: 12px;
+  cursor: pointer; transition: border-color var(--mo, 120ms) ease, background var(--mo, 120ms) ease;
+}
+.cmp-cta-eg::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--cc, var(--accent)); }
+.cmp-cta-eg:hover { border-color: var(--line-3); background: var(--bg-hover); }
+.cmp-cta-eg-vs { font-family: var(--f-mono); font-weight: 500; font-size: 10px; text-transform: none; color: var(--fg-4); }
+
 @media (max-width: 560px) {
   .cmp-cta-sub { display: none; }
   .cmp-cta { font-size: 14px; padding: 12px 14px; }
@@ -5191,11 +5206,16 @@ a.cmp-foot-btn { text-decoration: none; display: inline-flex; align-items: cente
 /* Compare Mode — standalone /compare/ launcher (CompareLauncher.jsx) */
 .cmp-launch { display: flex; flex-direction: column; gap: 16px; }
 .cmp-launch .cmp-panel { max-width: none; }
-.cmp-seg { display: inline-flex; border: 1px solid var(--line-2); align-self: flex-start; }
-.cmp-seg-btn { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; padding: 8px 16px; background: transparent; color: var(--fg-3); border: none; border-right: 1px solid var(--line-2); cursor: pointer; }
-.cmp-seg-btn:last-child { border-right: none; }
-.cmp-seg-btn:hover:not(.is-on) { color: var(--fg-1); background: var(--bg-hover); }
-.cmp-seg-btn.is-on { background: var(--accent); color: #fff; }
+/* matches the standings page tabs (.standings-toggle) */
+.cmp-seg { display: inline-flex; background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden; }
+.cmp-seg-btn {
+  text-align: center; padding: 10px 22px; font-family: var(--f-display); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em; font-size: 13px; line-height: 1;
+  background: transparent; color: var(--fg-3); border: none; cursor: pointer; transition: background .15s ease, color .15s ease;
+}
+.cmp-seg-btn + .cmp-seg-btn { border-left: 1px solid var(--line-2); }
+.cmp-seg-btn:hover:not(.is-on) { color: var(--fg-2); background: var(--bg-hover); }
+.cmp-seg-btn.is-on { background: var(--bg-3); color: var(--fg-1); }
 
 .cmp-launch-slots { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch; }
 .cmp-launch-vs { display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-weight: 800; font-size: 22px; color: var(--accent); padding: 0 4px; }
@@ -5285,6 +5305,127 @@ a.cmp-foot-btn { text-decoration: none; display: inline-flex; align-items: cente
 
 @media (max-width: 560px) {
   .cmp-sugg-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   COMPARE CANVAS  (CompareLauncher.jsx — the /compare/ page)
+   Multi-entity head-to-head: a left rail of entity cards + a shared
+   metric-bars panel (one bar per pinned entity per metric, each bar
+   tagged with the entity face + code). The 2-way overlay (.cmp-*
+   above) still powers the rivalry/share card for pairs. Entity
+   colour arrives as the --cc var on cards, chips and bars.
+   ============================================================ */
+.cvs { display: flex; flex-direction: column; gap: 14px; }
+
+.cvs-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cvs-top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* entity cards — a compact wrapping row along the top */
+.cvs-cards { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* entity card — compact horizontal cell (sized to content, not stretched) */
+.cvs-card {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+  gap: 11px; padding: 9px 9px 9px 13px; background: var(--bg-2); border: 1px solid var(--line-2);
+  flex: 0 1 auto; min-width: 168px; max-width: 240px;
+}
+.cvs-card-rule { position: absolute; top: 0; left: 0; bottom: 0; width: 3px; background: var(--cc, var(--accent)); }
+.cvs-card-face-btn { position: relative; padding: 0; background: none; border: none; cursor: pointer; line-height: 0; border-radius: 50%; }
+.cvs-card-swapover {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--cc, var(--accent)) 30%, rgba(0,0,0,0.72)); color: #fff;
+  opacity: 0; transition: opacity var(--mo, 120ms) ease;
+}
+.cvs-card-face-btn:hover .cvs-card-swapover, .cvs-card-face-btn:focus-visible .cvs-card-swapover { opacity: 1; }
+
+/* stylised round avatar: team-colour ring + soft glow + team-tint wash */
+.cvs-face {
+  width: 52px; height: 52px; border-radius: 50%; object-fit: cover; object-position: top center;
+  border: 2px solid var(--cc, var(--line-3));
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--cc, var(--line-3)) 30%, var(--bg-3)), var(--bg-3));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cc, var(--line-3)) 18%, transparent);
+}
+.cvs-face.is-team { object-fit: contain; padding: 8px; background: #fff; }
+.cvs-face.is-mono { display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-weight: 800; font-size: 18px; color: var(--fg-1); }
+.cvs-face.is-sm {
+  width: 22px; height: 22px; border-width: 1.5px; box-shadow: none; flex: none;
+}
+.cvs-face.is-sm.is-team { padding: 3px; }
+.cvs-face.is-sm.is-mono { font-size: 9px; }
+
+.cvs-card-body { min-width: 0; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.cvs-card-name {
+  font-family: var(--f-display); font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em;
+  font-size: 15px; line-height: 1.05; color: var(--fg-1); text-decoration: none;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.cvs-card-name:hover { color: var(--accent-text); }
+.cvs-card-swap {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; background: var(--bg-3);
+  border: 1px solid var(--line-2); color: var(--fg-3); cursor: pointer;
+  font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px;
+  transition: color var(--mo, 120ms) ease, border-color var(--mo, 120ms) ease;
+}
+.cvs-card-swap:hover { color: var(--fg-1); border-color: var(--line-3); }
+.cvs-swapicon { flex: none; }
+.cvs-card-x {
+  align-self: flex-start; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-3); border: 1px solid var(--line-2); color: var(--fg-3); cursor: pointer;
+  transition: color var(--mo, 120ms) ease, border-color var(--mo, 120ms) ease, background var(--mo, 120ms) ease;
+}
+.cvs-card-x:hover { color: #fff; background: var(--neg); border-color: var(--neg); }
+
+/* add-entity slot — matches a card's footprint */
+.cvs-add {
+  display: flex; align-items: center; justify-content: center; gap: 9px; padding: 10px 16px;
+  flex: 0 1 auto; min-width: 150px;
+  background: var(--bg-2); border: 1px dashed var(--line-2); color: var(--fg-3); cursor: pointer;
+  transition: border-color var(--mo, 120ms) ease, color var(--mo, 120ms) ease;
+}
+.cvs-add:hover { border-color: var(--accent); color: var(--fg-1); }
+.cvs-add-plus { font-family: var(--f-display); font-weight: 800; font-size: 22px; line-height: 1; }
+.cvs-add-hint { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; }
+
+/* metric bars panel */
+.cvs-main { min-width: 0; }
+.cvs-panel { background: var(--bg-2); border: 1px solid var(--line-2); }
+.cvs-panel-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 220px;
+  padding: 28px; color: var(--fg-3); font-family: var(--f-body); font-weight: 500; font-size: 14px; line-height: 1.6; text-align: center;
+}
+.cvs-prompt { max-width: 46ch; margin: 0 auto; }
+.cvs-prompt-vs { font-family: var(--f-display); font-weight: 800; font-size: 32px; letter-spacing: 0.04em; color: var(--accent); }
+
+.cvs-metric { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line-1); }
+.cvs-metric:last-of-type { border-bottom: none; }
+.cvs-metric-label { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 13px; color: var(--fg-2); line-height: 1.2; }
+.cvs-metric-unit { display: block; font-family: var(--f-mono); font-weight: 400; font-size: 9px; letter-spacing: 0.1em; color: var(--fg-4); margin-top: 3px; text-transform: uppercase; }
+.cvs-bars { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cvs-bar { display: grid; grid-template-columns: 116px minmax(0, 1fr) 48px; align-items: center; gap: 10px; opacity: 0.9; }
+.cvs-bar.is-lead { opacity: 1; }
+/* name + face on the left, outside the bar */
+.cvs-bar-id { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.cvs-bar-name {
+  font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
+  font-size: 12px; line-height: 1; color: var(--fg-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cvs-bar.is-lead .cvs-bar-name { color: var(--fg-1); }
+.cvs-track { position: relative; height: 13px; background: var(--bg-3); overflow: hidden; }
+.cvs-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--cc, var(--accent)); transition: width 0.6s ease; }
+.cvs-val { font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; color: var(--fg-3); }
+.cvs-val.is-lead { color: var(--fg-1); font-weight: 600; }
+
+.cvs-verdict { display: flex; align-items: baseline; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line-2); background: var(--bg-3); flex-wrap: wrap; }
+.cvs-verdict-kick { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-4); }
+.cvs-verdict-txt { font-family: var(--f-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; font-size: 14px; color: var(--fg-2); }
+.cvs-verdict-txt b { color: var(--fg-1); }
+
+@media (max-width: 720px) {
+  .cvs-card { flex: 1 1 46%; min-width: 150px; max-width: none; }
+  .cvs-add { flex: 1 1 46%; min-width: 150px; }
+  .cvs-metric { grid-template-columns: 1fr; gap: 8px; padding: 12px; }
+  .cvs-bar { grid-template-columns: 104px minmax(0, 1fr) 44px; gap: 8px; }
 }
 
 /* ============================================================

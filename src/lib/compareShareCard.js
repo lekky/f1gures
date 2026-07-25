@@ -20,14 +20,14 @@ export const CMP_SHARE_FORMATS = {
   wide: { w: 1920, h: 1080, label: '16:9 Wide' },
   story: { w: 1080, h: 1920, label: '9:16 Story' },
 };
-const EXPORT_SCALE = 2;
+export const EXPORT_SCALE = 2;
 
-const DISPLAY = "'Arial Narrow', 'Roboto Condensed', 'Oswald', sans-serif";
-const MONO = "'JetBrains Mono', 'Consolas', ui-monospace, monospace";
+export const DISPLAY = "'Arial Narrow', 'Roboto Condensed', 'Oswald', sans-serif";
+export const MONO = "'JetBrains Mono', 'Consolas', ui-monospace, monospace";
 const LOGO_ALIAS = { red_bull: 'redbull', aston_martin: 'aston' };
 
 // The red accent is constant across both themes; everything else flips.
-const THEMES = {
+export const THEMES = {
   dark: {
     bg: '#0B0C10', panel: '#16171C', line: '#2A2C34', track: '#23242A',
     fg: '#F5F5F5', fg2: '#B8B9BD', fg3: '#9A9BA1',
@@ -42,7 +42,7 @@ const THEMES = {
   },
 };
 
-function loadImg(src) {
+export function loadImg(src) {
   return new Promise((resolve) => {
     if (!src) { resolve(null); return; }
     const img = new Image();
@@ -52,7 +52,7 @@ function loadImg(src) {
   });
 }
 
-function faceSrc(kind, ref) {
+export function faceSrc(kind, ref) {
   if (kind === 'team') return `/images/teams/${LOGO_ALIAS[ref] || ref}.jpg`;
   return `/images/drivers/${ref}.webp`;
 }
@@ -101,7 +101,7 @@ function wrapLines(ctx, text, maxW, maxLines) {
   return lines;
 }
 
-function fitFont(ctx, text, maxW, maxPx, weight = 800, minPx = 22) {
+export function fitFont(ctx, text, maxW, maxPx, weight = 800, minPx = 22) {
   let px = maxPx;
   do {
     ctx.font = `${weight} ${px}px ${DISPLAY}`;
@@ -138,7 +138,7 @@ function contextForCard(cmp) {
   return { kick: 'Different eras', text: `Never shared a grid · ${A.span} vs ${B.span}` };
 }
 
-function drawAvatar(ctx, PAL, img, x, y, size, color, fallback, isTeam) {
+export function drawAvatar(ctx, PAL, img, x, y, size, color, fallback, isTeam) {
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, size, size);
