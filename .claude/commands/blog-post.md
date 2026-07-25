@@ -6,9 +6,9 @@ argument-hint: "[topic] e.g. 'austria recap' or 'mid-season check-in'"
 # Write a blog post: $ARGUMENTS
 
 Follow this workflow exactly. The three non-negotiables: **the branch/data must be
-current before you write a word**, **race events must be researched, not inferred
-from timing data**, and **every post ships with a hero-image prompt that doesn't
-repeat the last one**.
+current before you write a word**, **race events must be researched - Wikipedia
+first, then subagents for the gaps - and never inferred from timing data**, and
+**every post ships with a hero-image prompt that doesn't repeat the last one**.
 
 ## 1. Sync the branch and data FIRST
 
@@ -68,25 +68,76 @@ it tempts you into either hedging ("whatever went wrong…") or guessing.
 
 So, for every **race recap** (and any post that narrates on-track events):
 
-1. **Search for race reports before writing.** Use WebSearch/WebFetch:
-   `"<Grand Prix name> <year> report"`, `"<GP> <year> safety car"`,
-   `"<driver> <GP> <year> retirement reason"`. Two independent sources for
-   anything you state as fact.
-2. **Specifically chase the gaps the data can't fill:**
+1. **Start with the Wikipedia race report.** It is by far the highest-yield
+   source: one page carries the full narrative, every retirement with its
+   cause, safety cars and red flags with lap numbers, the stewards' decisions,
+   weather, attendance, and the records-and-milestones notes that make a recap
+   worth reading. WebFetch it directly and ask for what you need:
+
+   ```
+   https://en.wikipedia.org/wiki/<YEAR>_<Race Name>_Grand_Prix
+   ```
+
+   e.g. `2026_Monaco_Grand_Prix`, `2026_Belgian_Grand_Prix`,
+   `2026_Hungarian_Grand_Prix`. **Match the bundle's race name, not the
+   country you assume** - the 2026 calendar has both a June
+   `2026_Barcelona-Catalunya_Grand_Prix` and a separate September Spanish
+   Grand Prix in Madrid, so guessing "Spanish" gets the wrong race. Take the
+   name from `d.calendar[].name` and try the obvious variants if the first
+   URL 404s.
+
+   In the WebFetch prompt, list the specific unknowns *and* hand over the
+   facts you already hold from the bundle (pole, podium, grid slots, DNF laps)
+   so the answer cannot drift from the record. Ask explicitly for records,
+   milestones, career firsts and anything unusual.
+
+2. **Dispatch a research agent per race for anything Wikipedia leaves open.**
+   Launch one `general-purpose` subagent per race (in a single message, so they
+   run concurrently) to chase the gaps across Autosport, Motorsport.com,
+   RaceFans, the-race.com and Formula1.com. Web research is slow, wide and
+   context-heavy: an agent can read a dozen reports and hand back a page of
+   findings, where doing it inline burns the context you need for writing.
+   Be aware these can come back empty or die silently - if a race is recent,
+   Wikipedia may be the only source that has caught up. Give each agent:
+   - the **race, date and round number**, and every fact you already hold from
+     the bundle (pole, podium, finishing order, grid slots, DNF laps, gaps) so
+     it cannot contradict the record;
+   - a **numbered list of the specific unknowns** — one question per DNF, per
+     big grid-vs-finish delta, per surprise result;
+   - a standing instruction to also report **anything out of the ordinary the
+     questions didn't anticipate**: a standout drive, a record, a debut, a
+     controversy, a bizarre strategy call, a milestone. The best line in a
+     recap is usually the thing you didn't know to ask about;
+   - the output contract: **numbered findings, each with source URL(s) and a
+     confidence level** (CONFIRMED 2+ sources / SINGLE SOURCE / NOT FOUND),
+     plus an explicit list of what it could NOT find, and a hard instruction
+     never to guess or fill gaps with plausible invention.
+
+   While the agents run, do the bundle work (standings snapshots, superlatives,
+   reading the previous recap for continuity). Fold the findings in when they
+   land. Search terms worth handing over: `"<Grand Prix name> <year> report"`,
+   `"<GP> <year> safety car"`, `"<driver> <GP> <year> retirement reason"`.
+3. **Specifically chase the gaps the data can't fill:**
    - cause of every DNF and every big grid-vs-finish delta (damage? penalty?
      strategy? spin?)
    - safety cars / red flags / VSC — when, why, and who won or lost from them
    - pit-stop calls that decided positions (who stopped under the SC, who
      stayed out)
    - weather, penalties, collisions, team orders
-3. **Numbers from the bundle beat numbers from reports.** If a report's gap or
+   - **the out-of-the-ordinary:** a career-first or a milestone (first win,
+     first podium, first points for a team), a record broken, a debut or a
+     stand-in driver, a drive that beat the car (a huge recovery, a one-stop
+     nobody else made work), a protest, a stewards' decision that changed the
+     result after the flag. These are what make a recap worth reading rather
+     than a table with sentences around it — ask for them explicitly.
+4. **Numbers from the bundle beat numbers from reports.** If a report's gap or
    lap count disagrees with `d.results`, the bundle wins. Reports supply the
    *why*, the bundle supplies the *what*.
-4. **If research comes up empty** (offline, paywalled, or a fictional/future
+5. **If research comes up empty** (offline, paywalled, or a fictional/future
    season the web knows nothing about): **ask the user** for the key events —
    "what caused X's DNF? was there a safety car?" — before publishing. The
    user watched the race; a 30-second question beats a hedged paragraph.
-5. **Never fabricate a cause.** If neither research nor the user can fill a
+6. **Never fabricate a cause.** If neither research nor the user can fill a
    gap, write around it honestly and narrowly — but treat that as a last
    resort, not the default.
 
@@ -142,11 +193,62 @@ blog looks like one publication — but the *moment depicted* must come from the
 post's own story. The old approach (same finish-line template every recap)
 produced a wall of near-identical images. Don't add to it.
 
-### Fixed style DNA (append to every prompt, verbatim)
+### Prompt craft — these go to Gemini, so write for Gemini
 
-> Painterly editorial illustration style, cinematic light, a single red
-> (#E10600) accent, muted palette otherwise. **Plain unbranded liveries — no
-> sponsor logos, wordmarks, or readable text anywhere.** No photorealism. 16:9.
+The images are generated with Google's models (Gemini 2.5 Flash Image / Imagen).
+They behave differently from Stable-Diffusion-style tooling, and three habits
+carried over from that world actively make our images worse:
+
+1. **Never write negations.** Gemini has no negative-prompt channel (Imagen
+   dropped `negative_prompt` outright), so "no cars, no people, no text" simply
+   injects *cars, people, text* into the attention context — a reliable way to
+   get exactly what you excluded. **State everything positively.** Instead of
+   "no cars on the track", write "the bare track ribbon alone on the
+   background". Instead of "no sponsor logos", write "plain unmarked bodywork in
+   solid block colour".
+2. **Name colours in words; treat hex as a hint, not an instruction.** Models
+   read `#E10600` as a text token, not a colour. Write "vivid racing red
+   (#E10600)" — the words do the work and the hex nudges the shade.
+3. **Quote the exact text you want rendered.** Gemini renders short strings
+   genuinely well, but only if you give it the literal string: `the word
+   "MONACO"` gets MONACO; "the circuit name" gets an invented one. Keep strings
+   short, state where they sit in the frame and what they look like, and avoid
+   the `·` middot (it garbles) — use a plain hyphen.
+
+Also: **write flowing descriptive prose, not comma-separated keyword soup** —
+Gemini follows narrative composition instructions ("centred in the frame", "in
+the lower left") far better than tag lists. Set **16:9 with the aspect-ratio
+control in the UI/API**, not in the prompt text; the parameter is honoured, the
+words largely are not.
+
+**When the subject has a shape that must be right** (a circuit outline above
+all), don't describe geometry in words — Gemini accepts reference images. Hand
+it `public/images/circuits/white-outline/<id>.svg` (or the black-outline
+variant) and ask it to restyle *that* outline. A text description of a track
+layout will never come back accurate.
+
+### Fixed style DNA (weave into every prompt)
+
+> Painterly editorial illustration, cinematic light, a muted palette lifted by a
+> single vivid racing red (#E10600) accent, bodywork in clean solid block
+> colour. Illustrated and painterly rather than photographic.
+
+**Sponsor boards and trackside branding are fine.** An image model will fill
+gantries, pit walls and grandstand banners with plausible sponsor signage, and
+that reads as a real racing scene - a scrubbed, unbranded paddock looks sterile
+and faintly uncanny. This is painterly editorial illustration on a fan stats
+site, not merchandise or passing-off, so incidental trademarks are not a
+problem. (An older version of this skill banned them outright; the real reason
+was that models used to garble text, which is no longer reliably true.)
+
+Two things that *are* problems, both checked by looking at the finished image:
+
+- **Garbled or misspelled lettering.** A warped wordmark looks cheap. If the
+  text came out mangled, regenerate rather than ship it.
+- **Wrong team identity.** A car in another team's colours, or a livery
+  attributed to the wrong constructor, is a factual error in a post otherwise
+  full of real results. Team colours come from the bundle `teams[]`, and any
+  depicted running order must match `d.results[<round>].order`.
 
 ### Anti-samey check (do this BEFORE writing the prompt)
 
@@ -190,7 +292,10 @@ telephoto · high grandstand wide · trackside pan with motion blur · pit-wall
 level. Light: match the actual race (day/dusk/night/overcast/rain).
 
 Team colours and any depicted running order must match the real result — get
-colours from the bundle `teams[]`.
+colours from the bundle `teams[]`. Write the scene as flowing prose in the
+composition-first style above ("in the foreground…", "behind them…"), name the
+colours in words, and describe the bodywork as plain and unmarked rather than
+asking for no sponsors.
 
 `heroImageAlt`: one factual sentence describing the depicted moment, e.g.
 `"Painted illustration of {what the image shows}, {circuit/landmark context}"`.
@@ -200,30 +305,43 @@ colours from the bundle `teams[]`.
 Previews keep the track-map identity — it's the one category where sameness is
 the brand. Vary only the ambience to match the venue:
 
-> Stylised illustrated track map of the **{Circuit Full Name}, {City}**. Clean
-> vector aerial view of the full circuit outline, start/finish marked, condensed
-> uppercase circuit name and "ROUND {NN} · {YEAR}" label. Dark charcoal
-> background, a single red (#E10600) accent on the track ribbon, subtle
-> {venue-flavoured texture: topographic grid / coastline contours / city-street
-> fabric / desert dunes / night-race glow}, flat editorial poster style. No
-> cars, no people. **No corner numbers and no text labels on the track — keep
-> only the title and round label** (image models garble corner numbers). 16:9.
+> A flat 2D vector poster illustration, orthographic top-down view, of the
+> **{Circuit Full Name}** racetrack{ in/near {City}}. The complete circuit
+> outline is drawn as a single clean continuous ribbon centred in the frame,
+> rendered in vivid racing red (#E10600) against a deep charcoal background. A
+> small white chequered marker indicates the start/finish line. The background
+> carries a faint darker-charcoal texture of **{venue-flavoured texture:
+> topographic contours / harbour coastline and marina berths / city-street
+> grid / desert dunes / forest canopy / heat-haze gradient}**. In the lower
+> left, in condensed uppercase sans-serif white lettering, the word
+> **"{SHORT CIRCUIT NAME}"**, and beneath it in smaller grey lettering
+> **"ROUND {NN} - {YEAR}"**. The track ribbon is clean and unlabelled.
+> Minimalist editorial poster design, flat colour, sharp vector edges, generous
+> negative space.
+
+Note what this template does *not* say: no "no cars", no "no corner numbers".
+"The track ribbon is clean and unlabelled" and "generous negative space" get the
+same result without naming the things you don't want. Keep it that way.
 
 `heroImageAlt`: `"Illustrated track map of the {Circuit Full Name}, {City}"`
 
 ### `technical` → conceptual subject illustration
 
-> Clean conceptual illustration of **{the technical subject}**, exploded /
-> cutaway diagram style, charcoal background with a single red accent, condensed
-> labels, flat technical-poster aesthetic. No real sponsor branding. 16:9.
+> A clean conceptual illustration of **{the technical subject}**, drawn as an
+> exploded cutaway diagram on a deep charcoal background, with a single vivid
+> racing red (#E10600) accent picking out {the key component}. Short condensed
+> uppercase labels in white sit alongside the components. Flat technical-poster
+> aesthetic, generic unmarked engineering surfaces.
 
 `heroImageAlt`: `"{The technical subject} explained"`
 
 ### `driver-focus` → driver portrait
 
-> Editorial portrait illustration of **{driver name}** in **{era/team}** racing
-> kit, three-quarter profile, muted period palette with a single red accent,
-> painterly poster style. Likeness-suggestive, not photoreal. 16:9.
+> A painterly editorial portrait illustration of **{driver name}** in
+> **{era/team}** racing kit, shown in three-quarter profile against
+> **{backdrop}**. Muted period palette lifted by a single vivid racing red
+> (#E10600) accent, plain unmarked overalls and helmet in solid block colour.
+> Loose painterly brushwork, an illustrated likeness rather than a photograph.
 
 Vary the backdrop with the driver's story (home circuit, title-winning venue,
 garage, era-appropriate paddock) so consecutive portraits don't share a
@@ -233,16 +351,18 @@ background.
 
 ### `historic-season` → period rivalry scene
 
-> Period illustration of **{subject / rivalry}**, **{year}**, {two cars or two
-> drivers} in correct era liveries, vintage editorial palette, grain texture,
-> painterly poster style. 16:9.
+> A period illustration of **{subject / rivalry}** in **{year}**, showing
+> {two cars or two drivers} in era-correct colours with plain unmarked
+> bodywork. Vintage editorial palette, soft film-grain texture across the
+> frame, painterly poster style.
 
 `heroImageAlt`: `"{Subjects / rivalry}, {year}"`
 
 ### `general` → representative scene from the post
 
-> Painted illustration of **{representative scene from the post}**, correct
-> {year} liveries, single red accent. 16:9.
+> A painted illustration of **{representative scene from the post}**, with the
+> cars in their correct {year} team colours on plain unmarked bodywork, muted
+> palette lifted by a single vivid racing red (#E10600) accent.
 
 `heroImageAlt`: `"{One-line description of the scene}"`
 
@@ -257,6 +377,25 @@ node --input-type=module -e "import sharp from 'sharp';import{writeFileSync}from
 ```
 
 Verify it serves as `image/jpeg` at a sane size before finishing.
+
+**Then look at the image** (Read the file) and check three things:
+
+1. **Lettering is clean and team identity is right.** Sponsor boards are fine;
+   garbled or misspelled ones are not, and neither is a car wearing the wrong
+   constructor's colours. Regenerate if either is off.
+2. **No generator watermark.** Gemini stamps a sparkle glyph into the
+   bottom-right corner on some export paths. **Crop it, never inpaint it** - a
+   sampled patch over a gradient background leaves a worse artefact than the
+   watermark did (learned the hard way; three preview heroes were destroyed
+   this way and could not be recovered). A 10% trim off the right edge, keeping
+   the aspect ratio, removes it cleanly:
+   ```bash
+   node --input-type=module -e "import sharp from 'sharp';import{readFileSync,writeFileSync}from'fs';const p='public/images/blog/<slug>.jpg';const src=readFileSync(p);const{width:W,height:H}=await sharp(src).metadata();const w=Math.round(W*0.90),h=Math.round(w*H/W);writeFileSync(p,await sharp(src).extract({left:0,top:0,width:w,height:h}).jpeg({quality:82,mozjpeg:true}).toBuffer())"
+   ```
+   Note `readFileSync` first: on Windows sharp keeps a handle on the source
+   path, so writing back to it in the same call fails with `UNKNOWN`.
+3. **Keep the generated original** until the processed `.jpg` has been reviewed.
+   Deleting the source before checking leaves nothing to fall back to.
 
 ## 7. Wrap up
 

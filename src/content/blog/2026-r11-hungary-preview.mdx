@@ -1,0 +1,115 @@
+---
+title: "Hungary 2026 Preview: Monaco Without the Walls, and the Last Race Before the Break"
+description: "Round 11 closes the first half at the Hungaroring, where track position is everything and overtaking is a rumour. Antonelli's Spa win pushed his lead to 45 - Hamilton has won here eight times."
+category: race-preview
+publishedAt: 2026-07-23
+author: "f1gures"
+heroImage: /images/blog/2026-r11-hungary-preview.jpg
+heroImageAlt: "Illustrated track map of the Hungaroring, Budapest"
+---
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import PullQuote from '../../components/blog/PullQuote.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
+import Sessions from '../../components/blog/Sessions.astro';
+import DriverChip from '../../components/blog/DriverChip.astro';
+
+Two weeks ago the title fight was down to 25 points and the chasers had the
+momentum. Then [Spa](/races/2026/10/) happened: pole, win, and a championship
+lead back out to 45. Whatever Silverstone suggested about
+<DriverChip ref="antonelli" /> being catchable, the Ardennes un-suggested it.
+
+Now the season stops for a month, but not before the [Hungaroring](/circuits/hungaroring/) -
+seventy laps of a circuit with fourteen corners, one DRS zone and a reputation
+earned honestly. Budapest is where a fast car that qualifies badly stays
+stuck, where the strategy variance is among the highest of the year, and where
+the last five runnings have produced four different winners. It is the least
+predictable race on a calendar that has, so far, been extremely predictable.
+
+## The championship
+
+<StandingsCard
+  title="Drivers' Championship · After Round 10"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 204 },
+    { driver: 'hamilton',       team: 'FER', value: 159 },
+    { driver: 'russell',        team: 'MER', value: 154 },
+    { driver: 'leclerc',        team: 'FER', value: 126 },
+    { driver: 'norris',         team: 'MCL', value: 103 },
+    { driver: 'piastri',        team: 'MCL', value: 92 },
+    { driver: 'max_verstappen', team: 'RBR', value: 91 },
+  ]}
+/>
+
+<StandingsCard
+  title="Constructors' Championship · After Round 10"
+  kind="constructor"
+  rows={[
+    { name: 'Mercedes', color: '#27F4D2', value: 358 },
+    { name: 'Ferrari',  color: '#E80020', value: 285 },
+    { name: 'McLaren',  color: '#FF8000', value: 195 },
+    { name: 'Red Bull', color: '#3671C6', value: 151 },
+  ]}
+/>
+
+Spa restored the order at the top and scrambled it just below.
+<DriverChip ref="antonelli" /> won from pole for his sixth victory in ten
+rounds. <DriverChip ref="russell" /> did not complete a lap, which handed second
+in the championship back to <DriverChip ref="hamilton" /> by five points.
+<DriverChip ref="leclerc" /> finished second and is now 126, closer to the top
+three than to the McLarens. And the fight for fifth has compressed to nothing:
+<DriverChip ref="norris" /> on 103, <DriverChip ref="piastri" /> on 92,
+<DriverChip ref="max_verstappen" /> on 91.
+
+## What the Hungaroring asks of the cars
+
+**Maximum downforce, minimum straight:** the longest straight is 700 m and
+there is one DRS zone. Teams bolt on the biggest wing they own and accept that
+the pit straight is a place to recover, not to attack. **Front-end rotation:**
+the lap is a chain of medium and slow corners that flow into each other, so a
+car that will not turn in the middle of a corner never gets a clean exit
+anywhere. **Heat:** Budapest in late July is reliably the hottest race of the
+European season, which loads the tyres, the brakes and the cooling all at once -
+and the 2026 power units have been at their least happy on hot afternoons.
+
+<PullQuote>“There is no straight to fix your mistakes on. You just carry the lap you have until it ends.”</PullQuote>
+
+Track position is the whole game. Overtaking here is rated among the lowest on
+the calendar, and while the 2026 cars follow better than their predecessors,
+nobody expects that to turn the Hungaroring into a passing circuit. The
+undercut is powerful, the safety car is common, and the team that gets its
+Saturday right usually gets to dictate Sunday.
+
+## The storylines
+
+<Storylines>
+  <Storyline title="The best record at the best-suited track" driver="hamilton">
+    Eight wins and nine poles at the Hungaroring, more than anyone in history,
+    plus the outright lap record. He arrives second in the championship on 159
+    with one win in Ferrari red already this season. If there is a circuit where
+    experience is still worth a tenth, this is it.
+  </Storyline>
+  <Storyline title="Six wins, ten rounds, one month off" driver="antonelli">
+    A 45-point lead going into the summer break would be the biggest cushion any
+    leader has carried into August in years - and the Hungaroring, where pole
+    matters more than pace, suits a driver who has taken six poles in ten rounds.
+  </Storyline>
+  <Storyline title="Three drivers, twelve points, fifth place" driver="max_verstappen">
+    Norris, Piastri and Verstappen are covered by twelve points. Verstappen has
+    won here twice, McLaren won the last two Hungarian Grands Prix, and none of
+    the three can afford to head into the break on the wrong side of the gap.
+  </Storyline>
+</Storylines>
+
+## Sessions · Track time
+
+<Sessions
+  rows={[
+    { day: 'Fri', name: 'Practice 1', time: '13:30' },
+    { day: 'Fri', name: 'Practice 2', time: '17:00' },
+    { day: 'Sat', name: 'Practice 3', time: '12:30' },
+    { day: 'Sat', name: 'Qualifying', time: '16:00' },
+    { day: 'Sun', name: 'Race', time: '15:00', race: true },
+  ]}
+  note="All times local (CEST, GMT+2). Hungaroring, 70 laps of 4.381 km. Last race before the summer break."
+/>
