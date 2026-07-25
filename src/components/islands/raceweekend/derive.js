@@ -299,7 +299,20 @@ export function progressionRows(results) {
 // marker: T6 + T7 becomes "T6/7", T12 + T12A becomes "T12/12A".
 export function cornerMarkers(corners, len, nPts, minGap = 3) {
   if (!corners?.length || !len || nPts < 2) return [];
-  const placed = corners
+  // Corner distance should rise with corner number around the lap. A handful of
+  // sessions disagree with themselves — Baku 2025 puts T20 at 2176m of a 5937m
+  // lap, São Paulo 2022 puts T8 at 10m — and a label placed from a bad distance
+  // is worse than no label, because it names the wrong part of the circuit. So
+  // score each corner by how many others contradict its position and drop the
+  // outliers, which leaves the coherent majority intact rather than binning the
+  // whole session.
+  const ds = corners.map((c) => c.d);
+  const limit = Math.max(2, Math.ceil(corners.length * 0.25));
+  const trusted = corners.filter((c, i) => {
+    const clashes = ds.reduce((n, d, j) => n + ((j < i && d > ds[i]) || (j > i && d < ds[i]) ? 1 : 0), 0);
+    return clashes < limit;
+  });
+  const placed = trusted
     .map((c) => ({
       label: c.name,
       idx: Math.max(0, Math.min(nPts - 1, Math.round((c.d / len) * (nPts - 1)))),
@@ -316,6 +329,56 @@ export function cornerMarkers(corners, len, nPts, minGap = 3) {
     }
   }
   return out;
+}
+
+// Choose a screen position for each corner label. Merging by lap distance only
+// catches corners that are consecutive; Baku and Jeddah double back on
+// themselves, so corners a kilometre apart can still land on the same pixels.
+// Each label is offered progressively larger offsets along its outward normal
+// and takes the first that clears everything already placed and stays on the
+// canvas — falling back to the innermost on-canvas option if nothing clears.
+// The negative steps flip the label onto the infield, which is what saves a
+// corner sitting hard against the edge of the box (Miami's T setup) where no
+// outward offset fits on the canvas at all.
+export function placeCornerLabels(cands, opts = {}) {
+  const {
+    charW = 7.8, lineH = 15, steps = [30, 46, 62, -32, -48], angles = [0, 0.6, -0.6],
+    w = Infinity, h = Infinity, track = null, clearOf = 19,
+  } = opts;
+  // A label also has to miss the ribbon itself. Jeddah snakes back on itself 27
+  // times, so the outward normal of one corner frequently points straight at
+  // another part of the circuit — without this the labels stay off each other
+  // but sit on the track.
+  const offTrack = (x, y, ownIdx) => {
+    if (!track) return true;
+    for (let i = 0; i < track.length; i++) {
+      if (Math.abs(i - ownIdx) < 4) continue;
+      const dx = track[i][0] - x, dy = track[i][1] - y;
+      if (dx * dx + dy * dy < clearOf * clearOf) return false;
+    }
+    return true;
+  };
+  const placed = [];
+  for (const c of cands) {
+    const halfW = (c.label.length * charW) / 2;
+    let fallback = null;
+    let chosen = null;
+    // straight out first, then swung along the track, then further out again
+    outer: for (const dist of steps) {
+      for (const ang of angles) {
+        const cos = Math.cos(ang), sin = Math.sin(ang);
+        const ux = c.ux * cos - c.uy * sin, uy = c.ux * sin + c.uy * cos;
+        const x = c.px + ux * dist, y = c.py + uy * dist;
+        const onCanvas = x - halfW >= 4 && x + halfW <= w - 4 && y - lineH / 2 >= 6 && y + lineH / 2 <= h - 4;
+        const clear = !placed.some((p) => Math.abs(p.x - x) < halfW + p.halfW && Math.abs(p.y - y) < lineH);
+        const score = (onCanvas ? 4 : 0) + (clear ? 2 : 0) + (offTrack(x, y, c.idx) ? 1 : 0);
+        if (!fallback || score > fallback.score) fallback = { x, y, dist, ux, uy, score };
+        if (score === 7) { chosen = { x, y, dist, ux, uy }; break outer; }
+      }
+    }
+    placed.push({ ...c, halfW, ...(chosen || fallback) });
+  }
+  return placed;
 }
 
 // Nudge a column of end-of-line labels apart so none overlap. Charts that place

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount,
   fastestLap, lap1Gains, duelGap, teamPace, degSeries, undercutWindows,
-  segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, compoundOffsets,
+  segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, compoundOffsets,
   fuelCorrectedPace, fmtLap,
 } from './derive.js';
 
@@ -226,11 +226,75 @@ describe('cornerMarkers', () => {
     expect(out.map((m) => m.label)).toEqual(['T1', 'T3']);
   });
 
+  it('drops a corner whose distance contradicts the rest of the lap', () => {
+    // Baku 2025 shape: one corner reports a distance from the wrong part of the
+    // lap, and the other nineteen agree with each other
+    const baku = Array.from({ length: 20 }, (_, i) => ({ name: `T${i + 1}`, d: (i + 1) * 290 }));
+    baku[19].d = 2176;
+    const out = cornerMarkers(baku, 5937, 240);
+    expect(out.map((m) => m.label)).not.toContain('T20');
+    expect(out.length).toBeGreaterThanOrEqual(18);
+  });
+
+  it('falls back to almost nothing when the whole lap is scrambled', () => {
+    // São Paulo 2022: distances contradict each other wholesale, so there is no
+    // coherent majority to keep. Degrading to a near-empty map is the point —
+    // the alternative is a map confidently naming the wrong corners.
+    const sao = [351, 539, 598, 1086, 1086, 454, 176, 10, 2022, 2389, 1921, 1622, 1674, 2379, 54]
+      .map((d, i) => ({ name: `T${i + 1}`, d }));
+    const labels = cornerMarkers(sao, 4234, 240).map((m) => m.label);
+    for (const bad of ['T7', 'T8', 'T15']) expect(labels.join(' ')).not.toMatch(new RegExp(`\\bT${bad.slice(1)}\\b`));
+    expect(labels.length).toBeLessThanOrEqual(4);
+  });
+
+  it('keeps every corner when the lap is self-consistent', () => {
+    const clean = Array.from({ length: 16 }, (_, i) => ({ name: `T${i + 1}`, d: (i + 1) * 250 }));
+    expect(cornerMarkers(clean, 4342, 240)).toHaveLength(16);
+  });
+
   it('clamps to the outline and tolerates missing input', () => {
     expect(cornerMarkers([{ name: 'T1', d: 9999 }], 1000, 51)[0].idx).toBe(50);
     expect(cornerMarkers(null, 1000, 240)).toEqual([]);
     expect(cornerMarkers(corners, 0, 240)).toEqual([]);
     expect(cornerMarkers(corners, 1000, 1)).toEqual([]);
+  });
+});
+
+describe('placeCornerLabels', () => {
+  // a corner at (100, 100) whose outward normal points straight up
+  const at = (label, px, py, ux = 0, uy = -1, idx = 0) => ({ label, px, py, ux, uy, idx });
+
+  it('takes the plain outward offset when nothing is in the way', () => {
+    const [m] = placeCornerLabels([at('T1', 100, 100)], { w: 400, h: 400 });
+    expect(m.dist).toBe(30);
+    expect([m.x, Math.round(m.y)]).toEqual([100, 70]);
+  });
+
+  it('pushes further out when the first slot is taken', () => {
+    const out = placeCornerLabels([at('T1', 100, 100), at('T2', 106, 100)], { w: 400, h: 400 });
+    expect(out[0].dist).toBe(30);
+    expect(Math.hypot(out[1].x - out[0].x, out[1].y - out[0].y)).toBeGreaterThanOrEqual(15);
+  });
+
+  it('flips onto the infield when outward runs off the canvas', () => {
+    // corner near the top edge, normal pointing up: no outward slot fits
+    const [m] = placeCornerLabels([at('T1', 100, 12)], { w: 400, h: 400 });
+    expect(m.dist).toBeLessThan(0);
+    expect(m.y).toBeGreaterThan(12);
+  });
+
+  it('avoids planting a label on the track ribbon', () => {
+    // a straight of track sits exactly where the outward normal points
+    const ribbon = Array.from({ length: 40 }, (_, i) => [60 + i * 2, 70]);
+    const [m] = placeCornerLabels([at('T1', 100, 100, 0, -1, 99)], { w: 400, h: 400, track: ribbon });
+    expect(ribbon.some((q) => Math.hypot(q[0] - m.x, q[1] - m.y) < 19)).toBe(false);
+  });
+
+  it('still returns a position for every label when nothing fits', () => {
+    const boxed = Array.from({ length: 400 }, (_, i) => [i % 20 * 5, Math.floor(i / 20) * 5]);
+    const out = placeCornerLabels([at('T1', 50, 50)], { w: 100, h: 100, track: boxed });
+    expect(out).toHaveLength(1);
+    expect(Number.isFinite(out[0].x) && Number.isFinite(out[0].y)).toBe(true);
   });
 });
 

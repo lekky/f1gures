@@ -1,7 +1,7 @@
 // Qualifying / sprint-quali / practice session charts.
 import React, { useState } from 'react';
 import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg, compoundColor } from './primitives.jsx';
-import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, compoundOffsets } from './derive.js';
+import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, compoundOffsets } from './derive.js';
 import { EmptyNote } from './charts-race.jsx';
 import { useIsMobile } from '../../../lib/shared.jsx';
 
@@ -81,15 +81,15 @@ export function DominanceMap({ dominance, track, corners, sectors, ctx }) {
   // with a third of the card empty. The viewBox width then follows the circuit's
   // own aspect (floored by the legend), so a tall track like the Hungaroring
   // gets a near-square card instead of swimming in a fixed 1000-wide one.
-  const MAP_H = 636, PAD = 52, SLOT = 230;
+  const MAX_W = 1000, MAX_H = 636, PAD = 52, SLOT = 230;
   const xs = track.pts.map((p) => p[0]), ys = track.pts.map((p) => p[1]);
   const minX = Math.min(...xs), minY = Math.min(...ys);
   const w = Math.max(1, Math.max(...xs) - minX), h = Math.max(1, Math.max(...ys) - minY);
-  const kH = (MAP_H - PAD * 2) / h;
+  const k = Math.min((MAX_W - PAD * 2) / w, (MAX_H - PAD * 2) / h);
   const legendW = codes.length * SLOT;
-  const VB_W = Math.round(Math.min(1000, Math.max(660, legendW, w * kH + PAD * 2)));
-  const k = Math.min((VB_W - PAD * 2) / w, kH);
-  const ox = (VB_W - w * k) / 2 - minX * k, oy = (MAP_H - h * k) / 2 - minY * k;
+  const VB_W = Math.round(Math.max(660, legendW, w * k + PAD * 2));
+  const MAP_H = Math.round(h * k + PAD * 2);
+  const ox = (VB_W - w * k) / 2 - minX * k, oy = PAD - minY * k;
   const pts = track.pts.map((p) => [p[0] * k + ox, p[1] * k + oy]);
   const cx = VB_W / 2, cy = MAP_H / 2;
 
@@ -102,34 +102,42 @@ export function DominanceMap({ dominance, track, corners, sectors, ctx }) {
   const counts = {};
   dominance.owners.forEach((c) => { counts[c] = (counts[c] || 0) + 1; });
   const laps = Object.fromEntries((sectors || []).map((s) => [s.code, s.lap]));
-  const marks = cornerMarkers(corners, track.len, pts.length);
   const sf = pts[0];
+
+  // Corner labels sit along the track's local normal, not radially from the
+  // centre: the Hungaroring folds back on itself and a radial push planted T4
+  // and T13 straight on the ribbon. Sign picks whichever side faces outward.
+  const n = pts.length;
+  const marks = placeCornerLabels(
+    cornerMarkers(corners, track.len, n).map((m) => {
+      const p = pts[m.idx];
+      const a = pts[(m.idx - 3 + n) % n], b = pts[(m.idx + 3) % n];
+      let ux = -(b[1] - a[1]), uy = b[0] - a[0];
+      const d = Math.hypot(ux, uy) || 1;
+      ux /= d; uy /= d;
+      if ((p[0] - cx) * ux + (p[1] - cy) * uy < 0) { ux = -ux; uy = -uy; }
+      return { label: m.label, idx: m.idx, px: p[0], py: p[1], ux, uy };
+    }),
+    { w: VB_W, h: MAP_H, track: pts },
+  );
 
   // Legend: one centred slot per driver, code + share on top, lap time beneath.
   const lx = (VB_W - legendW) / 2;
 
   return (
-    <svg viewBox={`0 0 ${VB_W} 724`} style={{ width: '82%', display: 'block', margin: '0 auto' }}>
+    <svg viewBox={`0 0 ${VB_W} ${MAP_H + 88}`} style={{ width: '82%', display: 'block', margin: '0 auto' }}>
       <polyline points={pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={PANEL.line} strokeWidth="22" strokeLinejoin="round" strokeLinecap="round" />
       {segs.map((sg, i) => (
         <polyline key={i} points={sg.pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={colors[sg.owner]} strokeWidth="12" strokeLinejoin="round" strokeLinecap="round" />
       ))}
       {marks.map((m) => {
-        // Offset along the track's local normal, not radially from the centre:
-        // the Hungaroring folds back on itself, and a radial push planted T4 and
-        // T13 straight on top of the ribbon. Sign picks whichever side of the
-        // track faces away from the middle of the map.
-        const p = pts[m.idx];
-        const n = pts.length;
-        const a = pts[(m.idx - 3 + n) % n], b = pts[(m.idx + 3) % n];
-        let ux = -(b[1] - a[1]), uy = b[0] - a[0];
-        const d = Math.hypot(ux, uy) || 1;
-        ux /= d; uy /= d;
-        if ((p[0] - cx) * ux + (p[1] - cy) * uy < 0) { ux = -ux; uy = -uy; }
+        // leader runs from the edge of the ribbon out to the label, either side
+        const sgn = m.dist < 0 ? -1 : 1;
+        const [a, b] = [13 * sgn, m.dist - 11 * sgn];
         return (
           <g key={m.label}>
-            <line x1={(p[0] + ux * 13).toFixed(1)} y1={(p[1] + uy * 13).toFixed(1)} x2={(p[0] + ux * 20).toFixed(1)} y2={(p[1] + uy * 20).toFixed(1)} stroke={PANEL.fg4} strokeWidth="1.5" />
-            <text x={(p[0] + ux * 30).toFixed(1)} y={(p[1] + uy * 30 + 4).toFixed(1)} fontFamily={MONO} fontSize="13" fontWeight="700" fill={PANEL.fg3} textAnchor="middle">{m.label}</text>
+            <line x1={(m.px + m.ux * a).toFixed(1)} y1={(m.py + m.uy * a).toFixed(1)} x2={(m.px + m.ux * b).toFixed(1)} y2={(m.py + m.uy * b).toFixed(1)} stroke={PANEL.fg4} strokeWidth="1.5" />
+            <text x={m.x.toFixed(1)} y={(m.y + 4).toFixed(1)} fontFamily={MONO} fontSize="13" fontWeight="700" fill={PANEL.fg3} textAnchor="middle">{m.label}</text>
           </g>
         );
       })}
@@ -137,11 +145,11 @@ export function DominanceMap({ dominance, track, corners, sectors, ctx }) {
       <text x={(sf[0] + 16).toFixed(1)} y={(sf[1] + 5).toFixed(1)} fontFamily={MONO} fontSize="15" fontWeight="700" fill={PANEL.fg}>S/F</text>
       {codes.map((c, i) => (
         <g key={c}>
-          <FaceImg href={ctx.faceImg?.(c)} x={lx + i * SLOT} y={664} size={34} />
-          <rect x={lx + i * SLOT + 44} y={670} width="18" height="18" fill={colors[c]} />
-          <text x={lx + i * SLOT + 70} y={685} fontFamily={MONO} fontSize="17" fontWeight="700" fill={PANEL.fg2}>{`${c} × ${counts[c] || 0}`}</text>
+          <FaceImg href={ctx.faceImg?.(c)} x={lx + i * SLOT} y={MAP_H + 28} size={34} />
+          <rect x={lx + i * SLOT + 44} y={MAP_H + 34} width="18" height="18" fill={colors[c]} />
+          <text x={lx + i * SLOT + 70} y={MAP_H + 49} fontFamily={MONO} fontSize="17" fontWeight="700" fill={PANEL.fg2}>{`${c} × ${counts[c] || 0}`}</text>
           {laps[c] != null && (
-            <text x={lx + i * SLOT + 70} y={706} fontFamily={MONO} fontSize="14" fill={PANEL.fg3}>{fmtLap(laps[c])}</text>
+            <text x={lx + i * SLOT + 70} y={MAP_H + 70} fontFamily={MONO} fontSize="14" fill={PANEL.fg3}>{fmtLap(laps[c])}</text>
           )}
         </g>
       ))}
