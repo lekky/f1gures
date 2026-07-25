@@ -206,8 +206,20 @@ layout will never come back accurate.
 
 > Painterly editorial illustration, cinematic light, a muted palette lifted by a
 > single vivid racing red (#E10600) accent. Bodywork is plain and unmarked in
-> solid block colour, the surfaces clean and free of lettering. Illustrated and
-> painterly rather than photographic.
+> solid block colour, the surfaces clean and free of lettering. Every trackside
+> surface - barriers, gantries, pit walls, garage fascias, grandstand banners,
+> flags - is plain unbranded colour. Illustrated and painterly rather than
+> photographic.
+
+**The unbranded instruction must cover the whole frame, not just the cars.**
+Asking only for "plain unmarked bodywork" gets you a clean car parked in front
+of a wall of rendered Pirelli boards and F1 logos - it happened on the first
+Barcelona recap hero. Trackside signage, pit gantries, garage fascias and
+grandstand banners are exactly where an image model reaches for real
+trademarks, because that is what its training images look like. Name those
+surfaces as plain, positively, in every prompt that shows a circuit
+environment. Then **check the generated image for lettering before shipping
+it** - a hero with a real sponsor's wordmark in it does not go on the site.
 
 ### Anti-samey check (do this BEFORE writing the prompt)
 
@@ -336,6 +348,25 @@ node --input-type=module -e "import sharp from 'sharp';import{writeFileSync}from
 ```
 
 Verify it serves as `image/jpeg` at a sane size before finishing.
+
+**Then look at the image** (Read the file) and check three things:
+
+1. **No real trademarks.** Sponsor wordmarks, series logos, team badges. If any
+   appear, regenerate with the trackside surfaces named as plain - do not try to
+   paint them out.
+2. **No generator watermark.** Gemini stamps a sparkle glyph into the
+   bottom-right corner on some export paths. **Crop it, never inpaint it** - a
+   sampled patch over a gradient background leaves a worse artefact than the
+   watermark did (learned the hard way; three preview heroes were destroyed
+   this way and could not be recovered). A 10% trim off the right edge, keeping
+   the aspect ratio, removes it cleanly:
+   ```bash
+   node --input-type=module -e "import sharp from 'sharp';import{readFileSync,writeFileSync}from'fs';const p='public/images/blog/<slug>.jpg';const src=readFileSync(p);const{width:W,height:H}=await sharp(src).metadata();const w=Math.round(W*0.90),h=Math.round(w*H/W);writeFileSync(p,await sharp(src).extract({left:0,top:0,width:w,height:h}).jpeg({quality:82,mozjpeg:true}).toBuffer())"
+   ```
+   Note `readFileSync` first: on Windows sharp keeps a handle on the source
+   path, so writing back to it in the same call fails with `UNKNOWN`.
+3. **Keep the generated original** until the processed `.jpg` has been reviewed.
+   Deleting the source before checking leaves nothing to fall back to.
 
 ## 7. Wrap up
 
