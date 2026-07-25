@@ -1,0 +1,115 @@
+---
+title: "Barcelona 2026 Recap: Hamilton's First Win in Red, and the First All-British Podium Since 1968"
+description: "Lewis Hamilton won for Ferrari at 41, the oldest Grand Prix winner since Jack Brabham. Antonelli retired from second with five laps left and watched his 66-point lead fall to 41."
+category: race-recap
+publishedAt: 2026-06-15
+author: "f1gures"
+heroImage: /images/blog/2026-r7-barcelona-recap.jpg
+heroImageAlt: "Painted illustration of a red Ferrari stationary in its pit box during a virtual safety car while a silver Mercedes passes on the track behind"
+---
+import DriverChip from '../../components/blog/DriverChip.astro';
+import RaceResult from '../../components/blog/RaceResult.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+
+The preview asked whether the Mercedes was genuinely the fastest car or simply
+the best driven one. Barcelona answered by handing the race to a Ferrari, and
+gave <DriverChip ref="hamilton" /> the win he had been chasing since he put on
+red overalls.
+
+It is his first victory for Ferrari, his first Grand Prix win since Belgium in
+2024, and the 106th of his career. At 41 he becomes the oldest driver to win a
+Formula 1 race since Jack Brabham in 1970 and the first over the age of 40
+since Nigel Mansell in 1994. The podium behind him -
+<DriverChip ref="russell" /> second, <DriverChip ref="norris" /> third - was the
+first all-British rostrum since the 1968 United States Grand Prix, and the
+first podium of any single nationality since San Marino in 1983.
+
+## The race
+
+<DriverChip ref="russell" /> had [pole](/races/2026/7/) at 1:14.679, Mercedes'
+seventh in a row, and led the opening stint. The race was decided in the
+Ferrari pit wall's spreadsheet rather than on the road.
+
+On lap 28 Ferrari brought <DriverChip ref="hamilton" /> in for a second stop
+and fitted mediums, committing him to a three-stop in a race the Mercedes
+drivers were running in two. The pace advantage was immediate. It still needed
+the timing to fall right, and on lap 41 it did: <DriverChip ref="alonso" />
+stopped on track with a battery failure, the virtual safety car came out, and
+Ferrari called Hamilton in for hard tyres at exactly the moment a pit stop cost
+almost nothing. He rejoined ahead of Russell and stayed there, winning by
+19.561s. It is the largest winning margin of the 2026 season so far.
+
+Track temperatures were above 50 °C before the formation lap and degradation
+was severe all afternoon, which is how a race with two virtual safety cars and
+no full safety car still ended with everyone from sixth place back at least a
+lap down.
+
+## Antonelli's first blank Sunday
+
+<DriverChip ref="antonelli" /> was running second with five laps to go when he
+attacked <DriverChip ref="russell" /> for the place, went wheel to wheel with
+his team-mate, and came out ahead. He also came out with a damaged front wing.
+He slowed shortly afterwards and stopped with a mechanical problem on lap 61,
+classified sixteenth. He had already picked up a five-second penalty for
+exceeding track limits. Six rounds of scoring at every one, and the run ended
+with a move on his own team-mate that neither Mercedes needed.
+
+Almost simultaneously, on lap 62, <DriverChip ref="leclerc" /> stopped with a
+power steering failure, triggering the second virtual safety car. His weekend
+had gone wrong a day earlier: he lost the Ferrari at Turn 4 in Q3, ran through
+the gravel and hit the barriers, set no time in the session and started tenth.
+
+The oddest retirement of the day belonged to <DriverChip ref="hulkenberg" />,
+who was running strongly from ninth on the grid when a stray rock, kicked up by
+<DriverChip ref="lawson" />'s Racing Bulls, struck the safety switch on the Audi
+and shut the electronics down on lap 29.
+
+## The DNFs
+
+- <DriverChip ref="stroll" /> - lap 5, gearbox, Aston Martin
+- <DriverChip ref="bottas" /> - lap 15, overheating, Cadillac
+- <DriverChip ref="hulkenberg" /> - lap 29, electronics shutdown, Audi
+- <DriverChip ref="alonso" /> - lap 37, battery failure, Aston Martin
+- <DriverChip ref="albon" /> - lap 55, Williams
+- <DriverChip ref="bearman" /> - lap 60, electrical, Haas
+- <DriverChip ref="antonelli" /> - lap 61, front wing damage and mechanical failure, Mercedes
+- <DriverChip ref="leclerc" /> - lap 62, power steering, Ferrari
+
+<RaceResult year={2026} round={7} />
+
+## The championship
+
+<StandingsCard
+  title="Drivers' Championship · After Round 7"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 156 },
+    { driver: 'hamilton',       team: 'FER', value: 115 },
+    { driver: 'russell',        team: 'MER', value: 106 },
+    { driver: 'leclerc',        team: 'FER', value: 75 },
+    { driver: 'norris',         team: 'MCL', value: 73 },
+    { driver: 'piastri',        team: 'MCL', value: 68 },
+    { driver: 'max_verstappen', team: 'RBR', value: 55 },
+  ]}
+/>
+
+<StandingsCard
+  title="Constructors' Championship · After Round 7"
+  kind="constructor"
+  rows={[
+    { name: 'Mercedes', color: '#27F4D2', value: 262 },
+    { name: 'Ferrari',  color: '#E80020', value: 190 },
+    { name: 'McLaren',  color: '#FF8000', value: 141 },
+    { name: 'Red Bull', color: '#3671C6', value: 89 },
+  ]}
+/>
+
+The leader's total did not move. Everyone else's did.
+<DriverChip ref="antonelli" /> stays on 156 and watches a 66-point cushion
+become 41 in a single afternoon, the first time all season the gap has closed.
+<DriverChip ref="hamilton" /> is second on 115 and has now outscored his former
+team-mate in consecutive rounds, with <DriverChip ref="russell" /> third on 106.
+
+Ferrari's 25 points against Mercedes' 18 barely dents a constructors' lead that
+still reads 72. But the number that matters is the one at the top of the
+drivers' table, and for the first time in 2026 it is going in the wrong
+direction. [Austria](/races/2026/8/) is next.

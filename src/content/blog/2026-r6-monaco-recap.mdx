@@ -1,0 +1,132 @@
+---
+title: "Monaco 2026 Recap: Antonelli's Grand Slam, and a Podium Decided Five Days Later"
+description: "Antonelli became the youngest winner in Monaco history with a grand slam. Behind him: a red flag, a standing restart, six retirements, and a Gasly podium that took a Right of Review to confirm."
+category: race-recap
+publishedAt: 2026-06-08
+author: "f1gures"
+heroImage: /images/blog/2026-r6-monaco-recap.jpg
+heroImageAlt: "Painted illustration of the Formula 1 field lined up in formation for a standing restart on the Monaco grid, the harbour and yachts behind the barriers"
+---
+import DriverChip from '../../components/blog/DriverChip.astro';
+import RaceResult from '../../components/blog/RaceResult.astro';
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+
+The preview said Monaco was the best chance anyone had to stop
+<DriverChip ref="antonelli" />. Instead he took [pole](/races/2026/6/) with a
+1:12.051, led every lap, set the fastest lap of the race on lap 76, and won the
+Monaco Grand Prix at nineteen. That is a grand slam, and it makes him the
+youngest winner in the history of this race and the youngest driver ever to
+complete one. It also made him the first Italian to take pole at Monaco since
+Jarno Trulli in 2004.
+
+The rest of the afternoon was considerably less tidy. Six cars retired, a red
+flag stopped the race with fourteen laps to go, and the final podium position
+was not settled until the following Friday.
+
+## The race
+
+<DriverChip ref="max_verstappen" /> had the best seat in the house and lost it
+before the first lap was out. A power unit problem dropped the Red Bull through
+the field from second on the grid, and he retired at the end of the opening
+lap without completing a racing lap. Monaco's most valuable commodity is the
+grid slot, and Red Bull's evaporated in about ninety seconds.
+
+<DriverChip ref="antonelli" /> was never troubled. Out front from lights to
+flag, he crossed the line 6.271s clear of <DriverChip ref="hamilton" />, who
+had run a quiet, disciplined race from third and turned it into Ferrari's
+second podium of the year.
+
+The chaos arrived late. On lap 56 <DriverChip ref="stroll" /> crashed at the
+final corner and brought out the safety car. When the race resumed,
+<DriverChip ref="leclerc" /> crashed at the same corner on lap 64, ending his
+home Grand Prix from fourth on the grid and prompting a red flag while the
+marshals inspected the track surface. The race restarted from a standing start
+with the order shuffled and the tyres cold.
+
+<DriverChip ref="sainz" /> had two collisions in the minutes after that
+restart, first with <DriverChip ref="hulkenberg" /> and then with
+<DriverChip ref="colapinto" />, and parked the Williams with damage on lap 70
+after being classified sixteenth. Hulkenberg took a ten-second penalty for the
+first of them. <DriverChip ref="norris" /> had already gone, stopping on lap 43
+reporting a loss of battery power, which is a modern way to lose a race at a
+circuit that used to take your gearbox instead.
+
+<DriverChip ref="russell" /> had the worst afternoon of anyone still running.
+He reported engine braking and gear-selection problems, could not find a way
+past <DriverChip ref="hadjar" />, picked up a five-second penalty for speeding
+in the pit lane, and then collected a drive-through for failing to serve it
+correctly. Sixth on the grid, twelfth at the flag, nothing scored, and a
+championship lead handed further away.
+
+## The podium that took five days
+
+<DriverChip ref="gasly" /> crossed the line third, drove an excellent race from
+ninth, and was then dropped to seventh by two separate five-second pit-lane
+speeding penalties. Alpine petitioned for a Right of Review. On 12 June, five
+days after the race, the stewards found the pit-lane speed calculation had used
+an incorrect distance measurement, rescinded both penalties and reinstated him
+to third. McLaren and Red Bull appealed; Mercedes lodged its own petition and
+withdrew it on 18 June.
+
+It stands as Gasly's sixth career podium and his first since São Paulo in 2024,
+and it is Alpine's only visit to the rostrum since that afternoon.
+
+Further back the penalties cascaded. <DriverChip ref="perez" /> took a
+ten-second post-race penalty for being out of position at the standing restart,
+which cost Cadillac what would have been their first Formula 1 point and
+promoted <DriverChip ref="alonso" /> to tenth. From twenty-first on the grid,
+that is Aston Martin's first point of 2026. <DriverChip ref="arvid_lindblad" />
+came seventh from fifteenth in a strong afternoon for the rookie, with
+<DriverChip ref="lawson" /> sixth ahead of him.
+
+The weekend also marked McLaren's 1,000th Grand Prix entry, sixty years after
+the team made its debut at this circuit in 1966.
+
+## The DNFs
+
+- <DriverChip ref="max_verstappen" /> - lap 1, power unit, Red Bull
+- <DriverChip ref="bottas" /> - lap 15, brakes, Cadillac
+- <DriverChip ref="bearman" /> - lap 27, mechanical, Haas
+- <DriverChip ref="norris" /> - lap 43, battery power, McLaren
+- <DriverChip ref="stroll" /> - lap 56, crash at the final corner, Aston Martin
+- <DriverChip ref="leclerc" /> - lap 64, crash at the final corner, Ferrari
+
+<RaceResult year={2026} round={6} />
+
+## The championship
+
+<StandingsCard
+  title="Drivers' Championship · After Round 6"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 156 },
+    { driver: 'hamilton',       team: 'FER', value: 90 },
+    { driver: 'russell',        team: 'MER', value: 88 },
+    { driver: 'leclerc',        team: 'FER', value: 75 },
+    { driver: 'piastri',        team: 'MCL', value: 58 },
+    { driver: 'norris',         team: 'MCL', value: 58 },
+    { driver: 'max_verstappen', team: 'RBR', value: 43 },
+  ]}
+/>
+
+<StandingsCard
+  title="Constructors' Championship · After Round 6"
+  kind="constructor"
+  rows={[
+    { name: 'Mercedes', color: '#27F4D2', value: 244 },
+    { name: 'Ferrari',  color: '#E80020', value: 165 },
+    { name: 'McLaren',  color: '#FF8000', value: 116 },
+    { name: 'Red Bull', color: '#3671C6', value: 69 },
+  ]}
+/>
+
+Twenty-five more points for the leader and none for the man who was second in
+the table pushes the gap to 66, the largest it has been all season.
+<DriverChip ref="hamilton" /> inherits second on 90, one clear of
+<DriverChip ref="russell" />, which is the first time in 2026 the number two
+Mercedes has not been the closest challenger. <DriverChip ref="leclerc" /> stays
+fourth on 75 despite scoring nothing, and <DriverChip ref="norris" /> and
+<DriverChip ref="piastri" /> are locked together on 58.
+
+Five wins from six, four poles, and a lead that has grown after every round
+since March. [Barcelona](/races/2026/7/) is next, and unlike Monte Carlo it has
+never been kind to a car that is merely well driven.

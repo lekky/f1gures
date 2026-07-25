@@ -1,0 +1,115 @@
+---
+title: "Belgium 2026 Preview: The Longest Lap of the Year, and a Lead Down to 25"
+description: "Round 10 goes to Spa-Francorchamps with the title fight closer than it has been since May. Antonelli leads Russell by 25 and Hamilton by 32 - and the Ardennes writes its own weather."
+category: race-preview
+publishedAt: 2026-07-16
+author: "f1gures"
+heroImage: /images/blog/2026-r10-belgium-preview.jpg
+heroImageAlt: "Illustrated track map of the Circuit de Spa-Francorchamps, Stavelot"
+---
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import PullQuote from '../../components/blog/PullQuote.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
+import Sessions from '../../components/blog/Sessions.astro';
+import DriverChip from '../../components/blog/DriverChip.astro';
+
+[Silverstone](/races/2026/9/) ended with the championship leader fifteenth in a
+damaged car and his advantage cut almost in half. Two weeks later the season
+arrives at [Spa-Francorchamps](/circuits/spa/), which is the last place a team
+whose Sundays have started going wrong wants to be. Seven kilometres of
+Ardennes forest, 44 laps, and a lap so long that a weather front can sit over
+one end of the circuit while the other stays dry.
+
+<DriverChip ref="antonelli" /> still leads, and by a race win's worth of points.
+But the trend has turned: he has been beaten in each of the last two rounds, and
+for the first time in 2026 the cars behind him arrive with the momentum.
+
+## The championship
+
+<StandingsCard
+  title="Drivers' Championship · After Round 9"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 179 },
+    { driver: 'russell',        team: 'MER', value: 154 },
+    { driver: 'hamilton',       team: 'FER', value: 147 },
+    { driver: 'leclerc',        team: 'FER', value: 108 },
+    { driver: 'norris',         team: 'MCL', value: 97 },
+    { driver: 'piastri',        team: 'MCL', value: 82 },
+    { driver: 'max_verstappen', team: 'RBR', value: 76 },
+  ]}
+/>
+
+<StandingsCard
+  title="Constructors' Championship · After Round 9"
+  kind="constructor"
+  rows={[
+    { name: 'Mercedes', color: '#27F4D2', value: 333 },
+    { name: 'Ferrari',  color: '#E80020', value: 255 },
+    { name: 'McLaren',  color: '#FF8000', value: 179 },
+    { name: 'Red Bull', color: '#3671C6', value: 128 },
+  ]}
+/>
+
+Twenty-five points is the smallest the lead has been since the start of May.
+It was 66 after Monaco. Barcelona took 25 off it in an afternoon when
+<DriverChip ref="antonelli" /> retired, Austria trimmed one more, and Silverstone
+took another fifteen. <DriverChip ref="russell" /> and <DriverChip ref="hamilton" />
+are now separated by seven points in the fight for second, which is its own race
+inside the race, and <DriverChip ref="leclerc" /> has moved clear of the McLarens
+after winning at Silverstone.
+
+## What Spa asks of the cars
+
+**Aerodynamic efficiency, not maximum downforce:** the run from La Source
+through Eau Rouge and up the Kemmel straight is nearly two kilometres of full
+throttle, then the middle sector demands genuine load through Pouhon and the
+Speaker's Corner sweeps. Every team runs a wing level they are unhappy with in
+one sector or the other. **Power unit:** more of this lap is spent at full
+throttle than almost anywhere, so the 2026 units - and how well each team
+manages the electrical deployment across a 7 km lap - matter more here than at
+any circuit since Monza will. **Tyre energy:** degradation is high, the corners
+are long and fast, and a two-stop is normal.
+
+<PullQuote>“You come out of Eau Rouge with the car light and the throttle pinned and you have another twenty seconds of straight to think about whether that was wise.”</PullQuote>
+
+Then there is the weather, which at Spa is less a variable than a participant.
+Rain over Malmedy while the pit straight stays dry is a normal Sunday here, and
+the circuit has produced more strategy-inverting afternoons than anywhere on
+the calendar. For a championship leader carrying a 25-point cushion, that is a
+threat. For the two men behind him, it is the best tool they have.
+
+## The storylines
+
+<Storylines>
+  <Storyline title="Two rounds, two beatings, one lead left" driver="antonelli">
+    Third in Austria, fifteenth at Silverstone, and a lead down from 66 to 25 in
+    three rounds. He has still scored more than anyone this season by a distance -
+    but Spa punishes a team whose execution has begun to wobble, and this is
+    only his second Belgian Grand Prix in a Formula 1 car.
+  </Storyline>
+  <Storyline title="The Mercedes fight for second is getting real" driver="russell">
+    Russell is 25 behind his team-mate and seven ahead of Hamilton. He has won
+    twice this year and been the more reliable of the two silver cars since May.
+    If Mercedes have a genuine internal title fight, Spa is where it stops being
+    theoretical.
+  </Storyline>
+  <Storyline title="Ferrari have found the pace, and the calendar" driver="leclerc">
+    Barcelona and Silverstone both went red, and Ferrari have cut the
+    constructors' gap to Mercedes to 78. Spa suits their aero package, and
+    Leclerc arrives fourth in the championship with a win already banked.
+  </Storyline>
+</Storylines>
+
+## Sessions · Track time
+
+<Sessions
+  rows={[
+    { day: 'Fri', name: 'Practice 1', time: '13:30' },
+    { day: 'Fri', name: 'Practice 2', time: '17:00' },
+    { day: 'Sat', name: 'Practice 3', time: '12:30' },
+    { day: 'Sat', name: 'Qualifying', time: '16:00' },
+    { day: 'Sun', name: 'Race', time: '15:00', race: true },
+  ]}
+  note="All times local (CEST, GMT+2). Circuit de Spa-Francorchamps, 44 laps of 7.004 km."
+/>
