@@ -1,7 +1,7 @@
 // Qualifying / sprint-quali / practice session charts.
 import React, { useState } from 'react';
 import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg, compoundColor } from './primitives.jsx';
-import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, compoundOffsets } from './derive.js';
+import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, compoundOffsets } from './derive.js';
 import { EmptyNote } from './charts-race.jsx';
 import { useIsMobile } from '../../../lib/shared.jsx';
 
@@ -70,13 +70,30 @@ export function SectorBattle({ sectors, ctx }) {
 }
 
 // ── Track dominance map ─────────────────────────────────────────
-export function DominanceMap({ dominance, track, ctx }) {
+export function DominanceMap({ dominance, track, corners, sectors, ctx }) {
   if (!dominance || !track?.pts?.length) return <EmptyNote txt="No telemetry available for this session." />;
-  const pts = track.pts;
   const codes = dominance.codes;
   const colors = distinctColors(codes, ctx.colorOf, ctx.teamOf);
-  const nSeg = dominance.n;
-  const per = pts.length / nSeg;
+
+  // Fit the outline to the drawing area. The source points are GPS-derived and
+  // land wherever the projection put them — Hungary 2026 spans x 50–632 inside
+  // a 1000-wide box — so drawing them raw left the map floating up and left
+  // with a third of the card empty. The viewBox width then follows the circuit's
+  // own aspect (floored by the legend), so a tall track like the Hungaroring
+  // gets a near-square card instead of swimming in a fixed 1000-wide one.
+  const MAX_W = 1000, MAX_H = 636, PAD = 52, SLOT = 230;
+  const xs = track.pts.map((p) => p[0]), ys = track.pts.map((p) => p[1]);
+  const minX = Math.min(...xs), minY = Math.min(...ys);
+  const w = Math.max(1, Math.max(...xs) - minX), h = Math.max(1, Math.max(...ys) - minY);
+  const k = Math.min((MAX_W - PAD * 2) / w, (MAX_H - PAD * 2) / h);
+  const legendW = codes.length * SLOT;
+  const VB_W = Math.round(Math.max(660, legendW, w * k + PAD * 2));
+  const MAP_H = Math.round(h * k + PAD * 2);
+  const ox = (VB_W - w * k) / 2 - minX * k, oy = PAD - minY * k;
+  const pts = track.pts.map((p) => [p[0] * k + ox, p[1] * k + oy]);
+  const cx = VB_W / 2, cy = MAP_H / 2;
+
+  const per = pts.length / dominance.n;
   const segs = dominance.owners.map((owner, i) => {
     const a = Math.floor(i * per);
     const b = Math.min(pts.length - 1, Math.ceil((i + 1) * per));
@@ -84,20 +101,56 @@ export function DominanceMap({ dominance, track, ctx }) {
   });
   const counts = {};
   dominance.owners.forEach((c) => { counts[c] = (counts[c] || 0) + 1; });
+  const laps = Object.fromEntries((sectors || []).map((s) => [s.code, s.lap]));
   const sf = pts[0];
+
+  // Corner labels sit along the track's local normal, not radially from the
+  // centre: the Hungaroring folds back on itself and a radial push planted T4
+  // and T13 straight on the ribbon. Sign picks whichever side faces outward.
+  const n = pts.length;
+  const marks = placeCornerLabels(
+    cornerMarkers(corners, track.len, n).map((m) => {
+      const p = pts[m.idx];
+      const a = pts[(m.idx - 3 + n) % n], b = pts[(m.idx + 3) % n];
+      let ux = -(b[1] - a[1]), uy = b[0] - a[0];
+      const d = Math.hypot(ux, uy) || 1;
+      ux /= d; uy /= d;
+      if ((p[0] - cx) * ux + (p[1] - cy) * uy < 0) { ux = -ux; uy = -uy; }
+      return { label: m.label, idx: m.idx, px: p[0], py: p[1], ux, uy };
+    }),
+    { w: VB_W, h: MAP_H, track: pts },
+  );
+
+  // Legend: one centred slot per driver, code + share on top, lap time beneath.
+  const lx = (VB_W - legendW) / 2;
+
   return (
-    <svg viewBox="0 0 1000 720" style={{ width: '78%', display: 'block', margin: '0 auto' }}>
-      <polyline points={pts.map((p) => `${p[0]},${p[1]}`).join(' ')} fill="none" stroke={PANEL.line} strokeWidth="22" strokeLinejoin="round" strokeLinecap="round" />
+    <svg viewBox={`0 0 ${VB_W} ${MAP_H + 88}`} style={{ width: '82%', display: 'block', margin: '0 auto' }}>
+      <polyline points={pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={PANEL.line} strokeWidth="22" strokeLinejoin="round" strokeLinecap="round" />
       {segs.map((sg, i) => (
-        <polyline key={i} points={sg.pts.map((p) => `${p[0]},${p[1]}`).join(' ')} fill="none" stroke={colors[sg.owner]} strokeWidth="12" strokeLinejoin="round" strokeLinecap="round" />
+        <polyline key={i} points={sg.pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={colors[sg.owner]} strokeWidth="12" strokeLinejoin="round" strokeLinecap="round" />
       ))}
-      <circle cx={sf[0]} cy={sf[1]} r="9" fill={PANEL.fg} />
-      <text x={sf[0] + 16} y={sf[1] + 5} fontFamily={MONO} fontSize="15" fontWeight="700" fill={PANEL.fg}>S/F</text>
+      {marks.map((m) => {
+        // leader runs from the edge of the ribbon out to the label, either side
+        const sgn = m.dist < 0 ? -1 : 1;
+        const [a, b] = [13 * sgn, m.dist - 11 * sgn];
+        return (
+          <g key={m.label}>
+            <line x1={(m.px + m.ux * a).toFixed(1)} y1={(m.py + m.uy * a).toFixed(1)} x2={(m.px + m.ux * b).toFixed(1)} y2={(m.py + m.uy * b).toFixed(1)} stroke={PANEL.fg4} strokeWidth="1.5" />
+            <text x={m.x.toFixed(1)} y={(m.y + 4).toFixed(1)} fontFamily={MONO} fontSize="13" fontWeight="700" fill={PANEL.fg3} textAnchor="middle">{m.label}</text>
+          </g>
+        );
+      })}
+      <circle cx={sf[0].toFixed(1)} cy={sf[1].toFixed(1)} r="9" fill={PANEL.fg} />
+      <text x={(sf[0] + 16).toFixed(1)} y={(sf[1] + 5).toFixed(1)} fontFamily={MONO} fontSize="15" fontWeight="700" fill={PANEL.fg}>S/F</text>
       {codes.map((c, i) => (
         <g key={c}>
-          <FaceImg href={ctx.faceImg?.(c)} x={244 + i * 170} y={682} size={30} />
-          <rect x={282 + i * 170} y={688} width="18" height="18" fill={colors[c]} />
-          <text x={308 + i * 170} y={703} fontFamily={MONO} fontSize="17" fontWeight="700" fill={PANEL.fg2}>{`${c} × ${counts[c] || 0}`}</text>
+          <FaceImg href={ctx.faceImg?.(c)} x={lx + i * SLOT} y={MAP_H + 28} size={34} />
+          <rect x={lx + i * SLOT + 44} y={MAP_H + 34} width="18" height="18" fill={colors[c]} />
+          <text x={lx + i * SLOT + 70} y={MAP_H + 49} fontFamily={MONO} fontSize="17" fontWeight="700" fill={PANEL.fg2}>{`${c} × ${counts[c] || 0}`}</text>
+          {laps[c] != null && (
+            <text x={lx + i * SLOT + 70} y={MAP_H + 70} fontFamily={MONO} fontSize="14" fill={PANEL.fg3}>{fmtLap(laps[c])}</text>
+          )}
         </g>
       ))}
     </svg>
@@ -175,6 +228,19 @@ export function ProgressionChart({ results, ctx, segLabels = ['Q1', 'Q2', 'Q3'] 
     const lo = Math.min(...vals), hi = Math.max(...vals);
     return scale(lo, hi === lo ? lo + 0.5 : hi, 30, 470);
   });
+  const lines = rows
+    .map((r) => {
+      const pts = r.segs.map((v, i) => (v != null ? [colX[i], colScales[i](v)] : null)).filter(Boolean);
+      return pts.length < 2 ? null : { code: r.code, pts, end: pts[pts.length - 1] };
+    })
+    .filter(Boolean);
+  // Each label sits at its driver's last point, so drivers knocked out in the
+  // same segment share an x — spread within each column, not across the chart.
+  const labelY = new Map();
+  for (const x of new Set(lines.map((l) => l.end[0]))) {
+    const col = lines.filter((l) => l.end[0] === x).map((l) => ({ code: l.code, y: l.end[1] }));
+    for (const it of spreadLabels(col, 11, 30, 470)) labelY.set(it.code, it.y);
+  }
   return (
     <svg viewBox="0 0 1000 520" style={{ width: '100%', display: 'block' }}>
       {colX.map((x, i) => (
@@ -183,19 +249,21 @@ export function ProgressionChart({ results, ctx, segLabels = ['Q1', 'Q2', 'Q3'] 
           <text x={x} y="500" fontFamily={COND} fontSize="14" fontWeight="700" letterSpacing="2" fill={PANEL.fg3} textAnchor="middle">{segLabels[i]}</text>
         </g>
       ))}
-      {rows.map((r) => {
-        const pts = r.segs.map((v, i) => (v != null ? [colX[i], colScales[i](v)] : null)).filter(Boolean);
-        if (pts.length < 2) return null;
-        const last = pts[pts.length - 1];
+      {lines.map((l) => {
+        const color = ctx.colorOf(l.code);
+        const ly = labelY.get(l.code) ?? l.end[1];
         return (
-          <g key={r.code}>
-            <polyline points={pts.map((p) => `${p[0]},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={ctx.colorOf(r.code)} strokeWidth="2" opacity="0.85" />
-            {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1].toFixed(1)} r="3.4" fill={ctx.colorOf(r.code)} />)}
-            <text x={last[0] + 10} y={(last[1] + 4).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="700" fill={ctx.colorOf(r.code)}>{r.code}</text>
+          <g key={l.code}>
+            <polyline points={l.pts.map((p) => `${p[0]},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={color} strokeWidth="2" opacity="0.85" />
+            {l.pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1].toFixed(1)} r="3.4" fill={color} />)}
+            {Math.abs(ly - l.end[1]) > 1.5 && (
+              <line x1={l.end[0] + 4} y1={l.end[1].toFixed(1)} x2={l.end[0] + 9} y2={ly.toFixed(1)} stroke={color} strokeWidth="1" opacity="0.45" />
+            )}
+            <text x={l.end[0] + 10} y={(ly + 3.5).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="700" fill={color}>{l.code}</text>
           </g>
         );
       })}
-      <text x="150" y="14" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>EACH COLUMN RANKED FASTEST (TOP) → SLOWEST · LINE = ONE DRIVER ACROSS SEGMENTS</text>
+      <text x="150" y="14" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>EACH COLUMN SCALED BY TIME · FASTEST (TOP) → SLOWEST · LINE = ONE DRIVER</text>
     </svg>
   );
 }

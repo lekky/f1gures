@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount,
   fastestLap, lap1Gains, duelGap, teamPace, degSeries, undercutWindows,
-  segmentBests, theoreticalBest, progressionRows, compoundOffsets,
+  segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, compoundOffsets,
   fuelCorrectedPace, fmtLap,
 } from './derive.js';
 
@@ -196,6 +196,160 @@ describe('quali helpers', () => {
   });
   it('progressionRows keeps nulls for knocked-out segments', () => {
     expect(progressionRows(results)[1].segs).toEqual([89.5, 89.2, null]);
+  });
+});
+
+describe('cornerMarkers', () => {
+  const corners = [{ name: 'T1', d: 0 }, { name: 'T2', d: 500 }, { name: 'T3', d: 1000 }];
+
+  it('maps corner distance to an outline index', () => {
+    expect(cornerMarkers(corners, 1000, 101)).toEqual([
+      { label: 'T1', idx: 0 }, { label: 'T2', idx: 50 }, { label: 'T3', idx: 100 },
+    ]);
+  });
+
+  it('merges corners too close to label separately', () => {
+    // T6/T7 are 37m apart at the Hungaroring — ~2 indices of 240
+    const tight = [{ name: 'T6', d: 2353 }, { name: 'T7', d: 2390 }];
+    const out = cornerMarkers(tight, 4342, 240);
+    expect(out).toHaveLength(1);
+    expect(out[0].label).toBe('T6/7');
+  });
+
+  it('keeps a suffixed corner readable when merged', () => {
+    const out = cornerMarkers([{ name: 'T12', d: 100 }, { name: 'T12A', d: 104 }], 4342, 240);
+    expect(out[0].label).toBe('T12/12A');
+  });
+
+  it('orders by distance regardless of input order', () => {
+    const out = cornerMarkers([{ name: 'T3', d: 900 }, { name: 'T1', d: 100 }], 1000, 101);
+    expect(out.map((m) => m.label)).toEqual(['T1', 'T3']);
+  });
+
+  it('drops a corner whose distance contradicts the rest of the lap', () => {
+    // Baku 2025 shape: one corner reports a distance from the wrong part of the
+    // lap, and the other nineteen agree with each other
+    const baku = Array.from({ length: 20 }, (_, i) => ({ name: `T${i + 1}`, d: (i + 1) * 290 }));
+    baku[19].d = 2176;
+    const out = cornerMarkers(baku, 5937, 240);
+    expect(out.map((m) => m.label)).not.toContain('T20');
+    expect(out.length).toBeGreaterThanOrEqual(18);
+  });
+
+  it('falls back to almost nothing when the whole lap is scrambled', () => {
+    // São Paulo 2022: distances contradict each other wholesale, so there is no
+    // coherent majority to keep. Degrading to a near-empty map is the point —
+    // the alternative is a map confidently naming the wrong corners.
+    const sao = [351, 539, 598, 1086, 1086, 454, 176, 10, 2022, 2389, 1921, 1622, 1674, 2379, 54]
+      .map((d, i) => ({ name: `T${i + 1}`, d }));
+    const labels = cornerMarkers(sao, 4234, 240).map((m) => m.label);
+    for (const bad of ['T7', 'T8', 'T15']) expect(labels.join(' ')).not.toMatch(new RegExp(`\\bT${bad.slice(1)}\\b`));
+    expect(labels.length).toBeLessThanOrEqual(4);
+  });
+
+  it('keeps every corner when the lap is self-consistent', () => {
+    const clean = Array.from({ length: 16 }, (_, i) => ({ name: `T${i + 1}`, d: (i + 1) * 250 }));
+    expect(cornerMarkers(clean, 4342, 240)).toHaveLength(16);
+  });
+
+  it('clamps to the outline and tolerates missing input', () => {
+    expect(cornerMarkers([{ name: 'T1', d: 9999 }], 1000, 51)[0].idx).toBe(50);
+    expect(cornerMarkers(null, 1000, 240)).toEqual([]);
+    expect(cornerMarkers(corners, 0, 240)).toEqual([]);
+    expect(cornerMarkers(corners, 1000, 1)).toEqual([]);
+  });
+});
+
+describe('placeCornerLabels', () => {
+  // a corner at (100, 100) whose outward normal points straight up
+  const at = (label, px, py, ux = 0, uy = -1, idx = 0) => ({ label, px, py, ux, uy, idx });
+
+  it('takes the plain outward offset when nothing is in the way', () => {
+    const [m] = placeCornerLabels([at('T1', 100, 100)], { w: 400, h: 400 });
+    expect(m.dist).toBe(30);
+    expect([m.x, Math.round(m.y)]).toEqual([100, 70]);
+  });
+
+  it('pushes further out when the first slot is taken', () => {
+    const out = placeCornerLabels([at('T1', 100, 100), at('T2', 106, 100)], { w: 400, h: 400 });
+    expect(out[0].dist).toBe(30);
+    expect(Math.hypot(out[1].x - out[0].x, out[1].y - out[0].y)).toBeGreaterThanOrEqual(15);
+  });
+
+  it('flips onto the infield when outward runs off the canvas', () => {
+    // corner near the top edge, normal pointing up: no outward slot fits
+    const [m] = placeCornerLabels([at('T1', 100, 12)], { w: 400, h: 400 });
+    expect(m.dist).toBeLessThan(0);
+    expect(m.y).toBeGreaterThan(12);
+  });
+
+  it('avoids planting a label on the track ribbon', () => {
+    // a straight of track sits exactly where the outward normal points
+    const ribbon = Array.from({ length: 40 }, (_, i) => [60 + i * 2, 70]);
+    const [m] = placeCornerLabels([at('T1', 100, 100, 0, -1, 99)], { w: 400, h: 400, track: ribbon });
+    expect(ribbon.some((q) => Math.hypot(q[0] - m.x, q[1] - m.y) < 19)).toBe(false);
+  });
+
+  it('still returns a position for every label when nothing fits', () => {
+    const boxed = Array.from({ length: 400 }, (_, i) => [i % 20 * 5, Math.floor(i / 20) * 5]);
+    const out = placeCornerLabels([at('T1', 50, 50)], { w: 100, h: 100, track: boxed });
+    expect(out).toHaveLength(1);
+    expect(Number.isFinite(out[0].x) && Number.isFinite(out[0].y)).toBe(true);
+  });
+});
+
+describe('spreadLabels', () => {
+  const gaps = (out) => out.slice(1).map((o, i) => +(o.y - out[i].y).toFixed(6));
+
+  it('leaves already-separated labels untouched', () => {
+    const out = spreadLabels([{ code: 'A', y: 50 }, { code: 'B', y: 200 }], 11, 30, 470);
+    expect(out.map((o) => o.y)).toEqual([50, 200]);
+  });
+
+  it('pushes apart labels closer than minGap', () => {
+    // the Hungary 2026 case: pole and P2 0.012s apart land on the same pixel
+    const out = spreadLabels([{ code: 'NOR', y: 100 }, { code: 'HAM', y: 100.4 }], 11, 30, 470);
+    expect(out.map((o) => o.code)).toEqual(['NOR', 'HAM']);
+    expect(gaps(out)).toEqual([11]);
+  });
+
+  it('returns copies sorted top-down without mutating the input', () => {
+    const input = [{ code: 'B', y: 300 }, { code: 'A', y: 40 }];
+    const out = spreadLabels(input, 11, 30, 470);
+    expect(out.map((o) => o.code)).toEqual(['A', 'B']);
+    expect(input[0]).toEqual({ code: 'B', y: 300 });
+  });
+
+  it('walks back up when a cluster spills past the bottom', () => {
+    const out = spreadLabels(
+      [{ code: 'A', y: 465 }, { code: 'B', y: 466 }, { code: 'C', y: 467 }], 11, 30, 470,
+    );
+    expect(out[out.length - 1].y).toBe(470);
+    expect(gaps(out)).toEqual([11, 11]);
+    expect(out[0].y).toBeGreaterThanOrEqual(30);
+  });
+
+  it('keeps every label inside the axis when the column is full', () => {
+    const out = spreadLabels(
+      Array.from({ length: 10 }, (_, i) => ({ code: `D${i}`, y: 250 })), 11, 30, 470,
+    );
+    expect(gaps(out)).toEqual(Array(9).fill(11));
+    expect(out[0].y).toBeGreaterThanOrEqual(30);
+    expect(out[out.length - 1].y).toBeLessThanOrEqual(470);
+  });
+
+  it('pins the top and overflows downward when labels outnumber the space', () => {
+    // 50 labels × 11px needs 539px of a 440px axis — nothing can fit, but they
+    // must still read top-down from the axis start rather than off the chart
+    const out = spreadLabels(
+      Array.from({ length: 50 }, (_, i) => ({ code: `D${i}`, y: 250 })), 11, 30, 470,
+    );
+    expect(out[0].y).toBe(30);
+    expect(gaps(out)).toEqual(Array(49).fill(11));
+  });
+
+  it('handles an empty column', () => {
+    expect(spreadLabels([], 11, 30, 470)).toEqual([]);
   });
 });
 
