@@ -2,29 +2,325 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const title = 'Page Not Found - f1gures';
-const description = "Sorry, we couldn't find that page. Browse drivers, races, circuits or constructors from the home page.";
+const description = "Sorry, we couldn't find that page. Search the archive, or browse drivers, races, circuits and constructors.";
 ---
 <BaseLayout {title} {description} canonicalPath="/404/" robots="noindex" ogImage="/images/og/pages/404.png">
-  <div class="page page-404">
-    <h1 class="page-title">404</h1>
-    <p class="page-404-tagline">We couldn't find that page.</p>
-    <p class="page-404-sub">Maybe one of these:</p>
-    <ul class="page-404-links">
-      <li><a href="/">Home</a></li>
-      <li><a href="/standings-drivers/">Driver standings</a></li>
-      <li><a href="/standings-constructors/">Constructor standings</a></li>
-      <li><a href="/calendar/">Calendar</a></li>
-      <li><a href="/circuits/">Circuits</a></li>
-    </ul>
+  <div class="p404">
+    <div class="p404-head">
+      <span class="p404-num" aria-hidden="true">404</span>
+      <span class="pill pill-dnf">Retired</span>
+    </div>
+
+    <h1 class="p404-tag">No data for this lap</h1>
+
+    <p class="p404-path">
+      Nothing is published at <code id="p404-url">this address</code>.
+    </p>
+
+    <!-- Suggestion slots are pre-rendered (and hidden) rather than created by the
+         script: Astro's scoped styles only reach elements present in this template,
+         so runtime-built nodes would come out unstyled. -->
+    <section class="panel p404-panel" id="p404-panel" hidden>
+      <div class="panel-head"><span id="p404-panel-title">Did you mean</span></div>
+      <div class="p404-list">
+        {[0, 1, 2, 3].map((i) => (
+          <a class="p404-sug" id={`p404-sug-${i}`} href="/" hidden>
+            <span class="p404-sug-name"></span>
+            <span class="p404-sug-meta"></span>
+            <span class="p404-sug-go" aria-hidden="true">&rarr;</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <button class="p404-search" type="button" data-search-trigger>
+      <span>Search the archive</span>
+      <kbd id="p404-kbd">/</kbd>
+    </button>
+
+    <nav class="p404-nav" aria-label="Main sections">
+      <a href="/">Home</a>
+      <a href="/standings-drivers/">Drivers' standings</a>
+      <a href="/standings-constructors/">Constructors' standings</a>
+      <a href="/calendar/">Calendar</a>
+      <a href="/drivers/">Drivers</a>
+      <a href="/teams/">Teams</a>
+      <a href="/circuits/">Circuits</a>
+      <a href="/records/">Records</a>
+    </nav>
   </div>
 </BaseLayout>
 
+<script is:inline>
+  (function () {
+    var path = window.location.pathname || '';
+    var urlEl = document.getElementById('p404-url');
+    if (urlEl) urlEl.textContent = path.length > 1 ? path : '/';
+
+    var kbd = document.getElementById('p404-kbd');
+    if (kbd && /Mac|iPhone|iPad/.test(navigator.platform || '')) kbd.textContent = '⌘K';
+    else if (kbd) kbd.textContent = 'Ctrl K';
+
+    // Dice coefficient over character bigrams. Tolerant of typos and
+    // transpositions, which is what a mistyped slug usually is.
+    function bigrams(s) {
+      var out = [];
+      for (var i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
+      return out;
+    }
+    function similarity(a, b) {
+      if (!a || !b) return 0;
+      if (a === b) return 1;
+      if (b.indexOf(a) !== -1 || a.indexOf(b) !== -1) return 0.85;
+      var A = bigrams(a), B = bigrams(b);
+      if (!A.length || !B.length) return 0;
+      var hits = 0, used = {};
+      for (var i = 0; i < A.length; i++) {
+        for (var j = 0; j < B.length; j++) {
+          if (!used[j] && A[i] === B[j]) { used[j] = 1; hits++; break; }
+        }
+      }
+      return (2 * hits) / (A.length + B.length);
+    }
+    function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+    var seg = path.replace(/^\/+|\/+$/g, '').split('/');
+    var kind = seg[0] || '';
+    var slug = seg.length > 1 ? seg[seg.length - 1] : '';
+
+    var SOURCES = {
+      drivers: {
+        file: '_drivers-index.json',
+        title: 'Did you mean',
+        map: function (d) {
+          var name = (d.forename || '') + ' ' + (d.surname || '');
+          var yrs = d.firstYear ? d.firstYear + (d.lastYear && d.lastYear !== d.firstYear ? '-' + d.lastYear : '') : '';
+          var bits = [d.nationality, yrs];
+          if (d.wins) bits.push(d.wins + (d.wins === 1 ? ' win' : ' wins'));
+          return {
+            keys: [d.driverRef, name, d.surname, d.code],
+            name: name.trim(),
+            meta: bits.filter(Boolean).join(' · '),
+            href: '/drivers/' + d.driverRef + '/',
+            weight: (d.championships || 0) * 100 + (d.wins || 0) * 5 + (d.races || 0)
+          };
+        }
+      },
+      teams: {
+        file: '_teams-index.json',
+        title: 'Did you mean',
+        map: function (t) {
+          var yrs = t.firstYear ? t.firstYear + (t.lastYear && t.lastYear !== t.firstYear ? '-' + t.lastYear : '') : '';
+          var bits = [t.nationality, yrs];
+          if (t.wins) bits.push(t.wins + (t.wins === 1 ? ' win' : ' wins'));
+          return {
+            keys: [t.constructorRef, t.name],
+            name: t.name,
+            meta: bits.filter(Boolean).join(' · '),
+            href: '/teams/' + t.constructorRef + '/',
+            weight: (t.championships || 0) * 100 + (t.wins || 0) * 5 + (t.races || 0)
+          };
+        }
+      },
+      circuits: {
+        file: '_circuits-index.json',
+        title: 'Did you mean',
+        map: function (c) {
+          var bits = [c.location, c.countryName];
+          if (c.raceCount) bits.push(c.raceCount + (c.raceCount === 1 ? ' race' : ' races'));
+          return {
+            keys: [c.circuitRef, c.name, c.location],
+            name: c.name,
+            meta: bits.filter(Boolean).join(' · '),
+            href: '/circuits/' + c.circuitRef + '/',
+            weight: c.raceCount || 0
+          };
+        }
+      },
+      races: {
+        file: '_races-index.json',
+        title: 'Nearby rounds',
+        map: function (r) {
+          return {
+            keys: [String(r.year) + String(r.round), r.name, String(r.year)],
+            name: r.year + ' ' + r.name,
+            meta: 'Round ' + r.round + (r.completed ? '' : ' · upcoming'),
+            href: '/races/' + r.year + '/' + r.round + '/',
+            year: r.year,
+            round: r.round,
+            completed: r.completed
+          };
+        }
+      }
+    };
+
+    var src = SOURCES[kind];
+    if (!src || !slug) return;
+
+    fetch('/data/archive/' + src.file)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (json) {
+        if (!json) return;
+        var arr = Array.isArray(json) ? json : (json.drivers || json.teams || json.circuits || json.races || []);
+        var items = arr.map(src.map);
+        var scored;
+
+        if (kind === 'races') {
+          // /races/<year>/<round> - a bad round number is far more common than a
+          // bad year, so anchor on the year and offer that season's rounds.
+          var year = Number(seg[1]);
+          var want = Number(slug);
+          var sameYear = items.filter(function (i) { return i.year === year; });
+          if (!sameYear.length) return;
+          scored = sameYear
+            .sort(function (a, b) { return Math.abs(a.round - want) - Math.abs(b.round - want); })
+            .slice(0, 4)
+            .map(function (i) { return { item: i, score: 1 }; });
+        } else {
+          var q = norm(slug);
+          scored = items
+            .map(function (i) {
+              var best = 0;
+              for (var k = 0; k < i.keys.length; k++) {
+                var s = similarity(q, norm(i.keys[k]));
+                if (s > best) best = s;
+              }
+              return { item: i, score: best };
+            })
+            .filter(function (x) { return x.score >= 0.45; })
+            .sort(function (a, b) {
+              // Near-identical scores are common ("hamiltonn" matches both
+              // Hamiltons). Break those ties on prominence, which is almost
+              // always what the visitor meant.
+              if (Math.abs(b.score - a.score) > 0.02) return b.score - a.score;
+              return (b.item.weight || 0) - (a.item.weight || 0);
+            })
+            .slice(0, 4);
+        }
+
+        if (!scored.length) return;
+
+        var titleEl = document.getElementById('p404-panel-title');
+        if (titleEl) titleEl.textContent = src.title;
+
+        scored.forEach(function (x, n) {
+          var el = document.getElementById('p404-sug-' + n);
+          if (!el) return;
+          el.href = x.item.href;
+          el.querySelector('.p404-sug-name').textContent = x.item.name;
+          el.querySelector('.p404-sug-meta').textContent = x.item.meta;
+          el.hidden = false;
+        });
+        document.getElementById('p404-panel').hidden = false;
+      })
+      .catch(function () { /* suggestions are a bonus; the nav below always works */ });
+  })();
+</script>
+
 <style>
-  .page-404 { max-width: 640px; margin: 60px auto; text-align: center; }
-  .page-title { font-size: 96px; line-height: 1; margin: 0 0 16px 0; color: var(--accent); }
-  .page-404-tagline { font-family: var(--f-display); font-weight: 700; font-size: 22px; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 32px 0; }
-  .page-404-sub { color: var(--fg-3); margin-bottom: 12px; }
-  .page-404-links { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-  .page-404-links a { display: inline-block; padding: 8px 12px; color: var(--fg-1); text-decoration: none; border-bottom: 1px dotted var(--line-2); }
-  .page-404-links a:hover { color: var(--accent); }
+  .p404 { max-width: 620px; margin: 56px auto 72px; padding: 0 16px; }
+
+  .p404-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+  .p404-num {
+    font-family: var(--f-mono);
+    font-size: 72px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .p404-tag {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 10px;
+    color: var(--fg-1);
+  }
+  .p404-path { color: var(--fg-3); font-size: 14px; margin: 0 0 28px; }
+  .p404-path code {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    color: var(--fg-2);
+    background: var(--bg-3);
+    border: 1px solid var(--line-1);
+    padding: 2px 6px;
+    word-break: break-all;
+  }
+
+  .p404-panel { margin-bottom: 24px; }
+  .p404-list { display: flex; flex-direction: column; }
+  .p404-sug {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-top: 1px solid var(--line-1);
+    text-decoration: none;
+    color: var(--fg-1);
+    border-left: 3px solid transparent;
+  }
+  .p404-sug:first-child { border-top: none; }
+  .p404-sug:hover { background: var(--bg-3); border-left-color: var(--accent); }
+  .p404-sug-name { font-weight: 600; font-size: 15px; }
+  .p404-sug-meta {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--fg-3);
+    text-align: right;
+  }
+  .p404-sug-go { color: var(--fg-4); }
+  .p404-sug:hover .p404-sug-go { color: var(--accent); }
+
+  .p404-search {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 32px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-2);
+    color: var(--fg-3);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .p404-search:hover { border-color: var(--accent); color: var(--fg-1); }
+  .p404-search kbd {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+    background: var(--bg-3);
+    border: 1px solid var(--line-2);
+    padding: 2px 6px;
+  }
+
+  .p404-nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .p404-nav a {
+    font-family: var(--f-display);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-3);
+    text-decoration: none;
+    padding: 4px 0;
+    border-bottom: 1px solid transparent;
+  }
+  .p404-nav a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  @media (max-width: 560px) {
+    .p404 { margin-top: 32px; }
+    .p404-num { font-size: 56px; }
+    .p404-tag { font-size: 19px; }
+    /* Stack name over meta. The arrow is decorative and would otherwise be
+       auto-placed onto a third row of its own. */
+    .p404-sug { grid-template-columns: 1fr; gap: 3px; }
+    .p404-sug-meta { text-align: left; }
+    .p404-sug-go { display: none; }
+  }
 </style>
