@@ -6,9 +6,9 @@ argument-hint: "[topic] e.g. 'austria recap' or 'mid-season check-in'"
 # Write a blog post: $ARGUMENTS
 
 Follow this workflow exactly. The three non-negotiables: **the branch/data must be
-current before you write a word**, **race events must be researched by dispatched
-subagents, never inferred from timing data**, and **every post ships with a
-hero-image prompt that doesn't repeat the last one**.
+current before you write a word**, **race events must be researched - Wikipedia
+first, then subagents for the gaps - and never inferred from timing data**, and
+**every post ships with a hero-image prompt that doesn't repeat the last one**.
 
 ## 1. Sync the branch and data FIRST
 
@@ -68,12 +68,37 @@ it tempts you into either hedging ("whatever went wrong…") or guessing.
 
 So, for every **race recap** (and any post that narrates on-track events):
 
-1. **Dispatch a research agent per race — do not skip this, and do not try to
-   do it inline.** Before writing a word of prose, launch one `general-purpose`
-   subagent for each race being written up (in a single message, so they run
-   concurrently). Web research is slow, wide, and context-heavy: an agent can
-   read a dozen race reports and hand back a page of findings, where doing it
-   inline burns the context you need for writing. Give each agent:
+1. **Start with the Wikipedia race report.** It is by far the highest-yield
+   source: one page carries the full narrative, every retirement with its
+   cause, safety cars and red flags with lap numbers, the stewards' decisions,
+   weather, attendance, and the records-and-milestones notes that make a recap
+   worth reading. WebFetch it directly and ask for what you need:
+
+   ```
+   https://en.wikipedia.org/wiki/<YEAR>_<Race Name>_Grand_Prix
+   ```
+
+   e.g. `2026_Monaco_Grand_Prix`, `2026_Belgian_Grand_Prix`,
+   `2026_Hungarian_Grand_Prix`. **Match the bundle's race name, not the
+   country you assume** - the 2026 calendar has both a June
+   `2026_Barcelona-Catalunya_Grand_Prix` and a separate September Spanish
+   Grand Prix in Madrid, so guessing "Spanish" gets the wrong race. Take the
+   name from `d.calendar[].name` and try the obvious variants if the first
+   URL 404s.
+
+   In the WebFetch prompt, list the specific unknowns *and* hand over the
+   facts you already hold from the bundle (pole, podium, grid slots, DNF laps)
+   so the answer cannot drift from the record. Ask explicitly for records,
+   milestones, career firsts and anything unusual.
+
+2. **Dispatch a research agent per race for anything Wikipedia leaves open.**
+   Launch one `general-purpose` subagent per race (in a single message, so they
+   run concurrently) to chase the gaps across Autosport, Motorsport.com,
+   RaceFans, the-race.com and Formula1.com. Web research is slow, wide and
+   context-heavy: an agent can read a dozen reports and hand back a page of
+   findings, where doing it inline burns the context you need for writing.
+   Be aware these can come back empty or die silently - if a race is recent,
+   Wikipedia may be the only source that has caught up. Give each agent:
    - the **race, date and round number**, and every fact you already hold from
      the bundle (pole, podium, finishing order, grid slots, DNF laps, gaps) so
      it cannot contradict the record;
@@ -92,7 +117,7 @@ So, for every **race recap** (and any post that narrates on-track events):
    reading the previous recap for continuity). Fold the findings in when they
    land. Search terms worth handing over: `"<Grand Prix name> <year> report"`,
    `"<GP> <year> safety car"`, `"<driver> <GP> <year> retirement reason"`.
-2. **Specifically chase the gaps the data can't fill:**
+3. **Specifically chase the gaps the data can't fill:**
    - cause of every DNF and every big grid-vs-finish delta (damage? penalty?
      strategy? spin?)
    - safety cars / red flags / VSC — when, why, and who won or lost from them
@@ -105,14 +130,14 @@ So, for every **race recap** (and any post that narrates on-track events):
      nobody else made work), a protest, a stewards' decision that changed the
      result after the flag. These are what make a recap worth reading rather
      than a table with sentences around it — ask for them explicitly.
-3. **Numbers from the bundle beat numbers from reports.** If a report's gap or
+4. **Numbers from the bundle beat numbers from reports.** If a report's gap or
    lap count disagrees with `d.results`, the bundle wins. Reports supply the
    *why*, the bundle supplies the *what*.
-4. **If research comes up empty** (offline, paywalled, or a fictional/future
+5. **If research comes up empty** (offline, paywalled, or a fictional/future
    season the web knows nothing about): **ask the user** for the key events —
    "what caused X's DNF? was there a safety car?" — before publishing. The
    user watched the race; a 30-second question beats a hedged paragraph.
-5. **Never fabricate a cause.** If neither research nor the user can fill a
+6. **Never fabricate a cause.** If neither research nor the user can fill a
    gap, write around it honestly and narrowly — but treat that as a last
    resort, not the default.
 
