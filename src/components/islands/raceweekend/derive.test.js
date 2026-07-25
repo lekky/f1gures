@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount,
   fastestLap, lap1Gains, duelGap, teamPace, degSeries, undercutWindows,
-  segmentBests, theoreticalBest, progressionRows, spreadLabels, compoundOffsets,
+  segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, compoundOffsets,
   fuelCorrectedPace, fmtLap,
 } from './derive.js';
 
@@ -196,6 +196,41 @@ describe('quali helpers', () => {
   });
   it('progressionRows keeps nulls for knocked-out segments', () => {
     expect(progressionRows(results)[1].segs).toEqual([89.5, 89.2, null]);
+  });
+});
+
+describe('cornerMarkers', () => {
+  const corners = [{ name: 'T1', d: 0 }, { name: 'T2', d: 500 }, { name: 'T3', d: 1000 }];
+
+  it('maps corner distance to an outline index', () => {
+    expect(cornerMarkers(corners, 1000, 101)).toEqual([
+      { label: 'T1', idx: 0 }, { label: 'T2', idx: 50 }, { label: 'T3', idx: 100 },
+    ]);
+  });
+
+  it('merges corners too close to label separately', () => {
+    // T6/T7 are 37m apart at the Hungaroring — ~2 indices of 240
+    const tight = [{ name: 'T6', d: 2353 }, { name: 'T7', d: 2390 }];
+    const out = cornerMarkers(tight, 4342, 240);
+    expect(out).toHaveLength(1);
+    expect(out[0].label).toBe('T6/7');
+  });
+
+  it('keeps a suffixed corner readable when merged', () => {
+    const out = cornerMarkers([{ name: 'T12', d: 100 }, { name: 'T12A', d: 104 }], 4342, 240);
+    expect(out[0].label).toBe('T12/12A');
+  });
+
+  it('orders by distance regardless of input order', () => {
+    const out = cornerMarkers([{ name: 'T3', d: 900 }, { name: 'T1', d: 100 }], 1000, 101);
+    expect(out.map((m) => m.label)).toEqual(['T1', 'T3']);
+  });
+
+  it('clamps to the outline and tolerates missing input', () => {
+    expect(cornerMarkers([{ name: 'T1', d: 9999 }], 1000, 51)[0].idx).toBe(50);
+    expect(cornerMarkers(null, 1000, 240)).toEqual([]);
+    expect(cornerMarkers(corners, 0, 240)).toEqual([]);
+    expect(cornerMarkers(corners, 1000, 1)).toEqual([]);
   });
 });
 

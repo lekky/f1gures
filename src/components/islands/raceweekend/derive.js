@@ -292,6 +292,32 @@ export function progressionRows(results) {
     .map((r) => ({ code: r.code, segs: [r.q1, r.q2 ?? null, r.q3 ?? null] }));
 }
 
+// Place corner labels onto a track outline. The outline is `nPts` points around
+// a lap of `len` metres and the corner list carries distances, so a corner maps
+// to an index by distance fraction. Corners closer together than `minGap`
+// indices would print on top of each other on the map, so they merge into one
+// marker: T6 + T7 becomes "T6/7", T12 + T12A becomes "T12/12A".
+export function cornerMarkers(corners, len, nPts, minGap = 3) {
+  if (!corners?.length || !len || nPts < 2) return [];
+  const placed = corners
+    .map((c) => ({
+      label: c.name,
+      idx: Math.max(0, Math.min(nPts - 1, Math.round((c.d / len) * (nPts - 1)))),
+    }))
+    .sort((a, b) => a.idx - b.idx);
+  const out = [];
+  for (const m of placed) {
+    const prev = out[out.length - 1];
+    if (prev && m.idx - prev.idx < minGap) {
+      // drop the shared "T" so the joined label stays short
+      prev.label += `/${m.label.replace(/^T/, '')}`;
+    } else {
+      out.push({ ...m });
+    }
+  }
+  return out;
+}
+
 // Nudge a column of end-of-line labels apart so none overlap. Charts that place
 // a label at each driver's data point collide whenever two drivers are close on
 // the value axis — on a tight session that is exactly the pair worth reading

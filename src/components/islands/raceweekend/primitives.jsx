@@ -210,23 +210,35 @@ export function stackLabels(items, minGap = 13, top = 18, bottom = 370) {
   });
 }
 
-// Lighten a hex colour (teammate disambiguation on the dominance map).
-export function lighten(hex, f = 0.45) {
+// Mix a hex colour toward white (f > 0) or black (f < 0).
+function mixHex(hex, toward, f) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
   if (!m) return hex;
   const n = parseInt(m[1], 16);
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  const mix = (v) => Math.round(v + (255 - v) * f);
-  return `#${((mix(r) << 16) | (mix(g) << 8) | mix(b)).toString(16).padStart(6, '0')}`;
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map((v) => Math.round(v + (toward - v) * f));
+  return `#${((ch[0] << 16) | (ch[1] << 8) | ch[2]).toString(16).padStart(6, '0')}`;
 }
 
+// Lighten a hex colour (teammate disambiguation on the dominance map).
+export function lighten(hex, f = 0.45) { return mixHex(hex, 255, f); }
+export function darken(hex, f = 0.45) { return mixHex(hex, 0, f); }
+
 // Give every code a visually distinct colour even when teammates share one.
+//
+// The shade has to move AWAY from the panel background, not just away from the
+// base colour. Lightening Ferrari red on the light theme gave #F48090, which is
+// only ΔE 58 from white against the base's 104 — it read as washed-out red
+// rather than as a second driver, and two Ferraris on the dominance map turned
+// to mush. So the teammate goes darker on light backgrounds and lighter on dark
+// ones; either way it lands ~ΔE 41 from the base, which is the separation that
+// already works between different teams (Ferrari vs McLaren is ΔE 43).
 export function distinctColors(codes, colorOf, teamOf) {
   const seen = {};
   const out = {};
   for (const c of codes) {
     const t = teamOf(c) || c;
-    if (seen[t]) out[c] = lighten(colorOf(c), 0.5);
+    if (seen[t]) out[c] = _light ? darken(colorOf(c), 0.45) : lighten(colorOf(c), 0.5);
     else { out[c] = colorOf(c); seen[t] = 1; }
   }
   return out;

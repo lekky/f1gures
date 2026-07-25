@@ -66,7 +66,7 @@ const QUALI_VIZ = [
     render: (a) => <SectorBattle sectors={a.sess.sectors} ctx={a.ctx} /> },
   { key: 'dominance', tag: 'MAP', title: 'Track dominance map', src: 'telemetry distance-sliced mini-sectors',
     desc: 'The circuit coloured by who was fastest in each mini-sector, among the top three.',
-    render: (a) => <DominanceMap dominance={a.sess.dominance} track={a.sess.track} ctx={a.ctx} /> },
+    render: (a) => <DominanceMap dominance={a.sess.dominance} track={a.sess.track} corners={a.sess.poleTel?.corners} sectors={a.sess.sectors} ctx={a.ctx} /> },
   { key: 'poletel', tag: 'TEL', title: 'Pole lap telemetry', src: 'car_data["Speed"] + computed delta',
     desc: 'The front row’s speed traces with a live time-delta strip and corner bands. Hover anywhere on the lap.',
     render: (a) => <PoleTelemetry poleTel={a.sess.poleTel} ctx={a.ctx} /> },
