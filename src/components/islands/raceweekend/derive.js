@@ -331,6 +331,17 @@ export function cornerMarkers(corners, len, nPts, minGap = 3) {
   return out;
 }
 
+// Round a magnitude up to a friendly 1 / 2 / 2.5 / 5 × 10ⁿ value, so an
+// auto-scaled axis gets labels a reader can hold in their head (0.25s, not
+// 0.247s) and the trace stops just short of the edge instead of touching it.
+export function niceBound(v, floor = 0) {
+  const m = Math.max(Math.abs(v), floor);
+  if (!(m > 0)) return floor || 1;
+  const p = 10 ** Math.floor(Math.log10(m));
+  for (const mult of [1, 2, 2.5, 5]) if (m <= mult * p * 1.0000001) return mult * p;
+  return 10 * p;
+}
+
 // Choose a screen position for each corner label. Merging by lap distance only
 // catches corners that are consecutive; Baku and Jeddah double back on
 // themselves, so corners a kilometre apart can still land on the same pixels.

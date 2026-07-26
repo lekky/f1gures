@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount,
   fastestLap, lap1Gains, duelGap, teamPace, degSeries, undercutWindows,
-  segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, compoundOffsets,
+  segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, niceBound, compoundOffsets,
   fuelCorrectedPace, fmtLap,
 } from './derive.js';
 
@@ -257,6 +257,25 @@ describe('cornerMarkers', () => {
     expect(cornerMarkers(null, 1000, 240)).toEqual([]);
     expect(cornerMarkers(corners, 0, 240)).toEqual([]);
     expect(cornerMarkers(corners, 1000, 1)).toEqual([]);
+  });
+});
+
+describe('niceBound', () => {
+  it('rounds up to a friendly axis bound', () => {
+    expect(niceBound(0.247)).toBe(0.25);   // the Hungary 2026 delta strip
+    expect(niceBound(0.04)).toBe(0.05);
+    expect(niceBound(0.12)).toBe(0.2);
+    expect(niceBound(1.7)).toBe(2);
+    expect(niceBound(6)).toBe(10);
+  });
+  it('leaves an exact friendly value alone rather than jumping a step', () => {
+    expect(niceBound(0.25)).toBe(0.25);
+    expect(niceBound(2)).toBe(2);
+  });
+  it('honours the floor and survives degenerate input', () => {
+    expect(niceBound(0.001, 0.05)).toBe(0.05);
+    expect(niceBound(0, 0.05)).toBe(0.05);
+    expect(niceBound(-0.3)).toBe(0.5);
   });
 });
 

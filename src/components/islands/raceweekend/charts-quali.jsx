@@ -1,7 +1,7 @@
 // Qualifying / sprint-quali / practice session charts.
 import React, { useState } from 'react';
 import { PANEL, MONO, COND, YGrid, XTicks, scale, niceTicks, Ladder, distinctColors, FaceImg, compoundColor } from './primitives.jsx';
-import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, compoundOffsets } from './derive.js';
+import { COMPOUNDS, fmtLap, segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, niceBound, compoundOffsets } from './derive.js';
 import { EmptyNote } from './charts-race.jsx';
 import { useIsMobile } from '../../../lib/shared.jsx';
 
@@ -168,9 +168,22 @@ export function PoleTelemetry({ poleTel, ctx }) {
   const vmax = Math.max(...speedA, ...speedB);
   const vmin = Math.min(...speedA, ...speedB);
   const svy = scale(vmin - 10, vmax + 10, 250, 14);
-  const dmax = Math.max(0.05, ...delta.map((v) => Math.abs(v)));
-  const dvy = scale(-dmax, dmax, 386, 300);
+  // Delta strip. It used to auto-fit to the largest deviation and draw no axis
+  // at all, so the same shape read identically whether the swings were 0.02s or
+  // 2s — the trace looked dramatic with no way to see it spanned a quarter of a
+  // second. Round the bound to a friendly value and label it.
+  const DY0 = 316, DY1 = 408;
+  const dBound = niceBound(Math.max(...delta.map((v) => Math.abs(v))), 0.05);
+  const dvy = scale(-dBound, dBound, DY1, DY0);
+  const dClamp = (v) => dvy(Math.max(-dBound, Math.min(dBound, v)));
   const dEnd = delta[delta.length - 1];
+  // `b` is the chaser, so the delta is *their* running gap — spell the name out
+  // rather than leaning on a three-letter code the reader has to decode.
+  const surname = (code) => {
+    const parts = String(ctx.nameOf?.(code) || code).trim().split(/\s+/);
+    return (parts.length > 1 ? parts[parts.length - 1] : parts[0]).toUpperCase();
+  };
+  const nameA = surname(a), nameB = surname(b);
   const yTicks = niceTicks(vmin - 10, vmax + 10, 4).map((v) => ({ y: svy(v).toFixed(1), label: Math.round(v) }));
   const onMove = (e) => {
     const { fx } = svgFrac(e);
@@ -181,11 +194,11 @@ export function PoleTelemetry({ poleTel, ctx }) {
     ctx.tip(e, `${Math.round(i * step)}m`, [
       { color: colors[a], txt: `${a}  ${Math.round(speedA[i])} km/h` },
       { color: colors[b], txt: `${b}  ${Math.round(speedB[i])} km/h` },
-      { color: PANEL.fg, txt: `Δ ${delta[i] >= 0 ? '+' : ''}${delta[i].toFixed(3)}s` },
+      { color: PANEL.fg, txt: `${nameB} ${delta[i] >= 0 ? '+' : ''}${delta[i].toFixed(3)}s` },
     ]);
   };
   return (
-    <svg viewBox="0 0 1000 400" style={{ width: '100%', display: 'block', cursor: 'crosshair' }}
+    <svg viewBox="0 0 1000 436" style={{ width: '100%', display: 'block', cursor: 'crosshair' }}
       onMouseMove={onMove} onMouseLeave={() => { setHoverX(null); ctx.leave(); }}>
       {(corners || []).map((c, i) => (
         <g key={i}>
@@ -200,18 +213,36 @@ export function PoleTelemetry({ poleTel, ctx }) {
         </g>
       ))}
       <YGrid ticks={yTicks} x0={x0} x1={x1} />
-      {hoverX != null && <line x1={hoverX} x2={hoverX} y1="10" y2="390" stroke={PANEL.fg} strokeDasharray="3 3" />}
+      {hoverX != null && <line x1={hoverX} x2={hoverX} y1="10" y2="410" stroke={PANEL.fg} strokeDasharray="3 3" />}
       <polyline points={speedA.map((v, i) => `${sx(i * step).toFixed(1)},${svy(v).toFixed(1)}`).join(' ')} fill="none" stroke={colors[a]} strokeWidth="2.6" strokeLinejoin="round" />
       <polyline points={speedB.map((v, i) => `${sx(i * step).toFixed(1)},${svy(v).toFixed(1)}`).join(' ')} fill="none" stroke={colors[b]} strokeWidth="2.4" strokeLinejoin="round" />
-      <line x1={x0} x2={x1} y1={dvy(0).toFixed(1)} y2={dvy(0).toFixed(1)} stroke={PANEL.line4} strokeDasharray="4 3" />
-      <polyline points={delta.map((v, i) => `${sx(i * step).toFixed(1)},${dvy(Math.max(-dmax, Math.min(dmax, v))).toFixed(1)}`).join(' ')} fill="none" stroke={PANEL.fg} strokeWidth="2" />
-      <text x={x0} y="296" fontFamily={MONO} fontSize="9" fill={PANEL.fg3}>
-        DELTA ({b} vs {a}) — above line = {b} losing time · <tspan fill={colors[a]} fontWeight="700">{a}</tspan> vs <tspan fill={colors[b]} fontWeight="700">{b}</tspan>
+      <text x={x0} y="298" fontFamily={MONO} fontSize="9.5" fontWeight="700" fill={PANEL.fg2}>
+        <tspan fill={colors[b]}>{nameB}</tspan>
+        <tspan fill={PANEL.fg3} fontWeight="400">{`'S RUNNING GAP TO `}</tspan>
+        <tspan fill={colors[a]}>{nameA}</tspan>
+        <tspan fill={PANEL.fg3} fontWeight="400">{' — TOTAL TIME LOST OR GAINED SO FAR, ENDING AT THE FINAL MARGIN'}</tspan>
       </text>
-      <text x={x1} y={(dvy(Math.max(-dmax, Math.min(dmax, dEnd))) + (dEnd >= 0 ? 14 : -6)).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="700" fill={PANEL.fg} textAnchor="end">
+      {/* scale: the two bounds plus level, labelled in the left gutter */}
+      {[dBound, 0, -dBound].map((v) => (
+        <g key={v}>
+          <line x1={x0} x2={x1} y1={dvy(v).toFixed(1)} y2={dvy(v).toFixed(1)}
+            stroke={v === 0 ? PANEL.line4 : PANEL.line2} strokeDasharray={v === 0 ? '4 3' : undefined} />
+          <text x={x0 - 6} y={(dvy(v) + 3).toFixed(1)} fontFamily={MONO} fontSize="8.5" fill={PANEL.axis} textAnchor="end">
+            {v === 0 ? 'LEVEL' : `${v > 0 ? '+' : '−'}${Math.abs(v)}s`}
+          </text>
+        </g>
+      ))}
+      <text x={x1} y={(DY0 + 11).toFixed(1)} fontFamily={MONO} fontSize="8.5" fill={PANEL.axis} textAnchor="end">{`▲ ${nameB} BEHIND`}</text>
+      <text x={x1} y={(DY1 - 4).toFixed(1)} fontFamily={MONO} fontSize="8.5" fill={PANEL.axis} textAnchor="end">{`▼ ${nameB} AHEAD`}</text>
+      <polyline points={delta.map((v, i) => `${sx(i * step).toFixed(1)},${dClamp(v).toFixed(1)}`).join(' ')} fill="none" stroke={PANEL.fg} strokeWidth="2" />
+      <circle cx={x1} cy={dClamp(dEnd).toFixed(1)} r="3" fill={PANEL.fg} />
+      {/* sit the final figure on whichever side the trace ISN'T approaching
+          from, else it lands on the line it is labelling */}
+      <text x={x1 - 8} y={(dClamp(dEnd) + (dEnd > delta[Math.max(0, delta.length - 10)] ? -8 : 15)).toFixed(1)}
+        fontFamily={MONO} fontSize="10.5" fontWeight="700" fill={PANEL.fg} textAnchor="end">
         {`${dEnd >= 0 ? '+' : ''}${dEnd.toFixed(3)}s`}
       </text>
-      <text x={x0} y="398" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>SPEED (KM/H) OVER THE LAP · SHADED BANDS = CORNERS</text>
+      <text x={x0} y="428" fontFamily={MONO} fontSize="9" fill={PANEL.axis}>SPEED (KM/H) OVER THE LAP · SHADED BANDS = CORNERS · SPIKES AT CORNERS ARE DIFFERENT BRAKING POINTS</text>
     </svg>
   );
 }
