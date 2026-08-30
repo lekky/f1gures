@@ -1,0 +1,210 @@
+---
+// "Team Principals" section for team pages: one row per curated boss tenure,
+// newest first, with per-tenure stats (races, wins, WCC/WDC titles) computed
+// by scripts/principals.mjs at build time. Server-rendered, no client JS -
+// mirrors LineageStrip.astro. Team colour appears only as strip/bar/tint per
+// the design system; no accent red in this section.
+
+interface PrincipalTenure {
+  name: string;
+  role: string;
+  from: number;
+  fromRound: number | null;
+  to: number | null;
+  toRound: number | null;
+  current: boolean;
+  seasons: number;
+  races: number;
+  wins: number;
+  titles: number;
+  driverTitles: number;
+}
+
+interface Props {
+  principals: PrincipalTenure[];
+  teamColor: string;
+}
+
+const { principals, teamColor } = Astro.props;
+
+// Curated order is oldest → newest; the page convention is newest first.
+const rows = [...principals].reverse();
+const maxWins = Math.max(1, ...rows.map(p => p.wins));
+const totalTitles = rows.reduce((s, p) => s + p.titles, 0);
+
+function yearsLabel(p: PrincipalTenure): string {
+  if (p.to == null) return `${p.from}–now`;
+  if (p.to === p.from) return `${p.from}`;
+  return `${p.from}–${p.to}`;
+}
+
+// Mid-season handover hint, e.g. "from R13" / "to R12" / "R7 · R15".
+function roundNote(p: PrincipalTenure): string {
+  const parts: string[] = [];
+  if (p.fromRound != null && p.fromRound > 1) parts.push(`from R${p.fromRound}`);
+  if (p.toRound != null) parts.push(`to R${p.toRound}`);
+  return parts.join(' · ');
+}
+---
+
+<div class="section-head section-head-band">
+  <span class="section-head-mark" aria-hidden="true"></span>
+  <h2>Team Principals</h2>
+  <div class="section-rule"></div>
+  <span class="t-eyebrow pr-summary">
+    {`${rows.length} ${rows.length === 1 ? 'boss' : 'bosses'}`}{totalTitles > 0 && <> &middot; {`${totalTitles} ${totalTitles === 1 ? 'title' : 'titles'}`}</>}
+  </span>
+</div>
+
+<div class="panel principals-list" style={`--c: ${teamColor};`}>
+  {rows.map(p => (
+    <div class:list={['pr-row', p.current && 'is-current']}>
+      <div class="pr-years">
+        <div class="pr-years-main">{yearsLabel(p)}</div>
+        {roundNote(p) && <div class="pr-years-note">{roundNote(p)}</div>}
+      </div>
+      <div class="pr-who">
+        <div class="pr-name">
+          <span class="pr-name-text">{p.name}</span>
+          {p.current && <span class="pr-now">Now</span>}
+        </div>
+        <div class="pr-role">{p.role}</div>
+        <div class="pr-winbar" aria-hidden="true">
+          <span style={`width: ${(p.wins / maxWins) * 100}%;`}></span>
+        </div>
+      </div>
+      <div class="pr-stats">
+        <div class="pr-stat"><div class="pr-stat-val">{p.seasons}</div><div class="pr-stat-lbl">{p.seasons === 1 ? 'Season' : 'Seasons'}</div></div>
+        <div class="pr-stat"><div class="pr-stat-val">{p.races}</div><div class="pr-stat-lbl">Races</div></div>
+        <div class="pr-stat"><div class="pr-stat-val">{p.wins}</div><div class="pr-stat-lbl">Wins</div></div>
+        <div class="pr-stat"><div class={`pr-stat-val ${p.titles > 0 ? 'has-titles' : ''}`}>{p.titles}</div><div class="pr-stat-lbl">WCC</div></div>
+        <div class="pr-stat"><div class={`pr-stat-val ${p.driverTitles > 0 ? 'has-titles' : ''}`}>{p.driverTitles}</div><div class="pr-stat-lbl">WDC</div></div>
+      </div>
+    </div>
+  ))}
+</div>
+
+<style>
+  .pr-summary {
+    margin-left: auto;
+    color: var(--fg-3);
+  }
+  .principals-list {
+    padding: 0;
+    margin-bottom: 24px;
+  }
+  .pr-row {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+    padding: 12px 16px 12px 13px;
+    border-left: 3px solid transparent;
+  }
+  .pr-row + .pr-row { border-top: 1px solid var(--line-1); }
+  .pr-row.is-current {
+    border-left-color: var(--c);
+    background: color-mix(in srgb, var(--c) 8%, var(--bg-2));
+  }
+  .pr-years-main {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--fg-2);
+  }
+  .pr-row.is-current .pr-years-main { color: color-mix(in srgb, var(--c) 50%, var(--fg-1)); }
+  .pr-years-note {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--fg-4);
+    margin-top: 2px;
+  }
+  .pr-name {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+  .pr-name-text {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1.15;
+    color: var(--fg-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pr-row.is-current .pr-name-text { color: color-mix(in srgb, var(--c) 50%, var(--fg-1)); }
+  .pr-now {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--c) 50%, var(--fg-1));
+    border: 1px solid color-mix(in srgb, var(--c) 45%, var(--line-2));
+    padding: 1px 6px;
+    flex-shrink: 0;
+  }
+  .pr-role {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    margin: 2px 0 6px;
+  }
+  .pr-winbar {
+    height: 3px;
+    background: var(--bg-3);
+    max-width: 320px;
+  }
+  .pr-winbar span {
+    display: block;
+    height: 100%;
+    background: var(--c);
+    min-width: 0;
+  }
+  .pr-stats {
+    display: flex;
+    gap: 20px;
+  }
+  .pr-stat { text-align: right; min-width: 44px; }
+  .pr-stat-val {
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--fg-1);
+    font-variant-numeric: tabular-nums;
+  }
+  .pr-stat-val.has-titles { color: color-mix(in srgb, var(--c) 50%, var(--fg-1)); }
+  .pr-stat-lbl {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    margin-top: 3px;
+  }
+
+  @media (max-width: 720px) {
+    .pr-row {
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 12px 14px 14px 11px;
+    }
+    .pr-years { display: flex; align-items: baseline; gap: 8px; }
+    .pr-stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .pr-stat { text-align: left; min-width: 0; }
+    .pr-winbar { max-width: none; }
+  }
+</style>
