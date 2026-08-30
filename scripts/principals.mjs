@@ -98,7 +98,8 @@ export const PRINCIPALS = {
     { name: 'Ayao Komatsu',     from: 2024, to: null },
   ],
   cadillac: [
-    { name: 'Graeme Lowdon', from: 2026, to: null },
+    { name: 'Graeme Lowdon',     from: 2026, to: 2026, toRound: 11 },    // sacked before the 2026 Dutch GP
+    { name: 'Marcin Budkowski',  from: 2026, fromRound: 12, to: null },
   ],
 
   // ── Lineage ancestors of the current grid ───────────────────────────
