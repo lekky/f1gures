@@ -1,0 +1,120 @@
+---
+title: "Zandvoort 2026 Preview: The Last Dutch Grand Prix"
+description: "F1 returns from the break for Zandvoort's farewell - a sprint weekend, an injured Hadjar replaced by Lawson, and a home crowd whose hero just signed until 2030 in a car that can't currently win."
+category: race-preview
+publishedAt: 2026-08-20
+author: "f1gures"
+heroImage: /images/blog/2026-r12-zandvoort-preview.jpg
+heroImageAlt: "Illustrated track map of Circuit Zandvoort, Netherlands"
+---
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import PullQuote from '../../components/blog/PullQuote.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
+import Sessions from '../../components/blog/Sessions.astro';
+import DriverChip from '../../components/blog/DriverChip.astro';
+
+A month off, and the season resumes with a goodbye.
+[Zandvoort](/circuits/zandvoort/) leaves the calendar after 2026, so this
+weekend is the last Dutch Grand Prix - the final orange invasion of the
+dunes, the final laps around the banking, and, in a piece of scheduling
+nobody planned, the first and only Zandvoort sprint. The circuit that
+returned in 2021 as the home of a champion checks out with its hero seventh
+in the standings, driving a car he described in Hungary as completely
+broken.
+
+## The championship
+
+<StandingsCard
+  title="Drivers' Championship · After Round 11"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 219 },
+    { driver: 'hamilton',       team: 'FER', value: 169 },
+    { driver: 'russell',        team: 'MER', value: 160 },
+    { driver: 'leclerc',        team: 'FER', value: 138 },
+    { driver: 'norris',         team: 'MCL', value: 128 },
+    { driver: 'max_verstappen', team: 'RBR', value: 109 },
+    { driver: 'piastri',        team: 'MCL', value: 92 },
+  ]}
+/>
+
+<StandingsCard
+  title="Constructors' Championship · After Round 11"
+  kind="constructor"
+  rows={[
+    { name: 'Mercedes', color: '#27F4D2', value: 379 },
+    { name: 'Ferrari',  color: '#E80020', value: 307 },
+    { name: 'McLaren',  color: '#FF8000', value: 220 },
+    { name: 'Red Bull', color: '#3671C6', value: 177 },
+  ]}
+/>
+
+The break froze the table at an awkward moment for everyone chasing.
+<DriverChip ref="antonelli" /> sits on 219 with a 50-point lead;
+[Hungary](/races/2026/11/) proved he can collect podiums even on his messy
+weekends. The man arriving with momentum is <DriverChip ref="norris" /> -
+pole and a win at the Hungaroring, his first Grand Prix victory since last
+November, and a car that has been the field's fastest on Sundays for a
+month. Thirty-three points a weekend are on the table here. Ninety-one
+points is a lot of ground. It is not unreachable ground.
+
+## One seat changes hands
+
+The break's biggest news came from Red Bull, twice. First:
+<DriverChip ref="hadjar" /> cracked a bone in his wrist training during the
+shutdown and misses this weekend. <DriverChip ref="lawson" /> steps up from
+RB to partner Verstappen - his first Red Bull start - while
+<DriverChip ref="tsunoda" /> comes off the bench to take the RB seat
+alongside <DriverChip ref="arvid_lindblad" />. Hadjar, sixth in Hungary and
+the season's quiet overachiever, hopes to be back for Monza. Second:
+<DriverChip ref="max_verstappen" /> signed a new contract through 2030,
+ending a summer of exit-clause speculation in the least 2026 way possible -
+committing his prime to a team currently fourth in the constructors'
+standings.
+
+<PullQuote>“I think I was closer to retiring than changing teams!”</PullQuote>
+
+## What Zandvoort asks of the cars
+
+Short lap, narrow ribbon, two banked corners - Hugenholtz at Turn 3 and the
+18-degree final banking that slings cars onto the pit straight. Downforce
+and commitment are everything; overtaking, as ever here, is mostly a
+qualifying problem. The sprint format compresses all of it: one practice
+session on Friday morning, then straight into sprint qualifying with dune
+wind, sea air and a track that evolves lap by lap. The North Sea weather is
+the wildcard - it has rained on this race weekend more often than not.
+
+## The storylines
+
+<Storylines>
+  <Storyline title="The last home race" driver="max_verstappen">
+    Three straight Zandvoort wins from 2021 to 2023, and now a farewell
+    edition in the worst Red Bull he has driven - McLaren have won the two
+    runnings since. The grandstands will be a wall of orange regardless. A
+    podium would feel like a win;
+    anything more would be the story of the season's second half.
+  </Storyline>
+  <Storyline title="Momentum against mathematics" driver="norris">
+    Hungary ended the drought and the Mercedes pole streak in one Saturday.
+    A sprint weekend offers 33 points - if the McLaren's Sunday pace is
+    real, Zandvoort is where the 91-point gap has to start shrinking.
+  </Storyline>
+  <Storyline title="The audition" driver="lawson">
+    Lawson gets the Red Bull seat for a weekend with no testing, no practice
+    margin and a sprint format. Every lap is a job interview - for the seat
+    Hadjar wants back, and for the one Tsunoda never stopped wanting.
+  </Storyline>
+</Storylines>
+
+## Sessions · Track time
+
+<Sessions
+  rows={[
+    { day: 'Fri', name: 'Practice 1', time: '12:30' },
+    { day: 'Fri', name: 'Sprint Qualifying', time: '16:30' },
+    { day: 'Sat', name: 'Sprint', time: '12:00' },
+    { day: 'Sat', name: 'Qualifying', time: '16:00' },
+    { day: 'Sun', name: 'Race', time: '15:00', race: true },
+  ]}
+  note="All times local (CEST, GMT+2). Circuit Zandvoort, 72 laps of 4.259 km. Sprint weekend - the first and last at Zandvoort."
+/>

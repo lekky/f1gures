@@ -1,0 +1,128 @@
+---
+title: "Italy 2026 Preview: Monza, Where the Leader Starts Last"
+description: "Antonelli takes an engine penalty at his home race, Norris arrives on a two-win streak, and Ferrari wear Schumacher red. Round 13 is the first real test of the 2026 cars' batteries at full stretch."
+category: race-preview
+publishedAt: 2026-08-30
+author: "f1gures"
+heroImage: /images/blog/2026-r13-italy-preview.jpg
+heroImageAlt: "Illustrated track map of the Autodromo Nazionale Monza, Italy"
+---
+import StandingsCard from '../../components/blog/StandingsCard.astro';
+import PullQuote from '../../components/blog/PullQuote.astro';
+import Storylines from '../../components/blog/Storylines.astro';
+import Storyline from '../../components/blog/Storyline.astro';
+import Sessions from '../../components/blog/Sessions.astro';
+import DriverChip from '../../components/blog/DriverChip.astro';
+
+For the first time since March, the championship has a live question in it,
+and Monza is about to stress-test both halves of it at once.
+<DriverChip ref="norris" /> has won the last two Grands Prix from the last
+two poles. <DriverChip ref="antonelli" /> - home race, freshly twenty, 59
+points clear - is set to start from the back: Toto Wolff has confirmed
+Mercedes will fit a fifth power unit of the season, one over the
+allocation, at the circuit where a fresh engine and 200 mph slipstreams
+make a recovery drive most plausible. The unit has already cost him a
+retirement at [Barcelona](/races/2026/7/) and a wounded fifteenth at
+[Silverstone](/races/2026/9/); Mercedes are trading Saturday for the
+final ten rounds.
+
+## The championship
+
+<StandingsCard
+  title="Drivers' Championship · After Round 12"
+  rows={[
+    { driver: 'antonelli',      team: 'MER', value: 242 },
+    { driver: 'russell',        team: 'MER', value: 183 },
+    { driver: 'hamilton',       team: 'FER', value: 183 },
+    { driver: 'norris',         team: 'MCL', value: 159 },
+    { driver: 'leclerc',        team: 'FER', value: 155 },
+    { driver: 'max_verstappen', team: 'RBR', value: 112 },
+    { driver: 'piastri',        team: 'MCL', value: 104 },
+  ]}
+/>
+
+<StandingsCard
+  title="Constructors' Championship · After Round 12"
+  kind="constructor"
+  rows={[
+    { name: 'Mercedes', color: '#27F4D2', value: 425 },
+    { name: 'Ferrari',  color: '#E80020', value: 338 },
+    { name: 'McLaren',  color: '#FF8000', value: 263 },
+    { name: 'Red Bull', color: '#3671C6', value: 186 },
+  ]}
+/>
+
+<DriverChip ref="russell" /> and <DriverChip ref="hamilton" /> are level on
+183, Russell ahead on wins - and with the leader at the back of the grid,
+Sunday is their clearest shot in months at taking real points out of him.
+<DriverChip ref="norris" /> is 83 back with ten rounds and two sprints
+left. The arithmetic still favours Antonelli enormously; the momentum, for
+the first time all year, does not.
+
+## What Monza asks of the 2026 cars
+
+More than any circuit yet. The new power units split their output roughly
+50/50 between combustion and electric, and Monza's long flat-out stretches
+are exactly where the battery runs dry - "clipping", the deployment fading
+before the braking zone, is expected to be the technical story of the
+weekend. Teams that harvest efficiently through Parabolica and manage the
+energy map down the straights will find lap time nowhere else offers; the
+FIA can trim the race energy allowance at venues like this, and every team
+has been simulating it for months. Verstappen's pre-season complaint about
+the concept was aimed at precisely this weekend.
+
+<PullQuote>“Being flat-out on the Monza straight and having to lift off the throttle 400 or 500 metres before braking is not the right direction at all.”</PullQuote>
+
+Skinny wings, active aero at full stretch, and the year's biggest test of
+straight-line efficiency: if the Red Bull-Ford unit really is the class of
+the field, Monza is where it should finally show.
+
+## The storylines
+
+<Storylines>
+  <Storyline title="Ferrari in Schumacher red" driver="hamilton">
+    Ferrari mark thirty years since Michael Schumacher's first win in red -
+    and twenty since his last - with tribute race suits carrying his seven
+    stars. Hamilton arrives level with Russell on 183 and openly warning
+    that Ferrari need more pace; an upgraded engine is built and bench
+    testing, with the call on racing it due during the week. No pressure,
+    then - just Monza.
+  </Storyline>
+  <Storyline title="Two in a row, and the true benchmark" driver="norris">
+    Hungary and Zandvoort were maximum-downforce tracks; Monza is the
+    opposite extreme, and McLaren themselves call it the true benchmark of
+    whether their second-half surge is real. Verstappen beat Norris here
+    last year; Antonelli starts at the back. The door has never been
+    more open.
+  </Storyline>
+  <Storyline title="The recovery drive" driver="antonelli">
+    Fresh engine, the season's fastest car, and the calendar's most
+    overtaking-friendly straights: if you had to pick one venue to serve a
+    back-of-grid penalty, it's this one. Antonelli's six wins this year
+    have all come from the front two rows. Sunday shows us something new
+    either way.
+  </Storyline>
+</Storylines>
+
+Elsewhere: <DriverChip ref="max_verstappen" /> won here in 2025 by nearly
+twenty seconds and Red Bull have promised a Monza fightback after the
+Zandvoort disaster; <DriverChip ref="hadjar" /> hopes his wrist has healed
+enough to reclaim the seat <DriverChip ref="lawson" /> kept warm - though
+Monza's high-speed right-handers are no place for a sore left wrist. The
+forecast is set fair: sunny all weekend, race-day highs around 30°C, no
+rain expected. Monza itself is safe on the calendar to 2031, with a sprint
+arriving from 2027 - this is the last September the Temple of Speed hosts
+a plain old Grand Prix weekend.
+
+## Sessions · Track time
+
+<Sessions
+  rows={[
+    { day: 'Fri', name: 'Practice 1', time: '12:30' },
+    { day: 'Fri', name: 'Practice 2', time: '16:00' },
+    { day: 'Sat', name: 'Practice 3', time: '12:30' },
+    { day: 'Sat', name: 'Qualifying', time: '16:00' },
+    { day: 'Sun', name: 'Race', time: '15:00', race: true },
+  ]}
+  note="All times local (CEST, GMT+2). Autodromo Nazionale Monza, 53 laps of 5.793 km."
+/>
