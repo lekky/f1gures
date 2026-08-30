@@ -193,41 +193,34 @@ blog looks like one publication — but the *moment depicted* must come from the
 post's own story. The old approach (same finish-line template every recap)
 produced a wall of near-identical images. Don't add to it.
 
-### Prompt craft — these go to Gemini, so write for Gemini
+### Prompt craft — these go to ChatGPT (GPT-image), so write for it
 
-The images are generated with Google's models (Gemini 2.5 Flash Image / Imagen).
-They behave differently from Stable-Diffusion-style tooling, and three habits
-carried over from that world actively make our images worse:
+The images are generated in ChatGPT (the user has Pro). Habits that matter:
 
-1. **Never write negations.** Gemini has no negative-prompt channel (Imagen
-   dropped `negative_prompt` outright), so "no cars, no people, no text" simply
-   injects *cars, people, text* into the attention context — a reliable way to
-   get exactly what you excluded. **State everything positively.** Instead of
-   "no cars on the track", write "the bare track ribbon alone on the
-   background". Instead of "no sponsor logos", write "plain unmarked bodywork in
-   solid block colour".
+1. **Prefer positive phrasing, but short explicit bans are fine.** GPT-image
+   honours a brief "no lettering anywhere in the image" (unlike Gemini, where
+   negations backfire). Still describe what you *do* want first — "plain
+   unmarked bodywork in solid block colour" beats a list of exclusions.
 2. **Name colours in words; treat hex as a hint, not an instruction.** Models
    read `#E10600` as a text token, not a colour. Write "vivid racing red
    (#E10600)" — the words do the work and the hex nudges the shade.
-3. **Quote the exact text you want rendered.** Gemini renders short strings
-   genuinely well, but only if you give it the literal string: `the word
-   "MONACO"` gets MONACO; "the circuit name" gets an invented one. Keep strings
-   short, state where they sit in the frame and what they look like, and avoid
-   the `·` middot (it garbles) — use a plain hyphen.
-
-Also: **write flowing descriptive prose, not comma-separated keyword soup** —
-Gemini follows narrative composition instructions ("centred in the frame", "in
-the lower left") far better than tag lists. Set **16:9 with the aspect-ratio
-control in the UI/API**, not in the prompt text; the parameter is honoured, the
-words largely are not.
+3. **Quote the exact text you want rendered.** Give the literal string: `the
+   word "MONACO"` gets MONACO; "the circuit name" gets an invented one. Keep
+   strings short and say where they sit in the frame and what they look like.
+4. **Write flowing descriptive prose, not comma-separated keyword soup** —
+   composition instructions ("centred in the frame", "in the lower left") are
+   followed far better than tag lists. Ask for **16:9 landscape** in the prompt.
 
 **When the subject has a shape that must be right** (a circuit outline above
-all), don't describe geometry in words — Gemini accepts reference images. Hand
-it `public/images/circuits/white-outline/<id>.svg` (or the black-outline
-variant) and ask it to restyle *that* outline. A text description of a track
+all), don't describe geometry in words — attach a reference image. Convert
+`public/images/circuits/white-outline/<id>.svg` to a PNG first (image models
+handle raster references much better than SVG) and tell it to use *that* exact
+outline without inventing or altering corners. A text description of a track
 layout will never come back accurate.
 
-### Fixed style DNA (weave into every prompt)
+**Previews and recaps have locked templates below — use them verbatim** (only
+the placeholder slots change per post). The other categories share this looser
+style DNA instead:
 
 > Painterly editorial illustration, cinematic light, a muted palette lifted by a
 > single vivid racing red (#E10600) accent, bodywork in clean solid block
@@ -263,7 +256,30 @@ If the previous recap was a finish-line shot, this one isn't. Vary at least two
 of: **moment, camera angle, light/weather, setting** from the previous post in
 the same category.
 
-### `race-recap` → the race's defining moment (not automatically the finish)
+### `race-recap` → ink + red wash, the race's defining moment (LOCKED template)
+
+Recaps use one fixed style — **loose ink line drawing with a single translucent
+racing-red watercolour wash** — so the category reads as one publication. The
+*scene* is the variable: it must come from the post's own story, and it is
+never automatically the finish line (that composition was used eight times in a
+row once; don't add to it).
+
+The template (fill the two slots, keep everything else verbatim):
+
+> A loose ink line drawing of a Formula 1 scene, 16:9 landscape. The scene:
+> **{THE RACE'S KEY MOMENT — one sentence from the post, naming the
+> corner/setting and the team colours involved}**. Composition:
+> **{camera angle, rotated from the previous recap}**. A single translucent
+> racing-red (#E10600) watercolour wash carries the motion of the red car and
+> its racing line; everything else stays in muted ink greys and blacks. Heavy
+> dark ink sky across the top third for text overlay, textured paper grain,
+> lots of dark negative space, ink splatter at the edges of movement. No
+> lettering anywhere in the image.
+
+The red wash follows **the story's protagonist** — usually the winner or the
+post's central car. When that car isn't red (Ferrari), keep its bodywork in its
+real team colour but let the red wash carry its motion trail; the wash is an
+accent, not a livery.
 
 Pick the scene the post itself leads with. A menu, roughly in order of how
 often they're the real story:
@@ -298,32 +314,29 @@ colours in words, and describe the bodywork as plain and unmarked rather than
 asking for no sponsors.
 
 `heroImageAlt`: one factual sentence describing the depicted moment, e.g.
-`"Painted illustration of {what the image shows}, {circuit/landmark context}"`.
+`"Ink and red-wash illustration of {what the image shows}, {circuit/landmark context}"`.
 
-### `race-preview` → illustrated track map (consistent on purpose)
+### `race-preview` → night-aerial track map (LOCKED template)
 
 Previews keep the track-map identity — it's the one category where sameness is
-the brand. Vary only the ambience to match the venue:
+the brand. The style is the **night-satellite glowing ribbon**. Always attach
+the circuit outline reference (`public/images/circuits/white-outline/<id>.svg`
+converted to PNG); only the placeholder slots change per round:
 
-> A flat 2D vector poster illustration, orthographic top-down view, of the
-> **{Circuit Full Name}** racetrack{ in/near {City}}. The complete circuit
-> outline is drawn as a single clean continuous ribbon centred in the frame,
-> rendered in vivid racing red (#E10600) against a deep charcoal background. A
-> small white chequered marker indicates the start/finish line. The background
-> carries a faint darker-charcoal texture of **{venue-flavoured texture:
-> topographic contours / harbour coastline and marina berths / city-street
-> grid / desert dunes / forest canopy / heat-haze gradient}**. In the lower
-> left, in condensed uppercase sans-serif white lettering, the word
-> **"{SHORT CIRCUIT NAME}"**, and beneath it in smaller grey lettering
-> **"ROUND {NN} - {YEAR}"**. The track ribbon is clean and unlabelled.
-> Minimalist editorial poster design, flat colour, sharp vector edges, generous
-> negative space.
+> A 16:9 landscape editorial poster of the **{Circuit Full Name}** as seen from
+> the air at night. Use the attached circuit outline as the exact track shape —
+> do not invent or alter corners. The circuit is drawn as a single bold ribbon
+> in bright racing red (#E10600) glowing softly like a lit road, with a thin
+> cream inner line and a small chequered start/finish marker on the ribbon.
+> Beneath it, a near-black aerial landscape barely visible: **{venue-flavoured
+> ground detail: faint city street lights / a dark harbour and marina /
+> silhouetted forest and hills / farmland field boundaries / desert}**. One
+> warm light-bleed in a corner of the frame. In the lower left, the word
+> **"{SHORT CIRCUIT NAME}"** in tall condensed uppercase white sans-serif, and
+> beneath it **"ROUND {NN} · {YEAR}"** in smaller grey letters. No cars, no
+> other lettering — just the glowing map, the type, and generous dark space.
 
-Note what this template does *not* say: no "no cars", no "no corner numbers".
-"The track ribbon is clean and unlabelled" and "generous negative space" get the
-same result without naming the things you don't want. Keep it that way.
-
-`heroImageAlt`: `"Illustrated track map of the {Circuit Full Name}, {City}"`
+`heroImageAlt`: `"Glowing night-aerial track map of the {Circuit Full Name}, {City}"`
 
 ### `technical` → conceptual subject illustration
 
@@ -383,8 +396,9 @@ Verify it serves as `image/jpeg` at a sane size before finishing.
 1. **Lettering is clean and team identity is right.** Sponsor boards are fine;
    garbled or misspelled ones are not, and neither is a car wearing the wrong
    constructor's colours. Regenerate if either is off.
-2. **No generator watermark.** Gemini stamps a sparkle glyph into the
-   bottom-right corner on some export paths. **Crop it, never inpaint it** - a
+2. **No generator watermark.** Some generators stamp a glyph into a corner on
+   some export paths (Gemini's sparkle did this; check whatever ChatGPT
+   returns too). **Crop it, never inpaint it** - a
    sampled patch over a gradient background leaves a worse artefact than the
    watermark did (learned the hard way; three preview heroes were destroyed
    this way and could not be recovered). A 10% trim off the right edge, keeping
