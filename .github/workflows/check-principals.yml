@@ -1,0 +1,45 @@
+# Team-principal watchdog: daily check that the curated open-ended tenures in
+# scripts/principals.mjs still match each team's Wikipedia infobox. Flag-only -
+# on drift it opens ONE GitHub issue (deduped by title) with the report; a
+# human verifies against real reporting and edits principals.mjs by hand.
+# Uses only Node built-ins, so no npm install: a run costs well under a minute.
+name: Check team principals
+
+on:
+  schedule:
+    - cron: '20 5 * * *' # daily 05:20 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run watchdog
+        id: watchdog
+        run: |
+          set +e
+          node scripts/check-principals.mjs | tee report.md
+          echo "status=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Open issue on drift (deduped)
+        if: steps.watchdog.outputs.status != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Team principal watchdog: data needs a look"
+          open_count=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length')
+          if [ "$open_count" != "0" ]; then
+            echo "An open watchdog issue already exists - not filing another."
+          else
+            gh issue create --title "$title" --body-file report.md
+          fi

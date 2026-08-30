@@ -2296,6 +2296,58 @@ if (postArchiveTeamYears > 0) {
   console.log(`[archive] attached lineage to ${lineageRefsTouched} team docs across ${lineages.length} chains`);
 }
 
+// ─── Attach team-principal tenures to curated team docs ───────────────
+{
+  const { PRINCIPALS, validatePrincipals, buildPrincipalsAttachment } = await import('./principals.mjs');
+  validatePrincipals(PRINCIPALS, teamsIndex);
+
+  const completedRoundsByYear = new Map();
+  for (const r of racesIndex) {
+    if (!r.completed) continue;
+    if (!completedRoundsByYear.has(r.year)) completedRoundsByYear.set(r.year, []);
+    completedRoundsByYear.get(r.year).push(r.round);
+  }
+  for (const rounds of completedRoundsByYear.values()) rounds.sort((a, b) => a - b);
+
+  // Race docs are only read for round-cut tenure years (a handful of
+  // mid-season handovers), so the cache stays tiny.
+  const raceResultsCache = new Map();
+  const teamDocCacheForPrincipals = new Map();
+  const helpers = {
+    currentYear: new Date().getFullYear(),
+    roundsForYear: (year) => completedRoundsByYear.get(year) || [],
+    // Extra docs for alsoRefs (engine-split 1960s constructors).
+    lookupTeam: (ref) => {
+      if (!teamDocCacheForPrincipals.has(ref)) {
+        const p = join(OUT, 'teams', `${ref}.json`);
+        teamDocCacheForPrincipals.set(ref, existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : null);
+      }
+      return teamDocCacheForPrincipals.get(ref);
+    },
+    loadRaceResults: (year, round) => {
+      const key = `${year}/${round}`;
+      if (!raceResultsCache.has(key)) {
+        const p = join(OUT, 'races', String(year), `${round}.json`);
+        let results = null;
+        if (existsSync(p)) results = JSON.parse(readFileSync(p, 'utf8')).results || null;
+        raceResultsCache.set(key, results);
+      }
+      return raceResultsCache.get(key);
+    },
+  };
+
+  let principalRefsTouched = 0;
+  for (const [ref, tenures] of Object.entries(PRINCIPALS)) {
+    const p = join(OUT, 'teams', `${ref}.json`);
+    if (!existsSync(p)) continue;
+    const doc = JSON.parse(readFileSync(p, 'utf8'));
+    doc.principals = buildPrincipalsAttachment(doc, tenures, helpers);
+    writeFileSync(p, JSON.stringify(doc));
+    principalRefsTouched += 1;
+  }
+  console.log(`[archive] attached principals to ${principalRefsTouched} team docs`);
+}
+
 // ─── Enrich index entries with last5 and display data ───────────────────────
 {
   const teamRaceMap = new Map(); // constructorRef → Map<'year-round', {points,year,round}>

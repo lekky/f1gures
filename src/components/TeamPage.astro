@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Flag from './Flag.astro';
 import LineageStrip from './LineageStrip.astro';
+import PrincipalsStrip from './PrincipalsStrip.astro';
 import MobileTableCards from './MobileTableCards.astro';
 import { NATIONALITY } from '../lib/nationality.js';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
@@ -53,6 +54,20 @@ interface Props {
       tagline: string;
       drivers: Array<{ driverRef: string; name: string }>;
     } | null;
+    principals?: Array<{
+      name: string;
+      role: string;
+      from: number;
+      fromRound: number | null;
+      to: number | null;
+      toRound: number | null;
+      current: boolean;
+      seasons: number;
+      races: number;
+      wins: number;
+      titles: number;
+      driverTitles: number;
+    }>;
     lineage?: {
       chainId: string;
       selfIndex: number;
@@ -422,6 +437,10 @@ function hasFace(ref: string): boolean {
         ))}
       </div>
     </>
+  )}
+
+  {team.principals && team.principals.length > 0 && (
+    <PrincipalsStrip principals={team.principals} teamColor={team.color} />
   )}
 
   {team.lineage && team.lineage.nodes.length >= 2 && (
