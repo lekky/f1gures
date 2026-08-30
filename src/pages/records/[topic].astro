@@ -35,14 +35,18 @@ const jsonLd = top.length > 0 ? {
   '@type': 'ItemList',
   name: `${data.title} (All-time top ${top.length})`,
   numberOfItems: top.length,
-  itemListElement: top.map((e: any, i: number) => ({
-    '@type': 'ListItem',
-    position: i + 1,
-    name: e.name,
-    url: data.subjectType === 'team'
-      ? `${ORIGIN}/teams/${e.constructorRef}/`
-      : `${ORIGIN}/drivers/${e.driverRef}/`,
-  })),
+  itemListElement: top.map((e: any, i: number) => {
+    // Boss rows point at the primary team page (bosses have no pages).
+    const ref = data.subjectType === 'team' ? e.constructorRef
+      : data.subjectType === 'principal' ? e.teamRef
+      : e.driverRef;
+    return {
+      '@type': 'ListItem',
+      position: i + 1,
+      name: e.name,
+      ...(ref ? { url: `${ORIGIN}/${data.subjectType === 'team' || data.subjectType === 'principal' ? 'teams' : 'drivers'}/${ref}/` } : {}),
+    };
+  }),
 } : undefined;
 ---
 <BaseLayout

@@ -82,6 +82,25 @@ describe('tenureStats', () => {
     expect(s.races).toBe(24); // perSeason value, no race-doc walk
   });
 
+  it('carries a classic sub-bucket for pre-1981 seasons, omitted when empty', () => {
+    const doc = {
+      constructorRef: 'straddler',
+      perSeason: [
+        { year: 1979, position: 1, wins: 4, races: 15, drivers: [{ driverRef: 'a', position: 1 }] },
+        { year: 1980, position: 2, wins: 2, races: 14, drivers: [] },
+        { year: 1981, position: 1, wins: 5, races: 15, drivers: [] },
+      ],
+    };
+    const h = { ...helpers, roundsForYear: () => [], loadRaceResults: () => null };
+    const s = tenureStats(doc, { from: 1979, to: 1981 }, h);
+    expect(s.seasons).toBe(3);
+    expect(s.wins).toBe(11);
+    expect(s.titles).toBe(2);
+    expect(s.classic).toEqual({ seasons: 2, races: 29, wins: 6, titles: 1, driverTitles: 1 });
+    // Modern-only tenure → no classic key at all
+    expect(tenureStats(teamDoc, { from: 2022, to: 2024 }, helpers).classic).toBeUndefined();
+  });
+
   it('merges alsoRefs docs: wins/titles sum, races take the busiest ref, seasons stay unique', () => {
     // Ergast-style engine split: same physical 1966 season under two refs.
     const primary = {

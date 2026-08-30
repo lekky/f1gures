@@ -223,6 +223,10 @@ export function validatePrincipals(data, teamsIndex) {
   }
 }
 
+// The records library's era boundary (modern >= 1981). Kept here so the
+// per-tenure `classic` sub-stats line up with the records era toggle.
+import { MODERN_ERA_START_YEAR } from './records/helpers.mjs';
+
 // Per-tenure stats from the team doc's perSeason rows. Full seasons come
 // straight from perSeason; a year cut mid-season by fromRound/toRound is
 // recomputed round-by-round from the race archive (helpers.loadRaceResults),
@@ -230,9 +234,16 @@ export function validatePrincipals(data, teamsIndex) {
 // perSeason.position, WDC via perSeason.drivers[].position) are credited to
 // the tenure in charge at the final round, and never for the in-progress
 // season (mirrors eraStats in lineages.mjs).
+//
+// When a tenure touches pre-1981 seasons, the result carries a `classic`
+// sub-bucket (same five fields, classic-era share only) so the records
+// leaderboards can split all-time / modern / classic exactly - modern is
+// simply total minus classic, component-wise. Round-cut years are all
+// post-2013, so cut-year contributions never land in the classic bucket.
 export function tenureStats(teamDoc, tenure, helpers) {
   const { roundsForYear, loadRaceResults, currentYear, lookupTeam } = helpers;
   const out = { seasons: 0, races: 0, wins: 0, titles: 0, driverTitles: 0 };
+  const classic = { seasons: 0, races: 0, wins: 0, titles: 0, driverTitles: 0 };
   if (!teamDoc) return out;
   const toYear = tenure.to ?? Infinity;
 
@@ -253,13 +264,17 @@ export function tenureStats(teamDoc, tenure, helpers) {
   }
 
   for (const [year, rows] of byYear) {
+    const isClassic = year < MODERN_ERA_START_YEAR;
     out.seasons += 1;
+    if (isClassic) classic.seasons += 1;
 
     const cutStart = year === tenure.from && tenure.fromRound != null && tenure.fromRound > 1;
     const cutEnd = tenure.to != null && year === tenure.to && tenure.toRound != null;
+    let yearRaces = 0;
+    let yearWins = 0;
     if (!cutStart && !cutEnd) {
-      out.races += Math.max(...rows.map(s => s.races || 0));
-      out.wins += rows.reduce((sum, s) => sum + (s.wins || 0), 0);
+      yearRaces = Math.max(...rows.map(s => s.races || 0));
+      yearWins = rows.reduce((sum, s) => sum + (s.wins || 0), 0);
     } else {
       const lo = cutStart ? tenure.fromRound : 1;
       const hi = cutEnd ? tenure.toRound : Infinity;
@@ -269,18 +284,31 @@ export function tenureStats(teamDoc, tenure, helpers) {
         if (!results) continue;
         const teamRows = results.filter(r => r.constructorRef === teamDoc.constructorRef);
         if (!teamRows.length) continue;
-        out.races += 1;
-        if (teamRows.some(r => r.position === 1)) out.wins += 1;
+        yearRaces += 1;
+        if (teamRows.some(r => r.position === 1)) yearWins += 1;
       }
+    }
+    out.races += yearRaces;
+    out.wins += yearWins;
+    if (isClassic) {
+      classic.races += yearRaces;
+      classic.wins += yearWins;
     }
 
     if (year >= currentYear) continue;
     const rounds = roundsForYear(year) || [];
     const lastRound = rounds.length ? rounds[rounds.length - 1] : null;
     if (cutEnd && lastRound != null && tenure.toRound < lastRound) continue;
-    if (rows.some(s => s.position === 1)) out.titles += 1;
-    if (rows.some(s => (s.drivers || []).some(d => d.position === 1))) out.driverTitles += 1;
+    if (rows.some(s => s.position === 1)) {
+      out.titles += 1;
+      if (isClassic) classic.titles += 1;
+    }
+    if (rows.some(s => (s.drivers || []).some(d => d.position === 1))) {
+      out.driverTitles += 1;
+      if (isClassic) classic.driverTitles += 1;
+    }
   }
+  if (Object.values(classic).some(v => v > 0)) out.classic = classic;
   return out;
 }
 

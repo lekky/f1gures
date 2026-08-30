@@ -34,9 +34,13 @@ interface Entry {
 
 const { entries, subjectType, era } = Astro.props as {
   entries: Entry[];
-  subjectType: 'driver' | 'team' | 'driver-at-circuit';
+  subjectType: 'driver' | 'team' | 'driver-at-circuit' | 'principal';
   era: 'all-time' | 'modern' | 'classic';
 };
+
+// Team-boss rows link to the boss's primary team page (where the Team
+// Principals strip lives) - bosses have no pages of their own (yet).
+const isPrincipal = subjectType === 'principal';
 
 const isDefault = era === 'all-time';
 
@@ -58,6 +62,7 @@ function headshotExists(driverRef?: string): boolean {
 
 function rowHref(e: Entry): string | null {
   if (subjectType === 'team') return e.constructorRef ? `/teams/${e.constructorRef}/` : null;
+  if (isPrincipal) return e.teamRef ? `/teams/${e.teamRef}/` : null;
   return e.driverRef ? `/drivers/${e.driverRef}/` : null;
 }
 
@@ -81,9 +86,9 @@ const bePodium = (n: number) => n >= 1 && n <= 3;
       <thead>
         <tr>
           <th class="col-rank">#</th>
-          <th class="col-name">{subjectType === 'team' ? 'Team' : 'Driver'}</th>
+          <th class="col-name">{subjectType === 'team' ? 'Team' : isPrincipal ? 'Team boss' : 'Driver'}</th>
           {subjectType === 'driver-at-circuit' && <th class="col-circuit">Circuit</th>}
-          {subjectType === 'driver' && <th class="col-team">Team</th>}
+          {(subjectType === 'driver' || isPrincipal) && <th class="col-team">Team</th>}
           <th class="col-value right">Stat</th>
           <th class="col-context">Detail</th>
         </tr>
@@ -105,7 +110,7 @@ const bePodium = (n: number) => n >= 1 && n <= 3;
               </td>
               <td class="col-name">
                 <div class="records-cell">
-                  {subjectType === 'team' ? (
+                  {subjectType === 'team' || isPrincipal ? (
                     <>
                       <span class="records-team-chip" style={`background: ${teamColor}`}></span>
                       <a href={href} onclick="event.stopPropagation()">{e.name}</a>
@@ -136,7 +141,7 @@ const bePodium = (n: number) => n >= 1 && n <= 3;
                   <a href={`/circuits/${e.circuitRef}/`} onclick="event.stopPropagation()">{e.circuitName}</a>
                 </td>
               )}
-              {subjectType === 'driver' && (
+              {(subjectType === 'driver' || isPrincipal) && (
                 <td class="col-team">
                   {e.teamRef
                     ? <a href={`/teams/${e.teamRef}/`} onclick="event.stopPropagation()">{e.teamName}</a>
@@ -161,11 +166,11 @@ const bePodium = (n: number) => n >= 1 && n <= 3;
         const isTeam = subjectType === 'team';
         const face = !isTeam && headshotExists(e.driverRef) ? `/images/drivers/${e.driverRef}.webp` : null;
         const logo = isTeam ? teamLogoPath(e.constructorRef) : null;
-        const secLabel = isTeam ? null : (subjectType === 'driver' ? e.teamName : e.circuitName);
+        const secLabel = isTeam ? null : (subjectType === 'driver' || isPrincipal ? e.teamName : e.circuitName);
         const cells = [
           { l: 'Stat', v: e.valueLabel, cls: 'tc' },
           ...(e.context ? [{ l: 'Detail', v: e.context, cls: 'mono' }] : []),
-          ...(subjectType === 'driver' && e.teamName ? [{ l: 'Team', v: e.teamName, cls: 'sm' }] : []),
+          ...((subjectType === 'driver' || isPrincipal) && e.teamName ? [{ l: 'Team', v: e.teamName, cls: 'sm' }] : []),
           ...(subjectType === 'driver-at-circuit' && e.circuitName ? [{ l: 'Circuit', v: e.circuitName, cls: 'sm' }] : []),
         ];
         return (
@@ -202,7 +207,7 @@ const bePodium = (n: number) => n >= 1 && n <= 3;
                 <div class="c"><div class="l">{c.l}</div><div class={`n ${c.cls}`}>{c.v}</div></div>
               ))}
             </div>
-            {href && <a class="be-profile" href={href}>{e.name} →</a>}
+            {href && <a class="be-profile" href={href}>{isPrincipal ? (e.teamName || e.name) : e.name} →</a>}
           </div></div></div>
         </div>
         );

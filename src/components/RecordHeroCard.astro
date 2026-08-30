@@ -30,7 +30,7 @@ interface RecordIndex {
   id: string;
   title: string;
   blurb: string;
-  subjectType: 'driver' | 'team' | 'driver-at-circuit';
+  subjectType: 'driver' | 'team' | 'driver-at-circuit' | 'principal';
   allTime: { top5: Entry[] };
 }
 
@@ -66,8 +66,12 @@ function splitValue(label: string) {
   return { num: label, unit: '' };
 }
 const big = splitValue(holder?.valueLabel || '');
-const holderDriverImg = record.subjectType !== 'team' ? driverImg(holder?.driverRef) : null;
-const holderTeamLogo  = record.subjectType === 'team' ? teamLogo(holder?.constructorRef) : null;
+const isPrincipal = record.subjectType === 'principal';
+const holderDriverImg = record.subjectType !== 'team' && !isPrincipal ? driverImg(holder?.driverRef) : null;
+// Team bosses have no headshots - fall back to their primary team's logo.
+const holderTeamLogo  = record.subjectType === 'team'
+  ? teamLogo(holder?.constructorRef)
+  : isPrincipal ? teamLogo(holder?.teamRef) : null;
 ---
 {holder && (
   <a class="card-accent" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
@@ -83,13 +87,13 @@ const holderTeamLogo  = record.subjectType === 'team' ? teamLogo(holder?.constru
 
     <div class="card-accent-holder">
       <div class={`card-accent-avatar${holderDriverImg || holderTeamLogo ? ' card-accent-avatar-image' : ''}`}>
-        {record.subjectType === 'team' ? (
+        {record.subjectType === 'team' || isPrincipal ? (
           holderTeamLogo ? (
             <img src={holderTeamLogo} alt="" loading="lazy" />
           ) : (
             <>
               <span class="card-accent-avatar-chip" style={`background: ${accent}`}></span>
-              <span class="card-accent-avatar-tag">LOGO</span>
+              <span class="card-accent-avatar-tag">{isPrincipal ? 'BOSS' : 'LOGO'}</span>
             </>
           )
         ) : (

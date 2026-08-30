@@ -18,11 +18,11 @@ const totalRecords = groups.reduce((n: number, g: any) => n + (g.records?.length
 // Flat lookup by id so we can hand-pick the marquee cards.
 const byId: Record<string, any> = {};
 for (const g of groups) for (const r of g.records) byId[r.id] = r;
-const FEATURED = ['wins', 'championships', 'poles', 'wins-in-season', 'team-titles', 'podiums'];
+const FEATURED = ['wins', 'championships', 'poles', 'wins-in-season', 'team-titles', 'principal-wins'];
 const featured = FEATURED.map((id) => byId[id]).filter(Boolean);
 
 const title = 'F1 Stats — Records, Leaderboards & Comparisons | f1gures';
-const description = 'The numbers behind Formula 1: 17 all-time and modern-era leaderboards, from wins and poles to streaks and title margins, plus head-to-head comparisons.';
+const description = 'The numbers behind Formula 1: 20 all-time and modern-era leaderboards, from wins and poles to streaks, title margins and team bosses, plus head-to-head comparisons.';
 const canonicalPath = '/stats/';
 const breadcrumb = [
   { name: 'Home', path: '/' },

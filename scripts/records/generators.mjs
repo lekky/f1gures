@@ -357,6 +357,114 @@ export function generateOldestWinnerEntries(drivers, era, currentYear) {
 }
 
 // stat: 'wins' | 'titles'
+// Team-boss leaderboards. Team docs carry `principals` (per-tenure stats
+// attached by scripts/principals.mjs via build-archive); this aggregates the
+// tenures BY PERSON across every team they ran, so Briatore's Benetton and
+// Renault eras count as one career. Era splits use the per-tenure `classic`
+// sub-bucket (pre-1981 share): classic = classic bucket, modern = total minus
+// classic. stat: 'wins' | 'titles' | 'seasons'.
+function pickPrincipalEraStats(p, era) {
+  const zero = { seasons: 0, races: 0, wins: 0, titles: 0 };
+  const classic = p.classic || zero;
+  if (era === 'classic') return classic;
+  if (era === 'modern') {
+    return {
+      seasons: p.seasons - (classic.seasons || 0),
+      races: p.races - (classic.races || 0),
+      wins: p.wins - (classic.wins || 0),
+      titles: p.titles - (classic.titles || 0),
+    };
+  }
+  return p;
+}
+
+export function generatePrincipalEntries(teams, stat, era, currentYear) {
+  const byPerson = new Map();
+  for (const t of teams) {
+    for (const p of t.principals || []) {
+      if (!byPerson.has(p.name)) byPerson.set(p.name, []);
+      byPerson.get(p.name).push({ ...p, teamRef: t.constructorRef, teamName: t.name, teamColor: t.color || null });
+    }
+  }
+
+  const entries = [];
+  for (const [name, tenures] of byPerson) {
+    let value = 0;
+    let races = 0;
+    let seasonsSum = 0;
+    let bestTenure = null;
+    let bestKey = [-1, -1, -1];
+    const rangeYearCounts = new Map(); // year → number of tenures claiming it
+    const eraTeamRefs = new Set();
+    let firstYear = null;
+    let lastYear = null;
+
+    for (const p of tenures) {
+      const s = pickPrincipalEraStats(p, era);
+      // Era-clamp the tenure's year range (used for the years context, the
+      // seasons overlap correction, and skipping out-of-era tenures). An
+      // open-ended tenure clamps to currentYear, which formatYearsRange
+      // renders as "present".
+      const from = Math.max(p.from, era === 'modern' ? 1981 : -Infinity);
+      const to = Math.min(p.to ?? currentYear, currentYear, era === 'classic' ? 1980 : Infinity);
+      if (from > to) continue;
+
+      races += s.races || 0;
+      seasonsSum += s.seasons || 0;
+      if (stat === 'wins') value += s.wins || 0;
+      else if (stat === 'titles') value += s.titles || 0;
+
+      for (let y = from; y <= to; y++) rangeYearCounts.set(y, (rangeYearCounts.get(y) || 0) + 1);
+      if (firstYear == null || from < firstYear) firstYear = from;
+      if (lastYear == null || to > lastYear) lastYear = to;
+      eraTeamRefs.add(p.teamRef);
+
+      // Primary team = the tenure with the most era wins, then seasons, then
+      // the most recent - drives the entry's team colour / logo / link.
+      const key = [s.wins || 0, s.seasons || 0, to];
+      if (key[0] > bestKey[0] || (key[0] === bestKey[0] && (key[1] > bestKey[1] || (key[1] === bestKey[1] && key[2] > bestKey[2])))) {
+        bestKey = key;
+        bestTenure = p;
+      }
+    }
+
+    if (stat === 'seasons') {
+      // Attached seasons are actual raced years, but a same-year cross-team
+      // handover (Mekies: Racing Bulls → Red Bull in 2025) would count that
+      // year twice - subtract range overlaps.
+      let overlap = 0;
+      for (const count of rangeYearCounts.values()) if (count > 1) overlap += count - 1;
+      value = seasonsSum - overlap;
+    }
+    if (value === 0 || !bestTenure) continue;
+
+    const parts = name.trim().split(/\s+/);
+    const last = parts.at(-1);
+    const first = parts.slice(0, -1).join(' ') || null;
+    const teamCount = eraTeamRefs.size;
+    const yearsRange = formatYearsRange(firstYear, lastYear, currentYear);
+    const context = teamCount > 1 ? `${yearsRange} · ${teamCount} teams` : yearsRange;
+
+    entries.push({
+      value,
+      valueLabel: `${value} ${stat === 'wins' ? 'win' : stat === 'titles' ? 'title' : 'season'}${value === 1 ? '' : 's'}`,
+      races,
+      firstYear,
+      name,
+      first,
+      last,
+      shortName: first ? `${first[0]}. ${last}` : last,
+      teamRef: bestTenure.teamRef,
+      teamName: bestTenure.teamName,
+      teamColor: bestTenure.teamColor,
+      context,
+    });
+  }
+  entries.sort(compareEntries);
+  assignRanksWithTies(entries);
+  return entries;
+}
+
 export function generateTeamCareerEntries(teams, stat, era, currentYear) {
   const entries = [];
   for (const t of teams) {
