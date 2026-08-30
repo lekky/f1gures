@@ -16,6 +16,7 @@ import {
   generateYoungestChampionEntries,
   generateOldestWinnerEntries,
   generateTeamCareerEntries,
+  generatePrincipalEntries,
   generateTeam12FinishesEntries,
   generateDriverAtCircuitEntries,
 } from './generators.mjs';
@@ -50,6 +51,12 @@ function dispatch(configId, driverDocs, teamDocs, yearStandings, finalRoundDateB
       return generateTeamCareerEntries(teamDocs, 'wins', era, currentYear);
     case 'team-1-2-finishes':
       return generateTeam12FinishesEntries(allResults, teamsByRef, era, currentYear);
+    case 'principal-wins':
+      return generatePrincipalEntries(teamDocs, 'wins', era, currentYear);
+    case 'principal-titles':
+      return generatePrincipalEntries(teamDocs, 'titles', era, currentYear);
+    case 'principal-seasons':
+      return generatePrincipalEntries(teamDocs, 'seasons', era, currentYear);
     case 'wins-at-circuit':
       return generateDriverAtCircuitEntries(driverDocs, 'wins', era, currentYear);
     case 'poles-at-circuit':

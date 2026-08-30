@@ -18,8 +18,13 @@ export const GROUPS = [
   { id: 'season-streaks', label: 'Single-season & streaks' },
   { id: 'milestones',     label: 'Milestones' },
   { id: 'teams',          label: 'Teams' },
+  { id: 'bosses',         label: 'Team bosses' },
   { id: 'circuit',        label: 'Race & circuit' },
 ];
+
+// Shared caveat for the team-boss boards (they aggregate the hand-curated
+// tenure data in scripts/principals.mjs, not an exhaustive register).
+const PRINCIPALS_NOTE = "Based on f1gures' curated team-boss tenures (team principals, founders and de-facto bosses). Short caretaker stints and a few murky leadership eras are excluded, and championships are credited to the boss in charge at the season's final round.";
 
 export const RECORD_CONFIGS = [
   // Career (driver)
@@ -63,6 +68,17 @@ export const RECORD_CONFIGS = [
     title: 'Most team race wins',      blurb: 'Career grand prix victories by constructor.' },
   { id: 'team-1-2-finishes', group: 'teams', subjectType: 'team', valueFormat: 'integer',
     title: 'Most 1-2 finishes',        blurb: 'Races where the same constructor took both first and second place.' },
+
+  // Team bosses (principal) - aggregated across every team a boss has run
+  { id: 'principal-wins',    group: 'bosses', subjectType: 'principal', valueFormat: 'integer',
+    title: 'Most wins as team boss',   blurb: 'Grand prix victories under one team boss, across every team they have run.',
+    note: PRINCIPALS_NOTE },
+  { id: 'principal-titles',  group: 'bosses', subjectType: 'principal', valueFormat: 'integer',
+    title: "Most constructors' titles as team boss", blurb: "World Constructors' Championships won under one team boss.",
+    note: PRINCIPALS_NOTE },
+  { id: 'principal-seasons', group: 'bosses', subjectType: 'principal', valueFormat: 'integer',
+    title: 'Longest reign as team boss', blurb: 'Most seasons spent in charge of an F1 team, across every stint.',
+    note: PRINCIPALS_NOTE },
 
   // Race & circuit (driver-at-circuit)
   { id: 'wins-at-circuit', group: 'circuit', subjectType: 'driver-at-circuit', valueFormat: 'integer',
