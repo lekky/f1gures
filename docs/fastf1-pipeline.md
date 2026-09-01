@@ -104,17 +104,20 @@ out on the live 2026 Belgian FP2); it's the F1 API declining cloud egress. So:
   Scheduler runs it every ~15 min Fri–Sun on a residential machine. It
   hard-syncs a **dedicated clone** (`C:\Users\rotsm\f1gures-fastf1-bot` — never
   the dev checkout, so its `git reset --hard` is safe), runs
-  `scripts/fetch-fastf1.py --auto`, and if new session JSON appeared, commits to
-  `main` and dispatches `deploy.yml`. Net latency: a session is live within
-  ~15 min of FastF1 publishing it, **provided the machine is on and online** —
-  that's the tradeoff of local fetching. Logs land in the clone's
-  `.fetch-logs/`.
+  `scripts/fetch-fastf1.py --auto`, and if new session JSON appeared, commits
+  and pushes to `main`. The VPS ops loop (`docs/ops-vps.md`) sees `main` move
+  on its next 10-minute tick and builds + deploys. Net latency: a session is
+  live within ~30 min of FastF1 publishing it, **provided the machine is on and
+  online** — that's the tradeoff of local fetching. Logs land in the clone's
+  `.fetch-logs/`. (The VPS can't do the fetch itself: verified 2026-09-01 that
+  F1's live-timing host refuses its datacenter IP exactly as it refuses
+  GitHub's.)
 - **`.github/workflows/fetch-fastf1.yml`** is kept **dispatch-only** as a manual
   fallback (it still runs the gate + fetch + build + FTP when dispatched) in
   case F1 ever serves cloud IPs or the fetch is pointed at a self-hosted runner
   with residential egress. Its schedule is disabled — it only ever failed.
-- **`deploy.yml`** does the actual build + FTP for locally-committed data (the
-  local script dispatches it; its 3×-daily schedule is the fallback).
+- **`ops/loop.sh` on the VPS** does the actual build + SFTP for locally-pushed
+  data. `deploy.yml` is a dispatch-only fallback for when the VPS is down.
 - **Backfill**: FastF1 covers 2018+ (telemetry-complete). Run the script per
   round **on a residential machine** and commit, e.g.
   `for /l %r in (1,1,8) do python scripts/fetch-fastf1.py 2026 %r`. The next

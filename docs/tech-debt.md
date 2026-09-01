@@ -84,12 +84,14 @@ not anchors.
     but lftp mirror can't diff by content (fresh build timestamps) so it
     re-uploaded all ~5,000 files every run (~20 min) and its blunt
     `--delete` pruned stale server files. rsync fixes both.
-- **Still open:** `refresh-current-season.yml` still uses the plaintext
-  FTP-Deploy-Action (fine for now - it uploads only the few data-changed
-  pages per run, so it's not slow, but it's still cleartext). The
-  `SFTP_*` secret names remain misleading (host/user now feed SSH).
-- **Fix (remaining):** move `refresh-current-season.yml` to the same
-  rsync/SSH step; rename `SFTP_*` secrets to match reality.
+- **Update (2026-09):** routine deploys moved off Actions entirely to the
+  VPS ops loop (`ops/loop.sh`, `docs/ops-vps.md`), which uses the lftp/SFTP
+  recipe. The Actions workflows are dispatch-only fallbacks now.
+- **Still open (low priority):** the `refresh-current-season.yml` fallback
+  still uses the plaintext FTP-Deploy-Action, and the `SFTP_*` secret
+  names remain misleading (host/user now feed SSH).
+- **Fix (remaining):** move `refresh-current-season.yml` to the same lftp
+  step as `deploy.yml`; rename `SFTP_*` secrets to match reality.
 
 ### 5. Feedback worker: committed code ≠ deployed code, no tests
 - `feedback-worker/` is deployed manually via `npx wrangler deploy` from

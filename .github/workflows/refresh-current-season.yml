@@ -1,24 +1,16 @@
 name: Refresh Current Season
 
-# Pulls the latest race results, qualifying, sprint and standings for the
-# current calendar year from the Jolpica API, commits the bundle (so future
-# builds have it cached), then rebuilds and FTP-deploys the site so the
-# prerendered HTML reflects the new standings.
+# MANUAL FALLBACK ONLY. The nightly + race-weekend polling this used to do
+# (every 10 min Sat/Sun) now runs in the ops loop on the Coolify VPS -
+# ops/loop.sh step 2, see docs/ops-vps.md - because the no-op polls alone
+# were burning ~1,200 free Actions minutes a month.
 #
-# Build + FTP are gated on the bundle actually having changed. So is
-# `npm ci`: the fetch + change-detection path uses only Node built-ins
-# (fetch-season.mjs imports nothing from node_modules), so a no-op poll
-# skips dependency install entirely and bills ~1 minute instead of 2-3.
-# Only a real data change pays for npm ci + build + FTP. workflow_dispatch
-# bypasses the gate so you can force a redeploy.
+# When dispatched by hand it pulls the current calendar year from Jolpica,
+# commits the bundle if it changed, then always rebuilds and deploys (the
+# dispatch bypasses the changed-gate so it doubles as "force redeploy from
+# CI" when the VPS is down).
 
 on:
-  schedule:
-    # 04:00 UTC daily - safety net for off-weekends and anything missed by
-    # the race-weekend cron below.
-    - cron: '0 4 * * *'
-    # Race-weekend polling: every 10 min Sat-Sun UTC. Late US/Mexico races and sprint-quali Fridays are caught by the daily 04:00 run above. Bundle-changed gate keeps most runs no-ops.
-    - cron: '*/10 * * * 6,0'
   workflow_dispatch:
 
 permissions:
