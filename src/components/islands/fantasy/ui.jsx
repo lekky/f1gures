@@ -18,6 +18,20 @@ export function useAuth() {
     }
     const current = () => client.authStore.record || client.authStore.model || null;
     setState({ user: current(), ready: true });
+
+    // The stored record is a snapshot: `verified` flips server-side when the
+    // player clicks the email link, and nothing tells this tab. Refresh once
+    // on mount so the picks gate opens without a sign-out/sign-in dance. Only
+    // an actual auth rejection clears the store — a network blip must not.
+    if (client.authStore.isValid) {
+      client
+        .collection('users')
+        .authRefresh()
+        .catch((err) => {
+          if (err?.status === 401 || err?.status === 403) client.authStore.clear();
+        });
+    }
+
     return client.authStore.onChange(() => setState({ user: current(), ready: true }));
   }, []);
 

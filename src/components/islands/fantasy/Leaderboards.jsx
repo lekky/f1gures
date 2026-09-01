@@ -18,6 +18,7 @@ import {
   displayNameFor,
   isLocked,
   pbError,
+  teamName,
   fantasyConfigured,
 } from './pb.js';
 import { NotConfigured, Loading, ErrorNote, Empty, TeamDot, useAuth, useTeamMeta } from './ui.jsx';
@@ -386,7 +387,7 @@ function Lineup({ userId, roundId, meta, breakdown }) {
         <div className="fx-lineup-slot">Constructor</div>
         <div className="fx-lineup-driver">
           <TeamDot meta={meta} teamId={pick.constructor} />
-          <span className="fx-lineup-name">{pick.constructor || '—'}</span>
+          <span className="fx-lineup-name">{teamName(meta, pick.constructor)}</span>
         </div>
         {b.constructor?.total != null && (
           <div className="fx-lineup-pts t-mono">{Math.round(b.constructor.total)}</div>

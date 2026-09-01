@@ -58,9 +58,21 @@ export function isLocked(round, now = Date.now()) {
 }
 
 // ─── errors ───────────────────────────────────────────────────────────────
+/** True when `message` is PocketBase's own contentless rejection wording. */
+export function isGenericPbMessage(message) {
+  return /^failed to (create|update|delete) record\.?$/i.test(String(message || ''));
+}
+
 /**
  * Unpack a PocketBase ApiError into something a form can render.
- * @returns {{message: string, fields: string[], slots: string[], status: number}}
+ *
+ * `message` is left exactly as the server sent it — the hook puts the human
+ * reason there (several joined with " · "). Callers that can say something
+ * better about a generic message check `isGenericPbMessage` themselves;
+ * rewriting here would put pick wording on a league error.
+ *
+ * @returns {{message: string, fields: string[], slots: string[],
+ *            codes: Record<string, string>, status: number}}
  */
 export function pbError(err, fallback = 'Something went wrong. Please try again.') {
   const status = err?.status || 0;
@@ -68,19 +80,16 @@ export function pbError(err, fallback = 'Something went wrong. Please try again.
   const data = resp?.data && typeof resp.data === 'object' ? resp.data : {};
   const fields = Object.keys(data);
 
+  const codes = {};
+  for (const f of fields) codes[f] = data[f]?.code || '';
+
   // driverA…driverD map back to slot letters so the board can flag a column.
   const slots = fields
     .map((f) => (/^driver[ABCD]$/.test(f) ? f.slice(-1) : f === 'constructor' || f === 'boost' ? f : null))
     .filter(Boolean);
 
-  let message = resp?.message || err?.message || fallback;
-  // PocketBase's own generic wording is useless to a player — the API rule
-  // fires before the hook, so a locked round arrives as "Failed to create record."
-  if (/^failed to (create|update) record\.?$/i.test(message)) {
-    message =
-      'The server refused this lineup. If the round has just locked, picks are closed — reload the page.';
-  }
-  return { message, fields, slots, status };
+  const message = resp?.message || err?.message || fallback;
+  return { message, fields, slots, codes, status };
 }
 
 // ─── reads ────────────────────────────────────────────────────────────────
@@ -275,10 +284,18 @@ export async function loadTeamMeta(year) {
   return promise;
 }
 
+function teamMeta(meta, teamId) {
+  if (!teamId) return null;
+  return meta?.[teamId] || meta?.[TEAM_ID_ALIAS[teamId]] || null;
+}
+
 export function teamColor(meta, teamId) {
-  if (!teamId) return 'var(--line-3)';
-  const hit = meta?.[teamId] || meta?.[TEAM_ID_ALIAS[teamId]];
-  return hit?.color || 'var(--line-3)';
+  return teamMeta(meta, teamId)?.color || 'var(--line-3)';
+}
+
+/** Display name for a teamId, falling back to the id itself. */
+export function teamName(meta, teamId) {
+  return teamMeta(meta, teamId)?.name || teamId || '—';
 }
 
 // ─── display names ────────────────────────────────────────────────────────

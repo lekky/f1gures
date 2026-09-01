@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   pb,
   pbError,
+  isGenericPbMessage,
   fantasyConfigured,
   loadSeason,
   loadStandings,
@@ -132,12 +133,18 @@ function Leagues({ user }) {
       await load();
     } catch (err) {
       const info = pbError(err);
+      // A second join violates the unique(league, user) index; PocketBase
+      // reports that as a per-field `validation_not_unique`, and its top-level
+      // message stays the contentless "Failed to create record."
+      const already = Object.values(info.codes).includes('validation_not_unique');
       setError(
         info.status === 404
           ? 'No league has that code. Check it with whoever sent it.'
-          : /unique|already/i.test(info.message)
+          : already
             ? 'You are already in that league.'
-            : info.message
+            : isGenericPbMessage(info.message)
+              ? 'The server refused that. Check the code and try again.'
+              : info.message
       );
     } finally {
       setBusy('');

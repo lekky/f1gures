@@ -17,6 +17,7 @@ import {
   SLOT_FIELD,
   pb,
   pbError,
+  isGenericPbMessage,
   fantasyConfigured,
   loadSeason,
   loadRounds,
@@ -29,6 +30,7 @@ import {
   tierExhausted,
   pickableRound,
   isLocked,
+  teamName,
   formatDateTime,
 } from './pb.js';
 import {
@@ -230,7 +232,14 @@ function Board({ user }) {
       await load();
     } catch (err) {
       const info = pbError(err, 'The server refused this lineup.');
-      setSaveError(info.message);
+      // The picks API rule fires *before* the validation hook, so a submission
+      // to a round that locked a moment ago comes back as PocketBase's own
+      // contentless "Failed to create record." — say something useful instead.
+      setSaveError(
+        isGenericPbMessage(info.message)
+          ? 'The server refused this lineup. If the round has just locked, picks are closed — reload the page.'
+          : info.message
+      );
       setBadSlots(info.slots);
     } finally {
       setSaving(false);
@@ -364,6 +373,7 @@ function TierColumn({
               checked={boost === slot}
               onChange={() => onBoost(slot)}
               disabled={disabled}
+              aria-label={`Boost the Tier ${slot} driver`}
             />
             <span>Boost ×1.5</span>
           </label>
@@ -386,6 +396,9 @@ function TierColumn({
                 onClick={() => selectable && onChoose(slot, row.entry)}
                 disabled={!selectable}
                 aria-pressed={isSel}
+                aria-label={`${entry?.name || entry?.code || 'Driver'} — Tier ${slot}, ${
+                  Number.isFinite(left) ? `${left} start${left === 1 ? '' : 's'} left` : 'no cap'
+                }`}
               >
                 <span className="fx-tierrow-rank t-mono">{row.rank}</span>
                 <TeamDot meta={meta} teamId={entry?.teamId} title={entry?.teamName} />
@@ -441,6 +454,9 @@ function ConstructorPicker({ teams, meta, usage, cap, value, onChange, disabled,
               onClick={() => !disabled && !atCap && onChange(t.teamId)}
               disabled={disabled || atCap}
               aria-pressed={isSel}
+              aria-label={`${t.teamName} — ${
+                Number.isFinite(left) ? `${left} start${left === 1 ? '' : 's'} left` : 'no cap'
+              }`}
             >
               <TeamDot meta={meta} teamId={t.teamId} title={t.teamName} />
               <span className="fx-teamchip-name">{t.teamName}</span>
@@ -451,7 +467,7 @@ function ConstructorPicker({ teams, meta, usage, cap, value, onChange, disabled,
       </div>
       <div className="fx-hint">
         Your constructor scores both its cars’ race and qualifying points. There is no emergency
-        pick for constructors — with eleven teams a legal one always exists.
+        pick for constructors — with {teams.length} teams a legal one always exists.
       </div>
     </div>
   );
@@ -498,7 +514,7 @@ function ScoreBreakdown({ score, meta }) {
                 <td className="fx-score-slot">C’tor</td>
                 <td>
                   <TeamDot meta={meta} teamId={con.teamId} />
-                  <span className="t-mono"> {con.teamId || '—'}</span>
+                  <span> {teamName(meta, con.teamId)}</span>
                 </td>
                 <td className="t-num t-mono">—</td>
                 <td className="t-num t-mono">{con.total != null ? Math.round(con.total) : '—'}</td>
