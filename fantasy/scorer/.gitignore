@@ -1,0 +1,4 @@
+# Scratch space for local integration runs: a private copy of the PocketBase
+# binary, migrations, hooks and pb_data so a scorer test never shares a
+# database with the backend workstream's own dev server.
+.local/
