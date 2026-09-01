@@ -824,21 +824,27 @@ describe('replaySeason - 2026 round 12 worked example', () => {
   const bundle = loadBundle(2026);
   const ctx = buildContext(bundle, 12, seedHistory(loadBundle(2025)));
   const scores = scoreRound(bundle, 12, ctx);
-  // The rulebook's §13 example is hand-computed from the race weekend only;
-  // Zandvoort 2026 is a sprint weekend in the bundle, so the published figures
-  // are the totals net of the sprint table (§6.8).
-  const netOfSprint = code => scores.drivers[code].total - scores.drivers[code].sprint;
+  // Zandvoort 2026 is a sprint weekend: RUS won the sprint (+15), NOR P3 (+10),
+  // ANT P4 (+8), VER P6 (+6), HAM P7 (+5), HUL retired (0), the rest +1.
+  const total = code => scores.drivers[code].total;
 
-  it('reproduces the published driver totals', () => {
-    expect(netOfSprint('NOR')).toBe(87);
-    expect(netOfSprint('ANT')).toBe(60);
-    expect(netOfSprint('RUS')).toBe(57);
-    expect(netOfSprint('ALO')).toBe(50);
-    expect(netOfSprint('HUL')).toBe(47);
-    expect(netOfSprint('HAM')).toBe(44);
-    expect(netOfSprint('BOT')).toBe(10);
-    expect(netOfSprint('VER')).toBe(6);
-    expect(netOfSprint('BEA')).toBe(0);
+  it('reproduces the published driver totals (rulebook §13, sprint included)', () => {
+    expect(total('NOR')).toBe(97);
+    expect(total('RUS')).toBe(72);
+    expect(total('ANT')).toBe(68);
+    expect(total('ALO')).toBe(51);
+    expect(total('HAM')).toBe(49);
+    expect(total('HUL')).toBe(47);
+    expect(total('VER')).toBe(12);
+    expect(total('BOT')).toBe(11);
+    expect(total('BEA')).toBe(1);
+  });
+
+  it('pays the sprint table on top of the race-weekend components', () => {
+    expect(scores.drivers.RUS.sprint).toBe(15);
+    expect(scores.drivers.NOR.sprint).toBe(10);
+    expect(scores.drivers.HUL.sprint).toBe(0);
+    expect(scores.drivers.BEA.sprint).toBe(1);
   });
 
   it('breaks the winner s score down the way the rulebook does', () => {
@@ -859,13 +865,12 @@ describe('replaySeason - 2026 round 12 worked example', () => {
     expect(scores.constructors.mclaren).toBe(95);
   });
 
-  it('totals the worked-example lineup at 311 net of the sprint', () => {
-    const net = { drivers: {}, constructors: scores.constructors };
-    for (const [code, s] of Object.entries(scores.drivers)) net.drivers[code] = { ...s, total: s.total - s.sprint };
-    const { total } = scorePicks(
+  it('totals the worked-example lineup at 329 (Alonso boosted: ceil(51 * 1.5) = 77)', () => {
+    const { total, breakdown } = scorePicks(
       { A: 'NOR', B: 'HAM', C: 'ALO', D: 'BOT', constructor: 'mclaren', boost: 'C' },
-      net,
+      scores,
     );
-    expect(total).toBe(311);
+    expect(breakdown.C.final).toBe(77);
+    expect(total).toBe(329);
   });
 });
