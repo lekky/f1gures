@@ -56,7 +56,9 @@ node seed-dev.mjs               # season 2026, 5 rounds, 20 entries, tiers, 2 us
 Useful flags: `.\dev.ps1 -Reset` wipes `pb_data/` for a clean migrate;
 `.\dev.ps1 -NoServe` migrates and exits; `.\dev.ps1 -Port 8791` if 8090 is taken
 (pass `PORT=8791 ./dev.sh` on Unix). `node seed-dev.mjs --reset` clears the
-fantasy rows before re-seeding. All of `PB_URL`, `PB_SUPERUSER_EMAIL` and
+`fantasy_*` rows before re-seeding but **deliberately leaves `users` alone**, so
+accounts anyone is mid-test with survive; use `-Reset` on `dev.ps1` to drop the
+database entirely. All of `PB_URL`, `PB_SUPERUSER_EMAIL` and
 `PB_SUPERUSER_PASSWORD` are honoured by the seeder.
 
 `dev.ps1`/`dev.sh` pass absolute `--dir` / `--migrationsDir` / `--hooksDir`
@@ -96,11 +98,17 @@ collection, with a `displayName` text field added by the first migration.
 | `fantasy_standings` | `season` `scope` `user` `points` `bestWeekend` `weeksTop` `splitWins` | `(season, scope, user)` |
 | `fantasy_leagues` | `name` `code` `owner` | `code` |
 | `fantasy_league_members` | `league` `user` | `(league, user)` |
+| `fantasy_profiles` | *(view)* `id` `displayName` | — |
 
 Notes worth knowing before you build against it:
 
 - **`constructor` is a `teamId` string, not a relation.** Constructors live in
-  the season bundle (`public/data/<year>.json`), not in PocketBase.
+  the season bundle (`public/data/<year>.json`), not in PocketBase. Use that
+  bundle's `teams[].id` vocabulary verbatim — `alpine`, `aston`, `audi`,
+  `cadillac`, `ferrari`, `haas`, `mclaren`, `mercedes`, `rb`, `redbull`,
+  `williams` for 2026. It is what the scorer writes, so an invented id (e.g.
+  `red_bull`, `sauber`) produces picks that silently score zero. `seed-dev.mjs`
+  mirrors the bundle, driver→team pairings included.
 - **`driverA..D` are optional.** Rulebook §5 carry-forward: "a slot that can't
   legally carry over stays empty and scores 0", so the scorer must be able to
   write a partial lineup.
@@ -113,6 +121,29 @@ Notes worth knowing before you build against it:
 - **`scope`** on standings is `"season"` or `"split-1"`, `"split-2"`, … (§11).
 - Every relation cascades on delete, so removing a season removes its rounds,
   entries, tiers, picks and scores with it.
+
+### Showing other players' names: `fantasy_profiles`
+
+`users` keeps the default auth `viewRule` of `id = @request.auth.id`, so
+`?expand=user` on a standings or pick-scores row resolves **only for the
+signed-in player** — a leaderboard built that way shows one real name and a
+column of blanks. Do not loosen the `users` rule to fix this: it would publish
+email, `verified` and the auth timestamps along with the name.
+
+Read names from the `fantasy_profiles` **view collection** instead. Its fields
+are derived from `SELECT id, displayName FROM users`, so email and friends are
+not hidden-but-present, they are not in the collection at all. Both read rules
+are `""` (public); view collections are read-only by construction, so there is
+nothing else to lock down.
+
+```js
+const profiles = await pb.collection('fantasy_profiles').getFullList();
+const nameById = new Map(profiles.map((p) => [p.id, p.displayName]));
+// join against fantasy_standings.user / fantasy_pick_scores.user
+```
+
+Ids match `users.id`, so it also works as `?expand=` fodder wherever a relation
+points at `fantasy_profiles`.
 
 ### API rules
 
@@ -272,7 +303,7 @@ env vars.
 Migrations run automatically on start (`--automigrate` defaults to true, and the
 committed migrations are applied by the migrations runner). Watch the deploy log
 for `Applied 1788220800_users_display_name.js` … through
-`Applied 1788221200_fantasy_leagues.js`.
+`Applied 1788221300_fantasy_profiles.js`.
 
 Then create the real superuser — once, over the console:
 

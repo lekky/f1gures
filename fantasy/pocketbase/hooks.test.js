@@ -38,7 +38,7 @@ function ctx(over = {}) {
     slots: {
       A: { entryId: 'e_pia', code: 'PIA', name: 'Oscar Piastri', tier: 'A', usage: 0, emergency: false, tierExhausted: false },
       B: { entryId: 'e_sai', code: 'SAI', name: 'Carlos Sainz', tier: 'B', usage: 1, emergency: false, tierExhausted: false },
-      C: { entryId: 'e_hul', code: 'HUL', name: 'Nico Hulkenberg', tier: 'C', usage: 0, emergency: false, tierExhausted: false },
+      C: { entryId: 'e_hul', code: 'HUL', name: 'Nico Hülkenberg', tier: 'C', usage: 0, emergency: false, tierExhausted: false },
       D: { entryId: 'e_bor', code: 'BOR', name: 'Gabriel Bortoleto', tier: 'D', usage: 2, emergency: false, tierExhausted: false },
     },
   };

@@ -54,44 +54,52 @@ const ROUNDS = [
   { round: 5, name: 'Chinese Grand Prix',       isSprint: false, lockDays: 14,  status: 'upcoming' },
 ];
 
+// Team ids are the season-bundle vocabulary from public/data/2026.json
+// (`teams[].id`) — the same strings the scorer writes into
+// fantasy_picks.constructor and fantasy_constructor_scores.teamId in
+// production. Do not invent ids here; a mismatch would make dev picks
+// unscoreable against real data.
 const TEAMS = {
-  mclaren: 'McLaren',
+  alpine: 'Alpine F1 Team',
+  aston: 'Aston Martin',
+  audi: 'Audi',
   ferrari: 'Ferrari',
-  red_bull: 'Red Bull',
+  haas: 'Haas F1 Team',
+  mclaren: 'McLaren',
   mercedes: 'Mercedes',
-  aston_martin: 'Aston Martin',
-  alpine: 'Alpine',
+  rb: 'RB F1 Team',
+  redbull: 'Red Bull',
   williams: 'Williams',
-  rb: 'Racing Bulls',
-  haas: 'Haas',
-  sauber: 'Audi',
+  // cadillac (BOT, PER) is in the real 2026 bundle but left out here so the
+  // fixture is a tidy 10 teams x 2 cars = 20 entries, 5 per tier.
 };
 
 // code, driverRef, name, teamId, tier, rank
+// Driver -> team pairings also mirror public/data/2026.json.
 const ENTRIES = [
-  ['NOR', 'norris',     'Lando Norris',       'mclaren',      'A', 1],
-  ['PIA', 'piastri',    'Oscar Piastri',      'mclaren',      'A', 2],
-  ['VER', 'max_verstappen', 'Max Verstappen', 'red_bull',     'A', 3],
-  ['LEC', 'leclerc',    'Charles Leclerc',    'ferrari',      'A', 4],
-  ['RUS', 'russell',    'George Russell',     'mercedes',     'A', 5],
+  ['NOR', 'norris',        'Lando Norris',            'mclaren',  'A', 1],
+  ['PIA', 'piastri',       'Oscar Piastri',           'mclaren',  'A', 2],
+  ['VER', 'max_verstappen', 'Max Verstappen',         'redbull',  'A', 3],
+  ['LEC', 'leclerc',       'Charles Leclerc',         'ferrari',  'A', 4],
+  ['RUS', 'russell',       'George Russell',          'mercedes', 'A', 5],
 
-  ['HAM', 'hamilton',   'Lewis Hamilton',     'ferrari',      'B', 6],
-  ['ANT', 'antonelli',  'Kimi Antonelli',     'mercedes',     'B', 7],
-  ['ALO', 'alonso',     'Fernando Alonso',    'aston_martin', 'B', 8],
-  ['ALB', 'albon',      'Alexander Albon',    'williams',     'B', 9],
-  ['SAI', 'sainz',      'Carlos Sainz',       'williams',     'B', 10],
+  ['HAM', 'hamilton',      'Lewis Hamilton',          'ferrari',  'B', 6],
+  ['ANT', 'antonelli',     'Andrea Kimi Antonelli',   'mercedes', 'B', 7],
+  ['ALO', 'alonso',        'Fernando Alonso',         'aston',    'B', 8],
+  ['ALB', 'albon',         'Alexander Albon',         'williams', 'B', 9],
+  ['SAI', 'sainz',         'Carlos Sainz',            'williams', 'B', 10],
 
-  ['GAS', 'gasly',      'Pierre Gasly',       'alpine',       'C', 11],
-  ['TSU', 'tsunoda',    'Yuki Tsunoda',       'red_bull',     'C', 12],
-  ['HAD', 'hadjar',     'Isack Hadjar',       'rb',           'C', 13],
-  ['OCO', 'ocon',       'Esteban Ocon',       'haas',         'C', 14],
-  ['HUL', 'hulkenberg', 'Nico Hulkenberg',    'sauber',       'C', 15],
+  ['GAS', 'gasly',         'Pierre Gasly',            'alpine',   'C', 11],
+  ['TSU', 'tsunoda',       'Yuki Tsunoda',            'rb',       'C', 12],
+  ['HAD', 'hadjar',        'Isack Hadjar',            'redbull',  'C', 13],
+  ['OCO', 'ocon',          'Esteban Ocon',            'haas',     'C', 14],
+  ['HUL', 'hulkenberg',    'Nico Hülkenberg',         'audi',     'C', 15],
 
-  ['STR', 'stroll',     'Lance Stroll',       'aston_martin', 'D', 16],
-  ['COL', 'colapinto',  'Franco Colapinto',   'alpine',       'D', 17],
-  ['LAW', 'lawson',     'Liam Lawson',        'rb',           'D', 18],
-  ['BEA', 'bearman',    'Oliver Bearman',     'haas',         'D', 19],
-  ['BOR', 'bortoleto',  'Gabriel Bortoleto',  'sauber',       'D', 20],
+  ['STR', 'stroll',        'Lance Stroll',            'aston',    'D', 16],
+  ['COL', 'colapinto',     'Franco Colapinto',        'alpine',   'D', 17],
+  ['LIN', 'lindblad',      'Arvid Lindblad',          'rb',       'D', 18],
+  ['BEA', 'bearman',       'Oliver Bearman',          'haas',     'D', 19],
+  ['BOR', 'bortoleto',     'Gabriel Bortoleto',       'audi',     'D', 20],
 ];
 
 const USERS = [
@@ -110,10 +118,10 @@ const HISTORY = {
   'fantasy1@example.com': [
     { round: 1, A: 'NOR', B: 'HAM', C: 'GAS', D: 'STR', constructor: 'mclaren', boost: 'D', total: 214 },
     { round: 2, A: 'NOR', B: 'ANT', C: 'TSU', D: 'COL', constructor: 'mclaren', boost: 'D', total: 187 },
-    { round: 3, A: 'NOR', B: 'ALO', C: 'HAD', D: 'LAW', constructor: 'ferrari', boost: 'C', total: 241 },
+    { round: 3, A: 'NOR', B: 'ALO', C: 'HAD', D: 'LIN', constructor: 'ferrari', boost: 'C', total: 241 },
   ],
   'fantasy2@example.com': [
-    { round: 1, A: 'VER', B: 'SAI', C: 'HUL', D: 'BOR', constructor: 'red_bull', boost: 'D', total: 176 },
+    { round: 1, A: 'VER', B: 'SAI', C: 'HUL', D: 'BOR', constructor: 'redbull',  boost: 'D', total: 176 },
     { round: 2, A: 'LEC', B: 'ALB', C: 'OCO', D: 'BEA', constructor: 'ferrari',  boost: 'C', total: 203 },
     { round: 3, A: 'RUS', B: 'HAM', C: 'GAS', D: 'STR', constructor: 'mercedes', boost: 'D', total: 198 },
   ],
