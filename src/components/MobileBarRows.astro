@@ -9,6 +9,11 @@
 // inside rows still navigate. Include ONCE per page that renders a
 // .belist-wrap — the handler is document-level and guards against double
 // wiring.
+//
+// View transitions: deliberately NO data-astro-rerun. The listener is
+// delegated on `document` (which survives the body swap) and the
+// window.__beRowsWired guard makes it once-per-session by design, so it keeps
+// working on every swapped-in page without re-running.
 ---
 <script is:inline>
   (function () {

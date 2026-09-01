@@ -45,7 +45,10 @@ const jsonLd = {
       </div>
     </div>
 
-    <CompareLauncher client:load />
+    {/* client:idle: the launcher server-renders its empty canvas (same markup
+        the hydrated island paints, so no layout shift); all its work is
+        click-driven and fetch-backed, so it needn't compete with first paint. */}
+    <CompareLauncher client:idle />
 
     <TriviaBoard client:visible />
   </div>

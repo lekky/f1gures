@@ -30,6 +30,69 @@ drivers/teams/circuits, **Stats** = /stats + /records + /compare, **Read** =
   ranks substring matches across drivers, teams, circuits and races. Any
   `[data-search-trigger]` element opens it.
 
+## View transitions
+
+`BaseLayout.astro` mounts Astro's `<ViewTransitions fallback="none" />`.
+Same-origin link clicks are intercepted by Astro's client router, which
+fetches the next page and swaps `<head>` and `<body>` in place, so the chrome
+stays still and only the page body changes. `fallback="none"` means browsers
+without the native View Transitions API keep plain full-page loads (smallest
+blast radius: the rules below only have to hold where the swap happens).
+Astro's own `viewtransitions.css` disables every `::view-transition-*`
+animation under `prefers-reduced-motion`. Enabling the router also turns on
+Astro's `prefetch` (`prefetchAll: true`, hover strategy) for same-origin links.
+
+What the swap does, and what that means for anything you add:
+
+- **Every `<html>` attribute is replaced** with the incoming page's, so the
+  `html.light` theme class and the `year-pending` guard are re-applied from
+  `astro:after-swap` listeners in `BaseLayout.astro`. That event fires inside
+  the swap, before the new page paints — the right place for anything that
+  must be true before first paint. (`astro:page-load` fires after the swap,
+  the URL and `<title>` update and the scripts run — on the initial load too.)
+- **The whole `<body>` is replaced**, except elements with `transition:persist`.
+  The `SeasonStrip` island is persisted (`transition:persist="season-strip"`)
+  so it keeps its React state and never re-mounts or blinks; the nav, mobile
+  top bar and bottom nav carry `transition:name` + `transition:animate="none"`
+  so they are captured as their own still groups. `SearchPalette` is
+  deliberately not persisted (its index cache is module-level, and a persisted
+  portal would point at the discarded body). Non-persisted islands unmount
+  cleanly (`astro:unmount` → `root.unmount()`) and the incoming page's islands
+  hydrate as normal, including `RaceCountdown`, which re-reads the new
+  `<race-countdown>` markup on mount. Anything a third-party script injected
+  into `<body>` is lost unless carried over on `astro:before-swap` — see the
+  Buy Me a Coffee hand-off in `BaseLayout.astro`.
+- **Inline scripts do not re-run by default.** The router dedupes any
+  `<script is:inline>` whose text (or `src`) matches one already in the
+  document, so a script that is identical on every page runs exactly once per
+  session. That is the rule to design around:
+  - A script that **binds listeners to page elements** (expand/collapse
+    buttons, the records era toggle, the waffle sort toggle, hero flag-wash
+    wipes, mobile table cards, the guide scroll-spy, the 404 helper) needs
+    `data-astro-rerun`, otherwise the second page of the same type gets a dead
+    UI. It then re-runs after every swap (after paint — fine for wiring).
+  - A script that should run **once per session** (the GA4 tag, the BMC
+    loader, the history-state guard, delegated document-level handlers like
+    the More sheet and `MobileBarRows`) must NOT get `data-astro-rerun`, and
+    must not assume the body it saw at load is the current one — look elements
+    up at event time (delegation) or re-apply on `astro:after-swap`.
+  - Bundled `<script>` (no `is:inline`) modules also run once; use an
+    `astro:page-load` listener if they touch per-page DOM.
+- **GA4** sends a `page_view` per client-side navigation (on `astro:page-load`
+  when the pathname changed). If the property's Enhanced Measurement "page
+  changes based on browser history events" is on, that would double-count —
+  keep it off.
+- **History state**: the router stores `{ index, scrollX, scrollY }` in
+  `history.state` and ignores popstate events whose state is `null`. Islands
+  that write in-page state (`?session=`, `?viz=`, `?vs=`, `?e=`) go through a
+  small guard in `BaseLayout.astro` that merges those fields in, so Back keeps
+  working; prefer spreading `history.state` when adding new pushes anyway.
+  Back from an island-pushed entry (closing the viz modal) currently triggers
+  a same-page refetch/swap rather than an in-place close — harmless, but a
+  known follow-up.
+- Year changes (`SeasonStrip.pick()`) and search-palette selections still
+  navigate via `location.href` — full loads on purpose.
+
 ## Pages
 
 ### Year-aware listing pages (React island bodies)

@@ -86,7 +86,9 @@ const jsonLd = top.length > 0 ? {
     <MobileBarRows />
   </main>
 
-  <script is:inline>
+  <script is:inline data-astro-rerun>
+    // Era toggle. data-astro-rerun: binds per-page buttons; must re-run after
+    // every view-transition swap (identical scripts are otherwise deduped).
     (function () {
       const root = document.querySelector('.records-page');
       if (!root) return;

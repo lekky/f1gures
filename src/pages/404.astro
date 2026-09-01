@@ -51,7 +51,10 @@ const description = "Sorry, we couldn't find that page. Search the archive, or b
   </div>
 </BaseLayout>
 
-<script is:inline>
+<script is:inline data-astro-rerun>
+  // data-astro-rerun: a broken in-site link reaches this page through the view
+  // transition router too (the 404 document is swapped in), and the script
+  // reads the URL + fills page-specific elements, so it must run per page.
   (function () {
     var path = window.location.pathname || '';
     var urlEl = document.getElementById('p404-url');
