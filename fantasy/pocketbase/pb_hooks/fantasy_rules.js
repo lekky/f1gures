@@ -303,7 +303,15 @@ function validatePickSubmission(ctx) {
   return { ok: errors.length === 0, errors: errors };
 }
 
-/** Turn the error list into PocketBase's `{ field: {code, message} }` shape. */
+/**
+ * Map the error list to the ApiError `data` payload — field name -> detail.
+ *
+ * NOTE: PocketBase normalises whatever it is handed here into its own
+ * `{code: "validation_invalid_value", message: "Invalid value."}` shape, so
+ * the *keys* are what survives and matter (they tell a client which inputs to
+ * highlight). The human reason lives in the top-level message from
+ * `summarise()` — see README, "Error shape".
+ */
 function toFieldErrors(errors) {
   var out = {};
   for (var i = 0; i < errors.length; i++) {
@@ -314,11 +322,18 @@ function toFieldErrors(errors) {
   return out;
 }
 
-/** One-line summary for the top-level ApiError message. */
+/**
+ * Top-level ApiError message. Every reason is included — a lineup can fail
+ * several checks at once and the player needs to see all of them, not just
+ * the first.
+ */
 function summarise(errors) {
   if (!errors.length) return 'Invalid pick.';
   if (errors.length === 1) return errors[0].message;
-  return errors.length + ' problems with this pick: ' + errors[0].message;
+
+  var parts = [];
+  for (var i = 0; i < errors.length; i++) parts.push(errors[i].message);
+  return parts.join(' · ');
 }
 
 module.exports = {

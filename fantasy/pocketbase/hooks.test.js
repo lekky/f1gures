@@ -350,6 +350,21 @@ describe('error mapping', () => {
     );
   });
 
+  it('summarises one error verbatim and joins several', () => {
+    const one = validatePickSubmission(ctx({ boost: 'A' }));
+    expect(rules.summarise(one.errors)).toBe(
+      'Boost must be on your Tier C or Tier D driver (got "A").'
+    );
+
+    const many = validatePickSubmission(
+      ctx({ boost: 'A', constructor: { teamId: 'mclaren', usage: 2 } })
+    );
+    const text = rules.summarise(many.errors);
+    expect(text.split(' · ')).toHaveLength(2);
+    expect(text).toContain('Tier C or Tier D');
+    expect(text).toContain('Pick a different constructor');
+  });
+
   it('keys field errors the way PocketBase expects', () => {
     const res = validatePickSubmission(
       ctx({
