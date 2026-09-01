@@ -161,10 +161,12 @@ export class PbClient {
    * Every record matching `filter`, following pagination.
    *
    * @param {string} collection
-   * @param {{filter?: string, sort?: string, expand?: string, perPage?: number}} [opts]
+   * @param {string|{filter?: string, sort?: string, expand?: string, perPage?: number}} [opts]
+   *   a bare filter string is accepted as shorthand
    * @returns {Promise<object[]>}
    */
-  async listAll(collection, { filter = '', sort = '', expand = '', perPage = 500 } = {}) {
+  async listAll(collection, opts = {}) {
+    const { filter = '', sort = '', expand = '', perPage = 500 } = typeof opts === 'string' ? { filter: opts } : opts;
     const out = [];
     for (let page = 1; ; page++) {
       const params = new URLSearchParams({ page: String(page), perPage: String(perPage), skipTotal: 'true' });

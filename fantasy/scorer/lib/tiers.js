@@ -6,7 +6,7 @@
 // doesn't — tiers for the round that hasn't happened yet, published before
 // picks open (rulebook §3).
 
-import { RULES, computeTiers, replaySeason, seedHistory } from '../../../src/lib/fantasyScoring.mjs';
+import { RULES, computeTiers, entryList, replaySeason, seedHistory } from '../../../src/lib/fantasyScoring.mjs';
 
 /**
  * Replay every scored round of a season.
@@ -27,22 +27,30 @@ export function replay(bundle, prevBundle, opts = {}) {
  * Tiers for the next, unraced round.
  *
  * Two judgement calls the engine can't make on its own:
- *  - **Entry list.** `entryList` reads a round's classification, which an
- *    unraced round has none of. The grid that raced last weekend is the best
- *    available forecast of who is entered next weekend, so that is what the
- *    published tiers use. The scorer re-publishes on every run, so a driver
- *    change is picked up as soon as the bundle carries it.
+ *
+ *  - **Entry list.** `entryList` reads a round's classification. Once the
+ *    weekend's qualifying has run, the bundle's `pendingQuali` record gives the
+ *    real entry list and that is used verbatim. Before then, the grid that
+ *    raced last weekend is the best available forecast. Either way the scorer
+ *    re-publishes on every run, so a driver change is picked up as soon as the
+ *    bundle carries it.
  *  - **prevTiers.** The stability rule (§3) needs the previous round's
- *    published cut; that is the last replayed round's tiers.
+ *    published cut — the last replayed round's tiers, or nothing at all in
+ *    round 1, where there is no previous cut to be stable against.
+ *
+ * With no rounds replayed (round 1 of a season) the whole ranking comes from
+ * the previous season's tail, which is exactly §3's "round 1 tiers are seeded
+ * from the final 6 rounds of the previous season, rescored under these rules".
  *
  * @param {object} args
  * @param {{round: number, scores: object, tiers: object[], context: object}[]} args.replayed
  * @param {object|null} args.prevBundle
+ * @param {object} [args.bundle] this season's bundle, for a `pendingQuali` entry list
+ * @param {number|null} [args.nextRound] the round being published
  * @param {{window?: number, hysteresis?: number, tierCount?: number}} [args.opts]
  * @returns {{code: string, tier: string, rank: number, avgPts: number}[]}
  */
-export function tiersForNextRound({ replayed, prevBundle, opts = {} }) {
-  if (!replayed.length) return [];
+export function tiersForNextRound({ replayed, prevBundle, bundle = null, nextRound = null, opts = {} }) {
   const window = opts.window ?? RULES.TIER_WINDOW;
   const hysteresis = opts.hysteresis ?? RULES.TIER_HYSTERESIS;
   const tierCount = opts.tierCount ?? RULES.TIER_LETTERS.length;
@@ -58,16 +66,13 @@ export function tiersForNextRound({ replayed, prevBundle, opts = {} }) {
     }
   }
 
-  const last = replayed[replayed.length - 1];
-  const prevTiers = Object.fromEntries(last.tiers.map(t => [t.code, t.tier]));
-  return computeTiers({
-    entries: last.context.entries,
-    history,
-    prevTiers,
-    hysteresis,
-    window,
-    tierCount,
-  });
+  const last = replayed.length ? replayed[replayed.length - 1] : null;
+  const pending = bundle && nextRound != null ? entryList(bundle, nextRound) : [];
+  const entries = pending.length ? pending : (last ? last.context.entries : []);
+  if (!entries.length) return [];
+
+  const prevTiers = last ? Object.fromEntries(last.tiers.map(t => [t.code, t.tier])) : null;
+  return computeTiers({ entries, history, prevTiers, hysteresis, window, tierCount });
 }
 
 /**

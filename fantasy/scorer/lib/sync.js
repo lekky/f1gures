@@ -216,3 +216,23 @@ export function scoredRoundsOf(bundle) {
     .filter(Number.isFinite)
     .sort((a, b) => a - b);
 }
+
+/**
+ * The rounds that have an entry list: scored rounds, plus a round whose
+ * qualifying has run but whose race hasn't (the bundle's `pendingQuali`).
+ *
+ * That second case is what makes round 1 of a season work at all — before the
+ * first race there is no `results` entry to read a grid from, but there is a
+ * qualifying classification, and the rulebook needs published tiers before
+ * picks open (§3).
+ *
+ * @param {object} bundle
+ * @returns {number[]} ascending
+ */
+export function entryRoundsOf(bundle) {
+  const keys = new Set([
+    ...Object.keys((bundle && bundle.results) || {}),
+    ...Object.keys((bundle && bundle.pendingQuali) || {}),
+  ]);
+  return [...keys].map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+}

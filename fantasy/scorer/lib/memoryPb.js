@@ -64,7 +64,9 @@ export class MemoryPb {
     this.planned = [];
   }
 
-  async listAll(collection, { filter = '' } = {}) {
+  /** @param {string|{filter?: string}} [opts] a bare filter string is accepted as shorthand */
+  async listAll(collection, opts = {}) {
+    const { filter = '' } = typeof opts === 'string' ? { filter: opts } : opts;
     this.stats.requests++;
     return [...this._table(collection).values()].filter(r => matchesFilter(r, filter)).map(r => ({ ...r }));
   }

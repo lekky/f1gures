@@ -33,7 +33,7 @@ import { pathToFileURL } from 'node:url';
 
 import { RULES, scorePicks, validatePicks } from '../../src/lib/fantasyScoring.mjs';
 import { PbClient, pbDate, quote, indexBy } from './lib/pb.js';
-import { advanceStatus, planEntries, planRounds, planSeason, scoredRoundsOf } from './lib/sync.js';
+import { advanceStatus, entryRoundsOf, planEntries, planRounds, planSeason, scoredRoundsOf } from './lib/sync.js';
 import { countUsage, dnsCodes, isVoidRound, pickToLineup, refundsFor, resultFingerprint, SLOTS } from './lib/score.js';
 import { latestPickBefore, planCarry } from './lib/carry.js';
 import { buildStandings } from './lib/standings.js';
@@ -159,7 +159,10 @@ export async function runScorer({ pb, bundle, prevBundle = null, year, now = Dat
 
   // --------------------------------------------------------------- entries
   const scoredRounds = scoredRoundsOf(bundle);
-  const entryPlans = planEntries(bundle, scoredRounds);
+  // Entries come from every round with a classification, INCLUDING one whose
+  // qualifying has run but whose race hasn't — that is the only way round 1
+  // has an entry list to publish tiers over.
+  const entryPlans = planEntries(bundle, entryRoundsOf(bundle));
   summary.entries = entryPlans.length;
   const entryRows = indexBy(await pb.listAll('fantasy_entries', { filter: seasonFilter }), r => r.code);
   /** @type {Map<string, object>} driver code → entry record */
@@ -180,7 +183,7 @@ export async function runScorer({ pb, bundle, prevBundle = null, year, now = Dat
   const lastScored = scoredRounds.length ? scoredRounds[scoredRounds.length - 1] : 0;
   const upcoming = nextRoundNumber(bundle, lastScored);
   if (upcoming != null) {
-    const next = tiersForNextRound({ replayed, prevBundle, opts: { tierCount } });
+    const next = tiersForNextRound({ replayed, prevBundle, bundle, nextRound: upcoming, opts: { tierCount } });
     if (next.length) tierPlans.set(upcoming, next);
   }
 
@@ -271,8 +274,16 @@ export async function runScorer({ pb, bundle, prevBundle = null, year, now = Dat
     const roundScores = (replayed.find(s => s.round === plan.round) || {}).scores;
     if (!roundScores) continue;
 
+    // Self-healing: a pick with no score (a run that died half-way, a row
+    // inserted by hand) forces the round through again even though the result
+    // data itself is unchanged.
+    let missingPickScores = false;
+    for (const userId of picksByUser.keys()) {
+      if (pickIndex.has(`${roundRec.id}|${userId}`) && !pickScoreIndex.has(`${roundRec.id}|${userId}`)) missingPickScores = true;
+    }
+
     const wantStatus = advanceStatus(roundRec.status, plan.status);
-    if (settled || unchanged) {
+    if (settled || (unchanged && !missingPickScores)) {
       // Still let a settled round's status catch up (provisional → final).
       if (wantStatus !== roundRec.status) {
         const { record } = await pb.upsert('fantasy_rounds', roundRec, { status: wantStatus });
