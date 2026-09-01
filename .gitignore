@@ -48,3 +48,8 @@ public/.htaccess
 
 # Python bytecode (scripts/fetch-fastf1.py)
 __pycache__/
+
+# fantasy PocketBase local dev (fantasy/pocketbase/dev.ps1) - the downloaded
+# binary and the local SQLite database are never committed.
+fantasy/pocketbase/bin/
+fantasy/pocketbase/pb_data/
