@@ -263,17 +263,19 @@ Untested but complex and cheap to test:
   document it in both files with pointer comments, or generate the worker
   constants from a shared JSON at deploy time.
 
-### 16. Design-system card unification (audit PR 5) never landed
-- `design-system/audit.html` prescribed 5 migration PRs; 1–4 are done
-  (verified: spacing/motion tokens exist, dotted links gone,
-  `.listing-card` squared, `.data-table` deleted). PR 5 — unify the five
-  card systems into a `.card` base + modifiers — is not done: no `.card`
-  base exists and 58 `.race-card/.driver-card/.blog-card/.rec-card`
-  references remain in `app.css`. The Ferrari-vs-`--accent` collision
-  documented there also persists.
-- **Fix:** follow `audit.html`'s prescribed order (introduce `.card`
-  base + `.card-team/.card-accent/.is-next`, reskin `.rec-card` + home
-  top-3 first).
+### 16. Design-system card unification (audit PR 5) — RESOLVED
+- Landed in `feat/card-table-unify`: `.card` base (bg-2 / 1 px line-1 /
+  radius 0 / `--shadow-card` / hover border → line-3 on navigable cards)
+  with `.card-team`, `.card-accent` and `.is-next` modifiers;
+  `.race-card`, `.blog-card`, `.stat`, `.card-accent` and the team page's
+  driver cards are layout-only on top of it; `.driver-card`,
+  `.listing-card` and `.blog-race-card-table` deleted; every surface
+  radius is 0 (TOKENS.md §4 lists the three exceptions). The mobile
+  standings list (`StandingsBars.jsx`) was rebuilt as a dense ranked list
+  in the same PR.
+- Still open from that audit entry: the Ferrari-vs-`--accent` colour
+  collision (documented in `design-system/teams.html`, not yet enforced
+  in CSS).
 
 ---
 

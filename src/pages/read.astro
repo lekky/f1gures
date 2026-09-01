@@ -85,7 +85,7 @@ const jsonLd = {
           <a class="hub-latest-all" href="/blog/">All posts <span class="arrow" aria-hidden="true">›</span></a>
         </div>
 
-        <article class="panel blog-card blog-lede-card blog-lede-card--major hub-feature-card">
+        <article class="card blog-card blog-lede-card blog-lede-card--major hub-feature-card">
           {latest.data.heroImage ? (
             <div class="blog-card-img blog-lede-img">
               <a class="blog-card-img-link" href={`/blog/${latest.slug}/`} aria-hidden="true" tabindex="-1">
@@ -116,7 +116,7 @@ const jsonLd = {
           <ul class="blog-list hub-recent-list">
             {recent.map((post) => (
               <li class="blog-list-item">
-                <div class="panel blog-card">
+                <div class="card blog-card">
                   {post.data.heroImage ? (
                     <div class="blog-card-img">
                       <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">

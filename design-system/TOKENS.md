@@ -140,7 +140,8 @@ hue. Never colour text with the pure team hex.
 
 ### Where team color may land
 
-1. **3 px left strip** on driver cells (`.driver-cell`, `.driver-card`).
+1. **3 px left strip** on driver cells and team cards (`.driver-cell`,
+   `.card-team`, `.stdrow-strip`).
 2. **2–4 px top rule** on team cards / record sections (`.records-section-rule`).
 3. **8–12 px round dot** in search palette, chart legends (`.f1k-team-dot`).
 4. **2 px left strip on chips** (`.driver-chip`).
@@ -189,13 +190,21 @@ inline pixel values in places; follow-up PRs are migrating consumers.
 
 - **Border-only language** — 1 px borders separate surfaces, never shadows.
 - **`border-radius: 0`** is the rule. Exceptions:
-  - `border-radius: 50%` — dots, status indicators (6–12 px).
-  - `border-radius: 6px` — segmented controls, sort buttons. (Audit:
-    `.listing-card` 8 px is **flagged** for unification on 0.)
+  - `border-radius: 50%` — dots, status indicators (6–12 px), avatars.
+  - `border-radius: 6px` — segmented controls only (`.theme-switcher`,
+    `.standings-toggle`, `.records-era-toggle`, `.sort-group`, `.cmp-seg`).
+  - `border-radius: 2px` — bitmap thumbnails only (`.flag-img`, 14–30 px
+    team logos, `.sp-tick`) to soften image edges; never on a surface.
+  - Resolved in `feat/card-table-unify`: the 8 px `.listing-card` /
+    `.stdrow` / `.tbl-cards tr` cards, the 4–6 px inputs, page buttons,
+    mobile stat grids, bar tracks and value chips are all 0 now. Don't
+    add a new radius value.
 - **Shadows** only on floating elements:
   - Nav dropdown — `0 12px 32px rgba(0,0,0,.5)`
   - Search palette — `0 24px 64px rgba(0,0,0,.45)`
-  - `.race-card.is-next` — `0 8px 32px rgba(232,0,45,.14)` (accent halo)
+  - `.card.is-next` — `0 8px 32px rgba(232,0,45,.14)` (accent halo)
+  - `--shadow-card` — the quiet lift every `.panel` and `.card` carries
+    (the one "surface" shadow; it's a token, not a per-component value)
 - **Canvas gradient exception** — the flat/border-only rule is for
   *surfaces* (cards, panels, tables). The page canvas (`.f1-app`) is the
   one place a gradient/texture is allowed: it carries a carbon-fibre weave
@@ -270,9 +279,10 @@ state uses `bg-3` background (or `accent` for sort buttons).
 Neutral container. `.panel-head` for uppercase eyebrow row;
 `.panel-tight` kills body padding for tables.
 
-### Stat block — `.stat`
+### Stat block — `.card.stat`
 
 Small label + big value + optional caption. Stack in `.grid grid-{2,3,4}`.
+`.stat` is a layout class on top of `.card` (markup: `class="card stat"`).
 
 ### Callout — `.callout`
 
@@ -301,27 +311,60 @@ One base, one static modifier — `.data-table` was migrated to
   viewports for sortable tables.
 - `.tbl.tbl-static` — read-only modifier for prerendered detail pages
   (driver career table, race results, circuit historical winners,
-  team season-by-season). Suppresses hover, the chevron, and the
-  720 px min-width; mobile cell padding tightens to 8x10 px. Cell-color
-  modifiers `.is-champ-cell` / `.is-win-cell` work in both contexts —
-  they're scoped under `.tbl`.
+  team season-by-season, the blog `<RaceResult>` panel). Suppresses
+  hover, zebra, the chevron, and the 720 px min-width; mobile cell
+  padding tightens to 8x10 px. Cell-color modifiers `.is-champ-cell` /
+  `.is-win-cell` work in both contexts — they're scoped under `.tbl`.
+  Page-specific column tweaks go in a wrapper scope (`.records-table-wrap`,
+  `.blog-race-card .tbl`), never in a third table class —
+  `.blog-race-card-table` was retired in `feat/card-table-unify`.
 
-### Cards
+### Mobile standings list — `.std-barlist > .stdrow`
 
-**Audit warning — five card patterns coexist.** Until unification:
+The ≤720 px replacement for the sortable standings table (`StandingsBars.jsx`):
+one bg-2 list panel, one 56 px row per entry (`.stdrow-head`: `.pos` digit ·
+`.chg` · 3 px `.stdrow-strip` · 32 px `.stdrow-face` · name over team with a
+4 px `.stdrow-bar` under the name sized to the leader's points · 18 px
+`.stdrow-pts` · `›` caret). Tap expands `.stdrow-panel` (grid-rows height
+animation, `--mo`, off under reduced motion) to a one-line mono
+`.stdrow-stats` strip + `.stdrow-foot` profile link. No radius, no glow, no
+`--accent` anywhere in the list.
 
-- `.race-card` — calendar entries. States: default `.is-upcoming`,
-  `.is-completed` (opacity 0.45), `.is-next` (accent border + glow).
-  Always pair with `.race-card-link` to get the corner ↗.
-- `.driver-card` — compact home/listing row. Requires `--team-color`
-  CSS var. 3 px left strip.
-- `.listing-card` — drivers / teams index pages. **Currently 8 px
-  radius** — flagged for migration to 0.
-- `.blog-card` — editorial. 16:9 image + accent left rail. Title is
-  sentence-case (the only card that is).
-- `.card-accent` — record hero card on the records hub. **This is the
-  pattern to follow** for any new "leaderboard" surface. Requires
-  `--card-accent` CSS var.
+### Cards — `.card` + modifiers
+
+One base, three modifiers (audit PR 5, landed in `feat/card-table-unify`).
+
+- `.card` — the surface: `--bg-2`, 1 px `--line-1`, radius 0,
+  `--shadow-card`, `color: inherit`, no underline. Hover (border →
+  `--line-3`) applies only where the card navigates — an `<a>`,
+  `<button>`, or one of the opt-in link classes (`.race-card-link`,
+  `.blog-card`, `.f1-card-link`). Static cards (`.stat`) never hover.
+- `.card-team` — 3 px left strip, colour from `--team`
+  (`style="--team: #FF8000"`). Used by the team page's current / notable
+  driver cards.
+- `.card-accent` — 2 px top rule, colour from `--card-accent`. The records
+  hero pattern (`RecordHeroCard.astro`, circuit all-time leaders). Its hover
+  lifts the whole border to the accent colour — the one modifier-specific
+  hover. **This is the pattern to follow** for any new leaderboard surface.
+- `.is-next` — 2 px `--accent` border + the accent halo + radial wash. The
+  calendar's "next race" card.
+
+Layout classes sit **on top of** `.card` and own only their inner layout —
+never surface, radius or hover:
+
+- `.race-card` — calendar / circuit-index entries (`class="card race-card
+  race-card-link"`). States: `.is-completed` (opacity 0.45), `.is-next`.
+  `.race-card-link` supplies the corner ↗ and the hover.
+- `.blog-card` — editorial (`class="card blog-card"`). 16:9 image + 3 px
+  accent left rail. Title is sentence-case (the only card that is).
+- `.stat` — label + value block (`class="card stat"`).
+- `.current-driver-card` / `.notable-driver-card` — team page
+  (`class="card card-team …"`).
+
+Retired: `.driver-card` and `.listing-card` (no consumers; deleted),
+`.rec-card` (renamed `.card-accent` earlier). Don't add a new card class
+that redefines background / border / radius / hover — add a layout class
+on top of `.card` instead.
 
 ### Search palette — `.f1k-*`
 
@@ -398,9 +441,14 @@ When authoring new CSS:
 
 See `audit.html` for full migration plan. **Don't add new instances of:**
 
-- A 3rd table class. `.data-table` was retired in audit PR 4 — use
-  `.tbl` (interactive) or `.tbl.tbl-static` (read-only).
-- `border-radius: 8px` (or any radius other than 0 / 50%)
+- A 3rd table class. `.data-table` (audit PR 4) and
+  `.blog-race-card-table` (PR 5) are gone — use `.tbl` (interactive) or
+  `.tbl.tbl-static` (read-only) and scope column tweaks on a wrapper.
+- A card class that defines its own surface. `.card` is the only place
+  background / border / radius / hover live; `.card-team`, `.card-accent`
+  and `.is-next` are the only modifiers.
+- `border-radius: 8px` (or any radius other than 0 / 50% / the documented
+  6 px segmented-control and 2 px thumbnail exceptions)
 - Dotted `border-bottom` on link surfaces. Inline links across data
   surfaces (`.tbl.tbl-static a`, `.podium-name a`, `.record-row a`,
   `.inline-link`, etc.) share a single canonical underline rule in
@@ -422,7 +470,8 @@ See `audit.html` for full migration plan. **Don't add new instances of:**
 - Team color belongs on a strip / dot / rule / chip — not a fill.
 - Numbers are always mono and tabular (`font-variant-numeric: tabular-nums;`
   or use `.t-mono` / `.t-num`).
-- Cards never get `box-shadow` unless they're `.race-card.is-next`.
+- Cards carry only the `--shadow-card` token; the accent halo is reserved
+  for `.card.is-next`.
 - Hover state is always a border-color change. Never scale.
 - Mobile-first responsive: prefer CSS `@media (max-width: 720px)` over
   JS `useIsMobile()` for layout (see CLAUDE.md repo convention).

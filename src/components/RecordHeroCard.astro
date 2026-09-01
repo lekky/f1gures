@@ -74,7 +74,7 @@ const holderTeamLogo  = record.subjectType === 'team'
   : isPrincipal ? teamLogo(holder?.teamRef) : null;
 ---
 {holder && (
-  <a class="card-accent" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
+  <a class="card card-accent" href={`/records/${record.id}/`} style={`--card-accent: ${accent}`}>
     <header class="card-accent-head">
       <span class="card-accent-eyebrow">{record.title}</span>
       <span class="card-accent-arrow" aria-hidden="true">↗</span>

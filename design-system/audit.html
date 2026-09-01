@@ -103,6 +103,7 @@
         <h3>Two table systems</h3>
         <span class="where">.tbl · .data-table · .blog-race-card-table</span>
         <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Three table classes co-exist with overlapping but non-identical specs. Padding, header background, hover behaviour, row-divider rule, and the inline-link treatment differ.</p>
+        <p class="ds-prose" style="margin: 10px 0 0; font-size: 13px;"><strong>Resolved in PR feat/card-table-unify.</strong> <code>.data-table</code> went in audit PR 4; this PR retired <code>.blog-race-card-table</code> (blog <code>&lt;RaceResult&gt;</code> now renders <code>.tbl.tbl-static</code> with column tweaks scoped on <code>.blog-race-card .tbl</code>) and made <code>.tbl-static</code> also switch the zebra tint off. One base, one modifier.</p>
       </div>
       <div class="audit-body">
         <div class="audit-half bad">
@@ -170,6 +171,7 @@
         <h3>Five card systems</h3>
         <span class="where">.race-card · .driver-card · .listing-card · .blog-card · .rec-card · .stat</span>
         <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">Every card has its own border-left rule, hover effect, arrow position, and (worst) <em>different border-radius</em>. The records card is the only one that feels alive.</p>
+        <p class="ds-prose" style="margin: 10px 0 0; font-size: 13px;"><strong>Resolved in PR feat/card-table-unify.</strong> <code>.card</code> is now the single surface (bg-2, 1 px line-1, radius 0, <code>--shadow-card</code>, hover border → line-3 on navigable cards) with modifiers <code>.card-team</code> (3 px strip from <code>--team</code>), <code>.card-accent</code> (2 px top rule from <code>--card-accent</code>) and <code>.is-next</code> (accent border + glow). <code>.race-card</code>, <code>.blog-card</code>, <code>.stat</code>, <code>.card-accent</code> and the team page's driver cards keep only their inner layout on top of it; <code>.driver-card</code> and <code>.listing-card</code> (no consumers) were deleted. See TOKENS.md §6 · Cards.</p>
       </div>
       <div class="audit-body">
         <div class="audit-half bad">
@@ -204,6 +206,7 @@
         <h3>Mixed border-radius</h3>
         <span class="where">.listing-card 8 px · .theme-switcher 6 px · everything else 0</span>
         <p class="ds-prose" style="margin: 8px 0 0; font-size: 13px;">f1gures is a hard-corner system — every panel, callout, pill and chart uses 0. Two outliers (listing card, theme switcher, sort buttons) carry an 8 / 6 px radius. Either kill the radius, or apply it consistently. Pick zero — it's the dominant rule.</p>
+        <p class="ds-prose" style="margin: 10px 0 0; font-size: 13px;"><strong>Resolved in PR feat/card-table-unify.</strong> Every surface radius is 0: the 8 px mobile standings rows and <code>.tbl-cards</code> cards, the 4–6 px inputs, page buttons, stat grids, bar tracks and value chips. The documented exceptions are 50 % dots/avatars, 6 px on segmented controls only, and 2 px on bitmap thumbnails (flags, small team logos). See TOKENS.md §4.</p>
       </div>
       <div class="audit-body">
         <div class="audit-half bad">

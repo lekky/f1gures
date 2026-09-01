@@ -905,7 +905,7 @@ html.light .nav-logo .wm-light { display: block; }
 .sag-champ-media-team { padding-top: 4px; }
 .sag-champ-face {
   width: 92px; height: 104px; object-fit: cover; object-position: top center;
-  border-radius: 8px; background: var(--bg-3);
+  border-radius: 0; background: var(--bg-3);
   border: 2px solid var(--tc, var(--line-2)); box-shadow: var(--shadow-card);
 }
 .sag-champ-face-fallback { display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
@@ -1481,10 +1481,9 @@ html.light .tab.live { color: #c10021; }
 /* ============================================================
    STAT BLOCK / KPI
    ============================================================ */
+/* Layout on top of .card (markup: class="card stat"). */
 .stat {
   padding: 14px;
-  border: 1px solid var(--line-1);
-  background: var(--bg-2);
   display: flex; flex-direction: column; gap: 6px;
 }
 .stat-lbl {
@@ -1560,45 +1559,64 @@ html.light .tab.live { color: #c10021; }
 }
 
 /* ============================================================
-   RACE CARD
+   CARD BASE  [feat/card-table-unify · Part B]
+   One surface for every card (design-system/audit.html · #cards):
+   bg-2, 1 px --line-1, radius 0, --shadow-card (the same lift as
+   .panel), hover = border -> --line-3 on interactive cards only.
+   Variants only change where the colour lands:
+     .card-team    3 px left strip, colour from --team
+     .card-accent  2 px top rule, colour from --card-accent (records hero)
+     .is-next      accent border + glow (the calendar's "next race")
+   Layout classes (.race-card, .blog-card, .stat, .current-driver-card,
+   .notable-driver-card) sit ON TOP of .card and own only their inner
+   layout - never surface, radius or hover. The top-right arrow is the
+   existing Pattern 1 affordance (.f1-card-link / .race-card-link /
+   .blog-card), the row chevron is Pattern 1b - one per element, never
+   two (see the affordance-exclusivity note further down).
    ============================================================ */
-.race-card {
-  position: relative; padding: 16px; cursor: pointer;
-  background: var(--bg-2); border: 1px solid var(--line-1);
+.card {
+  position: relative;
+  box-sizing: border-box;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: 0;
   box-shadow: var(--shadow-card);
-  display: flex; flex-direction: column; gap: 12px;
-  transition: border-color .12s, background .12s, box-shadow .12s;
-  min-height: 200px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--mo, 120ms) ease, background var(--mo, 120ms) ease;
 }
-.race-card:hover { border-color: var(--line-3); background: var(--bg-elevated); }
-
-/* Completed - recede into history */
-.race-card.is-completed {
-  opacity: 0.45;
-  border-color: var(--line-1);
-}
-.race-card.is-completed:hover { opacity: 0.75; border-color: var(--line-2); }
-
-/* Next - dominant focal point */
-.race-card.is-next {
+/* Hover only where the card navigates (anchor, button, or an opt-in link class). */
+.card:where(a, button, .race-card-link, .blog-card, .f1-card-link):hover { border-color: var(--line-3); }
+.card-team { border-left: 3px solid var(--team, var(--line-2)); }
+.card-accent { border-top: 2px solid var(--card-accent, var(--accent)); }
+.card.is-next {
   border: 2px solid var(--accent);
   background: var(--bg-elevated);
   box-shadow: 0 0 0 1px rgba(232,0,45,0.2), 0 8px 32px rgba(232,0,45,0.14);
 }
-.race-card.is-next::before {
+.card.is-next::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(80% 70% at 50% 0%, rgba(232,0,45,0.1) 0%, transparent 65%);
 }
-.race-card.is-next:hover {
+.card.is-next:hover {
   border-color: var(--accent);
   background: var(--bg-elevated);
   box-shadow: 0 0 0 1px rgba(232,0,45,0.35), 0 8px 40px rgba(232,0,45,0.2);
 }
 
-/* Upcoming - clean, forward-looking */
-.race-card.is-upcoming {
-  border-color: var(--line-1);
+/* ============================================================
+   RACE CARD  (layout on top of .card - markup: "card race-card")
+   ============================================================ */
+.race-card {
+  padding: 16px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 12px;
+  min-height: 200px;
 }
+.race-card:hover { background: var(--bg-elevated); }
+
+/* Completed - recede into history */
+.race-card.is-completed { opacity: 0.45; }
+.race-card.is-completed:hover { opacity: 0.75; }
 .race-card-head {
   display: flex; justify-content: space-between; align-items: flex-start;
 }
@@ -1656,7 +1674,7 @@ html.light .tab.live { color: #c10021; }
   font-family: var(--f-mono); font-weight: 700; font-size: 12px;
   line-height: 1; color: #fff;
   background: rgba(10,10,12,0.86);
-  padding: 3px 5px; border-radius: 2px;
+  padding: 3px 5px; border-radius: 0;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
 }
 .cal-row.is-next-row {
@@ -1737,31 +1755,6 @@ html.light .tab.live { color: #c10021; }
   border-radius: 50%; object-fit: cover; object-position: center 12%;
   background: var(--bg-3); border: 1px solid var(--line-2);
 }
-
-/* ============================================================
-   DRIVER CARD (small)
-   ============================================================ */
-.driver-card {
-  background: var(--bg-2);
-  border: 1px solid var(--line-1);
-  box-shadow: var(--shadow-card);
-  padding: 14px;
-  display: flex; gap: 12px; align-items: center;
-  border-left: 3px solid var(--team-color);
-  cursor: pointer;
-  transition: background .12s;
-}
-.driver-card:hover { background: var(--bg-elevated); }
-.driver-card .pos {
-  font-family: var(--f-display); font-weight: 800; font-size: 28px;
-  width: 36px; text-align: center;
-}
-.driver-card .meta { flex: 1; min-width: 0; }
-.driver-card .name { font-family: var(--f-display); font-weight: 700; font-size: 16px; line-height: 1.1; text-transform: uppercase; }
-.driver-card .team { font-size: 11px; color: var(--fg-3); margin-top: 2px; font-family: var(--f-display); letter-spacing: 0.1em; text-transform: uppercase; }
-.driver-card .pts { text-align: right; }
-.driver-card .pts-num { font-family: var(--f-display); font-weight: 800; font-size: 22px; line-height: 1; }
-.driver-card .pts-lbl { font-size: 10px; color: var(--fg-3); font-family: var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; }
 
 /* ============================================================
    IMAGE PLACEHOLDER (silhouettes etc)
@@ -1943,6 +1936,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
    ============================================================ */
 .tbl.tbl-static { min-width: 0; }
 .tbl.tbl-static tbody tr { cursor: default; }
+.tbl.tbl-static tbody tr:nth-child(even) { background: transparent; }
 .tbl.tbl-static tbody tr:hover { background: transparent; }
 .tbl.tbl-static tbody tr.clickable td:last-child::after { content: none; }
 
@@ -2000,7 +1994,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
     position: relative;
     background: var(--bg-2);
     border: 1px solid var(--line-1);
-    border-radius: 8px;
+    border-radius: 0;
     padding: 11px 32px 12px 14px;
     margin: 0 0 8px;
     cursor: pointer;
@@ -2018,7 +2012,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
      strip at the left edge. */
   .tbl-cards tr::before {
     content: ''; position: absolute; top: 9px; bottom: 9px; width: 3px;
-    left: 7px; border-radius: 2px;
+    left: 7px; border-radius: 0;
     background: var(--team-color, var(--line-2));
   }
   .tbl-cards tr:has(td.card-pos)::before { left: 39px; }
@@ -2112,7 +2106,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards td.card-metric,
   .tbl-cards td.card-primary .tbl-card-bar {
     display: block; position: relative; height: 26px; margin-top: 10px;
-    padding: 0; border: none; border-radius: 4px; overflow: hidden;
+    padding: 0; border: none; border-radius: 0; overflow: hidden;
     background: color-mix(in srgb, var(--fg-1) 9%, var(--bg-2));
   }
   .tbl-cards td.card-metric::before { content: none; }
@@ -2120,7 +2114,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards td.card-metric .tbl-card-fill,
   .tbl-cards td.card-primary .tbl-card-bar .tbl-card-fill {
     display: block; position: absolute; left: 0; top: 0; bottom: 0; height: auto;
-    width: var(--tbl-card-bar, 100%); min-width: 3px; border-radius: 4px;
+    width: var(--tbl-card-bar, 100%); min-width: 3px; border-radius: 0;
     background: linear-gradient(90deg,
       color-mix(in srgb, var(--tc, var(--team-color, var(--accent))) 92%, transparent),
       color-mix(in srgb, var(--tc, var(--team-color, var(--accent))) 62%, transparent));
@@ -2130,7 +2124,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards td.card-primary .tbl-card-bar .tbl-card-val {
     position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
     display: flex; align-items: baseline; gap: 3px;
-    padding: 2px 8px; border-radius: 4px; background: var(--bg-1); color: var(--fg-1);
+    padding: 2px 8px; border-radius: 0; background: var(--bg-1); color: var(--fg-1);
     font-family: var(--f-display); font-weight: 800; font-size: 13px;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
@@ -2212,21 +2206,21 @@ html.light .circuit-track .circuit-track-light { display: block; }
     background: none; height: auto; overflow: visible; margin-top: 10px;
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar {
-    display: block; position: relative; height: 26px; border-radius: 4px;
+    display: block; position: relative; height: 26px; border-radius: 0;
     overflow: hidden; background: color-mix(in srgb, var(--fg-1) 9%, var(--bg-2));
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar-track {
     position: absolute; inset: 0; height: auto; min-width: 0; background: none;
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar-fill {
-    height: 100%; border-radius: 4px;
+    height: 100%; border-radius: 0;
     background: linear-gradient(90deg,
       color-mix(in srgb, var(--team-color, var(--accent)) 92%, transparent),
       color-mix(in srgb, var(--team-color, var(--accent)) 62%, transparent)) !important;
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar-lbl {
     position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-    min-width: 0; padding: 2px 8px; border-radius: 4px;
+    min-width: 0; padding: 2px 8px; border-radius: 0;
     background: var(--bg-1); color: var(--fg-1); font-size: 13px;
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar-lbl.is-champ { color: var(--accent-text); }
@@ -2566,7 +2560,6 @@ html.light .circuit-track .circuit-track-light { display: block; }
    class screens add to bare <a>/<div> wrappers that don't already
    carry a card class (HomeScreen panels, listing FeatureCards). */
 .race-card.race-card-link,
-.listing-card,
 .blog-card,
 .blog-race-card,
 .blog-article-nav-link,
@@ -2574,7 +2567,6 @@ html.light .circuit-track .circuit-track-light { display: block; }
   position: relative;
 }
 .race-card.race-card-link::after,
-.listing-card::after,
 .blog-card::after,
 .blog-race-card::after,
 .blog-article-nav-link::after,
@@ -2594,7 +2586,6 @@ html.light .circuit-track .circuit-track-light { display: block; }
   z-index: 2;
 }
 .race-card.race-card-link:hover::after,
-.listing-card:hover::after,
 .blog-card:hover::after,
 .blog-race-card:hover::after,
 .blog-article-nav-link:hover::after,
@@ -2608,8 +2599,8 @@ html.light .circuit-track .circuit-track-light { display: block; }
    element (.card-accent-arrow on records hero cards) - never two.
 
    Rules of thumb:
-   - Don't combine .race-card-link / .blog-card / .listing-card with
-     .f1-card-link (they each already provide the ::after arrow).
+   - Don't combine .race-card-link / .blog-card with .f1-card-link
+     (they each already provide the ::after arrow).
    - Don't apply .f1-card-link to a .card-accent - the records card uses
      its own .card-accent-arrow child element.
    - .f1-row-link and .tbl tbody tr.clickable already share the row
@@ -2776,15 +2767,14 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .team-drivers-list { grid-template-columns: 1fr; }
 }
 
+/* Navigable race card / calendar row: hover is a border-colour change only
+   (no lift) - .card.is-next / .cal-row.is-next-row override with accent. */
 .race-card-link {
   position: relative;
   cursor: pointer;
-  transition: border-color 120ms ease, transform 120ms ease;
+  transition: border-color var(--mo, 120ms) ease;
 }
-.race-card-link:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
+.race-card-link:hover { border-color: var(--line-3); }
 .race-card-stretch {
   position: absolute;
   inset: 0;
@@ -2856,18 +2846,12 @@ html.light .circuit-track .circuit-track-light { display: block; }
 }
 .blog-list-item { margin: 0; }
 
+/* Layout on top of .card (markup: class="card blog-card"). The 3 px accent
+   rail is the editorial cue - surface, hover and radius come from .card. */
 .blog-card {
-  position: relative;
-  transition: border-color 120ms, transform 120ms, box-shadow 120ms;
   border-left: 3px solid var(--accent);
-  box-shadow: var(--shadow-card);
   height: 100%;
-  box-sizing: border-box;
   overflow: hidden;
-}
-.blog-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-card-hover);
 }
 .blog-card-img {
   position: relative;
@@ -3187,29 +3171,18 @@ html.light .circuit-track .circuit-track-light { display: block; }
 }
 .blog-race-card-title:hover { color: var(--accent); }
 .blog-race-card-date { color: var(--fg-3); font-size: 12px; }
-.blog-race-card-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+/* Results table inside the blog race card: the site-wide .tbl.tbl-static
+   (markup in blog/RaceResult.astro; .blog-race-card-table retired in
+   feat/card-table-unify) with tighter cells so it fits the article column. */
+.blog-race-card .tbl { font-size: 14px; }
+.blog-race-card .tbl thead th {
+  position: static; background: transparent; color: var(--fg-3);
+  padding: 4px 8px 6px 0; border-bottom-color: var(--line-1);
 }
-.blog-race-card-table th {
-  text-align: left;
-  font-family: var(--f-display);
-  font-weight: 600;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--fg-3);
-  padding: 4px 8px 6px 0;
-  border-bottom: 1px solid var(--line-1);
-}
-.blog-race-card-table th.num,
-.blog-race-card-table td.num { text-align: right; padding-right: 0; }
-.blog-race-card-table td {
-  padding: 6px 8px 6px 0;
-  border-bottom: 1px solid var(--line-1);
-}
-.blog-race-card-table tbody tr:last-child td { border-bottom: 0; }
+.blog-race-card .tbl td { padding: 6px 8px 6px 0; white-space: normal; }
+.blog-race-card .tbl th.right,
+.blog-race-card .tbl td.right { padding-right: 0; }
+.blog-race-card .tbl tbody tr:last-child { border-bottom: 0; }
 .blog-race-card-driver,
 .blog-race-card-team {
   color: inherit;
@@ -3243,7 +3216,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   height: 18px;
   margin: 0;
   border: 0;
-  border-radius: 3px;
+  border-radius: 2px;
   object-fit: contain;
   background: #fff;
   padding: 1px;
@@ -3314,8 +3287,8 @@ html.light .circuit-track .circuit-track-light { display: block; }
 
 @media (max-width: 720px) {
   .blog-race-card { padding: 12px 12px; }
-  .blog-race-card-table th:nth-child(3),
-  .blog-race-card-table td:nth-child(3) { display: none; }
+  .blog-race-card .tbl th:nth-child(3),
+  .blog-race-card .tbl td:nth-child(3) { display: none; }
   .blog-season-chart-totals { margin-left: 0; }
 }
 
@@ -3979,26 +3952,17 @@ html.light .circuit-track .circuit-track-light { display: block; }
 @media (max-width: 1024px) { .records-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px)  { .records-grid { grid-template-columns: 1fr; } }
 
+/* Layout on top of .card (markup: class="card card-accent"); the 2 px top
+   rule lives with the .card modifiers. Hover lifts the whole border to the
+   accent colour - the one modifier-specific hover (TOKENS §6 · Cards). */
 .card-accent {
   --card-accent: var(--accent);
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px 16px 14px;
-  background: var(--bg-2);
-  border: 1px solid var(--line-1);
-  border-top: 2px solid var(--card-accent);
-  text-decoration: none;
-  color: inherit;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
-.card-accent:hover {
-  transform: translateY(-1px);
-  border-color: var(--card-accent);
-  box-shadow: var(--shadow-card-hover);
-  border-top-color: var(--card-accent);
-}
+.card-accent:hover { border-color: var(--card-accent); }
 .card-accent-head {
   display: flex;
   align-items: center;

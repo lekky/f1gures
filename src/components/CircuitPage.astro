@@ -397,10 +397,10 @@ const recordCards: CircuitRecordCard[] = [
               {profile && (
                 <div class="grid circuit-lap-meta">
                   {profile.type && profile.type !== '-' && (
-                    <div class="stat"><div class="stat-lbl">Type</div><div class="stat-val circuit-lap-meta-val">{profile.type}</div></div>
+                    <div class="card stat"><div class="stat-lbl">Type</div><div class="stat-val circuit-lap-meta-val">{profile.type}</div></div>
                   )}
                   {profile.weather && profile.weather !== '-' && (
-                    <div class="stat"><div class="stat-lbl">Weather</div><div class="stat-val circuit-lap-meta-val">{profile.weather}</div></div>
+                    <div class="card stat"><div class="stat-lbl">Weather</div><div class="stat-val circuit-lap-meta-val">{profile.weather}</div></div>
                   )}
                 </div>
               )}
@@ -409,7 +409,7 @@ const recordCards: CircuitRecordCard[] = [
           {nextRace && (
             <>
               <div class="section-head section-head-band"><span class="section-head-mark" aria-hidden="true"></span><h2>Next Race</h2><div class="section-rule"></div></div>
-              <div class="stat stat-accent circuit-next-race">
+              <div class="card stat stat-accent circuit-next-race">
                 <div class="stat-lbl">Next Race Here</div>
                 <div class="stat-val" style="font-size: 22px">{nextRace.name.replace(' Grand Prix', '')}</div>
                 <div class="stat-sub">{fmtDateLong(nextRace.date)} · Round {nextRace.round}</div>
@@ -430,7 +430,7 @@ const recordCards: CircuitRecordCard[] = [
           const leaderImg = driverImg(leader.driverRef);
           const maxValue = Math.max(...card.top.map(e => e.count), 1);
           return (
-            <a class="card-accent" href={`/drivers/${leader.driverRef}/`}>
+            <a class="card card-accent" href={`/drivers/${leader.driverRef}/`}>
               <header class="card-accent-head">
                 <span class="card-accent-eyebrow">{card.title} · {circuit.name.replace(/\s+Circuit$/i, '').replace(/\s+Grand Prix Circuit$/i, '')}</span>
                 <span class="card-accent-arrow" aria-hidden="true">↗</span>

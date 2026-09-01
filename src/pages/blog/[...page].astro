@@ -102,7 +102,7 @@ const breadcrumb = [
     {ledePosts.length > 0 && (
       <div class="blog-lede">
         {ledePosts.map((post, i) => (
-          <article class={`panel blog-card blog-lede-card ${i === 0 ? 'blog-lede-card--major' : 'blog-lede-card--minor'}`}>
+          <article class={`card blog-card blog-lede-card ${i === 0 ? 'blog-lede-card--major' : 'blog-lede-card--minor'}`}>
             {post.data.heroImage ? (
               <div class="blog-card-img blog-lede-img">
                 <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
@@ -135,7 +135,7 @@ const breadcrumb = [
     <ul class="blog-list">
       {gridPosts.map((post) => (
         <li class="blog-list-item">
-          <div class="panel blog-card">
+          <div class="card blog-card">
             {post.data.heroImage ? (
               <div class="blog-card-img">
                 <a class="blog-card-img-link" href={`/blog/${post.slug}/`} aria-hidden="true" tabindex="-1">
