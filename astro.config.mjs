@@ -36,6 +36,9 @@ export default defineConfig({
     mdx(),
     sitemap({
       customPages: teamPages,
+      // The fantasy game is a private beta: its pages are noindex and must
+      // not be advertised in the sitemap until the public launch.
+      filter: (page) => !page.includes('/fantasy/'),
       serialize(item) {
         const lastmod = lastmodMap.get(item.url);
         return lastmod ? { ...item, lastmod } : item;
