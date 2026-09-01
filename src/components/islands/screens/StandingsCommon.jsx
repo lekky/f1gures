@@ -157,7 +157,7 @@ export function HeadToHead({ data, standings }) {
           <div className="t-eyebrow"><Flag cc={driverA.country} flag={driverA.flag} /> {teamA.short}</div>
           <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 24, textTransform: 'uppercase' }}>{driverA.first} {driverA.last}</div>
         </div>
-        <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 28, color: 'var(--accent)' }}>VS</div>
+        <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 28, color: 'var(--fg-1)' }}>VS</div>
         <div style={{ borderRight: `3px solid ${teamB.color}`, paddingRight: 12, textAlign: 'right' }}>
           <div className="t-eyebrow">{teamB.short} <Flag cc={driverB.country} flag={driverB.flag} /></div>
           <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 24, textTransform: 'uppercase' }}>{driverB.first} {driverB.last}</div>
