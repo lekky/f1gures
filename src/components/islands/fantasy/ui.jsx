@@ -2,8 +2,8 @@
 // "not configured" notice, loading/error blocks, the lock countdown and the
 // team dot. Nothing here talks to the network beyond what pb.js exposes.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { pb, fantasyConfigured, parseDate, formatRemaining, formatDateTime, teamColor } from './pb.js';
+import { useEffect, useRef, useState } from 'react';
+import { pb, parseDate, formatRemaining, formatDateTime, teamColor } from './pb.js';
 
 // ─── auth bridge ──────────────────────────────────────────────────────────
 /** { user, ready } — re-renders on sign in / sign out / token refresh. */
@@ -101,12 +101,6 @@ export function Empty({ children }) {
   return <div className="fx-empty">{children}</div>;
 }
 
-/** Guards an island: renders `fallback` while not configured or signed out. */
-export function ConfigGate({ children }) {
-  if (!fantasyConfigured()) return <NotConfigured />;
-  return children;
-}
-
 // ─── round header + countdown ─────────────────────────────────────────────
 /**
  * The one place `--accent` is spent on a fantasy screen: the live lock
@@ -187,14 +181,4 @@ export function useClearedMount(selector) {
     setEl(node);
   }, [selector]);
   return el;
-}
-
-export function useMounted() {
-  const [m, setM] = useState(false);
-  useEffect(() => setM(true), []);
-  return m;
-}
-
-export function useSeasonYear(season) {
-  return useMemo(() => season?.year || null, [season]);
 }

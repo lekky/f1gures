@@ -14,7 +14,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SLOTS,
-  SLOT_FIELD,
   pb,
   pbError,
   isGenericPbMessage,

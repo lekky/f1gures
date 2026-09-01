@@ -65,7 +65,15 @@ export default function FantasyAuth({ compact = false, heading = 'Play the fanta
         setPassword('');
       }
     } catch (err) {
-      setError(pbError(err, 'Could not sign you in. Check your details and try again.').message);
+      const info = pbError(err, 'Could not sign you in. Check your details and try again.');
+      // PocketBase says "Failed to authenticate." for both a wrong password and
+      // an unknown address, and deliberately doesn't say which. Keep that
+      // property, lose the machine voice.
+      setError(
+        /^failed to authenticate\.?$/i.test(info.message)
+          ? 'That email and password don’t match an account.'
+          : info.message
+      );
     } finally {
       setBusy(false);
     }
