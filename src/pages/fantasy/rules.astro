@@ -1,0 +1,535 @@
+---
+// /fantasy/rules/ — the f1gures Fantasy Rulebook (edition 1, rules v0.2).
+//
+// Static, server-rendered, no islands and no client JS. The content is the
+// player-facing rulebook verbatim in substance; the presentation re-expresses
+// it in the site's design system (guide-article layout, .tbl.tbl-static
+// tables, mono numerics, tokens only). The fantasy beta is private, so the
+// page is served with `noindex` until public launch.
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const EDITION = 'Edition 1';
+const RULES_VERSION = 'v0.2';
+const DATED = 'September 2026';
+
+const title = 'Fantasy Rulebook | f1gures';
+const description = 'The complete rules of the f1gures fantasy game: weekend teams, form tiers, usage caps, deadlines, driver and constructor scoring, leagues, Splits and tie-breaks.';
+const canonicalPath = '/fantasy/rules/';
+const ORIGIN = 'https://f1gures.app';
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Fantasy', path: '/fantasy/' },
+  { name: 'Rulebook', path: canonicalPath },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'f1gures Fantasy Rulebook',
+  description,
+  version: `${EDITION} (rules ${RULES_VERSION})`,
+  author: { '@type': 'Organization', name: 'f1gures', url: ORIGIN + '/' },
+  publisher: {
+    '@type': 'Organization',
+    name: 'f1gures',
+    url: ORIGIN + '/',
+    logo: { '@type': 'ImageObject', url: ORIGIN + '/images/og-default.png' },
+  },
+  mainEntityOfPage: { '@type': 'WebPage', '@id': ORIGIN + canonicalPath },
+};
+
+// Contents rail. Numbers match the section headings below.
+const SECTIONS = [
+  { n: 1, id: 'the-game', title: 'The game' },
+  { n: 2, id: 'weekend-team', title: 'Your weekend team' },
+  { n: 3, id: 'form-tiers', title: 'Form tiers' },
+  { n: 4, id: 'usage-caps', title: 'Usage caps' },
+  { n: 5, id: 'deadlines', title: 'Deadlines' },
+  { n: 6, id: 'driver-scoring', title: 'Driver scoring' },
+  { n: 7, id: 'constructor-scoring', title: 'Constructor scoring' },
+  { n: 8, id: 'retirements', title: 'Retirements, DSQs, no-shows' },
+  { n: 9, id: 'results', title: 'Results and corrections' },
+  { n: 10, id: 'leagues', title: 'Leagues' },
+  { n: 11, id: 'season-splits', title: 'Season, Splits and joining late' },
+  { n: 12, id: 'fair-play', title: 'Fair play' },
+  { n: 13, id: 'worked-example', title: 'Worked example' },
+];
+
+// Scoring tables (rules v0.2). Kept as data so the markup can't drift from
+// the numbers; the engine (src/lib/fantasyScoring.mjs) is the source of truth.
+const RACE_PTS = [50, 40, 34, 29, 25, 22, 19, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
+const QUALI_PTS = [15, 12, 10, 8, 6, 5, 4, 3, 2, 1];
+const SPRINT_PTS = [15, 12, 10, 8, 7, 6, 5, 4, 3, 2];
+const FORM_LADDER = [
+  { places: '2', bonus: 3 },
+  { places: '3', bonus: 6 },
+  { places: '4', bonus: 9 },
+  { places: '5', bonus: 12 },
+  { places: '6+', bonus: 15 },
+];
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="article"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+  robots="noindex, nofollow"
+>
+  <div class="page rb">
+    <div class="rb-grid">
+      <aside class="rb-rail">
+        <a class="rb-back" href="/fantasy/"><span aria-hidden="true">‹</span> Fantasy</a>
+        <div class="rb-rail-sec">
+          <div class="rb-rail-h">Contents</div>
+          <nav class="rb-toc" aria-label="Rulebook sections">
+            {SECTIONS.map((s) => (
+              <a href={`#${s.id}`}><span class="tn">{pad2(s.n)}</span><span>{s.title}</span></a>
+            ))}
+          </nav>
+        </div>
+        <div class="rb-meta">
+          <div class="m"><span class="k">Edition</span><span class="v">{EDITION}</span></div>
+          <div class="m"><span class="k">Rules</span><span class="v">{RULES_VERSION}</span></div>
+          <div class="m"><span class="k">Dated</span><span class="v">{DATED}</span></div>
+          <div class="m"><span class="k">Tiers</span><span class="v"><a href="/fantasy/tiers/">How tiers work</a></span></div>
+        </div>
+      </aside>
+
+      <article class="rb-body">
+        <div class="rb-eyebrow">f1gures &middot; official rules &middot; {EDITION} (rules {RULES_VERSION}) &middot; {DATED}</div>
+        <h1 class="rb-title">Fantasy Rulebook</h1>
+        <p class="rb-lead">The complete rules of the f1gures fantasy game. Free to play. Two minutes a week. Every point traceable to something that happened on track. If a situation isn’t covered here, it isn’t part of the game.</p>
+        <div class="rb-rule"></div>
+
+        {/* 1 */}
+        <section class="rb-sec" id="the-game">
+          <h2 class="rb-h2"><span class="n">01</span><span class="t">The game</span><span class="line"></span></h2>
+          <p>Each Grand Prix weekend you field a team of <strong>4 drivers and 1 constructor</strong>, locked in before qualifying. Your team scores points from what actually happens on track. Points add up across the season; every 6 rounds also forms its own mini-championship (a <em>Split</em>). You compete on the global leaderboard and in private leagues with friends.</p>
+          <p>There is no budget, no driver prices, and no transfer market. What limits you instead: drivers are grouped into four <strong>form tiers</strong> and you must field one from each, and every driver has a <strong>season usage cap</strong> — you can only start the same driver 5 times all year. Choosing <em>when</em> to spend your stars is the game.</p>
+        </section>
+
+        {/* 2 */}
+        <section class="rb-sec" id="weekend-team">
+          <h2 class="rb-h2"><span class="n">02</span><span class="t">Your weekend team</span><span class="line"></span></h2>
+          <ul>
+            <li><strong>One driver from each tier: A, B, C and D</strong> (tiers explained in §3).</li>
+            <li><strong>One constructor</strong> (any team).</li>
+            <li><strong>One Boost</strong>: mark either your Tier C or Tier D driver; their weekend score is multiplied by <strong>1.5×</strong> (rounded up). If you don’t choose, the Boost defaults to your Tier D driver.</li>
+          </ul>
+          <p>You may change everything freely until the lock (§5). Your league can’t see your picks until then.</p>
+        </section>
+
+        {/* 3 */}
+        <section class="rb-sec" id="form-tiers">
+          <h2 class="rb-h2"><span class="n">03</span><span class="t">Form tiers</span><span class="line"></span></h2>
+          <p>All drivers entered for the weekend are ranked by their <strong>average fantasy points over the last 6 rounds</strong> and cut into four equal tiers — on a 20-driver grid, 5 per tier. Tier A holds the highest-scoring drivers, Tier D the lowest.</p>
+          <ul>
+            <li><strong>Recomputed after every round</strong> and published on the site with the full ranking, before picks open. The formula is public; there is nothing hidden to reverse-engineer.</li>
+            <li><strong>Stability rule</strong>: a driver sitting within 2 ranking places of a tier boundary stays in their previous tier, with the tiers then re-cut to equal sizes. This stops drivers bouncing between tiers on one result.</li>
+            <li><strong>Season start</strong>: round 1 tiers are seeded from the final 6 rounds of the previous season, rescored under these rules.</li>
+            <li><strong>Drivers with no history</strong> (rookies, mid-season call-ups) are seeded at their <em>team’s</em> current level until they have results of their own. A rookie in a front-running car starts in a high tier accordingly.</li>
+            <li>If the grid isn’t divisible by four, the extra drivers go to the lower tiers (e.g. 22 drivers → 5/5/6/6).</li>
+          </ul>
+          <div class="rb-note-box">
+            <div class="rb-note-lbl">Worked through</div>
+            <p>The tier maths — the ranking window, the cut sizes, the stability rule and how rookies are seeded — is walked through step by step, with an example grid, on <a href="/fantasy/tiers/">How tiers work</a>.</p>
+          </div>
+        </section>
+
+        {/* 4 */}
+        <section class="rb-sec" id="usage-caps">
+          <h2 class="rb-h2"><span class="n">04</span><span class="t">Usage caps</span><span class="line"></span></h2>
+          <ul>
+            <li>Each <strong>driver</strong> can be started at most <strong>5 times per season</strong> by you. Each <strong>constructor</strong> at most <strong>4 times</strong>.</li>
+            <li>Caps belong to the <em>person</em>, not the seat: if a driver changes team mid-season, your remaining starts on them travel with them. A substitute driver has their own separate cap.</li>
+            <li><strong>Refund rule</strong>: if a driver you picked does not start the Grand Prix, the start is refunded to your cap (you keep any points they scored before withdrawing, e.g. qualifying).</li>
+            <li><strong>Emergency pick</strong>: if <em>every</em> driver in a tier is at your cap, you may still pick one of them — that driver scores <strong>half points</strong> (rounded up) that weekend. Multipliers stack before a single final round-up: an emergency pick that is also Boosted scores <code class="t-mono">ceil(points × 0.5 × 1.5)</code>.</li>
+            <li>Caps assume a 24-round calendar; if the calendar changes materially, adjusted caps are published before the season.</li>
+          </ul>
+        </section>
+
+        {/* 5 */}
+        <section class="rb-sec" id="deadlines">
+          <h2 class="rb-h2"><span class="n">05</span><span class="t">Deadlines</span><span class="line"></span></h2>
+          <ul>
+            <li>Your team locks at the scheduled start of <strong>qualifying</strong>. On sprint weekends it locks at the start of <strong>sprint qualifying</strong> — one lock covers the whole weekend.</li>
+            <li>At the lock, all picks in a league become visible to its members.</li>
+            <li><strong>Carry-forward</strong>: if you miss the deadline, your most recent locked lineup rolls over automatically wherever caps allow. A slot that can’t legally carry over stays empty and scores 0. The Boost carries to the same driver if still eligible, otherwise it defaults to your Tier D pick.</li>
+            <li>A brand-new player with no previous lineup scores 0 for weekends before their first lock.</li>
+          </ul>
+        </section>
+
+        {/* 6 */}
+        <section class="rb-sec" id="driver-scoring">
+          <h2 class="rb-h2"><span class="n">06</span><span class="t">Driver scoring</span><span class="line"></span></h2>
+          <p>All components are zero or positive. Nothing ever subtracts.</p>
+
+          <h3 class="rb-h3"><span class="n">6.1</span>Race finish</h3>
+          <div class="panel rb-tblpanel">
+            <div class="tbl-wrap">
+              <table class="tbl tbl-static rb-pts">
+                <thead>
+                  <tr>
+                    {RACE_PTS.map((_, i) => <th class="right">P{i + 1}</th>)}
+                    <th class="right">P21+</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {RACE_PTS.map((p) => <td class="right t-mono">{p}</td>)}
+                    <td class="right t-mono">1</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="rb-note">Official classification. A driver who is not classified (DNF, DSQ) scores 0 here — see §8.</p>
+
+          <h3 class="rb-h3"><span class="n">6.2</span>Qualifying</h3>
+          <div class="panel rb-tblpanel">
+            <div class="tbl-wrap">
+              <table class="tbl tbl-static rb-pts">
+                <thead>
+                  <tr>
+                    {QUALI_PTS.map((_, i) => <th class="right">P{i + 1}</th>)}
+                    <th class="right">P11+</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {QUALI_PTS.map((p) => <td class="right t-mono">{p}</td>)}
+                    <td class="right t-mono">0</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="rb-note">Qualifying classification, before any grid penalties. Only the top 10 score: making Q3 is the prize.</p>
+
+          <h3 class="rb-h3"><span class="n">6.3</span>Positions gained</h3>
+          <p><span class="t-mono rb-pos">+2</span> per place gained from grid slot to race finish, capped at <span class="t-mono">+20</span>. Places lost cost nothing. Pit-lane starters count as starting from the back. Requires classification.</p>
+
+          <h3 class="rb-h3"><span class="n">6.4</span>Laps completed (DNF consolation)</h3>
+          <p>Paid <strong>only to drivers who are not classified</strong>: <span class="t-mono rb-pos">+1</span> per full 10% of the race distance completed before retiring, max <span class="t-mono">+10</span>. Retire at half distance, bank 5; crash on lap 1, bank 0.</p>
+
+          <h3 class="rb-h3"><span class="n">6.5</span>Form beat</h3>
+          <p>Awarded for finishing well above the driver’s own <strong>season-to-date average finish</strong> (rounded to the nearest whole position; early in the season the average is topped up from the previous season’s final rounds until the driver has 3 starts). Requires classification.</p>
+          <div class="panel rb-tblpanel">
+            <div class="tbl-wrap">
+              <table class="tbl tbl-static rb-pts">
+                <thead>
+                  <tr>
+                    <th>Places better than average</th>
+                    {FORM_LADDER.map((f) => <th class="right">{f.places}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Bonus</td>
+                    {FORM_LADDER.map((f) => <td class="right t-mono">{f.bonus}</td>)}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <h3 class="rb-h3"><span class="n">6.6</span>Teammate head-to-head</h3>
+          <p><span class="t-mono rb-pos">+5</span> for finishing ahead of your teammate, awarded only when <em>both</em> cars are classified. <span class="t-mono rb-pos">+2</span> for out-qualifying your teammate. The teammate is the other driver entered for the same team that weekend; if a driver has no teammate that round, no head-to-head points are available to them.</p>
+
+          <h3 class="rb-h3"><span class="n">6.7</span>Fastest lap</h3>
+          <p><span class="t-mono rb-pos">+5</span> for the race’s official fastest lap, any finishing position.</p>
+
+          <h3 class="rb-h3"><span class="n">6.8</span>Sprint</h3>
+          <p>On sprint weekends, sprint finishing position scores as below (classified only). No other components apply to the sprint.</p>
+          <div class="panel rb-tblpanel">
+            <div class="tbl-wrap">
+              <table class="tbl tbl-static rb-pts">
+                <thead>
+                  <tr>
+                    {SPRINT_PTS.map((_, i) => <th class="right">P{i + 1}</th>)}
+                    <th class="right">P11+</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {SPRINT_PTS.map((p) => <td class="right t-mono">{p}</td>)}
+                    <td class="right t-mono">1</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* 7 */}
+        <section class="rb-sec" id="constructor-scoring">
+          <h2 class="rb-h2"><span class="n">07</span><span class="t">Constructor scoring</span><span class="line"></span></h2>
+          <p>Your constructor scores the <strong>race points (§6.1) plus qualifying points (§6.2) of both its cars</strong>, added together. No bonuses, no penalties. A team’s DSQ or DNF simply earns nothing for that car.</p>
+        </section>
+
+        {/* 8 */}
+        <section class="rb-sec" id="retirements">
+          <h2 class="rb-h2"><span class="n">08</span><span class="t">Retirements, disqualifications, no-shows</span><span class="line"></span></h2>
+          <dl class="rb-dl">
+            <dt>DNF / not classified</dt>
+            <dd>Scores 0 for race finish, positions gained, form beat and race head-to-head — but keeps qualifying points, quali head-to-head, sprint points already earned, and the laps consolation (§6.4). Never a negative number.</dd>
+            <dt>Disqualification</dt>
+            <dd>Treated as not classified from the session concerned. A post-race DSQ removes race-dependent points and pays the laps consolation instead.</dd>
+            <dt>Did not start the race</dt>
+            <dd>Keeps whatever was earned in earlier sessions; your usage-cap start is refunded (§4).</dd>
+            <dt>Cancelled sessions</dt>
+            <dd>If qualifying is cancelled, no qualifying points are scored by anyone and the lock moves to the first session actually held. If the Grand Prix itself is cancelled, the round is void: no points, all starts refunded.</dd>
+            <dt>Shortened races</dt>
+            <dd>Scored on the official classification as-is; race distance for §6.4 is the winner’s completed laps.</dd>
+          </dl>
+        </section>
+
+        {/* 9 */}
+        <section class="rb-sec" id="results">
+          <h2 class="rb-h2"><span class="n">09</span><span class="t">Results and corrections</span><span class="line"></span></h2>
+          <p>Scores are computed automatically from official classifications, minutes after each session. Results remain <strong>provisional for 7 days</strong> after the race (or until the next round’s lock, whichever comes first): any stewards’ decision in that window rescores the round automatically for everyone. After the window closes, scores are final and later reinstatements or penalties do not change them.</p>
+        </section>
+
+        {/* 10 */}
+        <section class="rb-sec" id="leagues">
+          <h2 class="rb-h2"><span class="n">10</span><span class="t">Leagues</span><span class="line"></span></h2>
+          <ul>
+            <li>Create a league, share its <strong>join code</strong>; unlimited members, join or leave any time.</li>
+            <li>Everyone plays the same game with the same global scoring — a league is a view of the leaderboard, not a separate ruleset.</li>
+            <li>Picks within a league are <strong>hidden until the lock</strong>, then revealed to all members.</li>
+            <li>League tables exist for the season, each Split, and each round.</li>
+          </ul>
+        </section>
+
+        {/* 11 */}
+        <section class="rb-sec" id="season-splits">
+          <h2 class="rb-h2"><span class="n">11</span><span class="t">Season, Splits and joining late</span><span class="line"></span></h2>
+          <ul>
+            <li>The <strong>season championship</strong> is the sum of all your weekend scores.</li>
+            <li>Every 6 rounds forms a <strong>Split</strong> with its own standings. Join at round 15 and Split 3 is still yours to win.</li>
+            <li>New players start with full usage caps regardless of joining date.</li>
+          </ul>
+          <h3 class="rb-h3">Tie-breaks</h3>
+          <p>Season or Split ties are broken in order by: most Split wins (season only) → highest single-weekend score → most weekends as the group’s top scorer → shared position.</p>
+        </section>
+
+        {/* 12 */}
+        <section class="rb-sec" id="fair-play">
+          <h2 class="rb-h2"><span class="n">12</span><span class="t">Fair play</span><span class="line"></span></h2>
+          <ul>
+            <li>One account per person, one team per account. Multi-accounting (e.g. hedging opposite Boosts across entries) is grounds for removal from leaderboards.</li>
+            <li>The scoring formula, tier maths and all data sources are public. There is no house edge, no paid advantage, and no prize-linked gambling — the game is free and for glory.</li>
+          </ul>
+        </section>
+
+        {/* 13 */}
+        <section class="rb-sec" id="worked-example">
+          <h2 class="rb-h2"><span class="n">13</span><span class="t">Worked example</span><span class="line"></span></h2>
+          <p>2026 Dutch Grand Prix (round 12). Suppose your locked team was Norris (A), Hamilton (B), <strong>Alonso (C, Boosted)</strong>, Bottas (D), constructor McLaren.</p>
+          <div class="panel rb-tblpanel">
+            <div class="tbl-wrap">
+              <table class="tbl tbl-static rb-example">
+                <thead>
+                  <tr>
+                    <th>Pick</th>
+                    <th>What happened</th>
+                    <th class="right">Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="rb-pick">Norris <span class="tier">A</span></td>
+                    <td class="wrap">Pole, win, beat teammate, big form beat</td>
+                    <td class="right t-mono">50 + 15 + 15 + 5 + 2 = <strong>87</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="rb-pick">Hamilton <span class="tier">B</span></td>
+                    <td class="wrap">P4 from P5, beat teammate both sessions</td>
+                    <td class="right t-mono">29 + 6 + 2 + 7 = <strong>44</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="rb-pick">Alonso <span class="tier">C</span> <span class="boost">×1.5</span></td>
+                    <td class="wrap">P9 from P18: +18 gained, +15 form beat, out-qualified Stroll</td>
+                    <td class="right t-mono">50 → <strong>75 boosted</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="rb-pick">Bottas <span class="tier">D</span></td>
+                    <td class="wrap">Retired after 80% distance: laps consolation + quali H2H</td>
+                    <td class="right t-mono">8 + 2 = <strong>10</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="rb-pick">McLaren</td>
+                    <td class="wrap">Norris P1/Q1 + Piastri P6/Q4</td>
+                    <td class="right t-mono">(50+15) + (22+8) = <strong>95</strong></td>
+                  </tr>
+                  <tr class="rb-total">
+                    <td class="rb-pick">Weekend total</td>
+                    <td></td>
+                    <td class="right t-mono"><strong>311</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="rb-note">Note what carried the weekend: the Boosted midfield charge was worth nearly as much as the race winner — and Verstappen’s DNF, had you picked him, would have cost you his points but never gone negative.</p>
+        </section>
+
+        <p class="rb-colophon">Rules {EDITION.toLowerCase()}, corresponding to design spec {RULES_VERSION} (simulation-validated over the 2024 and 2025 seasons and adversarially reviewed). Rule changes between seasons are announced before round 1 and never mid-season.</p>
+      </article>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  /* Layout mirrors the guide article: sticky contents rail + reading column. */
+  .rb-grid {
+    display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 56px;
+    align-items: start; max-width: 1120px; margin: 0 auto;
+  }
+  .rb-rail {
+    position: sticky; top: calc(var(--nav-h) + 24px);
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .rb-back {
+    font-family: var(--f-display); font-weight: 700; font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3);
+    display: inline-flex; align-items: center; gap: 8px;
+    text-decoration: none; transition: color var(--mo) ease, gap var(--mo) ease;
+  }
+  .rb-back:hover { color: var(--accent-text); gap: 12px; }
+  .rb-rail-h {
+    font-family: var(--f-display); font-weight: 700; font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3);
+    margin-bottom: 11px; padding-bottom: 9px; border-bottom: 1px solid var(--line-1);
+  }
+  .rb-toc { display: flex; flex-direction: column; }
+  .rb-toc a {
+    display: flex; gap: 10px; align-items: baseline; padding: 6px 0;
+    font-size: 13px; color: var(--fg-2); line-height: 1.4; text-decoration: none;
+    transition: color var(--mo) ease;
+  }
+  .rb-toc a .tn { font-family: var(--f-mono); font-size: 10px; color: var(--fg-3); flex-shrink: 0; }
+  .rb-toc a:hover { color: var(--fg-1); }
+  .rb-toc a:hover .tn { color: var(--accent-text); }
+  .rb-meta { display: flex; flex-direction: column; }
+  .rb-meta .m {
+    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    padding: 9px 0; border-top: 1px solid var(--line-1);
+  }
+  .rb-meta .m:first-child { border-top: 0; }
+  .rb-meta .m .k {
+    font-family: var(--f-display); font-weight: 700; font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .rb-meta .m .v { font-family: var(--f-mono); font-size: 12px; color: var(--fg-1); }
+  .rb-meta .m .v a { color: inherit; }
+
+  /* Reading column */
+  .rb-body { max-width: 720px; min-width: 0; font-size: 16px; line-height: 1.7; color: var(--fg-1); }
+  .rb-eyebrow {
+    font-family: var(--f-display); font-weight: 700; font-size: 12px;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent-text);
+  }
+  .rb-title {
+    font-family: var(--f-display); font-weight: 800; font-size: clamp(40px, 5.5vw, 60px);
+    text-transform: uppercase; line-height: 0.9; letter-spacing: -0.015em; margin-top: 12px;
+  }
+  .rb-lead { font-size: 18px; line-height: 1.6; color: var(--fg-2); margin-top: 18px; max-width: 60ch; }
+  .rb-rule { height: 2px; background: linear-gradient(90deg, var(--fg-1) 0 64px, var(--line-2) 64px); margin: 30px 0 8px; }
+
+  .rb-sec { scroll-margin-top: calc(var(--nav-h) + 20px); }
+  .rb-body p { margin: 0 0 16px; }
+  .rb-body ul { margin: 0 0 16px; padding-left: 22px; }
+  .rb-body li { margin: 0 0 6px; }
+  .rb-body a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; }
+  .rb-body a:hover { text-decoration-thickness: 2px; }
+  .rb-body code {
+    font-size: 0.9em; background: var(--bg-2); padding: 1px 5px; border: 1px solid var(--line-1);
+  }
+
+  /* Numbered section head: mono number + condensed title + rule. */
+  .rb-h2 {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--f-display); font-weight: 800; font-size: 24px;
+    letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.1;
+    margin: 44px 0 14px;
+  }
+  .rb-h2 .n {
+    font-family: var(--f-mono); font-weight: 600; font-size: 13px; letter-spacing: 0;
+    color: var(--accent-text); flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .rb-h2 .t { min-width: 0; }
+  .rb-h2 .line { flex: 1 1 40px; min-width: 24px; height: 2px; background: var(--rule); }
+  .rb-h3 {
+    display: flex; align-items: baseline; gap: 10px;
+    font-family: var(--f-display); font-weight: 700; font-size: 19px;
+    letter-spacing: 0.01em; text-transform: uppercase; line-height: 1.2;
+    margin: 26px 0 8px;
+  }
+  .rb-h3 .n { font-family: var(--f-mono); font-weight: 500; font-size: 12px; color: var(--fg-3); letter-spacing: 0; }
+
+  /* Tables: the site's static table inside a panel with a scroll wrapper. */
+  .rb-tblpanel { margin: 12px 0 10px; }
+  .rb-tblpanel .tbl-wrap { overflow-x: auto; }
+  .rb-tblpanel .tbl th { position: static; white-space: nowrap; }
+  .rb-tblpanel .tbl td.wrap { white-space: normal; min-width: 18ch; }
+  .rb-pts td { font-size: 14px; }
+  .rb-pts td:first-child { font-family: var(--f-display); font-weight: 700; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-2); }
+  .rb-pts thead th:first-child { text-transform: uppercase; }
+  .rb-example td { font-size: 14px; vertical-align: top; }
+  .rb-example .rb-pick { font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
+  .rb-example .rb-pick .tier {
+    display: inline-block; margin-left: 4px; padding: 0 5px; border: 1px solid var(--line-2);
+    font-family: var(--f-mono); font-weight: 600; font-size: 11px; color: var(--fg-2); vertical-align: 1px;
+  }
+  .rb-example .rb-pick .boost {
+    display: inline-block; margin-left: 4px; padding: 0 5px;
+    font-family: var(--f-mono); font-weight: 600; font-size: 11px;
+    color: var(--accent-text); border: 1px solid var(--accent); vertical-align: 1px;
+  }
+  .rb-example tr.rb-total td { border-top: 2px solid var(--line-2); }
+  .rb-example tr.rb-total .rb-pick { text-transform: uppercase; letter-spacing: 0.1em; font-size: 12px; color: var(--fg-2); }
+  .rb-example td strong { color: var(--fg-1); }
+
+  .rb-note { color: var(--fg-3); font-size: 13.5px; line-height: 1.55; }
+  .rb-pos { color: var(--pos); font-weight: 600; }
+
+  /* "Worked through" note box (same shape as the guide's Good-to-know). */
+  .rb-note-box {
+    border-left: 3px solid var(--accent); background: var(--bg-2);
+    padding: 14px 18px; margin: 18px 0; color: var(--fg-2);
+    font-size: 14.5px; line-height: 1.6; max-width: 64ch;
+  }
+  .rb-note-box .rb-note-lbl {
+    margin-bottom: 5px; font-family: var(--f-display); font-weight: 700; font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text);
+  }
+  .rb-note-box p { margin: 0; }
+
+  .rb-dl { margin: 0 0 16px; max-width: 70ch; }
+  .rb-dl dt { font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 14px; }
+  .rb-dl dd { margin: 2px 0 0; color: var(--fg-2); font-size: 15px; }
+
+  .rb-colophon { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line-1); color: var(--fg-3); font-size: 13px; line-height: 1.55; }
+
+  @media (max-width: 720px) {
+    .rb-grid { grid-template-columns: 1fr; gap: 0; }
+    .rb-rail { position: static; gap: 14px; margin-bottom: 18px; }
+    .rb-toc { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .rb-toc a {
+      padding: 4px 8px; border: 1px solid var(--line-1); background: var(--bg-2);
+      font-size: 12px; gap: 6px;
+    }
+    .rb-meta { flex-direction: row; flex-wrap: wrap; gap: 8px 18px; }
+    .rb-meta .m { flex-direction: column; gap: 2px; border-top: 0; padding: 0; }
+    .rb-body { font-size: 15px; }
+    .rb-h2 { font-size: 21px; margin-top: 36px; }
+  }
+</style>
