@@ -4,6 +4,7 @@
 // lap, and the gap chip reads "Pole" / "+0.234".
 
 import Flag from './Flag.astro';
+import Icon from './Icon.astro';
 import { bestQualiSeconds, parseClock } from '../lib/raceTimings.js';
 import { hasDriverFace } from '../lib/driverFaceExists.js';
 import { teamLogoPath } from '../lib/teamLogo.js';
@@ -168,7 +169,7 @@ const bePodium = (n: number | null) => n != null && n >= 1 && n <= 3;
                   ? <img class="be-av" src={face} alt="" width="30" height="30" loading="lazy" />
                   : <span class="be-av" aria-hidden="true">{initials(r)}</span>}
                 <span class="rname"><span class="fn">{first}</span> {last}</span>
-                <span class="chev" aria-hidden="true">▶</span>
+                <Icon name="chevron-right" size={12} class="chev" />
               </span>
               <span class="be-track">
                 {noTime || w == null

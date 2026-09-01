@@ -12,6 +12,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { compareDrivers, compareTeams } from '../../lib/compareStats.js';
+import { Icon } from '../../lib/shared.jsx';
 import {
   loadDoc, loadIndex, entryRef, entryName, entryColor, readableText, PickerBody, CompareView,
 } from './compareShared.jsx';
@@ -138,7 +139,7 @@ export default function CompareCta({ kind = 'driver', refId, name, teamColor }) 
           <div className="cmp-picker">
             <div className="cmp-picker-head">
               <span className="cmp-picker-eyebrow">Compare {name} with</span>
-              <button className="cmp-x" onClick={closeAll} aria-label="Close">✕</button>
+              <button className="cmp-x icon-btn" onClick={closeAll} aria-label="Close"><Icon name="x" size={14} /></button>
             </div>
             <PickerBody kind={kind} excludeRef={refId} onPick={(r) => pick(r)} />
           </div>
@@ -154,7 +155,7 @@ export default function CompareCta({ kind = 'driver', refId, name, teamColor }) 
               {status === 'error'
                 ? <div className="cmp-empty">Couldn’t load that comparison.</div>
                 : <div className="cmp-empty"><span className="cmp-spin" aria-hidden="true" />Building the head-to-head…</div>}
-              <button className="cmp-x cmp-x-abs" onClick={closeAll} aria-label="Close">✕</button>
+              <button className="cmp-x cmp-x-abs icon-btn" onClick={closeAll} aria-label="Close"><Icon name="x" size={14} /></button>
             </div>
           ) : (
             <CompareView

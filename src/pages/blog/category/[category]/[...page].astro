@@ -9,6 +9,7 @@ import {
 } from '../../../../content/config';
 import { isPublic, sortPosts, fmtPostDate } from '../../../../lib/blog';
 import BlogPager from '../../../../components/blog/BlogPager.astro';
+import Icon from '../../../../components/Icon.astro';
 
 // getStaticPaths is hoisted above module scope, so pageSize is inlined here.
 export const getStaticPaths = (async ({ paginate }) => {
@@ -66,7 +67,7 @@ const breadcrumb = [
   breadcrumb={breadcrumb}
 >
   <div class="page">
-    <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/blog/">← Blog</a>
+    <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/blog/"><Icon name="arrow-left" size={14} />Blog</a>
 
     <div class="page-head">
       <div>

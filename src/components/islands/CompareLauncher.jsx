@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Icon } from '../../lib/shared.jsx';
 import {
   compareDrivers, compareTeams, compareCanvas, fmtVal,
 } from '../../lib/compareStats.js';
@@ -224,7 +225,7 @@ export default function CompareLauncher() {
               </button>
             )}
             <button className="cmp-foot-btn cmp-foot-btn-primary" onClick={openShare} type="button">
-              <span aria-hidden="true">↗</span> Share image
+              <Icon name="share" size={14} /> Share image
             </button>
           </div>
         )}
@@ -274,7 +275,7 @@ export default function CompareLauncher() {
           <div className="cmp-picker">
             <div className="cmp-picker-head">
               <span className="cmp-picker-eyebrow">{picking.mode === 'replace' ? `Swap ${noun}` : `Add a ${noun}`}</span>
-              <button className="cmp-x" onClick={() => setPicking(null)} aria-label="Close">✕</button>
+              <button className="cmp-x icon-btn" onClick={() => setPicking(null)} aria-label="Close"><Icon name="x" size={14} /></button>
             </div>
             <PickerBody
               kind={type}
@@ -310,7 +311,7 @@ export default function CompareLauncher() {
                   <button type="button" className={`cmp-share-opt${shareLight ? ' is-active' : ''}`} onClick={() => setShareLight(true)}>Light</button>
                 </div>
               </div>
-              <button type="button" className="cmp-share-close" onClick={closeShare} aria-label="Close">✕</button>
+              <button type="button" className="cmp-share-close icon-btn" onClick={closeShare} aria-label="Close"><Icon name="x" size={14} /></button>
             </div>
             <div className={`cmp-share-preview cmp-share-preview-${shareFmt}`}>
               {shareImg && <img src={shareImg} alt="Share preview" />}
@@ -320,7 +321,7 @@ export default function CompareLauncher() {
               {toast && <span className="cmp-toast" role="status">{toast}</span>}
               {canNativeShare && (
                 <button type="button" className="cmp-foot-btn cmp-foot-btn-primary cmp-share-grow" onClick={onNativeShare} disabled={!shareImg || !!busy}>
-                  {busy === 'share' ? '…' : '↗'} Share image
+                  {busy === 'share' ? <span aria-hidden="true">…</span> : <Icon name="share" size={14} />} Share image
                 </button>
               )}
               <a

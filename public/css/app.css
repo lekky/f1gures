@@ -147,24 +147,32 @@ html.light .topbar-mobile {
   border-bottom-color: var(--line-1);
 }
 
-/* Theme switcher - segmented control */
-.theme-switcher {
-  display: flex; flex-shrink: 0;
-  border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
+/* ============================================================
+   ICONS — inline SVG set (src/lib/iconPaths.js via Icon.astro / <Icon />)
+   Stroke icons inherit `color`, so they follow the theme tokens for free.
+   ============================================================ */
+.icon { display: inline-block; vertical-align: middle; flex-shrink: 0; line-height: 0; }
+/* Icon-only controls: keep the drawn box small but guarantee a 44 px hit
+   area on touch by extending an invisible pseudo-element around it. */
+.icon-btn { position: relative; }
+@media (pointer: coarse) {
+  .icon-btn::after {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: max(100%, 44px); height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
 }
-.theme-opt {
-  background: transparent; border: none; padding: 4px 10px;
-  font-family: var(--f-display); font-size: 12px; font-weight: 600;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  line-height: 1; cursor: pointer;
-  color: var(--fg-3);
-  transition: background .15s, color .15s;
+
+/* Theme toggle - single icon button (sun while dark = "switch to light",
+   moon while light). aria-label + .sr-only text carry the words. */
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 32px; height: 32px; padding: 0;
+  background: transparent; color: var(--fg-2);
+  border: 1px solid var(--line-1); cursor: pointer;
+  transition: color var(--mo) ease, border-color var(--mo) ease;
 }
-.theme-opt:first-child { border-right: 1px solid var(--line-2); }
-/* Solid ink chip for the active segment (fg-on-bg) — matches the Career
-   Mosaic sort toggle so "which is selected" reads at a glance. */
-.theme-opt.active { background: var(--fg-1); color: var(--bg-1); }
-.theme-opt:hover:not(.active) { background: var(--bg-2); color: var(--fg-1); }
+.theme-toggle:hover { color: var(--fg-1); border-color: var(--fg-4); }
 
 /* Drivers/Constructors switcher (mobile standings pages) */
 .standings-toggle {
@@ -285,7 +293,8 @@ html.light .nav-logo .wm-light { display: block; }
   content: ''; position: absolute; left: 14px; right: 14px; bottom: 0;
   height: 2px; background: var(--accent);
 }
-.nav-item .caret { font-size: 10px; opacity: 0.5; margin-left: 6px; }
+.nav-item .caret { opacity: 0.5; margin-left: 5px; transition: transform var(--mo) ease; }
+.nav-item .caret.is-open { transform: rotate(180deg); }
 
 /* BMC widget - restyle the floating button from a 64x64 circle into a
    flatter rectangle so it reads as a 'Support' CTA rather than a circular
@@ -518,18 +527,25 @@ html.light .nav-logo .wm-light { display: block; }
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--line-2);
   display: flex;
-  padding: var(--sp-1) var(--sp-0) calc(var(--sp-2) + env(safe-area-inset-bottom));
+  padding: 0 var(--sp-0) calc(var(--sp-0) + env(safe-area-inset-bottom));
 }
+/* Each item: 24 px stroke icon over a 9 px label, ≥44 px tall. The active
+   route is a 2 px --accent rule along the top edge + fg-1 icon/label;
+   inactive items sit on fg-3. The rule is flush with the nav's top border. */
 .botnav-item {
   flex: 1; background: transparent; border: 0;
-  display: flex; flex-direction: column; align-items: center; gap: var(--sp-0);
-  padding: var(--sp-1) var(--sp-0); cursor: pointer;
+  border-top: 2px solid transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; min-height: 48px;
+  padding: 4px var(--sp-0) 5px; cursor: pointer;
   font-family: var(--f-display); font-weight: 600;
-  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--fg-3);
+  transition: color var(--mo) ease;
 }
-.botnav-item.active { color: var(--accent); }
-.botnav-item .botnav-icon { font-size: 18px; line-height: 1; }
+.botnav-item.active { color: var(--fg-1); border-top-color: var(--accent); }
+.botnav-item .botnav-icon { display: block; width: 24px; height: 24px; line-height: 0; }
+.botnav-item .botnav-label { line-height: 1; }
 
 /* ============================================================
    PAGE / LAYOUT
@@ -1256,7 +1272,7 @@ html.light .nav-logo .wm-light { display: block; }
   font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.03em;
 }
-.stdrow-caret { flex: 0 0 auto; width: 12px; text-align: center; color: var(--fg-3); font-size: 11px; }
+.stdrow-caret { flex: 0 0 auto; width: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--fg-3); }
 .stdrow.is-open .stdrow-caret { color: var(--accent-text); }
 
 /* Points bar */
@@ -2012,13 +2028,18 @@ html.light .circuit-track .circuit-track-light { display: block; }
   }
   .tbl-cards tr:has(td.card-pos)::before { left: 39px; }
 
-  /* Expand caret — small ▸ / ▾ glyph, matching .stdrow-caret. */
+  /* Expand caret — the chevron-right icon from iconPaths.js, drawn as a
+     CSS mask over currentColor so it stays theme-tokened (the 'black' in
+     the mask SVG is alpha only, never a painted colour). Rotates to point
+     down when the row is open, matching .stdrow-caret. */
   .tbl-cards tr::after {
-    content: '\25B8'; position: absolute; top: 12px; right: 12px;
-    color: var(--fg-3); font-size: 11px; line-height: 1;
-    transition: color 0.15s ease;
+    content: ''; position: absolute; top: 12px; right: 12px;
+    width: 12px; height: 12px; color: var(--fg-3); background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: color var(--mo) ease, transform var(--mo) ease;
   }
-  .tbl-cards tr.is-open::after { content: '\25BE'; color: var(--accent-text); }
+  .tbl-cards tr.is-open::after { transform: rotate(90deg); color: var(--accent-text); }
   .tbl-cards tr[data-noexpand]::after { content: none; }
   .tbl-cards tr[data-noexpand] { cursor: default; }
 
@@ -3377,6 +3398,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .blog-pager-edge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border: 1px solid var(--line-1);
   background: var(--bg-3);
@@ -4586,14 +4608,16 @@ a.guide-pg:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-ho
 }
 .more-sheet-group:first-child { padding-top: 0; }
 .more-sheet-link {
-  display: flex; align-items: center; padding: var(--sp-4);
+  display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-4);
   text-decoration: none; color: var(--fg-1);
   border: 1px solid var(--line-1);
   font-family: var(--f-display); font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.08em; font-size: 12px;
   transition: border-color var(--mo) ease;
 }
+.more-sheet-link .icon { color: var(--fg-3); }
 .more-sheet-link:hover, .more-sheet-link:active { border-color: var(--line-3); }
+.more-sheet-link:hover .icon, .more-sheet-link:active .icon { color: var(--fg-1); }
 /* Desktop never shows the sheet/trigger (botnav itself is mobile-only). */
 @media (min-width: 721px) { .more-sheet, .more-backdrop { display: none; } }
 
@@ -5084,7 +5108,7 @@ html.light .cmp-back { background: rgba(20, 22, 30, 0.4); }
 .cmp-extra-v { color: var(--fg-2); }
 .cmp-extra-v b { color: var(--fg-1); font-weight: 600; }
 .cmp-panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; border-top: 1px solid var(--line-1); }
-.cmp-foot-btn { background: var(--bg-3); border: 1px solid var(--line-2); color: var(--fg-1); font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; padding: 7px 12px; cursor: pointer; transition: border-color var(--mo) ease; }
+.cmp-foot-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--bg-3); border: 1px solid var(--line-2); color: var(--fg-1); font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; padding: 7px 12px; cursor: pointer; transition: border-color var(--mo) ease; }
 .cmp-foot-btn:hover { border-color: var(--line-3); }
 .cmp-foot-hint { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--fg-4); }
 
@@ -5194,7 +5218,7 @@ html.light .cmp-f-flagwash { opacity: 0.1; }
 .cmp-share-opt + .cmp-share-opt { border-left: 1px solid var(--line-2); }
 .cmp-share-opt:hover:not(.is-active) { color: var(--fg-1); }
 .cmp-share-opt.is-active { background: var(--fg-1); color: var(--bg-2); }
-.cmp-share-close { cursor: pointer; border: 0; font-family: var(--f-mono); font-size: 13px; font-weight: 700; padding: 4px 8px; background: var(--bg-3); color: var(--fg-1); }
+.cmp-share-close { cursor: pointer; border: 0; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; background: var(--bg-3); color: var(--fg-1); }
 .cmp-share-preview { margin-top: 14px; background: var(--bg-3); display: flex; align-items: center; justify-content: center; padding: 14px; min-height: 320px; }
 .cmp-share-preview img { max-width: 100%; max-height: 62vh; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25); }
 .cmp-share-busy { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--fg-3); }
@@ -5682,17 +5706,18 @@ html.light .rw-gal, html.light .rw-mviz-overlay {
 .rw-mviz-overlay { position: fixed; inset: 0; z-index: 110; background: rgba(4, 4, 6, 0.82); display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; overflow: auto; }
 .rw-mviz { background: var(--vx-bg); border: 1px solid var(--vx-line); width: min(1080px, 100%); margin: auto; }
 .rw-mviz-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--vx-panel); border-bottom: 1px solid var(--vx-line); }
-.rw-mviz-x { cursor: pointer; border: 1px solid var(--vx-line3); background: var(--vx-inset); color: var(--vx-fg); font-family: var(--f-mono); font-size: 13px; font-weight: 700; padding: 6px 10px; line-height: 1; }
+.rw-mviz-x { cursor: pointer; border: 1px solid var(--vx-line3); background: var(--vx-inset); color: var(--vx-fg); display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; line-height: 1; }
 .rw-mviz-x:hover { background: var(--vx-hover); }
 .rw-mviz-count { font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--vx-fg4); }
 .rw-mviz-baractions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
 .rw-mviz-share {
+  display: inline-flex; align-items: center; gap: 6px;
   cursor: pointer; border: 0; font-family: var(--f-display); font-weight: 700; font-size: 11px;
   letter-spacing: 0.14em; text-transform: uppercase; color: #fff; background: var(--accent); padding: 8px 16px;
 }
 .rw-mviz-share:hover { background: var(--accent-dim); }
 .rw-mviz-share:disabled { opacity: 0.4; cursor: default; }
-.rw-mviz-nav { cursor: pointer; border: 0; font-family: var(--f-mono); font-size: 14px; font-weight: 700; padding: 7px 13px; background: var(--vx-inset); color: var(--vx-fg2); user-select: none; }
+.rw-mviz-nav { cursor: pointer; border: 0; display: inline-flex; align-items: center; justify-content: center; padding: 7px 13px; background: var(--vx-inset); color: var(--vx-fg2); user-select: none; }
 .rw-mviz-nav:hover { background: var(--vx-line); }
 .rw-mviz-body { padding: 20px 24px 24px; }
 .rw-mviz-title { font-family: var(--f-display); font-weight: 800; font-size: 34px; line-height: 1; text-transform: uppercase; color: var(--vx-fg); }
@@ -5746,7 +5771,7 @@ html.light .rw-tooltip { background: #FFFFFF; border-color: #DEDEE3; color: #151
 }
 .rw-share-fmt + .rw-share-fmt { border-left: 1px solid var(--line-2); }
 .rw-share-fmt.is-active { background: var(--fg-1); color: var(--bg-2); }
-.rw-share-close { cursor: pointer; border: 0; font-family: var(--f-mono); font-size: 13px; font-weight: 700; padding: 4px 8px; background: var(--bg-3); color: var(--fg-1); }
+.rw-share-close { cursor: pointer; border: 0; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; background: var(--bg-3); color: var(--fg-1); }
 .rw-share-preview { margin-top: 14px; background: var(--bg-3); display: flex; align-items: center; justify-content: center; padding: 14px; min-height: 320px; }
 .rw-share-preview img { max-width: 100%; max-height: 60vh; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25); }
 .rw-share-busy { font-size: 11px; color: var(--fg-3); }

@@ -8,6 +8,7 @@
 
 import { ccFromFlag } from '../lib/shared.jsx';
 import { teamLogoPath } from '../lib/teamLogo.js';
+import Icon from './Icon.astro';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -193,7 +194,7 @@ const bePodium = (n: number) => n >= 1 && n <= 3;
                   <b>{isTeam ? e.name : (e.last || e.name)}</b>
                 </span>
                 {secLabel && <span class="sec">{secLabel}</span>}
-                <span class="chev" aria-hidden="true">▶</span>
+                <Icon name="chevron-right" size={12} class="chev" />
               </span>
               <span class="be-track">
                 <span class="be-fill" style={`width:${beWidth(e)}%`}></span>
