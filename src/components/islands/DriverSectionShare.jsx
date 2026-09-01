@@ -8,9 +8,10 @@
 //   <DriverSectionShare client:visible section="duels" driverRef="norris"
 //     driverName="Lando Norris" payload={...} />
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { track } from '../../lib/analytics.js';
+import { useFocusTrap } from '../../lib/useFocusTrap.js';
 import {
   renderDriverCard, buildDriverBlob, driverShareFileName, DRIVER_SHARE_FORMATS,
 } from '../../lib/driverShareCard.js';
@@ -26,6 +27,13 @@ export default function DriverSectionShare({ section, driverRef, driverName, pay
   const [busy, setBusy] = useState(false);
   const [action, setAction] = useState('');
   const [toast, setToast] = useState('');
+  // Dialog focus: trapped inside the modal while open, returned to the
+  // "Share image" button on close. Three instances share a page, so ids are
+  // per-instance.
+  const dialogRef = useRef(null);
+  const btnRef = useRef(null);
+  const titleId = `dv-share-title-${useId()}`;
+  useFocusTrap(dialogRef, open, { returnTo: btnRef });
 
   const full = { ...payload, driverName, order, driverRef };
   const shareTitle = `${driverName} · F1gures`;
@@ -99,13 +107,13 @@ export default function DriverSectionShare({ section, driverRef, driverName, pay
 
   return (
     <div className="dv-share">
-      <button type="button" className="cmp-foot-btn cmp-foot-btn-primary" onClick={openShare} title="Export a share image">↗ Share image</button>
+      <button type="button" className="cmp-foot-btn cmp-foot-btn-primary" ref={btnRef} onClick={openShare} title="Export a share image">↗ Share image</button>
 
       {open && typeof document !== 'undefined' && createPortal(
         <div className="cmp-share-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) closeShare(); }}>
-          <div className="cmp-share-modal" role="dialog" aria-modal="true" aria-label="Share this section">
+          <div className="cmp-share-modal" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
             <div className="cmp-share-head">
-              <div className="cmp-share-title">Share image</div>
+              <div className="cmp-share-title" id={titleId}>Share image</div>
               <div className="cmp-share-segs">
                 <div className="cmp-share-seg" role="group" aria-label="Aspect ratio">
                   {Object.entries(DRIVER_SHARE_FORMATS).map(([k, f]) => (

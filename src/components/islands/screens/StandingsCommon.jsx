@@ -2,10 +2,11 @@
 // Includes the type toggle, points-progression chart, head-to-head card.
 // Recharts is imported from npm (not window.Recharts UMD).
 
-import { useEffect, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useEffect, useId, useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Customized } from 'recharts';
 import { Panel, urlFor, Flag } from '../../../lib/shared.jsx';
 import { track } from '../../../lib/analytics.js';
+import { assignSeriesStyles, colorGroups, stackLabels } from '../../../lib/chartSeries.js';
 
 export function StandingsTypeToggle({ active }) {
   return (
@@ -26,6 +27,76 @@ export function StandingsTypeToggle({ active }) {
   );
 }
 
+// Direct end-of-line labels, drawn through Recharts' <Customized> so we get
+// the resolved pixel position of each line's last point (formattedGraphicalItems)
+// and can de-collide them with stackLabels. Fill/font come from the
+// `.chart-end-label` class (theme tokens), not inline hex. `labels` maps a
+// series dataKey → text; anything not in the map is skipped.
+function EndLabels({ formattedGraphicalItems, offset, labels }) {
+  if (!formattedGraphicalItems || !offset) return null;
+  const items = [];
+  for (const g of formattedGraphicalItems) {
+    const key = g?.item?.props?.dataKey;
+    const text = key != null ? labels[key] : null;
+    if (!text) continue;
+    const pts = (g?.props?.points || []).filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y));
+    if (!pts.length) continue;
+    const last = pts[pts.length - 1];
+    items.push({ key, text, x: last.x, y: last.y });
+  }
+  if (!items.length) return null;
+  items.sort((a, b) => a.y - b.y);
+  const placed = stackLabels(items, 12, offset.top + 6, offset.top + offset.height - 4);
+  return (
+    <g className="chart-end-labels" aria-hidden="true">
+      {placed.map(it => (
+        <text key={it.key} className="chart-end-label" x={(it.x + 6).toFixed(1)} y={(it.y + 4).toFixed(1)}>{it.text}</text>
+      ))}
+    </g>
+  );
+}
+
+// Chart + a keyboard/screen-reader "Show as table" toggle that reveals the
+// same round × series numbers as a plain static table (hidden by default).
+//   columns: [{ key, label, title? }]   rows: [{ label, values: { [key]: n } }]
+function ChartWithTable({ caption, columns, rows, children }) {
+  const [open, setOpen] = useState(false);
+  const tableId = `chart-table-${useId()}`;
+  return (
+    <div className="chart-a11y">
+      {children}
+      <div className="chart-a11y-bar">
+        <button type="button" className="btn btn-ghost btn-sm" aria-expanded={open} aria-controls={tableId}
+                onClick={() => setOpen(o => !o)}>
+          {open ? 'Hide table' : 'Show as table'}
+        </button>
+      </div>
+      <div className="chart-table-wrap" id={tableId} hidden={!open}>
+        <table className="tbl tbl-static chart-table">
+          <caption className="sr-only">{caption}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Round</th>
+              {columns.map(c => <th key={c.key} scope="col" className="right" title={c.title || undefined}>{c.label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.label}>
+                <th scope="row">{r.label}</th>
+                {columns.map(c => <td key={c.key} className="right num">{r.values[c.key] ?? '–'}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Room on the right for the direct labels (3–4 mono chars past the last point).
+const CHART_MARGIN = { top: 10, right: 44, left: -10, bottom: 0 };
+
 export function PointsChart({ data, series, drivers, height = 320 }) {
   const D = data;
   if (!drivers.length || !series[drivers[0].id]) return null;
@@ -40,24 +111,34 @@ export function PointsChart({ data, series, drivers, height = 320 }) {
     drivers.forEach(d => { row[d.id] = series[d.id][i].points; });
     return row;
   });
+  // Both cars of a team share one colour: `drivers` arrive in standings order,
+  // so the higher-placed car draws solid and the teammate dashed.
+  const styles = assignSeriesStyles(drivers, { idOf: d => d.id, groupOf: d => d.team });
+  const labels = Object.fromEntries(drivers.map(d => [d.id, d.code]));
+  const columns = drivers.map(d => ({ key: d.id, label: d.code, title: d.first && d.last ? `${d.first} ${d.last}` : undefined }));
+  const rows = chartData.map(row => ({ label: `${row.round} · ${row.name}`, values: row }));
   return (
-    <div style={{ width: '100%', height }}>
-      <ResponsiveContainer>
-        <LineChart data={chartData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
-          <CartesianGrid stroke="#1f2024" strokeDasharray="2 4" vertical={false} />
-          <XAxis dataKey="round" stroke="#75767b" tickLine={false} axisLine={{ stroke: '#2a2c32' }} />
-          <YAxis stroke="#75767b" tickLine={false} axisLine={{ stroke: '#2a2c32' }} />
-          <Tooltip contentStyle={{ background: '#15161a', border: '1px solid #2a2c32' }} />
-          <Legend />
-          {drivers.map(d => (
-            <Line key={d.id} type="monotone" dataKey={d.id} name={d.code}
-                  stroke={D.teamById(d.team).color} strokeWidth={2}
-                  dot={{ r: 3, strokeWidth: 0, fill: D.teamById(d.team).color }}
-                  activeDot={{ r: 5 }} />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <ChartWithTable caption="Drivers' championship points after each round" columns={columns} rows={rows}>
+      <div style={{ width: '100%', height }}>
+        <ResponsiveContainer>
+          <LineChart data={chartData} margin={CHART_MARGIN}>
+            <CartesianGrid stroke="#1f2024" strokeDasharray="2 4" vertical={false} />
+            <XAxis dataKey="round" stroke="#75767b" tickLine={false} axisLine={{ stroke: '#2a2c32' }} />
+            <YAxis stroke="#75767b" tickLine={false} axisLine={{ stroke: '#2a2c32' }} />
+            <Tooltip contentStyle={{ background: '#15161a', border: '1px solid #2a2c32' }} />
+            <Legend />
+            {drivers.map(d => (
+              <Line key={d.id} type="monotone" dataKey={d.id} name={d.code}
+                    stroke={D.teamById(d.team).color} strokeWidth={2}
+                    strokeDasharray={styles[d.id].dash || undefined}
+                    dot={{ r: 3, strokeWidth: 0, fill: D.teamById(d.team).color }}
+                    activeDot={{ r: 5 }} />
+            ))}
+            <Customized component={<EndLabels labels={labels} />} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </ChartWithTable>
   );
 }
 
@@ -71,24 +152,35 @@ export function TeamProgressionChart({ progression, teams, height = 360 }) {
     teams.forEach(t => { row[t.team.id] = progression[t.team.id][i].points; });
     return row;
   });
+  // Teams get one colour each, but some are near-identical (Williams #64C4FF
+  // vs Racing Bulls #6692FF; historic grids that all fell back to one grey),
+  // so bucket by colour similarity and dash the second/third of a bucket.
+  const styles = assignSeriesStyles(teams, { idOf: t => t.team.id, groupOf: colorGroups(teams, t => t.team.color) });
+  const labels = Object.fromEntries(teams.map(t => [t.team.id, t.team.short]));
+  const columns = teams.map(t => ({ key: t.team.id, label: t.team.short, title: t.team.name }));
+  const rows = chartData.map(row => ({ label: row.round, values: row }));
   return (
-    <div style={{ width: '100%', height }}>
-      <ResponsiveContainer>
-        <LineChart data={chartData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
-          <CartesianGrid stroke="#1f2024" strokeDasharray="2 4" vertical={false} />
-          <XAxis dataKey="round" stroke="#75767b" tickLine={false} axisLine={{ stroke: '#2a2c32' }} />
-          <YAxis stroke="#75767b" tickLine={false} axisLine={{ stroke: '#2a2c32' }} />
-          <Tooltip contentStyle={{ background: '#15161a', border: '1px solid #2a2c32' }} />
-          <Legend />
-          {teams.map(t => (
-            <Line key={t.team.id} type="monotone" dataKey={t.team.id} name={t.team.short}
-                  stroke={t.team.color} strokeWidth={2}
-                  dot={{ r: 3, strokeWidth: 0, fill: t.team.color }}
-                  activeDot={{ r: 5 }} />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <ChartWithTable caption="Constructors' championship points after each round" columns={columns} rows={rows}>
+      <div style={{ width: '100%', height }}>
+        <ResponsiveContainer>
+          <LineChart data={chartData} margin={CHART_MARGIN}>
+            <CartesianGrid stroke="#1f2024" strokeDasharray="2 4" vertical={false} />
+            <XAxis dataKey="round" stroke="#75767b" tickLine={false} axisLine={{ stroke: '#2a2c32' }} />
+            <YAxis stroke="#75767b" tickLine={false} axisLine={{ stroke: '#2a2c32' }} />
+            <Tooltip contentStyle={{ background: '#15161a', border: '1px solid #2a2c32' }} />
+            <Legend />
+            {teams.map(t => (
+              <Line key={t.team.id} type="monotone" dataKey={t.team.id} name={t.team.short}
+                    stroke={t.team.color} strokeWidth={2}
+                    strokeDasharray={styles[t.team.id].dash || undefined}
+                    dot={{ r: 3, strokeWidth: 0, fill: t.team.color }}
+                    activeDot={{ r: 5 }} />
+            ))}
+            <Customized component={<EndLabels labels={labels} />} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </ChartWithTable>
   );
 }
 

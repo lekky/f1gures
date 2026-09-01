@@ -1,6 +1,8 @@
 // Race / sprint session charts. Every chart takes:
 //   R   — derived race bundle (see deriveRace in RaceWeekendIsland)
-//   ctx — { colorOf, teamOf, teamNameOf, nameOf, tip(e,title,lines), leave() }
+//   ctx — { colorOf, teamOf, teamNameOf, nameOf, dashOf, tip(e,title,lines), leave() }
+//         dashOf(code) → SVG stroke-dasharray for the second/third car of a
+//         team (undefined = solid), so teammates sharing a colour stay apart.
 //   sel — Set of selected driver codes (driver filter)
 import React, { useState } from 'react';
 import { PANEL, MONO, COND, Bands, YGrid, XTicks, scale, niceTicks, lapTickValues, stackLabels, DivergingLadder, FaceImg, compoundColor } from './primitives.jsx';
@@ -24,7 +26,7 @@ export function RaceTrace({ R, ctx, sel, passLap = null }) {
   maxGap = Math.min(Math.ceil(maxGap / 10) * 10, 90);
   const gy = (g) => 12 + (Math.min(g, maxGap) / maxGap) * (374 - 12);
   const lines = codes.map((c) => ({
-    code: c, color: ctx.colorOf(c),
+    code: c, color: ctx.colorOf(c), dash: ctx.dashOf?.(c),
     pts: R.gaps[c].map((g, i) => `${xl(i + 1).toFixed(1)},${gy(g).toFixed(1)}`).join(' '),
   }));
   const labels = stackLabels(codes.map((c) => {
@@ -58,7 +60,7 @@ export function RaceTrace({ R, ctx, sel, passLap = null }) {
         </g>
       )}
       {hoverLap != null && <line x1={xl(hoverLap)} x2={xl(hoverLap)} y1="10" y2="374" stroke={PANEL.fg} strokeDasharray="3 3" />}
-      {lines.map((ln) => <polyline key={ln.code} points={ln.pts} fill="none" stroke={ln.color} strokeWidth="2.4" strokeLinejoin="round" />)}
+      {lines.map((ln) => <polyline key={ln.code} points={ln.pts} fill="none" stroke={ln.color} strokeWidth="2.4" strokeDasharray={ln.dash} strokeLinejoin="round" />)}
       {labels.map((lb) => (
         <g key={lb.code}>
           <FaceImg href={ctx.faceImg?.(lb.code)} x={lb.x} y={lb.y - 12} size={16} />
@@ -106,7 +108,7 @@ export function PositionChart({ R, ctx, sel }) {
         <polyline key={c} points={mk(c)} fill="none" stroke={PANEL.dim} strokeWidth="1.4" strokeLinejoin="round" />
       ))}
       {R.finishOrder.filter((c) => sel.has(c)).map((c) => (
-        <polyline key={c} points={mk(c)} fill="none" stroke={ctx.colorOf(c)} strokeWidth="3" strokeLinejoin="round" />
+        <polyline key={c} points={mk(c)} fill="none" stroke={ctx.colorOf(c)} strokeWidth="3" strokeDasharray={ctx.dashOf?.(c)} strokeLinejoin="round" />
       ))}
       {R.finishOrder.map((c) => (
         <text key={`l${c}`} x="34" y={(leftY[c] + 3).toFixed(1)} fontFamily={MONO} fontSize="10" fontWeight="600"

@@ -11,6 +11,7 @@
 // charts instead keep a min-width and pan horizontally (see app.css).
 import React from 'react';
 import { useIsMobile } from '../../../lib/shared.jsx';
+import { stackLabels } from '../../../lib/chartSeries.js';
 import { COMPOUNDS } from './derive.js';
 
 const DARK = {
@@ -199,16 +200,10 @@ export function DivergingLadder({ rows, width = 500, rowH = 26, fmt }) {
   );
 }
 
-// End-of-line label stacking: avoids overlapping driver codes.
-export function stackLabels(items, minGap = 13, top = 18, bottom = 370) {
-  const used = {};
-  return items.map((it) => {
-    let y = Math.max(top, Math.min(bottom, it.y));
-    while (used[Math.round(y / minGap)]) y += minGap;
-    used[Math.round(y / minGap)] = 1;
-    return { ...it, y };
-  });
-}
+// End-of-line label stacking (avoids overlapping driver codes) now lives in
+// src/lib/chartSeries.js so the Recharts standings charts share it; re-exported
+// here so the chart modules keep importing from primitives.
+export { stackLabels };
 
 // Mix a hex colour toward white (f > 0) or black (f < 0).
 function mixHex(hex, toward, f) {

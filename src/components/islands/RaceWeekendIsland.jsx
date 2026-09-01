@@ -11,11 +11,13 @@
 // The race/quali/sprint results blocks render from the archive doc, so they're
 // in the prerendered HTML (SEO). Charts hydrate from
 // /data/fastf1/<year>/<round>/<session>.json written by scripts/fetch-fastf1.py.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   decodeLaps, cumTimes, gapByLap, posByLap, overtakeCount, overtakeList,
   fastestLap, lap1Gains, degSeries, teamPace, fmtLap,
 } from './raceweekend/derive.js';
+import { assignSeriesStyles } from '../../lib/chartSeries.js';
+import { useFocusTrap } from '../../lib/useFocusTrap.js';
 import { vizListFor } from './raceweekend/vizdefs.jsx';
 import { setPanelTheme } from './raceweekend/primitives.jsx';
 import { renderShareCard, shareFileName, SHARE_FORMATS } from './raceweekend/share.js';
@@ -167,6 +169,16 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   const [shareImg, setShareImg] = useState(null);
   const [shareBusy, setShareBusy] = useState(false);
   const chartRef = useRef(null);
+  // Focus management: the chart modal and the share sheet are dialogs — focus
+  // is trapped inside whichever is on top and returns to its opener on close
+  // (the gallery card for the modal, the Share button for the sheet).
+  const dialogRef = useRef(null);
+  const shareRef = useRef(null);
+  const openerRef = useRef(null);
+  const shareBtnRef = useRef(null);
+  const uid = useId();
+  const titleId = `rw-mviz-title-${uid}`;
+  const shareTitleId = `rw-share-title-${uid}`;
   // Back-button handling for the chart modal (esp. mobile): openKeyRef lets the
   // stable popstate listener read the live modal state; modalHistRef tracks the
   // dedicated history entry we push so Back closes the modal instead of leaving.
@@ -241,9 +253,25 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     return m;
   }, [data, race]);
 
+  // Line style per driver: the first car of a team (in the active session's
+  // classification order) draws solid, the teammate dashed — the shared team
+  // colour alone can't tell them apart. Codes the session doesn't list fall
+  // back to race-classification order, then whatever else `meta` knows.
+  const sessDrivers = data[tab]?.drivers;
+  const dashMap = useMemo(() => {
+    const order = [];
+    const seen = new Set();
+    const push = (c) => { if (c && !seen.has(c)) { seen.add(c); order.push(c); } };
+    (sessDrivers || []).forEach((d) => push(d.code));
+    (race.results || []).forEach((r) => push(r.code));
+    Object.keys(meta).forEach(push);
+    return assignSeriesStyles(order, { idOf: (c) => c, groupOf: (c) => meta[c]?.teamId || meta[c]?.team || null });
+  }, [sessDrivers, race, meta]);
+
   const ctx = useMemo(() => ({
     colorOf: (c) => meta[c]?.color || '#8A8B93',
     teamOf: (c) => meta[c]?.teamId || meta[c]?.team || null,
+    dashOf: (c) => dashMap[c]?.dash || undefined,
     teamNameOf: (c) => meta[c]?.team || '',
     nameOf: (c) => meta[c]?.name || c,
     faceOf: (c) => ax.faces[c] || null,
@@ -257,7 +285,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
       y: e.clientY + 14, title, lines,
     }),
     leave: () => setTt(null),
-  }), [meta, ax, faceData, logoData]);
+  }), [meta, dashMap, ax, faceData, logoData]);
 
   // driver filter (race tab)
   const defaultSel = useMemo(() => {
@@ -391,6 +419,12 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [openKey, share, openIdx, vlist]);
+
+  // Focus traps: the share sheet takes over while it's up; when it closes,
+  // focus lands back on the Share button inside the chart modal, whose trap
+  // re-engages without moving it.
+  useFocusTrap(dialogRef, !!openKey && !share, { returnTo: openerRef });
+  useFocusTrap(shareRef, !!share, { returnTo: shareBtnRef });
 
   // Lock body scroll while any overlay is up.
   useEffect(() => {
@@ -581,7 +615,8 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
         </div>
         <div className="rw-gal-grid">
           {vlist.map((d, i) => (
-            <button type="button" key={d.key} className="rw-gal-card" onClick={() => openVizModal(d.key)}>
+            <button type="button" key={d.key} className="rw-gal-card"
+              onClick={(e) => { openerRef.current = e.currentTarget; openVizModal(d.key); }}>
               <div className="rw-gal-cardtop">
                 <span className="rw-gal-num t-mono">{String(i + 1).padStart(2, '0')}</span>
                 <span className="rw-gal-tag t-mono">{d.tag}</span>
@@ -612,19 +647,20 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     const showFilter = !!openViz.filter && (tab === 'race' || tab === 'sprint');
     const filterOrder = raceR?.finishOrder || (race.results || []).filter((r) => r.code).map((r) => r.code);
     return (
-      <div className="rw-mviz-overlay" onClick={closeVizModal} role="dialog" aria-modal="true">
-        <div className="rw-mviz" onClick={(e) => e.stopPropagation()}>
+      <div className="rw-mviz-overlay" onClick={closeVizModal}>
+        <div className="rw-mviz" onClick={(e) => e.stopPropagation()}
+          ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
           <div className="rw-mviz-bar">
             <button type="button" className="rw-mviz-x" onClick={closeVizModal} aria-label="Close">✕</button>
             <span className="rw-mviz-count t-mono">{sessLabel} · {openIdx + 1} / {vlist.length}</span>
             <div className="rw-mviz-baractions">
-              <button type="button" className="rw-mviz-share" onClick={openShare} disabled={loading}>⤴ Share</button>
+              <button type="button" className="rw-mviz-share" ref={shareBtnRef} onClick={openShare} disabled={loading}>⤴ Share</button>
               <button type="button" className="rw-mviz-nav" onClick={() => stepViz(-1)} aria-label="Previous chart">←</button>
               <button type="button" className="rw-mviz-nav" onClick={() => stepViz(1)} aria-label="Next chart">→</button>
             </div>
           </div>
           <div className="rw-mviz-body">
-            <div className="rw-mviz-title">{openViz.title}</div>
+            <div className="rw-mviz-title" id={titleId}>{openViz.title}</div>
             <div className="rw-mviz-titlerule" />
             <div className="rw-mviz-desc">{openViz.desc}</div>
             {showFilter && (
@@ -699,9 +735,10 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
 
       {share && (
         <div className="rw-share-overlay" onClick={() => { setShare(null); setShareImg(null); }}>
-          <div className="rw-share-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="rw-share-modal" onClick={(e) => e.stopPropagation()}
+            ref={shareRef} role="dialog" aria-modal="true" aria-labelledby={shareTitleId} tabIndex={-1}>
             <div className="rw-share-head">
-              <div className="rw-share-title">Share this chart</div>
+              <div className="rw-share-title" id={shareTitleId}>Share this chart</div>
               <div className="rw-share-fmts">
                 {Object.entries(SHARE_FORMATS).map(([k, f]) => (
                   <button type="button" key={k} className={`rw-share-fmt${shareFmt === k ? ' is-active' : ''}`} onClick={() => setFmt(k)}>
@@ -709,7 +746,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
                   </button>
                 ))}
               </div>
-              <button type="button" className="rw-share-close" onClick={() => { setShare(null); setShareImg(null); }}>✕</button>
+              <button type="button" className="rw-share-close" onClick={() => { setShare(null); setShareImg(null); }} aria-label="Close">✕</button>
             </div>
             <div className="rw-share-preview">
               {shareImg && <img src={shareImg} alt="Share preview" />}
