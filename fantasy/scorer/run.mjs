@@ -1,4 +1,6 @@
-#!/usr/bin/env node
+// No shebang on purpose: this file is always invoked as `node run.mjs`, and a
+// hashbang line trips Vite's module transform when the checkout has CRLF line
+// endings — which it does on Windows — so the vitest suite can't import it.
 /**
  * The f1gures fantasy scorer.
  *
@@ -338,12 +340,14 @@ export async function runScorer({ pb, bundle, prevBundle = null, year, now = Dat
       // was submitted stays scored (§9 is about results, not re-litigation).
       const usage = countUsage(userPicks, p => (roundNumberOf[p.round] ?? Infinity) < plan.round, codeOfEntry);
       const check = validatePicks(lineup, { tiers: tierMap, usage, caps });
-      if (!check.ok) {
-        for (const e of check.errors) {
-          const msg = `round ${plan.round} user ${userId} slot ${e.slot}: ${e.message}`;
-          summary.violations.push(msg);
-          log(`WARN validate ${msg}`);
-        }
+      for (const e of check.errors) {
+        // An empty slot on a carried lineup is the rulebook's own outcome
+        // (§5: "a slot that can't legally carry over stays empty and scores
+        // 0"), not a violation — don't cry wolf about it every weekend.
+        if (pick.carriedForward && e.code === null) continue;
+        const msg = `round ${plan.round} user ${userId} slot ${e.slot}: ${e.message}`;
+        summary.violations.push(msg);
+        log(`WARN validate ${msg}`);
       }
 
       const scored = voidRound
