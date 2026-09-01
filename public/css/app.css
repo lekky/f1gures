@@ -415,11 +415,24 @@ html.light .nav-logo .wm-light { display: block; }
 .sstrip-decade-chip:hover { color: var(--fg-1); border-color: var(--line-3); }
 .sstrip-decade-chip.open,
 .sstrip-decade-chip.active { background: var(--fg-1); color: var(--bg-1); border-color: var(--fg-1); }
+/* The meta (and, in archive mode, the Back button) sits on an opaque --bg-2
+   plate with a short gradient fade on its left edge, above the chip row, so
+   overflowing chips visibly scroll under it instead of colliding with the
+   dot. Same ground in both themes and both strip modes (the gold lives on
+   the active chip only), so the archive variant needs no override. */
 .sstrip-meta {
+  position: relative; z-index: 1;
   margin-left: auto; display: flex; align-items: center; gap: 7px;
-  flex-shrink: 0; white-space: nowrap; min-width: 0;
+  flex-shrink: 0; white-space: nowrap; min-width: 0; height: 100%;
+  padding-left: 10px; background: var(--bg-2);
   font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.04em;
   color: var(--fg-3);
+}
+.sstrip-meta::before,
+.sstrip-back::before {
+  content: ''; position: absolute; top: 0; bottom: 0; right: 100%; width: 18px;
+  background: linear-gradient(to right, transparent, var(--bg-2));
+  pointer-events: none;
 }
 .sstrip-meta-text { overflow: hidden; text-overflow: ellipsis; }
 /* The live marker — the strip's second (and last) use of red, and only in
@@ -430,6 +443,7 @@ html.light .nav-logo .wm-light { display: block; }
 }
 @keyframes sstrip-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 .sstrip-back {
+  position: relative; z-index: 1;
   flex-shrink: 0; white-space: nowrap; cursor: pointer; border: 0;
   background: var(--fg-1); color: var(--bg-1);
   font-family: var(--f-display); font-weight: 700; font-size: 10px;
