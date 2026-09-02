@@ -3,6 +3,7 @@
 // shell.jsx.
 
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../../lib/shared.jsx';
 
 export default function StandingsDropdown({ active = false }) {
   const [open, setOpen] = useState(false);
@@ -19,8 +20,9 @@ export default function StandingsDropdown({ active = false }) {
   return (
     <div ref={ref} style={{ position: 'relative', height: '100%' }}>
       <button className={`nav-item ${active ? 'active' : ''}`}
+              aria-expanded={open}
               onClick={() => setOpen(o => !o)}>
-        Standings<span className="caret">▼</span>
+        Standings<Icon name="chevron-down" size={12} className={`caret${open ? ' is-open' : ''}`} />
       </button>
       {open && (
         <div className="nav-dropdown" style={{ top: 'calc(100% - 1px)' }}>

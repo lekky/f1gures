@@ -46,6 +46,7 @@ import { fmtDateLong } from '../lib/shared.jsx';
 import { hasDriverFace } from '../lib/driverFaceExists.js';
 import { teamLogoPath } from '../lib/teamLogo.js';
 import Flag from './Flag.astro';
+import Icon from './Icon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 
@@ -259,7 +260,7 @@ const recordCards: CircuitRecordCard[] = [
 ---
 
 <div class="page circuit-detail">
-  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/circuits/">← Circuits</a>
+  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/circuits/"><Icon name="arrow-left" size={14} />Circuits</a>
 
   <TriviaBoard client:visible />
 

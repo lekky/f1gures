@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fmtVal } from '../../lib/compareStats.js';
+import { Icon } from '../../lib/shared.jsx';
 import { renderCompareCard, buildCompareBlob, compareShareFileName, CMP_SHARE_FORMATS } from '../../lib/compareShareCard.js';
 import { NATIONALITY } from '../../lib/nationality.js';
 import { track } from '../../lib/analytics.js';
@@ -546,7 +547,7 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
 
   return (
     <div className="cmp-panel">
-      {onClose && <button className="cmp-x cmp-x-abs" onClick={onClose} aria-label="Close">✕</button>}
+      {onClose && <button className="cmp-x cmp-x-abs icon-btn" onClick={onClose} aria-label="Close"><Icon name="x" size={14} /></button>}
       <div className="cmp-tape-top">
         <Fighter side="left" id={A} kind={kind} color={aColor} />
         <div className="cmp-vscol">
@@ -581,7 +582,7 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
         {footerLeft || <span />}
         <div className="cmp-share-actions">
           {toast && <span className="cmp-toast" role="status">{toast}</span>}
-          <button className="cmp-foot-btn cmp-foot-btn-primary" onClick={openShare} title="Export a share image">↗ Share image</button>
+          <button className="cmp-foot-btn cmp-foot-btn-primary" onClick={openShare} title="Export a share image"><Icon name="share" size={14} /> Share image</button>
         </div>
       </div>
 
@@ -603,7 +604,7 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
                   <button type="button" className={`cmp-share-opt${shareLight ? ' is-active' : ''}`} onClick={() => setShareLight(true)}>Light</button>
                 </div>
               </div>
-              <button type="button" className="cmp-share-close" onClick={closeShare} aria-label="Close">✕</button>
+              <button type="button" className="cmp-share-close icon-btn" onClick={closeShare} aria-label="Close"><Icon name="x" size={14} /></button>
             </div>
             <div className={`cmp-share-preview cmp-share-preview-${shareFmt}`}>
               {shareImg && <img src={shareImg} alt="Share preview" />}
@@ -613,7 +614,7 @@ export function CompareView({ cmp, kind, teamColor, onClose, footerLeft }) {
               {toast && <span className="cmp-toast" role="status">{toast}</span>}
               {canNativeShare && (
                 <button type="button" className="cmp-foot-btn cmp-foot-btn-primary cmp-share-grow" onClick={onNativeShare} disabled={!shareImg || !!busy}>
-                  {busy === 'share' ? '…' : '↗'} Share image
+                  {busy === 'share' ? <span aria-hidden="true">…</span> : <Icon name="share" size={14} />} Share image
                 </button>
               )}
               <a

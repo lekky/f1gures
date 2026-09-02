@@ -12,6 +12,7 @@ import StandingsDropdown from './islands/StandingsDropdown.jsx';
 import GridDropdown from './islands/GridDropdown.jsx';
 import SearchPalette from './islands/SearchPalette.jsx';
 import Footer from './Footer.astro';
+import Icon from './Icon.astro';
 import currentSeason from '../data/currentSeason.js';
 
 // Current-season meta for the season strip's live label (round X/Y + next race).
@@ -86,10 +87,7 @@ const botActive =
     <div class="nav-spacer"></div>
     <div class="nav-controls">
       <button type="button" class="search-trigger" data-search-trigger aria-label="Search (Ctrl+K)">
-        <svg class="search-trigger-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
-          <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
-        </svg>
+        <Icon name="search" size={14} class="search-trigger-icon" />
         <span class="search-trigger-text">Search</span>
         <span class="search-trigger-kbd"><span data-search-mod>Ctrl</span> K</span>
       </button>
@@ -104,11 +102,8 @@ const botActive =
       <img class="nav-logo-img wm-light" src="/images/logo/f1gures-wordmark-light.png" width="560" height="141" alt="" />
     </a>
     <div style="flex:1"></div>
-    <button type="button" class="search-trigger-mobile" data-search-trigger aria-label="Search">
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
-        <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
-      </svg>
+    <button type="button" class="search-trigger-mobile icon-btn" data-search-trigger aria-label="Search">
+      <Icon name="search" size={18} />
     </button>
     <ThemeToggle client:load />
   </div>
@@ -142,17 +137,17 @@ const botActive =
 
   <!-- Mobile bottom nav (static) -->
   <nav class="botnav botnav-mobile" transition:name="nav-mobile-bottom" transition:animate="none">
-    <a class:list={['botnav-item', { active: botActive === 'home' }]} href="/">
-      <span class="botnav-icon">◇</span><span>Home</span>
+    <a class:list={['botnav-item', { active: botActive === 'home' }]} href="/" aria-current={botActive === 'home' ? 'page' : undefined}>
+      <span class="botnav-icon"><Icon name="home" size={24} /></span><span class="botnav-label">Home</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'standings' }]} href="/standings-drivers/">
-      <span class="botnav-icon">≡</span><span>Standings</span>
+    <a class:list={['botnav-item', { active: botActive === 'standings' }]} href="/standings-drivers/" aria-current={botActive === 'standings' ? 'page' : undefined}>
+      <span class="botnav-icon"><Icon name="list" size={24} /></span><span class="botnav-label">Standings</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/">
-      <span class="botnav-icon">▦</span><span>Calendar</span>
+    <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/" aria-current={botActive === 'calendar' ? 'page' : undefined}>
+      <span class="botnav-icon"><Icon name="calendar" size={24} /></span><span class="botnav-label">Calendar</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'stats' }]} href="/stats/">
-      <span class="botnav-icon">◆</span><span>Stats</span>
+    <a class:list={['botnav-item', { active: botActive === 'stats' }]} href="/stats/" aria-current={botActive === 'stats' ? 'page' : undefined}>
+      <span class="botnav-icon"><Icon name="bar-chart" size={24} /></span><span class="botnav-label">Stats</span>
     </a>
     <button
       type="button"
@@ -162,7 +157,7 @@ const botActive =
       aria-controls="more-sheet"
       aria-label="More sections"
     >
-      <span class="botnav-icon">⋯</span><span>More</span>
+      <span class="botnav-icon"><Icon name="more-horizontal" size={24} /></span><span class="botnav-label">More</span>
     </button>
   </nav>
 
@@ -172,14 +167,14 @@ const botActive =
     <div class="more-sheet-title" aria-hidden="true">More</div>
     <nav class="more-sheet-links">
       <div class="more-sheet-group" aria-hidden="true">Grid</div>
-      <a class="more-sheet-link" href="/drivers/">Drivers</a>
-      <a class="more-sheet-link" href="/teams/">Teams</a>
-      <a class="more-sheet-link" href="/circuits/">Circuits</a>
+      <a class="more-sheet-link" href="/drivers/"><Icon name="users" size={18} />Drivers</a>
+      <a class="more-sheet-link" href="/teams/"><Icon name="shield" size={18} />Teams</a>
+      <a class="more-sheet-link" href="/circuits/"><Icon name="map-pin" size={18} />Circuits</a>
       <div class="more-sheet-group" aria-hidden="true">Read</div>
-      <a class="more-sheet-link" href="/guide/">Guide</a>
-      <a class="more-sheet-link" href="/blog/">Blog</a>
+      <a class="more-sheet-link" href="/guide/"><Icon name="book-open" size={18} />Guide</a>
+      <a class="more-sheet-link" href="/blog/"><Icon name="newspaper" size={18} />Blog</a>
       <div class="more-sheet-group" aria-hidden="true">More</div>
-      <a class="more-sheet-link" href="/feedback/">Feedback</a>
+      <a class="more-sheet-link" href="/feedback/"><Icon name="message-square" size={18} />Feedback</a>
     </nav>
   </div>
   {/* View transitions: deliberately NOT transition:persist'ed. Its archive

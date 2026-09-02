@@ -1,0 +1,36 @@
+---
+// Server-rendered inline SVG icon. Paths live in src/lib/iconPaths.js so this
+// and the React `Icon` in src/lib/shared.jsx draw from one source.
+//
+//   <Icon name="calendar" />                    decorative (aria-hidden)
+//   <Icon name="x" size={14} class="chev" />    extra class for CSS hooks
+//   <Icon name="search" label="Search" />       accessible name (role="img")
+//
+// Unknown names fail the build — a missing icon should never ship silently.
+import { ICON_PATHS, ICON_STROKE } from '../lib/iconPaths.js';
+
+interface Props {
+  name: string;
+  size?: number;
+  label?: string;
+  class?: string;
+}
+
+const { name, size = 20, label, class: cls } = Astro.props;
+const d = ICON_PATHS[name];
+if (!d) throw new Error(`Icon.astro: unknown icon "${name}" (see src/lib/iconPaths.js)`);
+---
+<svg
+  class:list={['icon', `icon-${name}`, cls]}
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width={ICON_STROKE}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  focusable="false"
+  aria-hidden={label ? undefined : 'true'}
+  role={label ? 'img' : undefined}
+>{label && <title>{label}</title>}<path d={d}></path></svg>

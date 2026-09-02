@@ -288,15 +288,15 @@
          ============================================================ -->
     <section class="ds-section" id="segmented">
       <div class="ds-section-head"><h2>07 · Segmented controls</h2><span class="rule"></span></div>
-      <p class="ds-prose">Top-right of the masthead carries the theme switcher; mobile standings pages get a Drivers / Constructors / Records toggle; record sub-pages get the era toggle. Same shape, different padding.</p>
+      <p class="ds-prose">Mobile standings pages get a Drivers / Constructors / Records toggle; record sub-pages get the era toggle. Same shape, different padding. The masthead's theme control is no longer a segment pair — it's a single <code>.theme-toggle</code> icon button (sun while dark = "switch to light", moon while light) whose words live in <code>aria-label</code> + an <code>.sr-only</code> span. See <a href="TOKENS.md">TOKENS.md § Icons</a>.</p>
 
       <div class="ds-split">
         <div class="pane-dark"><span class="pane-lbl">DARK</span>
           <div class="ds-row">
-            <div class="theme-switcher">
-              <button class="theme-opt">Light</button>
-              <button class="theme-opt active">Dark</button>
-            </div>
+            <button type="button" class="theme-toggle icon-btn" aria-label="Switch to light mode" title="Switch to light mode">
+              <svg class="icon icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4V2M12 22v-2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4 12H2M22 12h-2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/></svg>
+              <span class="sr-only">Switch to light mode</span>
+            </button>
             <div class="standings-toggle" style="margin: 0;">
               <span class="standings-toggle-opt active">Drivers</span>
               <span class="standings-toggle-opt">Constructors</span>
@@ -311,10 +311,10 @@
         </div>
         <div class="pane-light theme-locked-light" style="--fg-1:#0d0e12;--fg-2:#3d3e48;--fg-3:#6a6b75;--bg-2:#fff;--bg-3:#e9eaef;--bg-hover:#e1e3ea;--line-1:#dcdee5;--line-2:#c7cad3;--line-3:#aab0bc;--accent:#E8002D;"><span class="pane-lbl">LIGHT</span>
           <div class="ds-row">
-            <div class="theme-switcher">
-              <button class="theme-opt">Light</button>
-              <button class="theme-opt active">Dark</button>
-            </div>
+            <button type="button" class="theme-toggle icon-btn" aria-label="Switch to dark mode" title="Switch to dark mode">
+              <svg class="icon icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <span class="sr-only">Switch to dark mode</span>
+            </button>
             <div class="standings-toggle" style="margin: 0;">
               <span class="standings-toggle-opt active">Drivers</span>
               <span class="standings-toggle-opt">Constructors</span>
