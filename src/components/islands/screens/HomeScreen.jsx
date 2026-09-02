@@ -89,7 +89,7 @@ function EmptyHome({ mob }) {
         <div className="kbd-corner kbd-bl"></div>
         <div className="kbd-corner kbd-br"></div>
         <div style={{ padding: mob ? 32 : 56, textAlign: 'center', color: 'var(--fg-3)' }}>
-          <div className="t-eyebrow" style={{ color: 'var(--accent)', marginBottom: 12 }}>Awaiting Season Data</div>
+          <div className="t-eyebrow" style={{ color: 'var(--fg-1)', marginBottom: 12 }}>Awaiting Season Data</div>
           <div className="t-display" style={{ fontSize: mob ? 24 : 32, marginBottom: 8, color: 'var(--fg-2)' }}>
             Refreshing<span style={{ color: 'var(--accent)' }}>.</span>
           </div>
@@ -242,7 +242,7 @@ function NextRacePanel({ data, cal, next, mob }) {
               <span></span>
               <span className="t-mono" style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}></span>
               <span></span>
-              <span className="t-mono" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: 10, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.25 }}>
+              <span className="t-mono" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: 10, color: 'var(--fg-1)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.25 }}>
                 <span>{twoTz ? 'Your time' : 'Local'}</span>
                 <span style={{ color: 'var(--fg-4)', fontWeight: 400 }}>({zoneShort(effUserZone, raceDt)})</span>
               </span>
@@ -440,7 +440,7 @@ function SeasonAtGlance({ data, cal, standings, mob }) {
       <div className="sag-grid">
         <div className="sag-main">
           <div className="sag-head">
-            <span className="t-eyebrow" style={{ color: 'var(--accent)' }}>{D.seasonYear} Season</span>
+            <span className="t-eyebrow" style={{ color: 'var(--fg-1)' }}>{D.seasonYear} Season</span>
             <span className="sag-head-rule"></span>
             <span className="t-eyebrow">{cal.length} {cal.length === 1 ? 'Round' : 'Rounds'} · Complete</span>
           </div>
