@@ -182,7 +182,7 @@ a { color: inherit; }
 .listing-controls select {
   padding: 6px 10px;
   border: 1px solid var(--line-1);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--bg-2);
   color: var(--fg-1);
   font-size: 14px;
@@ -245,45 +245,10 @@ a { color: inherit; }
   .drivers-grid,
   .teams-grid { grid-template-columns: 1fr; }
 }
-.listing-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  border: 1px solid var(--line-1);
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.listing-card:hover {
-  border-color: var(--line-3);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-}
-.listing-card-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.listing-driver-photo {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-.listing-driver-photo-fallback {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--bg-3);
-  flex-shrink: 0;
-}
-.listing-card-name { font-size: 15px; font-weight: 600; line-height: 1.2; }
-.listing-card-sub { font-size: 12px; color: var(--fg-3); }
-.listing-stats { display: flex; gap: 16px; font-size: 12px; }
-.listing-stats .lbl { color: var(--fg-3); margin-right: 3px; }
-.listing-stats .val { font-weight: 600; }
-.listing-team-bar { width: 4px; align-self: stretch; flex-shrink: 0; }
+/* .listing-card (+ -head/-name/-sub, .listing-driver-photo, .listing-stats,
+   .listing-team-bar) retired in feat/card-table-unify: the drivers/teams
+   index screens render .f1-card-link panels and nothing else referenced it.
+   New card surfaces use .card (+ .card-team / .card-accent) from app.css. */
 .pagination {
   display: flex;
   gap: 6px;
@@ -295,7 +260,7 @@ a { color: inherit; }
   display: inline-flex; align-items: center; justify-content: center;
   padding: 5px 11px;
   border: 1px solid var(--line-1);
-  border-radius: 4px;
+  border-radius: 0;
   background: none;
   color: var(--fg-2);
   font-size: 13px;

@@ -32,14 +32,14 @@ const race = getRaceArchive(year, round);
       </a>
       <span class="blog-race-card-date t-mono">{race.date}</span>
     </div>
-    <table class="blog-race-card-table">
+    <table class="tbl tbl-static">
       <thead>
         <tr>
           <th>#</th>
           <th>Driver</th>
           <th>Team</th>
-          <th class="num">Grid</th>
-          <th class="num">Pts</th>
+          <th class="right num">Grid</th>
+          <th class="right num">Pts</th>
         </tr>
       </thead>
       <tbody>
@@ -62,8 +62,8 @@ const race = getRaceArchive(year, round);
                 </a>
               ) : <span>{r.constructorName || '-'}</span>}
             </td>
-            <td class="num t-mono">{r.grid ?? '-'}</td>
-            <td class="num t-mono">{r.points}</td>
+            <td class="right num t-mono">{r.grid ?? '-'}</td>
+            <td class="right num t-mono">{r.points}</td>
           </tr>
         ))}
       </tbody>

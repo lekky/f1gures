@@ -956,7 +956,7 @@ html.light .nav-logo .wm-light { display: block; }
 .sag-champ-media-team { padding-top: 4px; }
 .sag-champ-face {
   width: 92px; height: 104px; object-fit: cover; object-position: top center;
-  border-radius: 8px; background: var(--bg-3);
+  border-radius: 0; background: var(--bg-3);
   border: 2px solid var(--tc, var(--line-2)); box-shadow: var(--shadow-card);
 }
 .sag-champ-face-fallback { display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
@@ -1246,146 +1246,156 @@ html.light .nav-logo .wm-light { display: block; }
 /* Breathing room between the leader/podium cards and the "Full Table" heading. */
 .std-podium .champ + .section-head-band { margin-top: 36px; }
 
-/* ── Mobile standings: bar rows + tap-to-expand ───────────────────
-   Each row is a proportional points bar; tapping drops an inline stat panel.
-   Only shown <=720px — desktop keeps the sortable .std-fulltable table. Both
-   are always in the DOM (CSS toggles) so there is no hydration flash and the
-   list works before JS (rows just don't expand). --tc = team colour. */
+/* ── Mobile standings: dense ranked list + tap-to-expand ─────────
+   [feat/card-table-unify · Part A] One 56 px bordered row per entry (1 px
+   --line-1 dividers, no card, no radius, no glow); tapping drops a one-line
+   stat strip + profile link. Only shown <=720px — desktop keeps the sortable
+   .std-fulltable table. Both are always in the DOM (CSS toggles) so there is
+   no hydration flash and the list works before JS (rows just don't expand).
+   --tc = team colour. Red (--accent) appears nowhere in this list: the podium
+   colour on the position digit and the longest bar already mark the leader.
+
+   Anatomy (StandingsBars.jsx):
+     .std-barlist            the list — bg-2 panel, 1 px --line-1 frame
+     .stdrow                 one entry (divider below); .is-open when expanded
+     .stdrow-head            56 px tap target (button)
+       .stdrow-pos           position digit (.pos + .pos-1/2/3 podium colours)
+       .stdrow-chg           round-over-round Δ (existing .chg indicator)
+       .stdrow-strip         3 px team-colour strip
+       .stdrow-face/-logo    32 px headshot / 26 px team logo (optional)
+       .stdrow-main          name (first 400 / last 700) over team (11 px fg-3)
+       .stdrow-bar/-fill     4 px team-colour bar, width = share of P1 points
+       .stdrow-pts           points, 18 px display, tabular
+       .stdrow-caret         › chevron (row style), rotates when open
+     .stdrow-panel           grid-rows 0fr→1fr height animation (<=120 ms)
+       .stdrow-stats         one-line mono stat strip (.stdrow-stat ×4 + form)
+       .stdrow-form          L5 mini-bars (MiniChart, team colour)
+       .stdrow-lineup        constructors only — compact driver lines
+       .stdrow-foot          profile text link + "Leader" / "−N to P1" tag */
 .std-barlist { display: none; }
 @media (max-width: 720px) {
   .std-barlist { display: block; }
   .std-fulltable { display: none; }
 }
-
-/* Each row is its own card so a collapsed row reads as a distinct surface
-   above the page background (not merged into it). */
-.stdrow {
+.std-barlist {
   background: var(--bg-2);
   border: 1px solid var(--line-1);
-  border-radius: 8px;
-  margin-bottom: 8px;
+  border-radius: 0;
 }
-.stdrow.is-open {
-  background: var(--bg-2);
-  border-color: var(--tc, var(--line-2));
-  border-width: 2px;
-}
+.stdrow { border-bottom: 1px solid var(--line-1); }
+.stdrow:last-child { border-bottom: 0; }
+
 .stdrow-head {
-  display: flex; align-items: stretch; gap: 11px; width: 100%;
-  padding: 11px 10px; background: none; border: 0; text-align: left;
+  display: flex; align-items: center; gap: var(--sp-2, 8px); width: 100%;
+  min-height: 56px; padding: 0 var(--sp-3, 12px) 0 var(--sp-2, 8px);
+  background: none; border: 0; text-align: left;
   color: inherit; cursor: pointer; font: inherit;
   -webkit-tap-highlight-color: transparent;
+  transition: background var(--mo, 120ms) ease;
 }
-.stdrow-pos {
-  flex: 0 0 22px; align-self: center; text-align: center;
-  font-family: var(--f-display); font-weight: 800; font-size: 18px;
-  color: var(--fg-1); font-variant-numeric: tabular-nums;
-}
-.stdrow-strip { flex: 0 0 3px; align-self: stretch; background: var(--tc, var(--fg-3)); border-radius: 2px; }
-.stdrow-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
-
-.stdrow-top { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.stdrow.is-open .stdrow-head { background: var(--bg-3); }
+.stdrow-pos.pos { flex: 0 0 26px; width: 26px; font-size: 18px; line-height: 1; }
+.stdrow-chg { flex: 0 0 auto; display: inline-flex; }
+.stdrow-chg .chg { width: auto; font-size: 10px; }
+.stdrow-strip { flex: 0 0 3px; align-self: stretch; margin: 10px 0; background: var(--tc, var(--line-2)); }
 .stdrow-face {
-  flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
-  object-fit: cover; background: var(--bg-3);
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
+  object-fit: cover; object-position: top center; background: var(--bg-3);
 }
-.stdrow-flag.flag-img { height: 13px; flex: 0 0 auto; }
+.stdrow-logo { flex: 0 0 auto; display: inline-flex; width: 32px; justify-content: center; }
+.stdrow-flag.flag-img { height: 14px; flex: 0 0 auto; }
+
+.stdrow-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 8px 0; }
 /* Name: the surname is protected (never truncates); the given name shrinks to
    an ellipsis first so "Andrea Kimi Antonelli" keeps "Antonelli" readable. */
-.stdrow-name { display: flex; align-items: baseline; gap: 4px; min-width: 0; font-size: 14px; }
+.stdrow-name { display: flex; align-items: baseline; gap: 4px; min-width: 0; font-size: 14px; line-height: 1.15; }
 .stdrow-name .first {
   flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-  white-space: nowrap; color: var(--fg-3); font-weight: 400;
+  white-space: nowrap; color: var(--fg-2); font-weight: 400;
 }
 .stdrow-name b { flex: 0 0 auto; white-space: nowrap; color: var(--fg-1); font-weight: 700; }
-.stdrow-name-team {
-  display: block; font-family: var(--f-display); text-transform: uppercase;
-  letter-spacing: 0.01em; font-size: 15px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
-}
 .stdrow-team {
-  margin-left: auto; flex: 0 1 auto; min-width: 0; max-width: 44%;
-  font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.03em;
+  font-size: 11px; line-height: 1.1; color: var(--fg-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.stdrow-caret { flex: 0 0 auto; width: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--fg-3); }
-.stdrow.is-open .stdrow-caret { color: var(--fg-1); }
-
-/* Points bar */
 .stdrow-bar {
-  position: relative; display: block; height: 26px; border-radius: 3px;
-  overflow: hidden; background: color-mix(in srgb, var(--fg-1) 9%, var(--bg-2));
+  display: block; height: 4px; margin-top: 2px;
+  background: var(--line-1); border-radius: 0; overflow: hidden;
 }
-.stdrow-fill {
-  position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px;
-  background: linear-gradient(90deg,
-    color-mix(in srgb, var(--tc, var(--accent)) 92%, transparent),
-    color-mix(in srgb, var(--tc, var(--accent)) 62%, transparent));
+.stdrow-fill { display: block; height: 100%; background: var(--tc, var(--fg-3)); border-radius: 0; }
+.stdrow-pts {
+  flex: 0 0 auto; min-width: 36px; text-align: right;
+  font-family: var(--f-display); font-weight: 800; font-size: 18px; line-height: 1;
+  color: var(--fg-1); font-variant-numeric: tabular-nums;
 }
-/* Value rides in a solid chip so it always clears WCAG AA regardless of the
-   team-colour fill it may sit over (white-on-bright-fill would otherwise fail). */
-.stdrow-val {
-  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-  display: flex; align-items: baseline; gap: 3px;
-  padding: 2px 7px; border-radius: 4px;
-  background: var(--bg-1); color: var(--fg-1);
-  font-family: var(--f-display); font-weight: 800; font-size: 13px;
+/* Row chevron — same glyph/colour as the clickable-row affordance (Pattern 1b). */
+.stdrow-caret {
+  flex: 0 0 auto; width: 12px; text-align: center;
+  font-family: var(--f-mono); font-size: 16px; line-height: 1; color: var(--fg-4);
+  transition: transform var(--mo, 120ms) ease, color var(--mo, 120ms) ease; display: inline-flex; align-items: center; justify-content: center; }
+.stdrow.is-open .stdrow-caret { transform: rotate(90deg); color: var(--fg-2); }
+
+/* Expand panel — grid-rows trick animates height without measuring. */
+.stdrow-panel {
+  display: grid; grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows var(--mo, 120ms) ease, visibility 0s linear var(--mo, 120ms);
+}
+.stdrow.is-open .stdrow-panel { grid-template-rows: 1fr; visibility: visible; transition-delay: 0s; }
+.stdrow-panel-in { min-height: 0; overflow: hidden; }
+.stdrow.is-open .stdrow-panel-in { padding: 6px var(--sp-3, 12px) var(--sp-3, 12px) 44px; }
+@media (prefers-reduced-motion: reduce) {
+  .stdrow-panel, .stdrow-caret, .stdrow-head { transition: none; }
+}
+
+/* One-line stat strip: "3 WINS · 5 PODS · 1 POLES · 2 FL · L5 ▁▃▅" */
+.stdrow-stats {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  font-family: var(--f-mono); font-size: 12px; color: var(--fg-1);
   font-variant-numeric: tabular-nums;
 }
-.stdrow-val small { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
-
-/* Expanded panel */
-.stdrow-panel { padding: 2px 10px 14px 44px; }
-.stdrow-stats {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
-  margin-bottom: 10px;
+.stdrow-stat { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+.stdrow-stat b { font-weight: 600; }
+.stdrow-stat span {
+  font-family: var(--f-display); font-weight: 600; font-size: 9px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3);
 }
-.stdrow-stat { padding: 9px 4px; text-align: center; }
-.stdrow-stat + .stdrow-stat { border-left: 1px solid var(--line-1); }
-.stdrow-stat-num {
-  font-family: var(--f-display); font-weight: 800; font-size: 20px;
-  color: var(--fg-1); line-height: 1; font-variant-numeric: tabular-nums;
-}
-.stdrow-stat-lbl {
-  margin-top: 4px; font-size: 9px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--fg-3);
+.stdrow-form { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; }
+.stdrow-form > span {
+  font-family: var(--f-display); font-weight: 600; font-size: 9px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3);
 }
 
-/* Constructor line-up */
-.stdrow-lineup {
-  border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
-  margin-bottom: 10px;
-}
+/* Constructor line-up: one compact line per driver. */
+.stdrow-lineup { margin-top: 6px; border-top: 1px solid var(--line-1); }
 .stdrow-lineup-row {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-  color: inherit; text-decoration: none;
+  display: flex; align-items: center; gap: 8px; padding: 5px 0;
+  color: inherit; text-decoration: none; font-size: 12px;
 }
 .stdrow-lineup-row + .stdrow-lineup-row { border-top: 1px solid var(--line-1); }
-.stdrow-lineup-row:hover { background: var(--bg-hover); }
-.stdrow-lineup-face { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: var(--bg-3); }
-.stdrow-lineup-flag.flag-img { height: 14px; flex: 0 0 auto; }
-.stdrow-lineup-name { min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stdrow-lineup-pos { flex: 0 0 24px; font-family: var(--f-mono); font-size: 10px; color: var(--fg-3); letter-spacing: 0.04em; }
+.stdrow-lineup-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stdrow-lineup-name .first { color: var(--fg-3); }
 .stdrow-lineup-name b { color: var(--fg-1); font-weight: 700; }
-.stdrow-lineup-pos { flex: 0 0 auto; font-family: var(--f-mono); font-size: 10px; color: var(--fg-3); letter-spacing: 0.04em; }
 .stdrow-lineup-pts {
-  margin-left: auto; flex: 0 0 auto; display: flex; align-items: baseline; gap: 3px;
-  font-family: var(--f-display); font-weight: 800; font-size: 15px; color: var(--fg-1);
-  font-variant-numeric: tabular-nums;
+  margin-left: auto; flex: 0 0 auto; font-family: var(--f-mono); font-size: 12px;
+  font-weight: 600; color: var(--fg-1); font-variant-numeric: tabular-nums;
 }
-.stdrow-lineup-pts small { font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
 
-/* Form + gap + profile link */
-.stdrow-formrow { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.stdrow-form-lbl { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
-.stdrow-gap { margin-left: auto; font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); letter-spacing: 0.02em; }
+/* Profile link + gap tag */
+.stdrow-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; }
 .stdrow-profile {
-  display: inline-block; font-family: var(--f-display); font-weight: 700;
-  font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--accent-text); text-decoration: none;
+  font-family: var(--f-display); font-weight: 700; font-size: 12px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--fg-2); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
 }
-.stdrow-profile:hover { text-decoration: underline; }
+.stdrow-profile:hover { color: var(--fg-1); text-decoration-color: currentColor; }
+.stdrow-gap { font-family: var(--f-mono); font-size: 11px; color: var(--fg-3); letter-spacing: 0.02em; white-space: nowrap; }
+.stdrow-gap.is-leader {
+  font-family: var(--f-display); font-weight: 800; font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3);
+}
 
 /* Flag images (lipis flag-icons, 4:3). Height is driven by the surrounding
    font-size so each call site keeps its previous visual weight; width
@@ -1522,10 +1532,9 @@ html.light .tab.live { color: #c10021; }
 /* ============================================================
    STAT BLOCK / KPI
    ============================================================ */
+/* Layout on top of .card (markup: class="card stat"). */
 .stat {
   padding: 14px;
-  border: 1px solid var(--line-1);
-  background: var(--bg-2);
   display: flex; flex-direction: column; gap: 6px;
 }
 .stat-lbl {
@@ -1601,45 +1610,64 @@ html.light .tab.live { color: #c10021; }
 }
 
 /* ============================================================
-   RACE CARD
+   CARD BASE  [feat/card-table-unify · Part B]
+   One surface for every card (design-system/audit.html · #cards):
+   bg-2, 1 px --line-1, radius 0, --shadow-card (the same lift as
+   .panel), hover = border -> --line-3 on interactive cards only.
+   Variants only change where the colour lands:
+     .card-team    3 px left strip, colour from --team
+     .card-accent  2 px top rule, colour from --card-accent (records hero)
+     .is-next      accent border + glow (the calendar's "next race")
+   Layout classes (.race-card, .blog-card, .stat, .current-driver-card,
+   .notable-driver-card) sit ON TOP of .card and own only their inner
+   layout - never surface, radius or hover. The top-right arrow is the
+   existing Pattern 1 affordance (.f1-card-link / .race-card-link /
+   .blog-card), the row chevron is Pattern 1b - one per element, never
+   two (see the affordance-exclusivity note further down).
    ============================================================ */
-.race-card {
-  position: relative; padding: 16px; cursor: pointer;
-  background: var(--bg-2); border: 1px solid var(--line-1);
+.card {
+  position: relative;
+  box-sizing: border-box;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: 0;
   box-shadow: var(--shadow-card);
-  display: flex; flex-direction: column; gap: 12px;
-  transition: border-color .12s, background .12s, box-shadow .12s;
-  min-height: 200px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--mo, 120ms) ease, background var(--mo, 120ms) ease;
 }
-.race-card:hover { border-color: var(--line-3); background: var(--bg-elevated); }
-
-/* Completed - recede into history */
-.race-card.is-completed {
-  opacity: 0.45;
-  border-color: var(--line-1);
-}
-.race-card.is-completed:hover { opacity: 0.75; border-color: var(--line-2); }
-
-/* Next - dominant focal point */
-.race-card.is-next {
+/* Hover only where the card navigates (anchor, button, or an opt-in link class). */
+.card:where(a, button, .race-card-link, .blog-card, .f1-card-link):hover { border-color: var(--line-3); }
+.card-team { border-left: 3px solid var(--team, var(--line-2)); }
+.card-accent { border-top: 2px solid var(--card-accent, var(--accent)); }
+.card.is-next {
   border: 2px solid var(--accent);
   background: var(--bg-elevated);
   box-shadow: 0 0 0 1px rgba(232,0,45,0.2), 0 8px 32px rgba(232,0,45,0.14);
 }
-.race-card.is-next::before {
+.card.is-next::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(80% 70% at 50% 0%, rgba(232,0,45,0.1) 0%, transparent 65%);
 }
-.race-card.is-next:hover {
+.card.is-next:hover {
   border-color: var(--accent);
   background: var(--bg-elevated);
   box-shadow: 0 0 0 1px rgba(232,0,45,0.35), 0 8px 40px rgba(232,0,45,0.2);
 }
 
-/* Upcoming - clean, forward-looking */
-.race-card.is-upcoming {
-  border-color: var(--line-1);
+/* ============================================================
+   RACE CARD  (layout on top of .card - markup: "card race-card")
+   ============================================================ */
+.race-card {
+  padding: 16px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 12px;
+  min-height: 200px;
 }
+.race-card:hover { background: var(--bg-elevated); }
+
+/* Completed - recede into history */
+.race-card.is-completed { opacity: 0.45; }
+.race-card.is-completed:hover { opacity: 0.75; }
 .race-card-head {
   display: flex; justify-content: space-between; align-items: flex-start;
 }
@@ -1697,7 +1725,7 @@ html.light .tab.live { color: #c10021; }
   font-family: var(--f-mono); font-weight: 700; font-size: 12px;
   line-height: 1; color: #fff;
   background: rgba(10,10,12,0.86);
-  padding: 3px 5px; border-radius: 2px;
+  padding: 3px 5px; border-radius: 0;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
 }
 .cal-row.is-next-row {
@@ -1778,31 +1806,6 @@ html.light .tab.live { color: #c10021; }
   border-radius: 50%; object-fit: cover; object-position: center 12%;
   background: var(--bg-3); border: 1px solid var(--line-2);
 }
-
-/* ============================================================
-   DRIVER CARD (small)
-   ============================================================ */
-.driver-card {
-  background: var(--bg-2);
-  border: 1px solid var(--line-1);
-  box-shadow: var(--shadow-card);
-  padding: 14px;
-  display: flex; gap: 12px; align-items: center;
-  border-left: 3px solid var(--team-color);
-  cursor: pointer;
-  transition: background .12s;
-}
-.driver-card:hover { background: var(--bg-elevated); }
-.driver-card .pos {
-  font-family: var(--f-display); font-weight: 800; font-size: 28px;
-  width: 36px; text-align: center;
-}
-.driver-card .meta { flex: 1; min-width: 0; }
-.driver-card .name { font-family: var(--f-display); font-weight: 700; font-size: 16px; line-height: 1.1; text-transform: uppercase; }
-.driver-card .team { font-size: 11px; color: var(--fg-3); margin-top: 2px; font-family: var(--f-display); letter-spacing: 0.1em; text-transform: uppercase; }
-.driver-card .pts { text-align: right; }
-.driver-card .pts-num { font-family: var(--f-display); font-weight: 800; font-size: 22px; line-height: 1; }
-.driver-card .pts-lbl { font-size: 10px; color: var(--fg-3); font-family: var(--f-display); letter-spacing: 0.14em; text-transform: uppercase; }
 
 /* ============================================================
    IMAGE PLACEHOLDER (silhouettes etc)
@@ -2001,6 +2004,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
    ============================================================ */
 .tbl.tbl-static { min-width: 0; }
 .tbl.tbl-static tbody tr { cursor: default; }
+.tbl.tbl-static tbody tr:nth-child(even) { background: transparent; }
 .tbl.tbl-static tbody tr:hover { background: transparent; }
 .tbl.tbl-static tbody tr.clickable td:last-child::after { content: none; }
 
@@ -2058,7 +2062,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
     position: relative;
     background: var(--bg-2);
     border: 1px solid var(--line-1);
-    border-radius: 8px;
+    border-radius: 0;
     padding: 11px 32px 12px 14px;
     margin: 0 0 8px;
     cursor: pointer;
@@ -2076,7 +2080,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
      strip at the left edge. */
   .tbl-cards tr::before {
     content: ''; position: absolute; top: 9px; bottom: 9px; width: 3px;
-    left: 7px; border-radius: 2px;
+    left: 7px; border-radius: 0;
     background: var(--team-color, var(--line-2));
   }
   .tbl-cards tr:has(td.card-pos)::before { left: 39px; }
@@ -2175,7 +2179,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards td.card-metric,
   .tbl-cards td.card-primary .tbl-card-bar {
     display: block; position: relative; height: 26px; margin-top: 10px;
-    padding: 0; border: none; border-radius: 4px; overflow: hidden;
+    padding: 0; border: none; border-radius: 0; overflow: hidden;
     background: color-mix(in srgb, var(--fg-1) 9%, var(--bg-2));
   }
   .tbl-cards td.card-metric::before { content: none; }
@@ -2183,7 +2187,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards td.card-metric .tbl-card-fill,
   .tbl-cards td.card-primary .tbl-card-bar .tbl-card-fill {
     display: block; position: absolute; left: 0; top: 0; bottom: 0; height: auto;
-    width: var(--tbl-card-bar, 100%); min-width: 3px; border-radius: 4px;
+    width: var(--tbl-card-bar, 100%); min-width: 3px; border-radius: 0;
     background: linear-gradient(90deg,
       color-mix(in srgb, var(--tc, var(--team-color, var(--accent))) 92%, transparent),
       color-mix(in srgb, var(--tc, var(--team-color, var(--accent))) 62%, transparent));
@@ -2193,7 +2197,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .tbl-cards td.card-primary .tbl-card-bar .tbl-card-val {
     position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
     display: flex; align-items: baseline; gap: 3px;
-    padding: 2px 8px; border-radius: 4px; background: var(--bg-1); color: var(--fg-1);
+    padding: 2px 8px; border-radius: 0; background: var(--bg-1); color: var(--fg-1);
     font-family: var(--f-display); font-weight: 800; font-size: 13px;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
@@ -2275,21 +2279,21 @@ html.light .circuit-track .circuit-track-light { display: block; }
     background: none; height: auto; overflow: visible; margin-top: 10px;
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar {
-    display: block; position: relative; height: 26px; border-radius: 4px;
+    display: block; position: relative; height: 26px; border-radius: 0;
     overflow: hidden; background: color-mix(in srgb, var(--fg-1) 9%, var(--bg-2));
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar-track {
     position: absolute; inset: 0; height: auto; min-width: 0; background: none;
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar-fill {
-    height: 100%; border-radius: 4px;
+    height: 100%; border-radius: 0;
     background: linear-gradient(90deg,
       color-mix(in srgb, var(--team-color, var(--accent)) 92%, transparent),
       color-mix(in srgb, var(--team-color, var(--accent)) 62%, transparent)) !important;
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar-lbl {
     position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-    min-width: 0; padding: 2px 8px; border-radius: 4px;
+    min-width: 0; padding: 2px 8px; border-radius: 0;
     background: var(--bg-1); color: var(--fg-1); font-size: 13px;
   }
   .tbl-cards td.team-finish-col.card-metric .finish-bar-lbl.is-champ { color: var(--accent-text); }
@@ -2629,7 +2633,6 @@ html.light .circuit-track .circuit-track-light { display: block; }
    class screens add to bare <a>/<div> wrappers that don't already
    carry a card class (HomeScreen panels, listing FeatureCards). */
 .race-card.race-card-link,
-.listing-card,
 .blog-card,
 .blog-race-card,
 .blog-article-nav-link,
@@ -2637,7 +2640,6 @@ html.light .circuit-track .circuit-track-light { display: block; }
   position: relative;
 }
 .race-card.race-card-link::after,
-.listing-card::after,
 .blog-card::after,
 .blog-race-card::after,
 .blog-article-nav-link::after,
@@ -2657,7 +2659,6 @@ html.light .circuit-track .circuit-track-light { display: block; }
   z-index: 2;
 }
 .race-card.race-card-link:hover::after,
-.listing-card:hover::after,
 .blog-card:hover::after,
 .blog-race-card:hover::after,
 .blog-article-nav-link:hover::after,
@@ -2671,8 +2672,8 @@ html.light .circuit-track .circuit-track-light { display: block; }
    element (.card-accent-arrow on records hero cards) - never two.
 
    Rules of thumb:
-   - Don't combine .race-card-link / .blog-card / .listing-card with
-     .f1-card-link (they each already provide the ::after arrow).
+   - Don't combine .race-card-link / .blog-card with .f1-card-link
+     (they each already provide the ::after arrow).
    - Don't apply .f1-card-link to a .card-accent - the records card uses
      its own .card-accent-arrow child element.
    - .f1-row-link and .tbl tbody tr.clickable already share the row
@@ -2839,15 +2840,14 @@ html.light .circuit-track .circuit-track-light { display: block; }
   .team-drivers-list { grid-template-columns: 1fr; }
 }
 
+/* Navigable race card / calendar row: hover is a border-colour change only
+   (no lift) - .card.is-next / .cal-row.is-next-row override with accent. */
 .race-card-link {
   position: relative;
   cursor: pointer;
-  transition: border-color 120ms ease, transform 120ms ease;
+  transition: border-color var(--mo, 120ms) ease;
 }
-.race-card-link:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
+.race-card-link:hover { border-color: var(--line-3); }
 .race-card-stretch {
   position: absolute;
   inset: 0;
@@ -2919,18 +2919,12 @@ html.light .circuit-track .circuit-track-light { display: block; }
 }
 .blog-list-item { margin: 0; }
 
+/* Layout on top of .card (markup: class="card blog-card"). The 3 px accent
+   rail is the editorial cue - surface, hover and radius come from .card. */
 .blog-card {
-  position: relative;
-  transition: border-color 120ms, transform 120ms, box-shadow 120ms;
   border-left: 3px solid var(--accent);
-  box-shadow: var(--shadow-card);
   height: 100%;
-  box-sizing: border-box;
   overflow: hidden;
-}
-.blog-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-card-hover);
 }
 .blog-card-img {
   position: relative;
@@ -3250,29 +3244,18 @@ html.light .circuit-track .circuit-track-light { display: block; }
 }
 .blog-race-card-title:hover { color: var(--accent); }
 .blog-race-card-date { color: var(--fg-3); font-size: 12px; }
-.blog-race-card-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+/* Results table inside the blog race card: the site-wide .tbl.tbl-static
+   (markup in blog/RaceResult.astro; .blog-race-card-table retired in
+   feat/card-table-unify) with tighter cells so it fits the article column. */
+.blog-race-card .tbl { font-size: 14px; }
+.blog-race-card .tbl thead th {
+  position: static; background: transparent; color: var(--fg-3);
+  padding: 4px 8px 6px 0; border-bottom-color: var(--line-1);
 }
-.blog-race-card-table th {
-  text-align: left;
-  font-family: var(--f-display);
-  font-weight: 600;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--fg-3);
-  padding: 4px 8px 6px 0;
-  border-bottom: 1px solid var(--line-1);
-}
-.blog-race-card-table th.num,
-.blog-race-card-table td.num { text-align: right; padding-right: 0; }
-.blog-race-card-table td {
-  padding: 6px 8px 6px 0;
-  border-bottom: 1px solid var(--line-1);
-}
-.blog-race-card-table tbody tr:last-child td { border-bottom: 0; }
+.blog-race-card .tbl td { padding: 6px 8px 6px 0; white-space: normal; }
+.blog-race-card .tbl th.right,
+.blog-race-card .tbl td.right { padding-right: 0; }
+.blog-race-card .tbl tbody tr:last-child { border-bottom: 0; }
 .blog-race-card-driver,
 .blog-race-card-team {
   color: inherit;
@@ -3306,7 +3289,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
   height: 18px;
   margin: 0;
   border: 0;
-  border-radius: 3px;
+  border-radius: 2px;
   object-fit: contain;
   background: #fff;
   padding: 1px;
@@ -3377,8 +3360,8 @@ html.light .circuit-track .circuit-track-light { display: block; }
 
 @media (max-width: 720px) {
   .blog-race-card { padding: 12px 12px; }
-  .blog-race-card-table th:nth-child(3),
-  .blog-race-card-table td:nth-child(3) { display: none; }
+  .blog-race-card .tbl th:nth-child(3),
+  .blog-race-card .tbl td:nth-child(3) { display: none; }
   .blog-season-chart-totals { margin-left: 0; }
 }
 
@@ -4043,26 +4026,17 @@ html.light .circuit-track .circuit-track-light { display: block; }
 @media (max-width: 1024px) { .records-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px)  { .records-grid { grid-template-columns: 1fr; } }
 
+/* Layout on top of .card (markup: class="card card-accent"); the 2 px top
+   rule lives with the .card modifiers. Hover lifts the whole border to the
+   accent colour - the one modifier-specific hover (TOKENS §6 · Cards). */
 .card-accent {
   --card-accent: var(--accent);
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px 16px 14px;
-  background: var(--bg-2);
-  border: 1px solid var(--line-1);
-  border-top: 2px solid var(--card-accent);
-  text-decoration: none;
-  color: inherit;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
-.card-accent:hover {
-  transform: translateY(-1px);
-  border-color: var(--card-accent);
-  box-shadow: var(--shadow-card-hover);
-  border-top-color: var(--card-accent);
-}
+.card-accent:hover { border-color: var(--card-accent); }
 .card-accent-head {
   display: flex;
   align-items: center;

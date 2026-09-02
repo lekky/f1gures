@@ -76,7 +76,7 @@ function NextRaceHero({ F, race, mob }) {
 
   return (
     <div
-      className="race-card race-card-link is-next cal-next-card"
+      className="card race-card race-card-link is-next cal-next-card"
       style={{ marginBottom: 28, minHeight: 0 }}
     >
       <a className="race-card-stretch" href={raceHref} aria-label={`${race.name} - round ${race.round}`}></a>
