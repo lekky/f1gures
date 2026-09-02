@@ -6,6 +6,37 @@
 import { useEffect, useState } from 'react';
 import { roundPointsMap } from './seasonStats.mjs';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
+import { ICON_PATHS, ICON_STROKE } from './iconPaths.js';
+
+// ─── Icons ────────────────────────────────────────────────────
+// React twin of src/components/Icon.astro — same path map, same SVG contract
+// (24x24 viewBox, stroke currentColor, 1.8 stroke, round caps/joins, no fill).
+// Decorative by default (aria-hidden); pass `label` only when the icon is the
+// whole accessible content of a control without its own aria-label.
+export function Icon({ name, size = 20, label, className = '', style }) {
+  const d = ICON_PATHS[name];
+  if (!d) return null;
+  return (
+    <svg
+      className={`icon icon-${name}${className ? ' ' + className : ''}`}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={ICON_STROKE}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      focusable="false"
+      aria-hidden={label ? undefined : 'true'}
+      role={label ? 'img' : undefined}
+      style={style}
+    >
+      {label && <title>{label}</title>}
+      <path d={d} />
+    </svg>
+  );
+}
 
 // ─── URL helpers ──────────────────────────────────────────────
 // Listing pages use clean Astro paths. Detail pages (driver/race/circuit/team)

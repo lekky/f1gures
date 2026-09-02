@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import {
-  Panel, SectionHead, ChangeIndicator, DriverCell, useIsMobile, urlFor,
+  Panel, SectionHead, ChangeIndicator, DriverCell, Icon, useIsMobile, urlFor,
   MiniChart, lastNCompletedRounds, driverPointsForRound,
 } from '../../../lib/shared.jsx';
 import { StandingsTypeToggle, PointsChart, HeadToHead } from './StandingsCommon.jsx';
@@ -51,7 +51,7 @@ export default function DriverStandingsScreen({ data }) {
     else { setSortKey(k); setSortDir(nextDir); }
     track('standings_sort', { sort_key: k, sort_dir: nextDir, season_year: DD.seasonYear });
   };
-  const SortInd = ({ k }) => sortKey === k ? <span className="sort-ind">{sortDir === 'asc' ? '▲' : '▼'}</span> : null;
+  const SortInd = ({ k }) => sortKey === k ? <Icon name={sortDir === 'asc' ? 'chevron-up' : 'chevron-down'} size={11} className="sort-ind" /> : null;
 
   const exportCSV = () => {
     const headers = ['Position', 'Driver', 'Code', 'Nationality', 'Team', 'Points', 'Wins', 'Podiums', 'Poles', 'Fastest Laps', 'DNFs'];

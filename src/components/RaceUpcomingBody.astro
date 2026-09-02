@@ -162,10 +162,12 @@ const initialNextKey = nextIdx >= 0 ? sessionRows[nextIdx].key : null;
 )}
 
 {((race.qualifying && race.qualifying.length > 0) || (race.sprint_results && race.sprint_results.length > 0)) && (
-  <script is:inline>
+  <script is:inline data-astro-rerun>
     // Expand/collapse the top-10 quali/sprint tables. RaceResultsBody carries its
     // own copy of this for completed races; holding pages don't render that
     // component, so these pre-race tables need the handler here.
+    // data-astro-rerun: binds per-page buttons; must re-run after every
+    // view-transition swap (identical scripts are otherwise deduped).
     document.querySelectorAll('.tbl-expand').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var box = document.querySelector(btn.getAttribute('data-target'));

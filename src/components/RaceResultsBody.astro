@@ -97,9 +97,11 @@ const winnerColor = winnerRow?.constructorColor || 'var(--accent)';
   </>
 )}
 
-<script is:inline>
+<script is:inline data-astro-rerun>
   // Expand/collapse the top-10 results tables. Each button toggles
   // data-collapsed on its target panel; CSS hides .rr-extra rows while collapsed.
+  // data-astro-rerun: binds per-page buttons; must re-run after every
+  // view-transition swap (identical scripts are otherwise deduped).
   document.querySelectorAll('.tbl-expand').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var box = document.querySelector(btn.getAttribute('data-target'));

@@ -1,6 +1,8 @@
 ---
 // Shared blog pagination control (index + category pages).
 // Page 1 lives at `basePath` (e.g. "/blog/"); page N at `${basePath}${n}/`.
+import Icon from '../Icon.astro';
+
 interface Props {
   currentPage: number;
   lastPage: number;
@@ -30,9 +32,9 @@ if (lastPage <= 7) {
 {lastPage > 1 && (
   <nav class="blog-pager" aria-label="Blog pagination">
     {currentPage > 1 ? (
-      <a class="blog-pager-edge" href={hrefFor(currentPage - 1)} rel="prev">← Newer</a>
+      <a class="blog-pager-edge" href={hrefFor(currentPage - 1)} rel="prev"><Icon name="arrow-left" size={14} />Newer</a>
     ) : (
-      <span class="blog-pager-edge is-disabled" aria-disabled="true">← Newer</span>
+      <span class="blog-pager-edge is-disabled" aria-disabled="true"><Icon name="arrow-left" size={14} />Newer</span>
     )}
 
     <ol class="blog-pager-nums">
@@ -48,9 +50,9 @@ if (lastPage <= 7) {
     </ol>
 
     {currentPage < lastPage ? (
-      <a class="blog-pager-edge" href={hrefFor(currentPage + 1)} rel="next">Older →</a>
+      <a class="blog-pager-edge" href={hrefFor(currentPage + 1)} rel="next">Older<Icon name="arrow-right" size={14} /></a>
     ) : (
-      <span class="blog-pager-edge is-disabled" aria-disabled="true">Older →</span>
+      <span class="blog-pager-edge is-disabled" aria-disabled="true">Older<Icon name="arrow-right" size={14} /></span>
     )}
   </nav>
 )}

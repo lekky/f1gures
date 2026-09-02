@@ -124,8 +124,10 @@ const jsonLd = {
     </div>
   </div>
 
-  <script is:inline>
-    /* Contents-rail scroll-spy: highlight the section currently in view. */
+  <script is:inline data-astro-rerun>
+    /* Contents-rail scroll-spy: highlight the section currently in view.
+       data-astro-rerun: observes per-page sections; must re-run after every
+       view-transition swap (identical scripts are otherwise deduped). */
     (function () {
       var links = Array.prototype.slice.call(document.querySelectorAll('.guide-toc a'));
       if (!links.length || !('IntersectionObserver' in window)) return;

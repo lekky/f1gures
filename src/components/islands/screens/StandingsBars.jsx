@@ -14,7 +14,7 @@
 
 import { useState } from 'react';
 import {
-  ChangeIndicator, Flag, MiniChart, TeamLogo, urlFor,
+  ChangeIndicator, Flag, Icon, MiniChart, TeamLogo, urlFor,
   driverPointsForRound, teamPointsForRound,
 } from '../../../lib/shared.jsx';
 
@@ -50,7 +50,7 @@ function Row({ id, position, change, tc, isOpen, onToggle, avatar, name, sub, pc
           </span>
         </span>
         <span className="stdrow-pts">{points}</span>
-        <span className="stdrow-caret" aria-hidden="true">&#8250;</span>
+        <span className="stdrow-caret" aria-hidden="true"><Icon name="chevron-right" size={14} /></span>
       </button>
       <div className="stdrow-panel" id={panelId} aria-hidden={!isOpen}>
         <div className="stdrow-panel-in">{children}</div>

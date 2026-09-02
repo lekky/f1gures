@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MiniChart, SectionHead, urlFor, useIsMobile } from '../../../lib/shared.jsx';
+import { Icon, MiniChart, SectionHead, urlFor, useIsMobile } from '../../../lib/shared.jsx';
 import { filterItems, sortItems, paginateItems } from '../../../lib/listingUtils.js';
 import { track, trackDebounced } from '../../../lib/analytics.js';
 
@@ -36,7 +36,7 @@ function Pagination({ page, totalPages, onPage }) {
   const visible = pages.filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2);
   return (
     <div className="pagination">
-      <button className="page-btn" onClick={() => onPage(page - 1)} disabled={page === 1}>←</button>
+      <button className="page-btn icon-btn" onClick={() => onPage(page - 1)} disabled={page === 1} aria-label="Previous page"><Icon name="arrow-left" size={14} /></button>
       {visible.map((p, i) => {
         const prev = visible[i - 1];
         return (
@@ -46,7 +46,7 @@ function Pagination({ page, totalPages, onPage }) {
           </span>
         );
       })}
-      <button className="page-btn" onClick={() => onPage(page + 1)} disabled={page === totalPages}>→</button>
+      <button className="page-btn icon-btn" onClick={() => onPage(page + 1)} disabled={page === totalPages} aria-label="Next page"><Icon name="arrow-right" size={14} /></button>
     </div>
   );
 }
@@ -89,7 +89,7 @@ function FeatureCard({ driver }) {
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, marginTop: 'auto' }}>
         <div>
           <div className="t-eyebrow" style={{ fontSize: 10, color: 'var(--fg-3)' }}>Titles</div>
-          <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 30, lineHeight: 1, color: driver.championships > 0 ? 'var(--accent)' : 'var(--fg-1)' }}>
+          <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 30, lineHeight: 1, color: 'var(--fg-1)' }}>
             {driver.championships}
           </div>
         </div>
@@ -145,7 +145,7 @@ function CompactRow({ driver, mob }) {
         </div>
       ) : null}
       <div style={{ textAlign: 'right', minWidth: 50 }}>
-        <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, lineHeight: 1, color: driver.championships > 0 ? 'var(--accent)' : 'var(--fg-1)' }}>
+        <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, lineHeight: 1, color: 'var(--fg-1)' }}>
           {driver.championships}
         </div>
         <div className="t-eyebrow" style={{ fontSize: 9, color: 'var(--fg-3)', marginTop: 3 }}>Titles</div>
@@ -238,7 +238,7 @@ export default function DriversIndexScreen({ drivers }) {
               className={`sort-btn${sortField === key ? ' active' : ''}`}
               onClick={() => handleSort(key)}
             >
-              {label}{sortField === key && <span className="sort-arrow">{sortDir === 'desc' ? '↓' : '↑'}</span>}
+              {label}{sortField === key && <Icon name={sortDir === 'desc' ? 'arrow-down' : 'arrow-up'} size={11} className="sort-arrow" />}
             </button>
           ))}
         </div>

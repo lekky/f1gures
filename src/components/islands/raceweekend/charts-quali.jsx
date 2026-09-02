@@ -163,6 +163,9 @@ export function PoleTelemetry({ poleTel, ctx }) {
   if (!poleTel) return <EmptyNote txt="No telemetry available for this session." />;
   const { a, b, speedA, speedB, delta, corners, len, step } = poleTel;
   const colors = distinctColors([a, b], ctx.colorOf, ctx.teamOf);
+  // Teammates on pole battle: shade B (distinctColors) AND dash it, so the two
+  // speed traces separate without colour.
+  const sameTeam = !!ctx.teamOf(a) && ctx.teamOf(a) === ctx.teamOf(b);
   const x0 = 44, x1 = 985;
   const sx = (d) => x0 + (d / len) * (x1 - x0);
   const vmax = Math.max(...speedA, ...speedB);
@@ -202,7 +205,7 @@ export function PoleTelemetry({ poleTel, ctx }) {
       <YGrid ticks={yTicks} x0={x0} x1={x1} />
       {hoverX != null && <line x1={hoverX} x2={hoverX} y1="10" y2="390" stroke={PANEL.fg} strokeDasharray="3 3" />}
       <polyline points={speedA.map((v, i) => `${sx(i * step).toFixed(1)},${svy(v).toFixed(1)}`).join(' ')} fill="none" stroke={colors[a]} strokeWidth="2.6" strokeLinejoin="round" />
-      <polyline points={speedB.map((v, i) => `${sx(i * step).toFixed(1)},${svy(v).toFixed(1)}`).join(' ')} fill="none" stroke={colors[b]} strokeWidth="2.4" strokeLinejoin="round" />
+      <polyline points={speedB.map((v, i) => `${sx(i * step).toFixed(1)},${svy(v).toFixed(1)}`).join(' ')} fill="none" stroke={colors[b]} strokeWidth="2.4" strokeDasharray={sameTeam ? '6 4' : undefined} strokeLinejoin="round" />
       <line x1={x0} x2={x1} y1={dvy(0).toFixed(1)} y2={dvy(0).toFixed(1)} stroke={PANEL.line4} strokeDasharray="4 3" />
       <polyline points={delta.map((v, i) => `${sx(i * step).toFixed(1)},${dvy(Math.max(-dmax, Math.min(dmax, v))).toFixed(1)}`).join(' ')} fill="none" stroke={PANEL.fg} strokeWidth="2" />
       <text x={x0} y="296" fontFamily={MONO} fontSize="9" fill={PANEL.fg3}>
@@ -254,7 +257,7 @@ export function ProgressionChart({ results, ctx, segLabels = ['Q1', 'Q2', 'Q3'] 
         const ly = labelY.get(l.code) ?? l.end[1];
         return (
           <g key={l.code}>
-            <polyline points={l.pts.map((p) => `${p[0]},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={color} strokeWidth="2" opacity="0.85" />
+            <polyline points={l.pts.map((p) => `${p[0]},${p[1].toFixed(1)}`).join(' ')} fill="none" stroke={color} strokeWidth="2" strokeDasharray={ctx.dashOf?.(l.code)} opacity="0.85" />
             {l.pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1].toFixed(1)} r="3.4" fill={color} />)}
             {Math.abs(ly - l.end[1]) > 1.5 && (
               <line x1={l.end[0] + 4} y1={l.end[1].toFixed(1)} x2={l.end[0] + 9} y2={ly.toFixed(1)} stroke={color} strokeWidth="1" opacity="0.45" />

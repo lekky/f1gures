@@ -1,8 +1,11 @@
-// Season strip — the site's single season control, a full-width bar under the
-// nav. Replaces the old top-right YearPicker dropdown.
+// Season strip — the site's single season control, a single 40 px row under
+// the nav (44 px on mobile). Replaces the old top-right YearPicker dropdown.
 //
-// State-as-colour: brand red in the current/live season, champion gold in
-// "archive mode" (any past year). The colour itself signals where you are.
+// State-as-colour, but only on the ACTIVE chip: brand red in the current/live
+// season, champion gold in "archive mode" (any past year). The row itself sits
+// on a neutral --bg-2 ground so the chip is the one coloured element — the
+// site's one-red-per-screen rule. Year chips scroll horizontally (scrollbar
+// hidden) with the full 1950→now picker as the last chip.
 //
 // Like the year-aware islands, the selected year comes from ?year= / the
 // f1-year localStorage key — never from server state. On SSR (and the first
@@ -13,7 +16,7 @@ import { forwardRef, useEffect, useRef, useState } from 'react';
 import { track } from '../../lib/analytics.js';
 
 const HISTORIC_MIN = 1950;
-const MAX_CHIPS = 9; // upper bound on quick-chips (kept odd so the pick centres)
+const MAX_CHIPS = 9; // quick-chips in the row (kept odd so the pick centres)
 
 // The routes whose islands react to ?year=. Selecting a year on any other page
 // sends you home for that year (matches the old YearPicker's behaviour).
@@ -65,9 +68,6 @@ export default function SeasonStrip({
   const [selected, setSelected] = useState(currentYear); // SSR-safe: current
   const [panelOpen, setPanelOpen] = useState(false);
   const [meta, setMeta] = useState(null); // fetched _seasons.json
-  // How many quick-chips fit. SSR default = MAX_CHIPS; the effect measures the
-  // available width (both layouts) and shrinks it to what fits on one line.
-  const [capacity, setCapacity] = useState(MAX_CHIPS);
   const chipRef = useRef(null);
   const panelRef = useRef(null);
   const chipsRowRef = useRef(null);
@@ -98,9 +98,10 @@ export default function SeasonStrip({
 
   // Quick chips centred on the selected year (selected in the middle, flanked
   // by its neighbours ±1, ±2, …) so you can click straight through adjacent
-  // seasons. Sized to what the device fits; clamped to [1950, currentYear], so
-  // at either end the window slides inward rather than showing empty slots.
-  const displayYears = windowAround(selected, capacity, HISTORIC_MIN, currentYear);
+  // seasons. Clamped to [1950, currentYear], so at either end the window slides
+  // inward rather than showing empty slots. The row scrolls horizontally when
+  // the chips don't fit (narrow phones), so no width measuring is needed.
+  const displayYears = windowAround(selected, MAX_CHIPS, HISTORIC_MIN, currentYear);
 
   // Lazy-load the champion/rounds map the first time we need archive labels.
   useEffect(() => {
@@ -132,62 +133,17 @@ export default function SeasonStrip({
     };
   }, [panelOpen]);
 
-  // Responsive capacity: fit as many quick-chips as the width allows while
-  // keeping the decade chip visible — never wrap or scroll. Year chips are
-  // uniform width (4 digits), so we measure the widest chip and divide the free
-  // space by it. The free space differs by layout: on mobile (≤900px) the chips
-  // get their own full-width row; on desktop they share one row with the label,
-  // meta and Back button, so we subtract those siblings. Capped at MAX_CHIPS.
+  // The chip row scrolls horizontally when it overflows (narrow phones). Keep
+  // the active chip in view — centred when it sits mid-window — by scrolling
+  // the row itself (never scrollIntoView, which can also scroll the page).
   useEffect(() => {
-    function recompute() {
-      const row = chipsRowRef.current;
-      if (!row) return;
-      const chips = [...row.querySelectorAll('.sstrip-chip')];
-      const decade = row.querySelector('.sstrip-decade-chip');
-      const divider = row.querySelector('.sstrip-div');
-      if (!chips.length || !decade) return;
-      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
-      const chipW = Math.max(...chips.map(c => c.getBoundingClientRect().width));
-      const decadeW = decade.getBoundingClientRect().width;
-      let dividerW = 0;
-      if (divider) {
-        const d = getComputedStyle(divider);
-        dividerW = divider.getBoundingClientRect().width +
-          (parseFloat(d.marginLeft) || 0) + (parseFloat(d.marginRight) || 0);
-      }
-
-      let avail;
-      if (window.matchMedia('(max-width: 900px)').matches) {
-        avail = row.clientWidth - decadeW - dividerW - gap;
-      } else {
-        const inner = row.parentElement;
-        const is = getComputedStyle(inner);
-        const innerGap = parseFloat(is.columnGap) || 0;
-        const innerPad = (parseFloat(is.paddingLeft) || 0) + (parseFloat(is.paddingRight) || 0);
-        let siblings = 0;
-        for (const child of inner.children) {
-          if (child !== row) siblings += child.getBoundingClientRect().width + innerGap;
-        }
-        avail = inner.clientWidth - innerPad - siblings - decadeW - dividerW - gap - 8;
-      }
-      const cap = Math.floor((avail + gap) / (chipW + gap));
-      setCapacity(Math.max(3, Math.min(cap, MAX_CHIPS)));
-    }
-    recompute();
-    window.addEventListener('resize', recompute);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(recompute);
-    // Re-measure when the meta/back siblings change width — the champion string
-    // arrives asynchronously (from _seasons.json) and widens the meta, and the
-    // label/back swap between live and archive modes.
-    let ro;
-    if (typeof ResizeObserver !== 'undefined' && chipsRowRef.current) {
-      ro = new ResizeObserver(recompute);
-      ro.observe(chipsRowRef.current.parentElement);
-      const metaEl = chipsRowRef.current.parentElement.querySelector('.sstrip-meta');
-      if (metaEl) ro.observe(metaEl);
-    }
-    return () => { window.removeEventListener('resize', recompute); if (ro) ro.disconnect(); };
-  }, [currentYear, selected, archive, meta]);
+    const row = chipsRowRef.current;
+    if (!row) return;
+    const el = row.querySelector('.sstrip-chip.active');
+    if (!el) return;
+    const target = el.offsetLeft - (row.clientWidth - el.offsetWidth) / 2;
+    row.scrollLeft = Math.max(0, target);
+  }, [selected]);
 
   // Lock background scroll while the mobile bottom sheet is open — otherwise a
   // touch-drag inside the sheet scrolls the page behind it. The position:fixed
@@ -237,26 +193,30 @@ export default function SeasonStrip({
   // selected year), so the trigger spans 1950 → current.
   const panelLabel = `${HISTORIC_MIN}–${currentYear}`;
 
+  // Compact, mono, right-aligned: "R13 · Italian GP" in the live season (the
+  // red dot before it is the strip's live marker), "Complete · Senna champion"
+  // in archive mode. The full sentence lives in the aria-label.
   let metaText;
+  let metaLabel;
   if (archive) {
     const sm = meta && meta[selected];
-    const bits = [String(selected), sm && sm.complete === false ? 'IN PROGRESS' : 'COMPLETE'];
+    const state = sm && sm.complete === false ? 'In progress' : 'Complete';
+    const bits = [state];
     if (sm && sm.champion) bits.push(`${sm.champion} champion`);
     metaText = bits.join(' · ');
+    metaLabel = `${selected} season · ${metaText}`;
   } else if (seasonComplete || nextRound == null) {
-    metaText = 'SEASON COMPLETE';
+    metaText = 'Season complete';
+    metaLabel = `${currentYear} season complete`;
   } else {
-    const next = nextRaceName ? `${nextRaceName} next` : '';
-    metaText = [`ROUND ${nextRound}/${totalRounds}`, next].filter(Boolean).join(' · ');
+    const gp = nextRaceName ? nextRaceName.replace(/\bGrand Prix\b/i, 'GP').trim() : '';
+    metaText = [`R${nextRound}`, gp].filter(Boolean).join(' · ');
+    metaLabel = `Live season · round ${nextRound} of ${totalRounds}${gp ? ` · ${gp} next` : ''}`;
   }
-
-  const labelChip = archive ? 'Archive' : 'Season';
 
   return (
     <div className={`sstrip${archive ? ' sstrip-archive' : ''}`} data-year={selected}>
       <div className="sstrip-inner">
-        <span className="sstrip-label">{labelChip}</span>
-
         <div className="sstrip-chips" role="group" aria-label="Season" ref={chipsRowRef}>
           {displayYears.map((y) => (
             <button
@@ -286,8 +246,8 @@ export default function SeasonStrip({
 
         <div className="sstrip-meta" aria-live="polite">
           {!archive && <span className="sstrip-dot" aria-hidden="true" />}
-          {!archive && <span className="sstrip-live">Live</span>}
-          <span className="sstrip-meta-text">{metaText}</span>
+          <span className="sr-only">{metaLabel}</span>
+          <span className="sstrip-meta-text" aria-hidden="true">{metaText}</span>
         </div>
 
         {archive && (

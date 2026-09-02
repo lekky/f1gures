@@ -7,6 +7,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Flag from './Flag.astro';
+import Icon from './Icon.astro';
 import LineageStrip from './LineageStrip.astro';
 import PrincipalsStrip from './PrincipalsStrip.astro';
 import MobileTableCards from './MobileTableCards.astro';
@@ -196,7 +197,7 @@ function hasFace(ref: string): boolean {
 ---
 
 <div class="page">
-  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-constructors/">← Constructors</a>
+  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-constructors/"><Icon name="arrow-left" size={14} />Constructors</a>
 
   <div class="panel team-hero" style={`--team-color: ${team.color}; border-left: 3px solid ${team.color};`}>
     <span class="team-hero-watermark" aria-hidden="true">{team.short}</span>
@@ -239,8 +240,10 @@ function hasFace(ref: string): boolean {
 
   {/* Trigger the flag-wash entrance wipe only when the page is visible, so a
       frozen/hidden preview never traps it at its invisible first frame. The
-      wash is CSS-visible without this. */}
-  <script is:inline>
+      wash is CSS-visible without this. data-astro-rerun: view transitions
+      dedupe identical inline scripts across navigations; this one wires the
+      freshly swapped-in body, so it must run on every page. */}
+  <script is:inline data-astro-rerun>
     (function () {
       function wipe() {
         var els = document.querySelectorAll('.driver-hero-flagwash, .team-hero-flagwash');
