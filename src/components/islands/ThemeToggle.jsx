@@ -2,8 +2,13 @@
 // Pre-hydration script in BaseLayout.astro already set the html.light class
 // from localStorage before paint, so this component just reflects the saved
 // state and writes back on click. No flash on hydration.
+//
+// One icon button: the glyph shows the mode you'd switch TO (sun while dark,
+// moon while light), the aria-label says so in words, and a visually-hidden
+// span carries the same text for anything that reads content over labels.
 
 import { useEffect, useState } from 'react';
+import { Icon } from '../../lib/shared.jsx';
 import { track } from '../../lib/analytics.js';
 
 export default function ThemeToggle() {
@@ -26,12 +31,19 @@ export default function ThemeToggle() {
     setTheme(next);
   }
 
+  const next = theme === 'dark' ? 'light' : 'dark';
+  const label = `Switch to ${next} mode`;
+
   return (
-    <div className="theme-switcher" role="group" aria-label="Theme">
-      <button className={`theme-opt ${theme === 'light' ? 'active' : ''}`}
-              onClick={() => setMode('light')}>Light</button>
-      <button className={`theme-opt ${theme === 'dark' ? 'active' : ''}`}
-              onClick={() => setMode('dark')}>Dark</button>
-    </div>
+    <button
+      type="button"
+      className="theme-toggle icon-btn"
+      onClick={() => setMode(next)}
+      aria-label={label}
+      title={label}
+    >
+      <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+      <span className="sr-only">{label}</span>
+    </button>
   );
 }

@@ -46,6 +46,7 @@ import { fmtDateLong } from '../lib/shared.jsx';
 import { hasDriverFace } from '../lib/driverFaceExists.js';
 import { teamLogoPath } from '../lib/teamLogo.js';
 import Flag from './Flag.astro';
+import Icon from './Icon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 
@@ -259,7 +260,7 @@ const recordCards: CircuitRecordCard[] = [
 ---
 
 <div class="page circuit-detail">
-  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/circuits/">← Circuits</a>
+  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/circuits/"><Icon name="arrow-left" size={14} />Circuits</a>
 
   <TriviaBoard client:visible />
 
@@ -324,8 +325,10 @@ const recordCards: CircuitRecordCard[] = [
 
   {/* Trigger the flag-wash entrance wipe only when the page is visible, so a
       frozen/hidden preview never traps it at its invisible first frame. The
-      wash is CSS-visible without this. */}
-  <script is:inline>
+      wash is CSS-visible without this. data-astro-rerun: view transitions
+      dedupe identical inline scripts across navigations; this one wires the
+      freshly swapped-in body, so it must run on every page. */}
+  <script is:inline data-astro-rerun>
     (function () {
       function wipe() {
         var els = document.querySelectorAll('.circuit-hero-flagwash');
@@ -547,9 +550,10 @@ const recordCards: CircuitRecordCard[] = [
 <MobileTableCards />
 
 {hasTrackPath && (
-  <script is:inline>
+  <script is:inline data-astro-rerun>
     // Respect reduced-motion: pause the SMIL dot-lap animation. The page ships
     // no other client JS; this is a one-shot accessibility guard.
+    // data-astro-rerun: must re-run per view-transition swap (new SVG).
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.querySelectorAll('svg.ct-svg').forEach(function (s) {
         if (s.pauseAnimations) s.pauseAnimations();

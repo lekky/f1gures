@@ -12,6 +12,7 @@ import StandingsDropdown from './islands/StandingsDropdown.jsx';
 import GridDropdown from './islands/GridDropdown.jsx';
 import SearchPalette from './islands/SearchPalette.jsx';
 import Footer from './Footer.astro';
+import Icon from './Icon.astro';
 import currentSeason from '../data/currentSeason.js';
 
 // Current-season meta for the season strip's live label (round X/Y + next race).
@@ -59,8 +60,14 @@ const botActive =
   inMore           ? 'more' : null;
 ---
 <div class="f1-app">
+  <!-- View transitions: each piece of chrome gets a stable view-transition-name
+       with animate="none", so it is captured as its own group and stays put
+       while the page body cross-fades underneath (the active-route highlight
+       still swaps with the page — there's no animation, it just updates).
+       Desktop and mobile chrome can both be named: the variant that is
+       display:none at the current breakpoint is simply not captured. -->
   <!-- Desktop top nav -->
-  <nav class="nav nav-desktop">
+  <nav class="nav nav-desktop" transition:name="nav-desktop" transition:animate="none">
     <a class="nav-logo" href="/" aria-label="f1gures — home">
       <img class="nav-logo-img wm-dark" src="/images/logo/f1gures-wordmark-dark.png" width="560" height="141" alt="" />
       <img class="nav-logo-img wm-light" src="/images/logo/f1gures-wordmark-light.png" width="560" height="141" alt="" />
@@ -80,10 +87,7 @@ const botActive =
     <div class="nav-spacer"></div>
     <div class="nav-controls">
       <button type="button" class="search-trigger" data-search-trigger aria-label="Search (Ctrl+K)">
-        <svg class="search-trigger-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
-          <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
-        </svg>
+        <Icon name="search" size={14} class="search-trigger-icon" />
         <span class="search-trigger-text">Search</span>
         <span class="search-trigger-kbd"><span data-search-mod>Ctrl</span> K</span>
       </button>
@@ -92,23 +96,34 @@ const botActive =
   </nav>
 
   <!-- Mobile top bar -->
-  <div class="topbar-mobile">
+  <div class="topbar-mobile" transition:name="nav-mobile-top" transition:animate="none">
     <a class="nav-logo topbar-logo" href="/" aria-label="f1gures — home">
       <img class="nav-logo-img wm-dark" src="/images/logo/f1gures-wordmark-dark.png" width="560" height="141" alt="" />
       <img class="nav-logo-img wm-light" src="/images/logo/f1gures-wordmark-light.png" width="560" height="141" alt="" />
     </a>
     <div style="flex:1"></div>
-    <button type="button" class="search-trigger-mobile" data-search-trigger aria-label="Search">
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
-        <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
-      </svg>
+    <button type="button" class="search-trigger-mobile icon-btn" data-search-trigger aria-label="Search">
+      <Icon name="search" size={18} />
     </button>
     <ThemeToggle client:load />
   </div>
 
+  {/* View transitions: transition:persist keeps this island — DOM and React
+      state — across client-side navigations. Its state (selected year, archive
+      mode, the lazily fetched _seasons.json champion map, the measured chip
+      capacity) comes from ?year= / localStorage, never from server props, so a
+      fresh mount on the next page would resolve to the same year anyway — but
+      only after hydration, with a red→gold blink under the sstrip-cloak on
+      every navigation for archive-mode visitors. Persisting means the strip
+      never re-mounts and never blinks. It can't go stale on its own: every
+      year change goes through pick() → location.href, a full page load. Its
+      props are build-time constants (identical on every page), so the router
+      never has to re-render it with new props either. */}
   <SeasonStrip
     client:load
+    transition:persist="season-strip"
+    transition:name="season-strip"
+    transition:animate="none"
     currentYear={csYear}
     nextRound={csNextRound}
     totalRounds={csTotalRounds}
@@ -121,18 +136,18 @@ const botActive =
   <Footer />
 
   <!-- Mobile bottom nav (static) -->
-  <nav class="botnav botnav-mobile">
-    <a class:list={['botnav-item', { active: botActive === 'home' }]} href="/">
-      <span class="botnav-icon">◇</span><span>Home</span>
+  <nav class="botnav botnav-mobile" transition:name="nav-mobile-bottom" transition:animate="none">
+    <a class:list={['botnav-item', { active: botActive === 'home' }]} href="/" aria-current={botActive === 'home' ? 'page' : undefined}>
+      <span class="botnav-icon"><Icon name="home" size={24} /></span><span class="botnav-label">Home</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'standings' }]} href="/standings-drivers/">
-      <span class="botnav-icon">≡</span><span>Standings</span>
+    <a class:list={['botnav-item', { active: botActive === 'standings' }]} href="/standings-drivers/" aria-current={botActive === 'standings' ? 'page' : undefined}>
+      <span class="botnav-icon"><Icon name="list" size={24} /></span><span class="botnav-label">Standings</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/">
-      <span class="botnav-icon">▦</span><span>Calendar</span>
+    <a class:list={['botnav-item', { active: botActive === 'calendar' }]} href="/calendar/" aria-current={botActive === 'calendar' ? 'page' : undefined}>
+      <span class="botnav-icon"><Icon name="calendar" size={24} /></span><span class="botnav-label">Calendar</span>
     </a>
-    <a class:list={['botnav-item', { active: botActive === 'stats' }]} href="/stats/">
-      <span class="botnav-icon">◆</span><span>Stats</span>
+    <a class:list={['botnav-item', { active: botActive === 'stats' }]} href="/stats/" aria-current={botActive === 'stats' ? 'page' : undefined}>
+      <span class="botnav-icon"><Icon name="bar-chart" size={24} /></span><span class="botnav-label">Stats</span>
     </a>
     <button
       type="button"
@@ -142,7 +157,7 @@ const botActive =
       aria-controls="more-sheet"
       aria-label="More sections"
     >
-      <span class="botnav-icon">⋯</span><span>More</span>
+      <span class="botnav-icon"><Icon name="more-horizontal" size={24} /></span><span class="botnav-label">More</span>
     </button>
   </nav>
 
@@ -152,64 +167,89 @@ const botActive =
     <div class="more-sheet-title" aria-hidden="true">More</div>
     <nav class="more-sheet-links">
       <div class="more-sheet-group" aria-hidden="true">Grid</div>
-      <a class="more-sheet-link" href="/drivers/">Drivers</a>
-      <a class="more-sheet-link" href="/teams/">Teams</a>
-      <a class="more-sheet-link" href="/circuits/">Circuits</a>
+      <a class="more-sheet-link" href="/drivers/"><Icon name="users" size={18} />Drivers</a>
+      <a class="more-sheet-link" href="/teams/"><Icon name="shield" size={18} />Teams</a>
+      <a class="more-sheet-link" href="/circuits/"><Icon name="map-pin" size={18} />Circuits</a>
       <div class="more-sheet-group" aria-hidden="true">Read</div>
-      <a class="more-sheet-link" href="/guide/">Guide</a>
-      <a class="more-sheet-link" href="/blog/">Blog</a>
+      <a class="more-sheet-link" href="/guide/"><Icon name="book-open" size={18} />Guide</a>
+      <a class="more-sheet-link" href="/blog/"><Icon name="newspaper" size={18} />Blog</a>
       <div class="more-sheet-group" aria-hidden="true">More</div>
-      <a class="more-sheet-link" href="/feedback/">Feedback</a>
+      <a class="more-sheet-link" href="/feedback/"><Icon name="message-square" size={18} />Feedback</a>
     </nav>
   </div>
+  {/* View transitions: deliberately NOT transition:persist'ed. Its archive
+      index cache is module-level (JS modules survive the swap on their own,
+      so there is no refetch), the closed palette renders nothing, and its
+      global key/click listeners re-bind cleanly on remount. Persisting would
+      keep a React portal pointed at the <body> the router throws away. */}
   <SearchPalette client:load />
 </div>
 
+<!-- Mac keyboard hints. View transitions: the body (and the kbd hints in it)
+     is replaced on every client-side navigation, so re-apply on
+     astro:after-swap (before paint). Identical on every page → the router
+     runs it once; the listener persists. -->
 <script is:inline>
   (function () {
-    if (/Mac|iPhone|iPad|iPod/.test(navigator.platform || '')) {
+    if (!/Mac|iPhone|iPad|iPod/.test(navigator.platform || '')) return;
+    function applyMacHints() {
       document.querySelectorAll('[data-search-mod]').forEach(function (el) { el.textContent = '⌘'; });
       document.querySelectorAll('.search-trigger[aria-label]').forEach(function (el) {
         el.setAttribute('aria-label', 'Search (⌘K)');
       });
     }
+    applyMacHints();
+    document.addEventListener('astro:after-swap', applyMacHints);
   })();
 </script>
+<!-- Mobile "More" sheet wiring. Document-level delegation (no per-element
+     listeners) so it survives view-transition body swaps: the trigger, sheet
+     and backdrop are looked up at event time, and a fresh body always arrives
+     with the sheet closed. Guarded so it wires once per session (the script is
+     identical on every page; the router runs it once, no data-astro-rerun). -->
 <script is:inline>
   (function () {
-    var trigger = document.querySelector('[data-more-trigger]');
-    var sheet = document.querySelector('[data-more-sheet]');
-    var backdrop = document.querySelector('[data-more-backdrop]');
-    if (!trigger || !sheet || !backdrop) return;
-    function setOpen(open) {
-      trigger.setAttribute('aria-expanded', String(open));
+    if (window.__f1MoreSheetWired) return;
+    window.__f1MoreSheetWired = true;
+    function parts() {
+      var trigger = document.querySelector('[data-more-trigger]');
+      var sheet = document.querySelector('[data-more-sheet]');
+      var backdrop = document.querySelector('[data-more-backdrop]');
+      return (trigger && sheet && backdrop) ? { trigger: trigger, sheet: sheet, backdrop: backdrop } : null;
+    }
+    function setOpen(p, open) {
+      p.trigger.setAttribute('aria-expanded', String(open));
       // Use a dedicated class for the open state so we don't clobber the
       // build-time `active` route highlight on More-section pages.
-      trigger.classList.toggle('sheet-open', open);
+      p.trigger.classList.toggle('sheet-open', open);
       if (open) {
-        sheet.hidden = false; backdrop.hidden = false;
+        p.sheet.hidden = false; p.backdrop.hidden = false;
         // Move focus into the sheet so screen readers announce it on open.
-        var firstLink = sheet.querySelector('a');
+        var firstLink = p.sheet.querySelector('a');
         if (firstLink) firstLink.focus();
       }
       requestAnimationFrame(function () {
-        sheet.classList.toggle('open', open);
-        backdrop.classList.toggle('open', open);
+        p.sheet.classList.toggle('open', open);
+        p.backdrop.classList.toggle('open', open);
       });
       if (!open) {
         setTimeout(function () {
-          if (!sheet.classList.contains('open')) { sheet.hidden = true; backdrop.hidden = true; }
+          if (!p.sheet.classList.contains('open')) { p.sheet.hidden = true; p.backdrop.hidden = true; }
         }, 320);
       }
     }
-    trigger.addEventListener('click', function () {
-      setOpen(trigger.getAttribute('aria-expanded') !== 'true');
+    document.addEventListener('click', function (e) {
+      var hit = e.target && e.target.closest ? e.target.closest('[data-more-trigger], [data-more-backdrop]') : null;
+      if (!hit) return;
+      var p = parts();
+      if (!p) return;
+      if (hit === p.trigger) setOpen(p, p.trigger.getAttribute('aria-expanded') !== 'true');
+      else { setOpen(p, false); p.trigger.focus(); }
     });
-    backdrop.addEventListener('click', function () { setOpen(false); trigger.focus(); });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && trigger.getAttribute('aria-expanded') === 'true') {
-        setOpen(false); trigger.focus();
-      }
+      if (e.key !== 'Escape') return;
+      var p = parts();
+      if (p && p.trigger.getAttribute('aria-expanded') === 'true') { setOpen(p, false); p.trigger.focus(); }
     });
   })();
 </script>

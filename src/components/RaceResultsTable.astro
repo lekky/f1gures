@@ -8,6 +8,7 @@
 // "Show all N" button (wired by the inline script in RaceResultsBody).
 
 import Flag from './Flag.astro';
+import Icon from './Icon.astro';
 import StatusIcon from './StatusIcon.astro';
 import { raceGapSeconds } from '../lib/raceTimings.js';
 import { hasDriverFace } from '../lib/driverFaceExists.js';
@@ -186,7 +187,7 @@ function rowCls(i: number): string {
                   ? <img class="be-av" src={face} alt="" width="30" height="30" loading="lazy" />
                   : <span class="be-av" aria-hidden="true">{initials(r)}</span>}
                 <span class="rname"><span class="fn">{first}</span> {last}</span>
-                <span class="chev" aria-hidden="true">▶</span>
+                <Icon name="chevron-right" size={12} class="chev" />
               </span>
               <span class="be-track">
                 {numeric && w != null

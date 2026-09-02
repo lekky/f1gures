@@ -28,7 +28,10 @@ const breadcrumb = [
     </div>
 
     <div class="fbk-wrap">
-      <FeedbackForm client:load />
+      {/* client:idle: the form server-renders in full (identical markup, no
+          layout shift); hydration only wires submit + mounts Turnstile, which
+          is not needed before the visitor has started typing. */}
+      <FeedbackForm client:idle />
     </div>
   </div>
 </BaseLayout>

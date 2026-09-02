@@ -12,6 +12,7 @@
 //   breadcrumb      - optional array of { name, path } for BreadcrumbList JSON-LD
 //   robots          - meta robots, defaults to "index, follow, max-image-preview:large"
 
+import { ViewTransitions } from 'astro:transitions';
 import Chrome from '../components/Chrome.astro';
 import { publicAssetHash } from '../lib/assetHash.js';
 import currentSeason from '../data/currentSeason.js';
@@ -115,6 +116,19 @@ if (breadcrumb && breadcrumb.length > 0) {
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
 
+  <!-- View transitions (Astro 4 client router). Same-origin link clicks fetch
+       the next page and swap <head>/<body> in place, so the chrome (nav, season
+       strip, bottom nav — named in Chrome.astro) stays still and only the page
+       body changes. fallback="none": browsers without the native View
+       Transitions API keep plain full-page loads. That keeps the blast radius
+       small — the inline-script rerun rules below only have to hold where the
+       swap actually happens, and older browsers behave exactly as before.
+       Reduced motion: Astro's own viewtransitions.css disables every
+       ::view-transition-* animation under prefers-reduced-motion (verified in
+       the built CSS), so no override is needed here.
+       READ docs/features.md "View transitions" before adding any <script>. -->
+  <ViewTransitions fallback="none" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://api.jolpi.ca" crossorigin />
@@ -129,16 +143,61 @@ if (breadcrumb && breadcrumb.length > 0) {
     <script type="application/ld+json" set:html={JSON.stringify(graph.length === 1 ? { '@context': 'https://schema.org', ...(graph[0] as object) } : { '@context': 'https://schema.org', '@graph': graph })}></script>
   )}
 
+  <!-- View transitions: history bookkeeping guard. Astro's client router keeps
+       { index, scrollX, scrollY } in history.state and IGNORES popstate events
+       whose state is null, so an island that writes its own in-page UI state
+       (RaceWeekendIsland's ?session=/?viz= via replaceState(null, …) and
+       pushState({ rwViz }), CompareCta's pushState({ vs }), CompareLauncher's
+       replaceState({}, …)) would strand the router: Back to such an entry
+       either does nothing (null state → dead Back button) or loses the index
+       and scroll restoration. This wrapper merges the router's fields into any
+       state that lacks them, and leaves states that already carry `index`
+       (the router's own) untouched. It must run before the router module
+       (deferred) binds history.pushState/replaceState at evaluation time —
+       an inline <head> script guarantees that. Identical on every page, so
+       the router runs it once. -->
+  <script is:inline>
+    (function () {
+      if (!window.history || history.__f1RouterStateGuard) return;
+      history.__f1RouterStateGuard = true;
+      var push = history.pushState.bind(history);
+      var replace = history.replaceState.bind(history);
+      function withRouterState(state, isPush) {
+        var cur = history.state;
+        if (!cur || typeof cur.index !== 'number') return state;
+        if (state && typeof state.index === 'number') return state;
+        var out = {};
+        if (state && typeof state === 'object') { for (var k in state) out[k] = state[k]; }
+        out.index = isPush ? cur.index + 1 : cur.index;
+        out.scrollX = isPush ? window.scrollX : cur.scrollX;
+        out.scrollY = isPush ? window.scrollY : cur.scrollY;
+        return out;
+      }
+      history.pushState = function (state, title, url) { return push(withRouterState(state, true), title, url); };
+      history.replaceState = function (state, title, url) { return replace(withRouterState(state, false), title, url); };
+    })();
+  </script>
+
   <!-- Pre-hydration theme: read localStorage and set html.light *before* CSS
        paints, to avoid a dark→light flash on every page load. Inlined per Astro
        docs - `is:inline` opts out of bundling so it actually runs synchronously
-       in <head>. -->
+       in <head>.
+       View transitions: the client router replaces every <html> attribute
+       (class included) with the incoming page's on each swap, so the class is
+       re-applied on `astro:after-swap` — dispatched inside the swap, before
+       the new page paints, so dark-mode users never see a light flash. This
+       script is byte-identical on every page, so the router runs it once (no
+       data-astro-rerun) and the listener lives for the whole session. -->
   <script is:inline>
     (function () {
-      try {
-        var saved = localStorage.getItem('f1-theme') || 'light';
-        if (saved === 'light') document.documentElement.classList.add('light');
-      } catch (e) {}
+      function applyTheme() {
+        try {
+          var saved = localStorage.getItem('f1-theme') || 'light';
+          document.documentElement.classList.toggle('light', saved === 'light');
+        } catch (e) {}
+      }
+      applyTheme();
+      document.addEventListener('astro:after-swap', applyTheme);
     })();
   </script>
 
@@ -153,20 +212,39 @@ if (breadcrumb && breadcrumb.length > 0) {
       // wins over the stored preference. Checking only localStorage let a
       // shared/linked `/?year=1998` URL flash the current season before the
       // historic bundle swapped in.
-      var y = null;
-      try { y = localStorage.getItem('f1-year'); } catch (e) {}
-      try {
-        var u = new URLSearchParams(window.location.search).get('year');
-        if (u) y = u;
-      } catch (e) {}
-      if (y && y !== 'current' && y !== currentSeasonYear) {
-        document.documentElement.classList.add('year-pending');
+      function pendingYear() {
+        var y = null;
+        try { y = localStorage.getItem('f1-year'); } catch (e) {}
+        try {
+          var u = new URLSearchParams(window.location.search).get('year');
+          if (u) y = u;
+        } catch (e) {}
+        return (y && y !== 'current' && y !== currentSeasonYear) ? y : null;
+      }
+      var html = document.documentElement;
+      if (pendingYear()) {
+        html.classList.add('year-pending');
         // Cloak the season strip too: it server-renders in the current (red)
         // state, so without this it flashes red before the island swaps it to
         // archive (gold). The SeasonStrip island lifts this the instant its
         // state reflects the picked year.
-        document.documentElement.classList.add('sstrip-cloak');
+        html.classList.add('sstrip-cloak');
       }
+      // View transitions: <html> classes are replaced on every client-side
+      // swap, so re-arm the guard for the incoming page on astro:after-swap
+      // (before paint, with the new body already in the DOM). Two deliberate
+      // differences from the first-load branch above:
+      //  - only `year-pending`, never `sstrip-cloak`: the SeasonStrip island
+      //    is transition:persist'ed (Chrome.astro), so it carries its archive
+      //    state across the swap and nothing would lift the cloak again;
+      //  - only when the incoming page actually has year-aware content —
+      //    otherwise the progress bar would trickle to 88% with no island
+      //    around to finish it.
+      document.addEventListener('astro:after-swap', function () {
+        if (pendingYear() && document.querySelector('[data-year-aware]')) {
+          html.classList.add('year-pending');
+        }
+      });
     })();
   </script>
   <style is:inline>
@@ -198,6 +276,26 @@ if (breadcrumb && breadcrumb.length > 0) {
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-17WG173FST');
+        // View transitions: the client router swaps pages without a full load,
+        // so gtag's automatic page_view fires only once per session. Send one
+        // per client-side navigation from astro:page-load, which fires after
+        // the URL and <title> are updated. Tracking the last pathname skips
+        // the initial astro:page-load (already counted by `config`) and any
+        // same-page swap (query-string state like ?session=, ?viz=, ?vs=, ?e=
+        // is in-page UI, not a page). NOTE: if the GA4 property's Enhanced
+        // Measurement has "Page changes based on browser history events"
+        // switched on, GA also fires on the router's pushState — turn that
+        // setting off to avoid double-counting.
+        var lastPath = location.pathname;
+        document.addEventListener('astro:page-load', function () {
+          if (location.pathname === lastPath) return;
+          lastPath = location.pathname;
+          gtag('event', 'page_view', {
+            page_title: document.title,
+            page_location: location.href,
+            page_path: location.pathname + location.search,
+          });
+        });
         // Buy Me a Coffee widget is injected async, so listen at the document
         // level. Donation completes off-site — this captures intent (the click).
         document.addEventListener('click', function (e) {
@@ -218,5 +316,21 @@ if (breadcrumb && breadcrumb.length > 0) {
   <!-- Buy Me a Coffee floating widget. Restyled in css/app.css. Don't display:none - breaks the modal.
        `is:inline` is required: without it Astro bundles the tag and the BMC loader stops injecting #bmc-wbtn. -->
   <script is:inline data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="f1gures" data-description="Support me on Buy me a coffee!" data-message="" data-color="#FF5F5F" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+  <!-- View transitions: the widget injects #bmc-wbtn (and its modal iframe)
+       straight into <body>, and the client router replaces <body> wholesale.
+       The loader above is deduped by src (runs once per session, must NOT get
+       data-astro-rerun — a second run would double-inject), so instead carry
+       the widget's nodes (every direct body child with a bmc-* id) into the
+       incoming body on astro:before-swap. Identical on every page → runs once. -->
+  <script is:inline>
+    document.addEventListener('astro:before-swap', function (e) {
+      var keep = [];
+      var kids = document.body.children;
+      for (var i = 0; i < kids.length; i++) {
+        if (kids[i].id && kids[i].id.indexOf('bmc-') === 0) keep.push(kids[i]);
+      }
+      for (var j = 0; j < keep.length; j++) e.newDocument.body.appendChild(keep[j]);
+    });
+  </script>
 </body>
 </html>

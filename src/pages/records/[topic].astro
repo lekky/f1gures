@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import RecordsTable from '../../components/RecordsTable.astro';
 import MobileBarRows from '../../components/MobileBarRows.astro';
+import Icon from '../../components/Icon.astro';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
@@ -64,7 +65,7 @@ const jsonLd = top.length > 0 ? {
       <a class="standings-toggle-opt" href="/standings-constructors/">Constructors</a>
       <a class="standings-toggle-opt active" href="/records/" aria-current="page">Records</a>
     </div>
-    <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/records/">← Records</a>
+    <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/records/"><Icon name="arrow-left" size={14} />Records</a>
     <header class="records-page-head">
       <h1>{data.title}</h1>
       <p class="page-sub">{data.blurb}</p>
@@ -86,7 +87,9 @@ const jsonLd = top.length > 0 ? {
     <MobileBarRows />
   </main>
 
-  <script is:inline>
+  <script is:inline data-astro-rerun>
+    // Era toggle. data-astro-rerun: binds per-page buttons; must re-run after
+    // every view-transition swap (identical scripts are otherwise deduped).
     (function () {
       const root = document.querySelector('.records-page');
       if (!root) return;

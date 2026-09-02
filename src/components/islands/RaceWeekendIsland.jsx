@@ -19,6 +19,7 @@ import {
 import { assignSeriesStyles } from '../../lib/chartSeries.js';
 import { useFocusTrap } from '../../lib/useFocusTrap.js';
 import { vizListFor } from './raceweekend/vizdefs.jsx';
+import { Icon } from '../../lib/shared.jsx';
 import { setPanelTheme } from './raceweekend/primitives.jsx';
 import { renderShareCard, shareFileName, SHARE_FORMATS } from './raceweekend/share.js';
 import {
@@ -651,12 +652,12 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
         <div className="rw-mviz" onClick={(e) => e.stopPropagation()}
           ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
           <div className="rw-mviz-bar">
-            <button type="button" className="rw-mviz-x" onClick={closeVizModal} aria-label="Close">✕</button>
+            <button type="button" className="rw-mviz-x icon-btn" onClick={closeVizModal} aria-label="Close"><Icon name="x" size={16} /></button>
             <span className="rw-mviz-count t-mono">{sessLabel} · {openIdx + 1} / {vlist.length}</span>
             <div className="rw-mviz-baractions">
-              <button type="button" className="rw-mviz-share" ref={shareBtnRef} onClick={openShare} disabled={loading}>⤴ Share</button>
-              <button type="button" className="rw-mviz-nav" onClick={() => stepViz(-1)} aria-label="Previous chart">←</button>
-              <button type="button" className="rw-mviz-nav" onClick={() => stepViz(1)} aria-label="Next chart">→</button>
+              <button ref={shareBtnRef} type="button" className="rw-mviz-share" onClick={openShare} disabled={loading}><Icon name="share" size={14} /> Share</button>
+              <button type="button" className="rw-mviz-nav icon-btn" onClick={() => stepViz(-1)} aria-label="Previous chart"><Icon name="arrow-left" size={16} /></button>
+              <button type="button" className="rw-mviz-nav icon-btn" onClick={() => stepViz(1)} aria-label="Next chart"><Icon name="arrow-right" size={16} /></button>
             </div>
           </div>
           <div className="rw-mviz-body">
@@ -746,7 +747,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
                   </button>
                 ))}
               </div>
-              <button type="button" className="rw-share-close" onClick={() => { setShare(null); setShareImg(null); }} aria-label="Close">✕</button>
+              <button type="button" className="rw-share-close icon-btn" onClick={() => { setShare(null); setShareImg(null); }} aria-label="Close"><Icon name="x" size={14} /></button>
             </div>
             <div className="rw-share-preview">
               {shareImg && <img src={shareImg} alt="Share preview" />}

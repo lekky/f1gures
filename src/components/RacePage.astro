@@ -77,6 +77,7 @@ import RaceWeekendBody from './RaceWeekendBody.astro';
 import RaceUpcomingBody from './RaceUpcomingBody.astro';
 import MobileBarRows from './MobileBarRows.astro';
 import Flag from './Flag.astro';
+import Icon from './Icon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 
 const { race } = Astro.props;
@@ -112,7 +113,7 @@ const flagWashSrc = washCc
 ---
 
 <div class="page race-detail">
-  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/calendar/">← Calendar</a>
+  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/calendar/"><Icon name="arrow-left" size={14} />Calendar</a>
 
   <div class="panel race-hero">
     {flagWashSrc && (
@@ -137,8 +138,10 @@ const flagWashSrc = washCc
 
   {/* Trigger the flag-wash entrance wipe only when the page is visible, so a
       frozen/hidden preview never traps it at its invisible first frame. The
-      wash is CSS-visible without this. */}
-  <script is:inline>
+      wash is CSS-visible without this. data-astro-rerun: view transitions
+      dedupe identical inline scripts across navigations; this one wires the
+      freshly swapped-in body, so it must run on every page. */}
+  <script is:inline data-astro-rerun>
     (function () {
       function wipe() {
         var els = document.querySelectorAll('.race-hero-flagwash');
@@ -166,13 +169,13 @@ const flagWashSrc = washCc
 
   <div class="race-nav">
     {race.prev ? (
-      <a class="btn btn-ghost btn-sm race-nav-prev" href={`/races/${race.prev.year}/${race.prev.round}/`}>
-        ← {race.prev.name} {race.prev.year}
+      <a class="btn btn-ghost btn-sm race-nav-prev" href={`/races/${race.prev.year}/${race.prev.round}/`} rel="prev">
+        <Icon name="arrow-left" size={14} />{race.prev.name} {race.prev.year}
       </a>
     ) : <span></span>}
     {race.next ? (
-      <a class="btn btn-ghost btn-sm race-nav-next" href={`/races/${race.next.year}/${race.next.round}/`}>
-        {race.next.name} {race.next.year} →
+      <a class="btn btn-ghost btn-sm race-nav-next" href={`/races/${race.next.year}/${race.next.round}/`} rel="next">
+        {race.next.name} {race.next.year}<Icon name="arrow-right" size={14} />
       </a>
     ) : <span></span>}
   </div>
