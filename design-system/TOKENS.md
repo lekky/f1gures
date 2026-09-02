@@ -296,9 +296,10 @@ hover / focus.
 
 ### Segmented controls
 
-`.theme-switcher`, `.standings-toggle`, `.records-era-toggle`,
-`.sort-group > .sort-btn`. Same shape, different padding. Active
-state uses `bg-3` background (or `accent` for sort buttons).
+`.standings-toggle`, `.records-era-toggle`, `.sort-group > .sort-btn`.
+Same shape, different padding. Active state uses `bg-3` background (or
+`accent` for sort buttons). (The masthead theme control is no longer a
+segment pair — see `.theme-toggle` under Icons.)
 
 ### Panel — `.panel`
 
@@ -362,6 +363,54 @@ One base, one static modifier — `.data-table` was migrated to
 
 Cmd / Ctrl + K. Trigger is `.search-trigger` (desktop) / `.search-trigger-mobile`.
 Panel is `.f1k-panel`. Groups separated by `.f1k-group` rules.
+
+### Icons — `Icon.astro` / `<Icon />`
+
+One hand-inlined stroke set, no icon dependency. Paths live in
+`src/lib/iconPaths.js`; `src/components/Icon.astro` renders them server-side
+and the React `Icon` in `src/lib/shared.jsx` renders the same map inside
+islands. Never paste raw `<svg>` for a UI glyph — add the path to the map.
+
+**Contract:** 24×24 viewBox · `stroke="currentColor"` · stroke-width 1.8 ·
+round caps + joins · `fill="none"`. Colour is never set on the icon — it
+inherits `color`, so it follows the theme tokens and hover states for free.
+
+**Set:** `home` `list` `calendar` `bar-chart` `more-horizontal` (bottom nav)
+· `users` `shield` `map-pin` `book-open` `newspaper` `message-square` (More
+sheet) · `search` `share` `sun` `moon` `x` `external-link` `check` ·
+`chevron-up/down/left/right` · `arrow-up/down/left/right` · `flag`.
+
+**Sizes:**
+
+| px | Use                                                      |
+|----|----------------------------------------------------------|
+| 24 | Bottom-nav item icon (`.botnav-icon`)                    |
+| 18 | Icon-only chrome buttons, More-sheet links               |
+| 14 | Inline beside 11–12 px display text (`.btn-sm`, share)   |
+| 12 | Expand carets (`.chev`, `.stdrow-caret`), nav caret      |
+| 11 | Sort indicators inside table heads / sort buttons        |
+
+**Rules:**
+
+- Decorative icons get `aria-hidden="true"` (the default). Only pass
+  `label` when the icon is the whole accessible content of an element
+  that has no `aria-label` of its own.
+- Icon-only buttons carry `aria-label` **and** `.icon-btn`, which extends
+  an invisible hit area to ≥44 px on `pointer: coarse` without changing
+  the drawn box (`.theme-toggle`, `.search-trigger-mobile`, `.cmp-x`,
+  `.rw-mviz-nav`, `.page-btn` prev/next …).
+- Bottom nav: 24 px icon over a 9 px label, item ≥44 px tall. Active =
+  2 px `--accent` rule along the top edge + `--fg-1` icon/label; inactive
+  `--fg-3`. That rule is the one `--accent` on the mobile chrome.
+- State is expressed by rotation, not by swapping glyphs, where a CSS hook
+  already exists: `.chev` and `.tbl-cards tr::after` rotate `chevron-right`
+  90° when open; `.nav-item .caret.is-open` flips `chevron-down` 180°.
+- Text-flow arrows in copy (`View profile →`, `Grid → Finish`, blog prose,
+  `.card-accent-arrow ↗`) and data glyphs (`.chg ▲▼`, `★` champion, chart
+  legends) stay typographic — the icon set is for controls only.
+- `.theme-toggle` is the single 32 px icon button in the masthead: sun while
+  dark ("switch to light"), moon while light. `aria-label` + `.sr-only`
+  carry the words; the `localStorage.f1-theme` contract is unchanged.
 
 ---
 

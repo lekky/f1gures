@@ -76,6 +76,7 @@ import { buildDriverSummary } from '../lib/buildDriverSummary.js';
 import { getDriverBio } from '../data/driverBios.js';
 import { NATIONALITY } from '../lib/nationality.js';
 import Flag from './Flag.astro';
+import Icon from './Icon.astro';
 import StatusIcon from './StatusIcon.astro';
 import TriviaBoard from './islands/screens/TriviaBoard.jsx';
 import CompareCta from './islands/CompareCta.jsx';
@@ -421,7 +422,7 @@ const outcomesShare = {
 ---
 
 <div class="page">
-  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-drivers/">← Standings</a>
+  <a class="btn btn-ghost btn-sm" style="margin-bottom: 12px" href="/standings-drivers/"><Icon name="arrow-left" size={14} />Standings</a>
 
   <div class="panel driver-hero" style={`--team-color: ${teamColor}; border-left-color: ${teamColor}`}>
     <div class="driver-hero-grid">
@@ -926,7 +927,7 @@ const outcomesShare = {
                         {seasonLogo && <img class="be-team-logo" src={seasonLogo} alt="" width="14" height="14" loading="lazy" />}
                         {s.constructorName || '–'} · {s.wins}W
                       </span>
-                      <span class="chev" aria-hidden="true">▶</span>
+                      <Icon name="chevron-right" size={12} class="chev" />
                     </span>
                     <span class="be-track">
                       <span class="be-fill" style={`width:${barPct(pts, seasonMaxPoints)}%`}></span>
@@ -1028,7 +1029,7 @@ const outcomesShare = {
               {/* Season header bar — collapses the whole year group; only the
                   latest season starts expanded. */}
               <button class="be-yearhead" type="button" aria-expanded={gi === 0 ? 'true' : 'false'}>
-                <span class="chev" aria-hidden="true">▶</span>
+                <Icon name="chevron-right" size={12} class="chev" />
                 <span class="yr">{g.year}</span>
                 <span class="cnt">{g.races.length} {g.races.length === 1 ? 'race' : 'races'}</span>
               </button>
@@ -1066,7 +1067,7 @@ const outcomesShare = {
                             {rowLogo && <img class="be-team-logo" src={rowLogo} alt="" width="14" height="14" loading="lazy" />}
                             {r.constructorName || ''}
                           </span>
-                          <span class="chev" aria-hidden="true">▶</span>
+                          <Icon name="chevron-right" size={12} class="chev" />
                         </span>
                         <span class="be-track">
                           <span class={`be-fill ${zero ? 'zero' : ''}`} style={`width:${zero ? 100 : barPct(pts, raceMaxPoints)}%`}></span>

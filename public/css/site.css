@@ -292,6 +292,7 @@ a { color: inherit; }
   padding-bottom: 32px;
 }
 .page-btn {
+  display: inline-flex; align-items: center; justify-content: center;
   padding: 5px 11px;
   border: 1px solid var(--line-1);
   border-radius: 4px;
