@@ -325,8 +325,10 @@ const recordCards: CircuitRecordCard[] = [
 
   {/* Trigger the flag-wash entrance wipe only when the page is visible, so a
       frozen/hidden preview never traps it at its invisible first frame. The
-      wash is CSS-visible without this. */}
-  <script is:inline>
+      wash is CSS-visible without this. data-astro-rerun: view transitions
+      dedupe identical inline scripts across navigations; this one wires the
+      freshly swapped-in body, so it must run on every page. */}
+  <script is:inline data-astro-rerun>
     (function () {
       function wipe() {
         var els = document.querySelectorAll('.circuit-hero-flagwash');
@@ -548,9 +550,10 @@ const recordCards: CircuitRecordCard[] = [
 <MobileTableCards />
 
 {hasTrackPath && (
-  <script is:inline>
+  <script is:inline data-astro-rerun>
     // Respect reduced-motion: pause the SMIL dot-lap animation. The page ships
     // no other client JS; this is a one-shot accessibility guard.
+    // data-astro-rerun: must re-run per view-transition swap (new SVG).
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.querySelectorAll('svg.ct-svg').forEach(function (s) {
         if (s.pauseAnimations) s.pauseAnimations();

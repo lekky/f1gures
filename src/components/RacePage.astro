@@ -138,8 +138,10 @@ const flagWashSrc = washCc
 
   {/* Trigger the flag-wash entrance wipe only when the page is visible, so a
       frozen/hidden preview never traps it at its invisible first frame. The
-      wash is CSS-visible without this. */}
-  <script is:inline>
+      wash is CSS-visible without this. data-astro-rerun: view transitions
+      dedupe identical inline scripts across navigations; this one wires the
+      freshly swapped-in body, so it must run on every page. */}
+  <script is:inline data-astro-rerun>
     (function () {
       function wipe() {
         var els = document.querySelectorAll('.race-hero-flagwash');

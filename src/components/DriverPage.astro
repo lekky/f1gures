@@ -489,8 +489,10 @@ const outcomesShare = {
   {/* Trigger the flag-wash entrance wipe only when the page is actually
       visible. The wash itself is CSS-visible without this; the script just
       adds the run-once animation so a frozen/hidden preview never traps it at
-      its invisible first frame. Fires now if visible, else on first reveal. */}
-  <script is:inline>
+      its invisible first frame. Fires now if visible, else on first reveal.
+      data-astro-rerun: view transitions dedupe identical inline scripts across
+      navigations; this wires the swapped-in body, so it runs on every page. */}
+  <script is:inline data-astro-rerun>
     (function () {
       function wipe() {
         var els = document.querySelectorAll('.driver-hero-flagwash, .team-hero-flagwash');
@@ -840,7 +842,9 @@ const outcomesShare = {
   </div>
 
   {showWaffle && (
-    <script is:inline>
+    <script is:inline data-astro-rerun>
+      // data-astro-rerun: binds per-page elements; must re-run after every
+      // view-transition swap (identical scripts are otherwise deduped).
       (function () {
         var grid = document.querySelector('.waffle-grid');
         var toggle = document.querySelector('.waffle-order-toggle');

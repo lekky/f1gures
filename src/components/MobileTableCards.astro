@@ -4,8 +4,13 @@
 // time. Desktop (>720px) is a no-op — those tables render as normal tables.
 // Include once per page that uses .tbl-cards. The whole card toggles, except
 // clicks on real links (which navigate) and rows flagged data-noexpand.
+//
+// data-astro-rerun: this binds per-table listeners, so it must re-run after
+// every view-transition body swap (identical inline scripts are otherwise
+// deduped by the client router). On a swap readyState is already 'complete',
+// so init() runs immediately.
 ---
-<script is:inline>
+<script is:inline data-astro-rerun>
   (function () {
     function initTable(tbl) {
       var rows = tbl.tBodies.length ? tbl.tBodies[0].rows : [];
