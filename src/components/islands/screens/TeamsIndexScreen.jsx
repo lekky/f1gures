@@ -67,7 +67,7 @@ function FeatureCard({ team }) {
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, marginTop: 'auto' }}>
         <div>
           <div className="t-eyebrow" style={{ fontSize: 10, color: 'var(--fg-3)' }}>Titles</div>
-          <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 30, lineHeight: 1, color: team.championships > 0 ? 'var(--accent)' : 'var(--fg-1)' }}>
+          <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 30, lineHeight: 1, color: 'var(--fg-1)' }}>
             {team.championships}
           </div>
         </div>
@@ -123,7 +123,7 @@ function CompactRow({ team, mob }) {
         </div>
       ) : null}
       <div style={{ textAlign: 'right', minWidth: 50 }}>
-        <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, lineHeight: 1, color: team.championships > 0 ? 'var(--accent)' : 'var(--fg-1)' }}>
+        <div style={{ fontFamily: 'var(--f-display)', fontWeight: 800, fontSize: 20, lineHeight: 1, color: 'var(--fg-1)' }}>
           {team.championships}
         </div>
         <div className="t-eyebrow" style={{ fontSize: 9, color: 'var(--fg-3)', marginTop: 3 }}>Titles</div>

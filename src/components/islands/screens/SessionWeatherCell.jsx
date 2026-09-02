@@ -21,7 +21,7 @@ export default function SessionWeatherCell({ forecast, isClimate, useFahrenheit,
         border: 'none',
         padding: 0,
         cursor: 'pointer',
-        color: expanded ? 'var(--accent)' : 'var(--fg-2)',
+        color: expanded ? 'var(--fg-1)' : 'var(--fg-2)',
         fontFamily: 'var(--f-mono)',
         fontSize: 11,
       }}

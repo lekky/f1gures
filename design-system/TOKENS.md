@@ -91,9 +91,21 @@ hue. Never colour text with the pure team hex.
 
 | Token            | Value                  | Role                                    |
 |------------------|------------------------|-----------------------------------------|
-| `--accent`       | #E8002D                | F1 red. Active nav, leader, next race.  |
+| `--accent`       | #E8002D                | F1 red. Reserved for "now" — see below. |
 | `--accent-dim`   | #B8002A                | Pressed / secondary accent fill         |
 | `--accent-glow`  | rgba(232,0,45, .18 D / .10 L) | Halo on accent dots, ::before  |
+
+**Red budget — `--accent` means "now".** It is reserved for: the active
+season chip (live season), the next race (card outline, countdown, `.pill-next`),
+the live session dot / `.pill-live`, the championship-leader marker, the
+brand full stop after hero titles, the docked Support button's 8 px square,
+and `.btn-primary` (one per surface). Everything else is neutral ink:
+section-head / page-title marks are `--fg-1`, their rules `--line-2`; the
+active desktop-nav underline and active bottom-nav item are `--fg-1`; sort
+indicators, expand carets, listing-card hover borders, sort/pager buttons,
+the "Your time" column header and the season-progress percentage are all
+`--fg-1` / `--line-3` / `--band-ink-fg`. Team colours, `--pos`/`--neg`/`--warn`,
+podium gold and the form-guide ticker are outside this budget.
 
 ### Semantic
 
@@ -258,6 +270,29 @@ Round-over-round delta. Mono, 11 px, fixed 36 px wide.
 
 Race-weekend session selector. Active gets 2 px accent underline.
 `.tab.locked` (fg-4, not-allowed). `.tab.live` (live color).
+
+### Season strip — `.sstrip`
+
+The site's single year control (`SeasonStrip.jsx`), one row under the nav:
+40 px desktop / 44 px mobile, `--bg-2` ground, 1 px `--line-1` bottom rule —
+**not** a red band. Year chips (`.sstrip-chip`) scroll sideways in an
+`overflow-x: auto` row with the scrollbar hidden; the `1950–<year>` picker
+(`.sstrip-decade-chip`) is the last chip. The active chip is the only
+coloured element: `--accent` fill + white text in the live season, `--gold`
+fill + gold-ink text in archive mode (`.sstrip-archive`). The live note is a
+compact right-aligned item — 6 px `--accent` dot + mono `--fg-3` text
+("R13 · Italian GP"); the text hides below 420 px, the dot stays.
+
+### Support button — `#bmc-wbtn`
+
+The Buy Me a Coffee widget, restyled in `app.css` (the loader stays
+`is:inline` and the button is never `display: none`). `--bg-2` fill, 1 px
+`--line-2` border, radius 0, `--f-display` 11 px tracked uppercase "Support"
+in `--fg-1`; its only colour is an 8 px `--accent` square before the label.
+Mobile: `--bmc-h` (36 px) tall, docked flush against the bottom nav at the
+right edge — the footer's bottom padding adds `--bmc-h` so nothing ends
+under it. Desktop: a 40 px icon-only square bottom-right, label revealed on
+hover / focus.
 
 ### Segmented controls
 
@@ -467,7 +502,8 @@ See `audit.html` for full migration plan. **Don't add new instances of:**
 
 ## 10. Quick rules of thumb
 
-- One screen, one `--accent` usage. If it's appearing twice, demote one.
+- One screen, one `--accent` usage — red means "now" (see the red budget under
+  Accent). If it's appearing twice, demote one to `--fg-1` / `--line-2`.
 - Team color belongs on a strip / dot / rule / chip — not a fill.
 - Numbers are always mono and tabular (`font-variant-numeric: tabular-nums;`
   or use `.t-mono` / `.t-num`).

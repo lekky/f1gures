@@ -143,7 +143,7 @@ function NextRaceHero({ F, race, mob }) {
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   marginRight: 6,
-                  color: isNext ? 'var(--accent)' : 'var(--fg-2)',
+                  color: isNext ? 'var(--fg-1)' : 'var(--fg-2)',
                 }}>{s.name}</span>
                 <span style={{ fontWeight: 700, color: isNext ? 'var(--fg-1)' : 'var(--fg-2)' }}>{s.day} {s.time}</span>
                 {twoTz && ts && (
@@ -263,7 +263,7 @@ function ScheduleRow({ F, race, status, mob, now }) {
           <span className="cal-flag-num-txt">{String(race.round).padStart(2, '0')}</span>
         </span>
       ) : (
-        <span className="t-mono" style={{ fontSize: 11, color: isNext ? 'var(--accent)' : 'var(--fg-3)', letterSpacing: '0.08em', fontWeight: isNext ? 700 : 400 }}>
+        <span className="t-mono" style={{ fontSize: 11, color: isNext ? 'var(--fg-1)' : 'var(--fg-3)', letterSpacing: '0.08em', fontWeight: isNext ? 700 : 400 }}>
           RD {String(race.round).padStart(2, '0')}
         </span>
       )}
@@ -321,7 +321,7 @@ function ScheduleRow({ F, race, status, mob, now }) {
         {statusSide}
       </span>
 
-      <span aria-hidden="true" style={{ color: isNext ? 'var(--accent)' : 'var(--fg-4)', fontFamily: 'var(--f-mono)', fontSize: 16 }}>›</span>
+      <span aria-hidden="true" style={{ color: isNext ? 'var(--fg-1)' : 'var(--fg-4)', fontFamily: 'var(--f-mono)', fontSize: 16 }}>›</span>
     </div>
   );
 }

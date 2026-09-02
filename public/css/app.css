@@ -65,6 +65,8 @@
   /* Layout */
   --nav-h: 56px;
   --botnav-h: 56px;
+  /* Docked Support (BMC) button height — mobile bottom clearances add it. */
+  --bmc-h: 36px;
 
   /* Spacing - 4-unit scale.
      Tokenised in PR 1 (design-system/audit.html · #spacing).
@@ -291,36 +293,55 @@ html.light .nav-logo .wm-light { display: block; }
 .nav-item.active { color: var(--fg-1); }
 .nav-item.active::after {
   content: ''; position: absolute; left: 14px; right: 14px; bottom: 0;
-  height: 2px; background: var(--accent);
+  height: 2px; background: var(--fg-1);
 }
 .nav-item .caret { opacity: 0.5; margin-left: 5px; transition: transform var(--mo) ease; }
 .nav-item .caret.is-open { transform: rotate(180deg); }
 
-/* BMC widget - restyle the floating button from a 64x64 circle into a
-   flatter rectangle so it reads as a 'Support' CTA rather than a circular
-   badge. The widget script sets these via inline styles, so we need
-   !important to win. A ::after label adds a 'Support' wordmark next to the
-   coffee-cup icon. */
+/* BMC widget - restyle the floating button from a yellow 64x64 circle into
+   a docked, hard-cornered "Support" tab in the site's own chrome: --bg-2
+   fill, 1 px --line-2 border, display-face tracked label, and an 8 px red
+   square as its only colour. The widget script sets its own inline styles,
+   so !important is needed to win. The button must never be display:none
+   (that breaks its modal); the coffee-cup <img> is just hidden.
+   Mobile (≤720px): 36 px tall, flush against the bottom nav at the right
+   edge — the footer's bottom padding (--bmc-h) keeps content clear of it.
+   Desktop: a 40 px icon-only square bottom-right; the label slides out on
+   hover / focus. */
 #bmc-wbtn {
   width: auto !important;
-  height: 40px !important;
-  border-radius: 6px !important;
-  padding: 0 14px !important;
+  height: var(--bmc-h) !important;
+  border-radius: 0 !important;
+  padding: 0 12px !important;
   gap: 8px !important;
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  background: var(--bg-2) !important;
+  color: var(--fg-1) !important;
+  border: 1px solid var(--line-2) !important;
+  box-shadow: none !important;
+  font-family: var(--f-display) !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  line-height: 1 !important;
+  transition: border-color var(--mo) ease, background var(--mo) ease !important;
 }
-#bmc-wbtn img { height: 20px !important; width: 20px !important; }
+#bmc-wbtn:hover, #bmc-wbtn:focus-visible { background: var(--bg-3) !important; border-color: var(--line-3) !important; }
+#bmc-wbtn img { display: none !important; }
+#bmc-wbtn::before { content: ''; width: 8px; height: 8px; background: var(--accent); flex-shrink: 0; }
 #bmc-wbtn::after { content: 'Support'; }
 @media (max-width: 720px) {
-  /* On mobile keep it a touch smaller and out of the way of the bottom nav.
-     Lift above nav height + safe-area inset + breathing room. */
-  #bmc-wbtn { height: 36px !important; padding: 0 12px !important; bottom: calc(var(--botnav-h) + env(safe-area-inset-bottom) + 24px) !important; }
-  #bmc-wbtn img { height: 18px !important; width: 18px !important; }
-  #bmc-wbtn::after { font-size: 11px; }
+  #bmc-wbtn {
+    right: 0 !important; left: auto !important; margin: 0 !important;
+    bottom: calc(var(--botnav-h) + env(safe-area-inset-bottom)) !important;
+    border-right: 0 !important; border-bottom: 0 !important;
+  }
+}
+@media (min-width: 721px) {
+  #bmc-wbtn { width: 40px !important; height: 40px !important; padding: 0 !important; justify-content: center !important; }
+  #bmc-wbtn::after { display: none; }
+  #bmc-wbtn:hover, #bmc-wbtn:focus-visible { width: auto !important; padding: 0 12px !important; }
+  #bmc-wbtn:hover::after, #bmc-wbtn:focus-visible::after { display: inline; }
 }
 .nav-spacer { flex: 1; }
 .nav-controls { display: flex; align-items: center; gap: 8px; }
@@ -342,82 +363,105 @@ html.light .nav-logo .wm-light { display: block; }
 
 /* ──────────────────────────────────────────────────────────
    Season strip — the site's single season control (SeasonStrip
-   island). Full-width bar under the nav. Colour is the state:
+   island). One 40 px row under the nav (44 px on mobile) on a
+   neutral --bg-2 ground with a 1 px --line-1 rule. The ACTIVE
+   chip is the only coloured element — colour is the state:
    brand red = current/live season, champion gold = archive mode.
-   The strip is a brand banner and looks identical in both themes;
-   the decade panel is a deliberately light popover in both.
-   Gold-ink (#1a1205) and panel neutrals have no design tokens, so
-   the design's literals are used directly here.
+   Year chips scroll horizontally (scrollbar hidden) with the
+   full-range picker as the last chip; the live note is a compact
+   right-aligned "● R13 · Italian GP".
+   The decade panel is a deliberately light popover in both
+   themes. Gold-ink (#1a1205) and panel neutrals have no design
+   tokens, so the design's literals are used directly there.
    ────────────────────────────────────────────────────────── */
 .sstrip {
+  --sstrip-h: 40px;
   position: relative; z-index: 40;
-  background: var(--accent);
-  border-bottom: 1px solid var(--accent-dim);
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line-1);
 }
 .sstrip-inner {
-  display: flex; align-items: center; gap: 14px;
-  padding: 0 20px; min-height: 44px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 20px; height: var(--sstrip-h);
 }
-.sstrip-label {
-  flex-shrink: 0;
-  background: #fff; color: var(--accent);
-  font-family: var(--f-display); font-weight: 800; font-size: 10px;
-  letter-spacing: 0.16em; text-transform: uppercase;
-  padding: 5px 10px; line-height: 1;
+/* Chip row: scrolls sideways when it overflows, scrollbar hidden. position:
+   relative so the island can centre the active chip via offsetLeft. */
+.sstrip-chips {
+  position: relative; display: flex; align-items: center; gap: 2px;
+  flex: 1 1 auto; min-width: 0; height: 100%;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  scrollbar-width: none; -ms-overflow-style: none;
 }
-.sstrip-chips { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.sstrip-chips::-webkit-scrollbar { display: none; }
+/* Chip = full-height hit target (≥40/44 px); the coloured fill on the active
+   chip is a ::before inset vertically, so it reads as a chip, not a tab. */
 .sstrip-chip {
+  position: relative; z-index: 0; flex-shrink: 0;
+  display: inline-flex; align-items: center; height: 100%;
   background: transparent; border: 0; cursor: pointer;
-  color: rgba(255,255,255,0.75);
-  font-family: var(--f-display); font-weight: 700; font-size: 14px;
-  padding: 5px 10px; line-height: 1;
-  transition: color 0.1s ease;
+  color: var(--fg-3);
+  font-family: var(--f-display); font-weight: 700; font-size: 13px;
+  padding: 0 10px; line-height: 1;
+  transition: color var(--mo) ease;
 }
-.sstrip-chip:hover { color: #fff; }
-.sstrip-chip.active {
-  background: #fff; color: var(--accent); font-weight: 800; padding: 5px 12px;
+.sstrip-chip:hover { color: var(--fg-1); }
+.sstrip-chip.active { color: #fff; font-weight: 800; }
+.sstrip-chip.active::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 8px; bottom: 8px;
+  background: var(--accent); z-index: -1;
 }
 .sstrip-div {
-  width: 1px; height: 16px; background: rgba(255,255,255,0.3); margin: 0 6px;
+  width: 1px; height: 14px; background: var(--line-2); margin: 0 6px;
   flex-shrink: 0;
 }
 .sstrip-decade-chip {
   flex-shrink: 0; white-space: nowrap; cursor: pointer;
-  background: transparent; border: 1px solid rgba(255,255,255,0.45); color: #fff;
-  font-family: var(--f-display); font-weight: 700; font-size: 12px;
-  letter-spacing: 0.06em; padding: 4px 10px; line-height: 1;
+  background: transparent; border: 1px solid var(--line-2); color: var(--fg-2);
+  font-family: var(--f-display); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.06em; padding: 4px 8px; line-height: 1;
+  transition: color var(--mo) ease, border-color var(--mo) ease;
 }
+.sstrip-decade-chip:hover { color: var(--fg-1); border-color: var(--line-3); }
 .sstrip-decade-chip.open,
-.sstrip-decade-chip.active { background: #fff; color: var(--accent); border-color: #fff; }
+.sstrip-decade-chip.active { background: var(--fg-1); color: var(--bg-1); border-color: var(--fg-1); }
+/* The meta (and, in archive mode, the Back button) sits on an opaque --bg-2
+   plate with a short gradient fade on its left edge, above the chip row, so
+   overflowing chips visibly scroll under it instead of colliding with the
+   dot. Same ground in both themes and both strip modes (the gold lives on
+   the active chip only), so the archive variant needs no override. */
 .sstrip-meta {
-  margin-left: auto; display: flex; align-items: center; gap: 6px;
-  flex-shrink: 0; white-space: nowrap;
-  font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.06em;
-  color: rgba(255,255,255,0.85); text-transform: uppercase;
+  position: relative; z-index: 1;
+  margin-left: auto; display: flex; align-items: center; gap: 7px;
+  flex-shrink: 0; white-space: nowrap; min-width: 0; height: 100%;
+  padding-left: 10px; background: var(--bg-2);
+  font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.04em;
+  color: var(--fg-3);
 }
+.sstrip-meta::before,
+.sstrip-back::before {
+  content: ''; position: absolute; top: 0; bottom: 0; right: 100%; width: 18px;
+  background: linear-gradient(to right, transparent, var(--bg-2));
+  pointer-events: none;
+}
+.sstrip-meta-text { overflow: hidden; text-overflow: ellipsis; }
+/* The live marker — the strip's second (and last) use of red, and only in
+   the live season (archive mode renders no dot). */
 .sstrip-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: #fff; flex-shrink: 0;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
   animation: sstrip-pulse 2s ease-in-out infinite;
 }
 @keyframes sstrip-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 .sstrip-back {
+  position: relative; z-index: 1;
   flex-shrink: 0; white-space: nowrap; cursor: pointer; border: 0;
-  background: #1a1205; color: #fff;
-  font-family: var(--f-display); font-weight: 700; font-size: 11px;
-  letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 12px; line-height: 1;
+  background: var(--fg-1); color: var(--bg-1);
+  font-family: var(--f-display); font-weight: 700; font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 10px; line-height: 1;
 }
 
-/* ── Archive mode (gold) ── */
-.sstrip-archive { background: var(--gold); border-bottom-color: #b8862e; }
-.sstrip-archive .sstrip-label { background: #1a1205; color: var(--gold); }
-.sstrip-archive .sstrip-chip { color: rgba(26,18,5,0.6); }
-.sstrip-archive .sstrip-chip:hover { color: #1a1205; }
-.sstrip-archive .sstrip-chip.active { background: #1a1205; color: var(--gold); }
-.sstrip-archive .sstrip-div { background: rgba(26,18,5,0.25); }
-.sstrip-archive .sstrip-decade-chip { color: #1a1205; border-color: rgba(26,18,5,0.4); }
-.sstrip-archive .sstrip-decade-chip.open,
-.sstrip-archive .sstrip-decade-chip.active { background: #1a1205; color: var(--gold); border-color: #1a1205; }
-.sstrip-archive .sstrip-meta { color: rgba(26,18,5,0.7); }
+/* ── Archive mode: the active chip goes champion gold (gold-ink text) ── */
+.sstrip-archive .sstrip-chip.active { color: #1a1205; }
+.sstrip-archive .sstrip-chip.active::before { background: var(--gold); }
 
 /* ── Decade mega-panel (desktop: anchored dropdown) ── */
 .sstrip-scrim { display: none; }
@@ -465,28 +509,14 @@ html.light .nav-logo .wm-light { display: block; }
 .sstrip-panel { border-top: 3px solid var(--accent); }
 .sstrip-archive .sstrip-panel { border-top-color: var(--gold); }
 
-/* ── Narrow (≤900px): two-row strip + bottom-sheet panel ──
-   The design treats < ~900px as mobile for the strip specifically (the site
-   chrome flips to the mobile top bar at 720px, but the single-row strip needs
-   more room than that, so it switches to the robust two-row layout earlier). */
+/* ── Narrow (≤900px): still one row (44 px touch height) + bottom-sheet
+   panel. The chip row simply scrolls; the meta shrinks to the dot + short
+   text and, in archive mode, gives way to the "Back to current" button. */
 @media (max-width: 900px) {
-  .sstrip-inner {
-    flex-wrap: wrap; gap: 8px 10px; padding: 8px 12px; align-items: center;
-  }
-  /* Row 1: label + meta (live mode) / label + back button (archive mode).
-     Row 2: the year chips (count computed in JS to keep the decade chip
-     visible) + the decade chip. flex-wrap is a safety net: if the JS count is
-     ever off by one, chips wrap to a second line rather than scrolling. */
-  .sstrip-chips {
-    order: 3; flex-basis: 100%; flex-wrap: wrap; row-gap: 6px;
-  }
-  .sstrip-meta {
-    font-size: 9.5px; overflow: hidden; text-overflow: ellipsis; min-width: 0;
-  }
-  .sstrip-meta-text { overflow: hidden; text-overflow: ellipsis; }
-  .sstrip-back { font-size: 10px; padding: 5px 10px; }
-  /* Archive mode: drop the season meta and sit "Back to current" on the top
-     row beside the ARCHIVE label (pushed to the right edge). */
+  .sstrip { --sstrip-h: 44px; }
+  .sstrip-inner { gap: 8px; padding: 0 12px; }
+  .sstrip-chip.active::before { top: 10px; bottom: 10px; }
+  .sstrip-meta { font-size: 10px; }
   .sstrip-archive .sstrip-meta { display: none; }
   .sstrip-archive .sstrip-back { margin-left: auto; }
 
@@ -514,6 +544,11 @@ html.light .nav-logo .wm-light { display: block; }
   }
   .sstrip-year-grid { grid-template-columns: repeat(4, 1fr); }
   .sstrip-year-cell { padding: 10px 0; }
+}
+/* Very narrow phones: keep the live dot, drop its text so the chips keep
+   their scroll room. */
+@media (max-width: 420px) {
+  .sstrip-meta-text { display: none; }
 }
 
 /* Mobile bottom nav.
@@ -560,7 +595,7 @@ html.light .nav-logo .wm-light { display: block; }
 .page-mob .page-title { font-size: 28px; }
 .page-sub { color: var(--fg-3); font-size: 13px; margin-top: 4px; }
 
-/* Page header → same "header type" as the band section heads: red skewed mark
+/* Page header → same "header type" as the band section heads: ink skewed mark
    + grey rule, sized a touch bigger for the page title. The text block grows so
    the rule extends across; eyebrow + sub indent to sit above/below the title
    text, leaving the mark in the gutter. (Scoped to .page-head so the bespoke
@@ -569,10 +604,10 @@ html.light .nav-logo .wm-light { display: block; }
 .page-head .page-title { display: flex; align-items: center; gap: 14px; }
 .page-head .page-title::before {
   content: ''; flex-shrink: 0; width: 20px; height: 18px;
-  background: var(--accent); transform: skewX(-14deg);
+  background: var(--fg-1); transform: skewX(-14deg);
 }
 .page-head .page-title::after {
-  content: ''; flex: 1 1 0; min-width: 40px; height: 3px; background: var(--rule);
+  content: ''; flex: 1 1 0; min-width: 40px; height: 3px; background: var(--line-2);
 }
 .page-head .t-eyebrow, .page-head .page-sub { padding-left: 34px; }
 
@@ -587,7 +622,7 @@ html.light .nav-logo .wm-light { display: block; }
   .home-band-inner { padding: 20px 14px; }
   /* Last band clears the fixed mobile bottom nav (height + safe-area) plus
      breathing room, so the final championship cards aren't flush against it. */
-  .home-page .home-band:last-child .home-band-inner { padding-bottom: calc(28px + var(--botnav-h) + env(safe-area-inset-bottom)); }
+  .home-page .home-band:last-child .home-band-inner { padding-bottom: calc(28px + var(--bmc-h) + var(--botnav-h) + env(safe-area-inset-bottom)); }
 }
 
 /* ============================================================
@@ -677,7 +712,7 @@ html.light .nav-logo .wm-light { display: block; }
 /* Season progress banner — same ink as the form-guide ticker. */
 .season-progress { background: var(--band-ink); border-top: 1px solid #000; border-bottom: 1px solid var(--band-ink-line); }
 .sp-inner { max-width: 1280px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
-.sp-pct { font-family: var(--f-display); font-weight: 800; font-size: 52px; line-height: 0.8; color: var(--accent); flex-shrink: 0; }
+.sp-pct { font-family: var(--f-display); font-weight: 800; font-size: 52px; line-height: 0.8; color: var(--band-ink-fg); flex-shrink: 0; }
 .sp-meta { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
 .sp-meta .sp-title { font-family: var(--f-display); font-weight: 800; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--band-ink-fg); }
 .sp-meta .sp-sub { font-family: var(--f-mono); font-size: 12px; color: var(--band-ink-fg-dim); }
@@ -867,14 +902,14 @@ html.light .nav-logo .wm-light { display: block; }
 .sag-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 .sag-head-rule { flex: 1; height: 1px; background: var(--line-1); }
 .sag-side-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.sag-side-mark { width: 13px; height: 12px; background: var(--accent); flex-shrink: 0; transform: skewX(-14deg); }
+.sag-side-mark { width: 13px; height: 12px; background: var(--fg-1); flex-shrink: 0; transform: skewX(-14deg); }
 .sag-side-title { flex: 1; font-family: var(--f-display); font-weight: 800; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-1); }
 .sag-go {
   flex-shrink: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--line-2); color: var(--fg-3); font-size: 14px; line-height: 1;
   transition: color 0.16s ease, border-color 0.16s ease;
 }
-.sag:hover .sag-go { color: var(--accent); border-color: var(--accent); }
+.sag:hover .sag-go { color: var(--fg-1); border-color: var(--line-3); }
 
 /* Champion / constructor blocks in the main column. */
 .sag-block + .sag-block { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line-1); }
@@ -927,7 +962,7 @@ html.light .nav-logo .wm-light { display: block; }
 .sag-champ-face-fallback { display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
 .sag-champ-face-fallback svg { width: 78%; height: auto; }
 
-/* Season-records list — one card per record, holder headshot + red value. */
+/* Season-records list — one card per record, holder headshot + ink value. */
 .sag-reclist { display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .sag-rec { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; background: var(--bg-2); border: 1px solid var(--line-1); padding: 12px 14px; }
 .sag-rec-lbl { font-family: var(--f-display); font-weight: 700; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
@@ -941,7 +976,7 @@ html.light .nav-logo .wm-light { display: block; }
 .sag-rec-team { display: flex; align-items: center; gap: 5px; min-width: 0; }
 .sag-rec-team img { flex-shrink: 0; }
 .sag-rec-team-name { font-family: var(--f-display); font-weight: 700; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sag-rec-val { flex-shrink: 0; font-family: var(--f-display); font-weight: 800; font-size: 28px; line-height: 0.8; color: var(--accent-text); }
+.sag-rec-val { flex-shrink: 0; font-family: var(--f-display); font-weight: 800; font-size: 28px; line-height: 0.8; color: var(--fg-1); }
 
 @media (max-width: 900px) {
   .sag-grid { grid-template-columns: 1fr; }
@@ -970,18 +1005,19 @@ html.light .nav-logo .wm-light { display: block; }
   font-family: var(--f-display); font-weight: 700; font-size: 16px;
   letter-spacing: 0.12em; text-transform: uppercase;
 }
-.section-head .section-rule { flex: 1; height: 1px; background: var(--rule); }
+.section-head .section-rule { flex: 1; height: 1px; background: var(--line-2); }
 
 /* Band variant - bolder header for the full-bleed homepage bands. */
 .section-head-band { margin-top: 0; gap: 14px; }
-/* Red mark — a forward-leaning parallelogram (motorsport slash), not a tilted
-   square. skewX keeps the top/bottom level and slants the sides. */
+/* Ink mark — a forward-leaning parallelogram (motorsport slash), not a tilted
+   square. skewX keeps the top/bottom level and slants the sides. Neutral
+   --fg-1, not red: red is reserved for "now" (one red per screen). */
 .section-head-band .section-head-mark {
-  width: 15px; height: 13px; background: var(--accent); flex-shrink: 0;
+  width: 15px; height: 13px; background: var(--fg-1); flex-shrink: 0;
   transform: skewX(-14deg);
 }
 .section-head-band h2 { font-size: 21px; letter-spacing: 0.1em; font-weight: 800; }
-.section-head-band .section-rule { height: 2px; background: var(--rule); }
+.section-head-band .section-rule { height: 2px; background: var(--line-2); }
 
 /* ============================================================
    PANEL / CARD
@@ -1141,7 +1177,7 @@ html.light .nav-logo .wm-light { display: block; }
 }
 .tbl thead th.sortable { cursor: pointer; }
 .tbl thead th.sortable:hover { color: var(--fg-1); }
-.tbl thead th .sort-ind { color: var(--accent-text); margin-left: 4px; font-size: 9px; }
+.tbl thead th .sort-ind { color: var(--fg-1); margin-left: 4px; font-size: 9px; }
 .tbl thead th.right { text-align: right; }
 .tbl thead th.center { text-align: center; }
 
@@ -1273,7 +1309,7 @@ html.light .nav-logo .wm-light { display: block; }
   text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.03em;
 }
 .stdrow-caret { flex: 0 0 auto; width: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--fg-3); }
-.stdrow.is-open .stdrow-caret { color: var(--accent-text); }
+.stdrow.is-open .stdrow-caret { color: var(--fg-1); }
 
 /* Points bar */
 .stdrow-bar {
@@ -2039,7 +2075,7 @@ html.light .circuit-track .circuit-track-light { display: block; }
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
     transition: color var(--mo) ease, transform var(--mo) ease;
   }
-  .tbl-cards tr.is-open::after { transform: rotate(90deg); color: var(--accent-text); }
+  .tbl-cards tr.is-open::after { transform: rotate(90deg); color: var(--fg-1); }
   .tbl-cards tr[data-noexpand]::after { content: none; }
   .tbl-cards tr[data-noexpand] { cursor: default; }
 
@@ -5458,7 +5494,7 @@ a.cmp-foot-btn { text-decoration: none; display: inline-flex; align-items: cente
    (CSS-only) to the minimal treatment "B" and clears the fixed
    bottom nav. See Footer.astro for the DOM contract.
    ============================================================ */
-.site-footer { border-top: 2px solid var(--accent); background: var(--bg-1); }
+.site-footer { border-top: 2px solid var(--line-2); background: var(--bg-1); }
 .site-footer-inner { max-width: 1280px; margin: 0 auto; padding: 36px var(--sp-7) 26px; }
 
 .site-footer a { color: var(--fg-3); text-decoration: none; transition: color var(--mo, 140ms) ease; }
@@ -5508,7 +5544,7 @@ html.light .sf-logo .wm-light { display: block; }
   /* Collapse to treatment "B": drop the columns/tagline/season chip,
      centre everything, show the condensed secondary nav, and reserve
      clearance for the fixed .botnav (matches the .page pattern). */
-  .site-footer-inner { padding: 26px var(--sp-6) calc(22px + var(--botnav-h) + env(safe-area-inset-bottom)); text-align: center; }
+  .site-footer-inner { padding: 26px var(--sp-6) calc(22px + var(--bmc-h) + var(--botnav-h) + env(safe-area-inset-bottom)); text-align: center; }
   .sf-top { display: flex; flex-direction: column; align-items: center; gap: 0; }
   .sf-brand { display: flex; flex-direction: column; align-items: center; }
   .sf-cols, .sf-tagline, .sf-season, .sf-actions { display: none; }
