@@ -1858,6 +1858,23 @@ html.light .circuit-track .circuit-track-light { display: block; }
 .recharts-tooltip-label { color: var(--fg-2) !important; font-family: var(--f-display) !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; font-size: 11px !important; }
 .recharts-legend-item-text { color: var(--fg-2) !important; font-family: var(--f-display) !important; font-size: 11px !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
 
+/* Chart accessibility (standings progression charts): direct end-of-line
+   series labels (theme text colour with a panel-coloured halo so they read
+   over the lines) and the "Show as table" toggle + its static table. */
+.chart-end-label {
+  fill: var(--fg-1); font-family: var(--f-mono); font-size: 11px; font-weight: 600;
+  paint-order: stroke; stroke: var(--bg-2); stroke-width: 3px; stroke-linejoin: round;
+}
+.chart-a11y-bar { display: flex; justify-content: flex-end; margin-top: var(--sp-2); }
+.chart-table-wrap { overflow-x: auto; margin-top: var(--sp-3); border-top: 1px solid var(--line-1); }
+.chart-table tbody th {
+  padding: 12px; text-align: left; vertical-align: middle; white-space: nowrap;
+  font-family: var(--f-mono); font-size: 12px; font-weight: 500; color: var(--fg-2);
+}
+/* Dialog frames take programmatic focus (focus trap) — the ring belongs on
+   their controls, not the container. */
+.rw-mviz:focus, .rw-share-modal:focus, .cmp-share-modal:focus { outline: none; }
+
 /* Selects */
 .sel {
   background: var(--bg-3); color: var(--fg-1);
