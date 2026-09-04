@@ -57,9 +57,12 @@ const WM = { top: 1.03, bottom: 1.03, left: 0.32, right: 0.70, outHeight: 264 };
 // diagonal lands at 0.367 of the tile, under the 0.40 limit) while matching
 // the optical weight of the icon it replaces.
 const ICON_GLYPH_W = 0.68;
-// Same, for 16/32px favicons: too small for the streaks to read, so the glyphs
-// are pushed larger and the streaks just tint the tile.
+// Same, for the 32px favicon: too small for the streaks to read as speed, so
+// the glyphs are pushed larger and the streaks just tint the tile.
 const ICON_GLYPH_W_TINY = 0.80;
+// At 16px even that is a smudge, so the streaks are dropped (they sit in their
+// own rows, clear of the glyphs) and the "F1." fills the tile.
+const ICON_GLYPH_W_16 = 0.86;
 
 // ── pixel helpers ───────────────────────────────────────────────────────────
 
@@ -194,15 +197,26 @@ async function buildWordmark(variant) {
  * on a black plate. `radiusPct` > 0 rounds the corners (browser icons, which
  * are shown as-authored); the maskable ones stay full-bleed square.
  */
-async function buildIcon(size, { glyphW = ICON_GLYPH_W, radiusPct = 0 } = {}) {
-  const src = await readRaw(path.join(SRC, 'icon.png'));
+async function buildIcon(size, { glyphW = ICON_GLYPH_W, radiusPct = 0, streaks = true } = {}) {
+  let src = await readRaw(path.join(SRC, 'icon.png'));
 
   // White "F" plus the red "1" and stop. The streaks are red too, but they sit
   // in their own horizontal bands, so glyphBox() only takes red from the "F"'s
   // rows.
   const white = bbox(src, (r, g, b) => Math.min(r, g, b) > 200);
   if (!white) throw new Error('icon: could not find the glyphs');
-  const glyph = glyphBox(src, white);
+  let glyph = glyphBox(src, white);
+
+  if (!streaks) {
+    // Those same clear bands mean the streaks can be dropped by keeping only
+    // the glyphs' rows (plus a little air) and letting the tile re-pad.
+    const air = Math.round(glyph.h * 0.14);
+    const top = Math.max(0, glyph.y0 - air);
+    const height = Math.min(src.h - top, glyph.h + air * 2);
+    const rows = await raw(src).extract({ left: 0, top, width: src.w, height }).png().toBuffer();
+    src = await readRaw(rows);
+    glyph = { ...glyph, y0: glyph.y0 - top, y1: glyph.y1 - top };
+  }
 
   if (process.env.BRAND_DEBUG) console.log('[brand] glyph box', glyph);
   const scale = (glyphW * size) / glyph.w;
@@ -280,7 +294,7 @@ async function main() {
   // Browser icons are drawn as authored - keep the rounded tile they had.
   write(path.join(PUBLIC, 'favicon.png'), await buildIcon(256, { radiusPct: 0.19 }));
   write(path.join(PUBLIC, 'favicon-32x32.png'), await buildIcon(32, { glyphW: ICON_GLYPH_W_TINY, radiusPct: 0.19 }));
-  write(path.join(PUBLIC, 'favicon-16x16.png'), await buildIcon(16, { glyphW: ICON_GLYPH_W_TINY, radiusPct: 0.19 }));
+  write(path.join(PUBLIC, 'favicon-16x16.png'), await buildIcon(16, { glyphW: ICON_GLYPH_W_16, radiusPct: 0.19, streaks: false }));
 }
 
 main().catch((err) => {
