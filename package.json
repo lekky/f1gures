@@ -11,6 +11,7 @@
     "build:archive": "node scripts/build-archive.mjs",
     "build:climate": "node scripts/build-climate.mjs",
     "build:og": "node scripts/generate-og-images.mjs",
+    "build:brand": "node scripts/build-brand-assets.mjs",
     "sync:current": "node scripts/sync-current-season.mjs",
     "fetch:current": "node scripts/fetch-season.mjs $(date +%Y)",
     "fetch:weather": "node scripts/fetch-weather.mjs",

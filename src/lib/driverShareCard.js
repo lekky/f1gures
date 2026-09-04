@@ -13,6 +13,8 @@
 // card carries the exact panel colours regardless of the site's live theme.
 // Consumed by DriverSectionShare.jsx via the share modal.
 
+import { wordmarkRect } from './brandMark.mjs';
+
 export const DRIVER_SHARE_FORMATS = {
   // 'fit' has no fixed height — the card grows to exactly hold the driver's
   // data, so a light career (few teammates / seasons) gets a compact card and a
@@ -534,7 +536,10 @@ export async function renderDriverCard(section, payload, { fmt = 'fit', light = 
   const teamCol = teamHex(payload, PAL);
 
   const padX = wide ? 84 : 64;
-  const padTop = story ? 84 : 56;
+  // The non-story padTop is 68 rather than 56 to clear the wordmark lockup's
+  // upper streak, which overdraws the masthead band (see src/lib/brandMark.mjs).
+  // Fixed formats give the 12px back from the body box; 'fit' grows by it.
+  const padTop = story ? 84 : 68;
   const bodyGap = story ? 30 : 20;
   const footBelow = story ? 92 : wide ? 72 : 78;
 
@@ -577,8 +582,10 @@ export async function renderDriverCard(section, payload, { fmt = 'fit', light = 
   ctx.textBaseline = 'alphabetic';
   const wmH = story ? 52 : 46;
   if (wordmark && wordmark.width) {
-    const lw = (wordmark.width / wordmark.height) * wmH;
-    ctx.drawImage(wordmark, padX, padTop - wmH + 8, lw, wmH);
+    // Overdraws the wmH band; the extra height is transparent glow. See
+    // src/lib/brandMark.mjs.
+    const r = wordmarkRect(wordmark, padTop - wmH + 8, wmH);
+    ctx.drawImage(wordmark, padX, r.y, r.w, r.h);
   } else {
     ctx.textAlign = 'left';
     ctx.fillStyle = PAL.fg;

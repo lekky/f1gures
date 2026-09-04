@@ -14,6 +14,7 @@
 
 import { fmtVal } from './compareStats.js';
 import { NATIONALITY } from './nationality.js';
+import { wordmarkRect } from './brandMark.mjs';
 
 export const CMP_SHARE_FORMATS = {
   sq: { w: 1080, h: 1080, label: '1:1 Feed' },
@@ -260,8 +261,11 @@ function computeLayout(fmt) {
     W, H, wide, story, padX, cx, av,
     nameFont, teamFont, spanFont, vsFont, verdictFont,
     aValRight, bValLeft, lBarX0, lBarX1, rBarX0, rBarX1, rowFont, barH,
-    // vertical rhythm knobs
-    padY: story ? 54 : 30,
+    // vertical rhythm knobs. The non-story padY is 44 rather than 30 to clear
+    // the wordmark lockup's upper streak, which overdraws the masthead band
+    // (see src/lib/brandMark.mjs); the metric rows below are spread across
+    // whatever height is left, so they absorb it.
+    padY: story ? 54 : 44,
     wmH: story ? 52 : 44,
     stripH: story ? 90 : wide ? 82 : 74,
     footerH: story ? 70 : 54,
@@ -304,8 +308,10 @@ export async function renderCompareCard(cmp, { bColor, fmt = 'sq', light = false
   ctx.textBaseline = 'alphabetic';
   const wmTop = L.padY - 12;
   if (wordmark && wordmark.width) {
-    const lh = L.wmH, lw = (wordmark.width / wordmark.height) * lh;
-    ctx.drawImage(wordmark, padX, wmTop, lw, lh);
+    // Overdraws the wmH band - the extra height is the streaks' transparent
+    // glow, which sits harmlessly over the padding. See src/lib/brandMark.mjs.
+    const r = wordmarkRect(wordmark, wmTop, L.wmH);
+    ctx.drawImage(wordmark, padX, r.y, r.w, r.h);
   } else {
     ctx.fillStyle = PAL.accent;
     ctx.beginPath(); ctx.arc(padX + 5, wmTop + L.wmH * 0.75, 6, 0, Math.PI * 2); ctx.fill();

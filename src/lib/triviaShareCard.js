@@ -7,6 +7,8 @@
 //
 // Consumed by TriviaBoard.jsx for its Share action.
 
+import { wordmarkRect } from './brandMark.mjs';
+
 const PAL = {
   bg: '#0B0C10', panel: '#16171C', line: '#2A2C34',
   fg: '#F5F5F5', fg2: '#B8B9BD', fg3: '#9A9BA1', accent: '#E8002D', white: '#FAFAFA',
@@ -77,8 +79,10 @@ export async function buildTriviaShareBlob(fact) {
   // ── masthead: brand wordmark (falls back to text), section label on the right ──
   ctx.textBaseline = 'alphabetic';
   if (logo && logo.width) {
-    const lh = 52, lw = (logo.width / logo.height) * lh;
-    ctx.drawImage(logo, pad, 40, lw, lh);
+    // Overdraws the 52px band; the extra height is transparent glow. See
+    // src/lib/brandMark.mjs.
+    const r = wordmarkRect(logo, 40, 52);
+    ctx.drawImage(logo, pad, r.y, r.w, r.h);
   } else {
     ctx.textAlign = 'left';
     ctx.fillStyle = PAL.fg;

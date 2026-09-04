@@ -82,7 +82,7 @@ jobs:
           # Cache the ~2,300 generated OG PNGs by content hash of inputs that
           # affect their output. CSS-only or docs-only PRs hit the cache and
           # save ~5 min of Satori rendering. Data updates bust the key.
-          key: og-images-v1-${{ hashFiles('data/history/**', 'public/data/*.json', 'scripts/build-archive.mjs', 'scripts/generate-og-images.mjs', 'scripts/og-templates/**', 'package-lock.json') }}
+          key: og-images-v1-${{ hashFiles('data/history/**', 'public/data/*.json', 'public/images/logo/**', 'scripts/build-archive.mjs', 'scripts/generate-og-images.mjs', 'scripts/og-templates/**', 'package-lock.json') }}
 
       - name: Build Astro site
         if: steps.decide.outputs.deploy == 'true'

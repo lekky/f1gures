@@ -273,14 +273,18 @@ button { font-family: inherit; }
 .nav-logo {
   display: flex; align-items: center; cursor: pointer;
 }
-/* Brand wordmark image, with a light/dark swap so the plate outline + letters
-   stay legible on both themes. The two <img> share a slot; the theme decides
-   which one shows (default = dark art; html.light = light art). */
-.nav-logo-img { display: block; height: 26px; width: auto; }
+/* Brand wordmark image, with a light/dark swap so the letters stay legible on
+   both themes. The two <img> share a slot; the theme decides which one shows
+   (default = dark art; html.light = light art). The lockup's speed streaks sit
+   above and below the letters and take about two thirds of the file's height,
+   so these heights are ~1.6x what the old plate wordmark used - that lands the
+   letters at the same optical size. See src/lib/brandMark.mjs. */
+.nav-logo-img { display: block; height: 42px; width: auto; }
 .nav-logo .wm-light { display: none; }
 html.light .nav-logo .wm-dark { display: none; }
 html.light .nav-logo .wm-light { display: block; }
-.topbar-logo .nav-logo-img { height: 24px; }
+/* 48px mobile bar, so the lockup sits a little tighter than in the 56px nav. */
+.topbar-logo .nav-logo-img { height: 36px; }
 .nav-items { display: flex; gap: 2px; height: 100%; align-items: center; }
 .nav-item {
   font-family: var(--f-display); font-weight: 600;
@@ -5491,7 +5495,7 @@ a.cmp-foot-btn { text-decoration: none; display: inline-flex; align-items: cente
 .sf-cols { display: contents; }
 
 .sf-logo { display: inline-block; margin-bottom: 12px; }
-.sf-logo-img { display: block; height: 30px; width: auto; }
+.sf-logo-img { display: block; height: 48px; width: auto; }
 .sf-logo .wm-light { display: none; }
 html.light .sf-logo .wm-dark { display: none; }
 html.light .sf-logo .wm-light { display: block; }
@@ -5534,7 +5538,7 @@ html.light .sf-logo .wm-light { display: block; }
   .sf-brand { display: flex; flex-direction: column; align-items: center; }
   .sf-cols, .sf-tagline, .sf-season, .sf-actions { display: none; }
   .sf-logo { margin-bottom: 14px; }
-  .sf-logo-img { height: 27px; }
+  .sf-logo-img { height: 44px; }
   .sf-links-mobile { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 4px; margin: 2px 0 4px; }
   .sf-links-mobile a { font-size: 13px; }
   .sf-links-mobile a:not(:last-child)::after { content: "·"; margin-left: 8px; color: var(--fg-4); opacity: .5; }

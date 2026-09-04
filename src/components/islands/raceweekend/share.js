@@ -8,6 +8,8 @@
 // double those dimensions — crisp after platform re-compression/zoom.
 // Client-only (canvas + XMLSerializer).
 
+import { wordmarkRect } from '../../../lib/brandMark.mjs';
+
 export const SHARE_FORMATS = {
   // 'fit' (Auto) has no fixed height — the card is feed-width and its height
   // follows the chart's own aspect ratio, so a wide chart gets a short card and
@@ -152,8 +154,10 @@ export async function renderShareCard(node, fmt, meta) {
     // as a deliberate composition instead of floating in dead space.
     let y = 168;
     if (logo && logo.width) {
-      const lh = 56, lw = (logo.width / logo.height) * lh;
-      ctx.drawImage(logo, mx, y - lh, lw, lh);
+      // Overdraws the 56px band; the extra height is transparent glow. See
+      // src/lib/brandMark.mjs.
+      const r = wordmarkRect(logo, y - 56, 56);
+      ctx.drawImage(logo, mx, r.y, r.w, r.h);
     } else {
       ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 10, y - 18, 10, 0, 7); ctx.fill();
       ctx.fillStyle = FG; ctx.font = '800 54px "Barlow Condensed", sans-serif';
@@ -213,8 +217,10 @@ export async function renderShareCard(node, fmt, meta) {
   // 16:9 wide + 1:1 feed
   let y = wide ? 96 : 110;
   if (logo && logo.width) {
-    const lh = 44, lw = (logo.width / logo.height) * lh;
-    ctx.drawImage(logo, mx, y - lh, lw, lh);
+    // Overdraws the 44px band; the extra height is transparent glow. See
+    // src/lib/brandMark.mjs.
+    const r = wordmarkRect(logo, y - 44, 44);
+    ctx.drawImage(logo, mx, r.y, r.w, r.h);
   } else {
     ctx.fillStyle = RED; ctx.beginPath(); ctx.arc(mx + 8, y - 14, 8, 0, 7); ctx.fill();
     ctx.fillStyle = FG; ctx.font = '800 42px "Barlow Condensed", sans-serif';

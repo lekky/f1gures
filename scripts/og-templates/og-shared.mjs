@@ -58,7 +58,7 @@ const LOGO_ALIAS = { red_bull: 'redbull', aston_martin: 'aston' };
 
 // ── brand wordmark, embedded as a base64 data URI ──
 const WORDMARK_PATH = path.join(ROOT, 'public/images/logo/f1gures-wordmark-dark.png');
-const WORDMARK_NATIVE = { w: 560, h: 141 };
+const WORDMARK_NATIVE = { w: 791, h: 264 };
 const WORDMARK_DATA_URI = (() => {
   try {
     return `data:image/png;base64,${fs.readFileSync(WORDMARK_PATH).toString('base64')}`;
@@ -66,8 +66,13 @@ const WORDMARK_DATA_URI = (() => {
     return null;
   }
 })();
-const WM_H = 34;
+// The lockup's streaks take roughly two thirds of the PNG's height, so it is
+// drawn ~1.6x taller than the old plate wordmark to land the letters at the
+// same size (see src/lib/brandMark.mjs). WM_TOP pulls the extra height - which
+// is transparent glow - back up so the letters stay on their old baseline.
+const WM_H = 55;
 const WM_W = Math.round((WORDMARK_NATIVE.w / WORDMARK_NATIVE.h) * WM_H);
+const WM_TOP = 34;
 
 // ── build-time image loaders (Satori can't decode WebP, so faces are
 //    converted to PNG via sharp; logos are JPEG and load directly). ──
@@ -214,14 +219,14 @@ export { absCard };
 export function wordmarkEl() {
   return WORDMARK_DATA_URI ? ogImg(WORDMARK_DATA_URI, WM_W, WM_H) : txt({ fontSize: 26, color: COLORS.muted }, 'f1gures');
 }
-export const wmTopLeft = () => div({ position: 'absolute', top: 44, left: 60 }, [wordmarkEl()]);
-export const wmTopRight = () => div({ position: 'absolute', top: 44, right: 60 }, [wordmarkEl()]);
+export const wmTopLeft = () => div({ position: 'absolute', top: WM_TOP, left: 60 }, [wordmarkEl()]);
+export const wmTopRight = () => div({ position: 'absolute', top: WM_TOP, right: 60 }, [wordmarkEl()]);
 export const urlBottomLeft = () =>
   txt({ position: 'absolute', bottom: 44, left: 60, fontSize: 26, color: COLORS.muted, fontWeight: 700 }, 'www.f1gures.app');
 
 // Masthead: red kicker on the left, wordmark on the right.
 export function masthead(kicker) {
-  return div({ position: 'absolute', top: 44, left: 60, right: 60, alignItems: 'center', justifyContent: 'space-between' }, [
+  return div({ position: 'absolute', top: WM_TOP, left: 60, right: 60, alignItems: 'center', justifyContent: 'space-between' }, [
     txt({ fontSize: 26, fontWeight: 600, color: COLORS.accent, textTransform: 'uppercase', letterSpacing: '0.1em' }, kicker),
     wordmarkEl(),
   ]);
