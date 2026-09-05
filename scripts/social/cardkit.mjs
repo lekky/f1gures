@@ -1,15 +1,17 @@
 // scripts/social/cardkit.mjs
 //
-// Layout primitives for the social cards, sized for the vertical/square
-// formats the feed platforms actually want. The OG templates in
-// scripts/og-templates/ are locked to one 1200x630 landscape canvas, so this
-// is a sibling toolkit rather than a reuse of them - but it deliberately
-// borrows their palette and their image loaders (faces, logos, flags, track
-// maps) so a social card and a link preview look like the same product.
+// Layout primitives for the social cards.
 //
-// Design follows design-system/TOKENS.md: hard corners, condensed uppercase
-// labels, dense numerics, and --accent red used once per card as the signal of
-// "this is the thing".
+// The design is the "f1gures social cards" handoff (see
+// docs/social-card-design.md): six skeletons covering all thirteen card types,
+// authored inside the Satori subset. Every measurement here is from that spec -
+// they are final and intentional, so change them there first, not here.
+//
+// Sizing model: the design is drawn at portrait 1080x1350. Square and story are
+// reflows of the same markup rather than separate designs, reached by three
+// scale factors - font size, explicit width, and everything vertical. That is
+// why nothing below hardcodes a pixel: a layout calls m.f() / m.w() / m.v() and
+// the same tree composes at all three sizes.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,8 +19,6 @@ import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { ROOT } from './sources.mjs';
 
-// Instagram feed takes 1:1 and 4:5; 4:5 occupies the most screen and is the
-// default. Story/TikTok is 9:16.
 export const FORMATS = {
   square: { w: 1080, h: 1080 },
   portrait: { w: 1080, h: 1350 },
@@ -27,31 +27,54 @@ export const FORMATS = {
 
 export const DEFAULT_FORMATS = ['portrait', 'square', 'story'];
 
+// Reflow multipliers, from the handoff's "Reflows" table. Portrait is the
+// drawn size, so it scales by 1.
+const SCALE = {
+  portrait: { font: 1, width: 1, vert: 1 },
+  square: { font: 0.88, width: 0.92, vert: 0.74 },
+  story: { font: 1.05, width: 1.02, vert: 1.18 },
+};
+
 /**
  * Dark-theme token values, mirrored from public/css/app.css.
  *
  * A PNG has no theme to read custom properties from, so the values are copied
- * here. If a token moves in app.css, move it here too - design-system/TOKENS.md
- * is the source of truth and this is a mirror of its dark column.
+ * here. design-system/TOKENS.md is the source of truth; this is a mirror of its
+ * dark column. If a token moves there, move it here too.
  */
 export const COLORS = {
-  bg0: '#050505',
-  bg1: '#060709',
-  bg2: '#1C1D22',
-  bg3: '#252629',
-  line1: '#2C2E36',
+  bg: '#060709',
+  panel: '#1C1D22',
+  raised: '#252629',
+  line: '#2C2E36',
   line2: '#383A44',
   fg1: '#F5F5F5',
   fg2: '#B8B9BD',
   fg3: '#9A9BA1',
-  accent: '#E8002D',      // "now" - one moment per card (TOKENS red budget)
-  accentText: '#FF3B57',  // accent that clears 4.5:1 as text
+  accent: '#E8002D',
   gold: '#FFD700',
   silver: '#C0C0C0',
   bronze: '#CD7F32',
 };
 
-export const PODIUM_COLORS = [COLORS.gold, COLORS.silver, COLORS.bronze];
+export const RANK_INK = [COLORS.gold, COLORS.silver, COLORS.bronze];
+
+/**
+ * Canvas grounds. The one sanctioned exception to the flat token list: a
+ * multi-stop gradient interpolating around #060709, as canvas texture. All
+ * content still sits on solid panels.
+ */
+export const GROUNDS = {
+  photo: 'linear-gradient(118deg,#1A1C22 0%,#0D0F13 34%,#060709 58%,#0E1015 100%)',
+  streak: 'linear-gradient(118deg,#12141A 0%,#08090C 46%,#060709 100%)',
+  flat: 'linear-gradient(168deg,#171A20 0%,#0A0B0F 46%,#060709 100%)',
+  flatAlt: 'linear-gradient(200deg,#15171C 0%,#090A0D 50%,#060709 100%)',
+};
+
+// Scrims stacked over a bleeding photo: one fades its left edge into the
+// ground so the headline can overlap it, one fades its foot.
+export const SCRIM_LEFT = 'linear-gradient(100deg,#060709 0%,rgba(6,7,9,0.82) 26%,rgba(6,7,9,0.12) 66%,rgba(6,7,9,0) 100%)';
+export const SCRIM_FOOT = 'linear-gradient(to top,#060709 0%,rgba(6,7,9,0.88) 10%,rgba(6,7,9,0.25) 26%,rgba(6,7,9,0) 44%)';
 
 // ── fonts ──
 // The brand's three families (TOKENS §1): Barlow Condensed for display, Barlow
@@ -153,6 +176,8 @@ export const txt = (style, children) => ({
 export const img = (src, w, h, style = {}) => ({
   type: 'img', props: { src, width: w, height: h, style },
 });
+/** A flex spacer. Vertical rhythm is slack, not fixed offsets, so this reflows. */
+export const grow = (n = 1) => div({ flexGrow: n });
 
 /** #RRGGBB -> rgba() at the given alpha. Team hues are only ever used tinted. */
 export function alpha(hex, a) {
@@ -172,19 +197,26 @@ export function contrastText(hex) {
 }
 
 /**
- * Estimate a font size that lets `text` fit `maxWidth` across `maxLines`.
+ * Ferrari's #E80020 is within a few points of the accent #E8002D, so a red chip
+ * beside a Ferrari strip reads as a rendering fault. TOKENS.md calls this
+ * collision out; the design inverts the chip to white-on-black instead.
+ */
+export function clashesWithAccent(teamColor) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(teamColor || '');
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const a = parseInt(COLORS.accent.slice(1), 16);
+  const d = (x, y, sh) => Math.abs(((x >> sh) & 255) - ((y >> sh) & 255));
+  return d(n, a, 16) < 28 && d(n, a, 8) < 28 && d(n, a, 0) < 40;
+}
+
+/**
+ * Estimate a font size that fits `maxWidth` across `maxLines`.
  *
- * Satori exposes no text-measurement API, so this uses an average advance width
- * per em. Condensed display type runs much narrower than a normal-width face,
- * hence the per-family defaults.
- *
- * Two constraints, both necessary: the whole string has to fit the available
- * area, AND the longest single word has to fit one line - words do not break,
- * so a long surname overflows even when the total would have fitted ("MAX
- * VERSTAPPEN" clipped for exactly this reason). The smaller of the two wins.
- *
- * Any layout feeding this a width must pass the width the text actually gets,
- * not the card's full inner width.
+ * The design specifies sizes outright (and a smaller step for long names), so
+ * this is now only a guard for the genuinely unbounded strings - circuit names,
+ * trivia sentences. Two constraints: the whole string must fit the area, and
+ * the longest single word must fit one line, because words do not break.
  */
 export const ADVANCE = { display: 0.42, body: 0.5, mono: 0.6 };
 
@@ -192,72 +224,48 @@ export function fitFontSize(text, { maxWidth, maxLines = 1, max, min, advance = 
   const str = String(text || '');
   const len = str.length || 1;
   const longestWord = str.split(/\s+/).reduce((n, w) => Math.max(n, w.length), 1);
-
   const byTotal = (maxWidth * maxLines) / (len * advance);
   const byWord = maxWidth / (longestWord * advance);
-
   return Math.max(min, Math.min(max, Math.floor(Math.min(byTotal, byWord))));
 }
 
 /**
- * Per-format geometry. Everything downstream sizes off this rather than
- * hardcoding numbers, so one format tweak moves every layout coherently.
+ * Per-format geometry and the three scale functions.
+ *
+ *   m.f(px)  font sizes and anything that must track them (letter-spacing runs)
+ *   m.w(px)  explicit widths
+ *   m.v(px)  heights, top/left/right offsets, padding, margin, gap
  */
 export function metrics(format) {
   const { w, h } = FORMATS[format] || FORMATS.portrait;
-  const pad = Math.round(w * 0.065);
+  const s = SCALE[format] || SCALE.portrait;
+  const f = (px) => Math.round(px * s.font);
+  const wf = (px) => Math.round(px * s.width);
+  const v = (px) => Math.round(px * s.vert);
+
+  const padX = wf(72);
+  const padTop = v(64);
+  const padBottom = v(56);
+
   return {
     format,
     w,
     h,
-    pad,
-    inner: w - pad * 2,
-    // The story format has vertical room to spare; the safe band keeps content
-    // clear of TikTok's UI chrome top and bottom.
-    safeTop: format === 'story' ? Math.round(h * 0.12) : pad,
-    safeBottom: format === 'story' ? Math.round(h * 0.15) : pad,
-    kicker: Math.round(w * 0.026),
-    label: Math.round(w * 0.023),
-    body: Math.round(w * 0.036),
-    stat: Math.round(w * 0.068),
-    rowH: Math.round(w * (format === 'story' ? 0.128 : 0.115)),
+    f,
+    v,
+    scale: s,
+    // `w` is the canvas width, so the width scaler is exposed as wx to avoid
+    // shadowing it in layouts that destructure.
+    wx: wf,
+    pad: padX,
+    padTop,
+    padBottom,
+    inner: w - padX * 2,
+    safeTop: padTop,
+    safeBottom: padBottom,
+    // Kept for callers that still think in terms of a generic row height.
+    rowH: v(144),
   };
-}
-
-// ── texture ──
-
-/**
- * A fine diagonal ruling at the rake of the wordmark's speed streaks.
- *
- * Built as one linear-gradient with repeated hard stops rather than
- * repeating-linear-gradient, whose Satori support is not guaranteed.
- */
-function diagonalRuling(bands = 26) {
-  const stops = [];
-  const step = 100 / bands;
-  for (let i = 0; i < bands; i++) {
-    const a = i * step;
-    const b = a + step * 0.5;
-    stops.push(`rgba(255,255,255,0) ${a.toFixed(2)}%`, `rgba(255,255,255,0) ${b.toFixed(2)}%`);
-    stops.push(`rgba(255,255,255,0.018) ${b.toFixed(2)}%`, `rgba(255,255,255,0.018) ${(a + step).toFixed(2)}%`);
-  }
-  return `linear-gradient(115deg, ${stops.join(', ')})`;
-}
-
-/** An enormous numeral ghosted into the ground - depth without ornament. */
-export function ghostMark(m, text, { bottom = null, right = null } = {}) {
-  if (!text) return div({});
-  const size = Math.round(m.w * 0.62);
-  return txt({
-    position: 'absolute',
-    bottom: bottom ?? Math.round(m.h * 0.16),
-    right: right ?? -Math.round(m.w * 0.05),
-    fontFamily: 'Mono',
-    fontWeight: 700,
-    fontSize: size,
-    lineHeight: 1,
-    color: 'rgba(245,245,245,0.035)',
-  }, String(text));
 }
 
 // ── brand furniture ──
@@ -271,161 +279,155 @@ const WORDMARK_URI = (() => {
   }
 })();
 
-/**
- * The wordmark lockup. Its speed streaks occupy roughly the top two thirds of
- * the PNG, so it is drawn ~1.6x taller than the letters need and the extra
- * (transparent) height is absorbed by negative margin - the same compensation
- * src/lib/brandMark.mjs applies to the canvas share cards.
- */
-export function wordmark(m) {
+/** The wordmark lockup at a spec width (250x80 top-right, 300x96 bottom-left). */
+export function wordmark(m, width = 250) {
+  const wpx = m.wx(width);
+  const hpx = Math.round((WORDMARK_NATIVE.h / WORDMARK_NATIVE.w) * wpx);
   if (!WORDMARK_URI) {
-    return txt({ fontFamily: 'Display', fontSize: m.kicker, color: COLORS.fg3, fontWeight: 700 }, 'F1GURES');
+    return txt({ fontFamily: 'Display', fontSize: m.f(30), fontWeight: 700, color: COLORS.fg3 }, 'F1GURES');
   }
-  const height = Math.round(m.w * 0.062);
-  const width = Math.round((WORDMARK_NATIVE.w / WORDMARK_NATIVE.h) * height);
-  return img(WORDMARK_URI, width, height, { marginTop: -Math.round(height * 0.28) });
+  return img(WORDMARK_URI, wpx, hpx);
 }
 
-/** Tiny tracked uppercase label - the card's quiet voice. */
-export function eyebrow(m, text, color = COLORS.fg3, size = null) {
+/** Tiny tracked mono kicker - the card's quiet voice. */
+export function kicker(m, text) {
   return txt({
-    fontFamily: 'Display',
-    fontSize: size || m.kicker,
-    fontWeight: 700,
-    color,
-    textTransform: 'uppercase',
-    letterSpacing: '0.16em',
+    fontFamily: 'Mono', fontSize: m.f(22), fontWeight: 700,
+    color: COLORS.fg3, textTransform: 'uppercase', letterSpacing: '0.22em',
   }, String(text || '').toUpperCase());
 }
 
-/** Kicker on the left, wordmark on the right. */
-export function masthead(m, kicker) {
-  return div({ alignItems: 'center', justifyContent: 'space-between', width: m.inner, flexShrink: 0 }, [
-    eyebrow(m, kicker, COLORS.fg3),
-    wordmark(m),
+/** Kicker left, wordmark right. */
+export function kickerRow(m, text, { mark = true } = {}) {
+  return div({ width: m.inner, alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }, [
+    kicker(m, text),
+    mark ? wordmark(m, 250) : div({}),
   ]);
 }
 
-/** Bottom rule + site URL. */
-export function footer(m, right = '') {
+/** The red session chip. Inverts to white-on-black beside a Ferrari strip. */
+export function chip(m, text, { invert = false } = {}) {
+  return div({
+    backgroundColor: invert ? COLORS.fg1 : COLORS.accent,
+    paddingTop: m.v(9), paddingBottom: m.v(8), paddingLeft: m.wx(16), paddingRight: m.wx(16),
+    alignSelf: 'flex-start', flexShrink: 0,
+  }, [
+    txt({
+      fontFamily: 'Display', fontSize: m.f(26), fontWeight: 700,
+      letterSpacing: '0.22em', color: invert ? COLORS.bg : '#FFFFFF',
+    }, String(text).toUpperCase()),
+  ]);
+}
+
+/** Footer: hairline rule, then f1gures.app left and a context string right. */
+export function footer(m, right = '', { mark = false } = {}) {
   return div({ flexDirection: 'column', width: m.inner, flexShrink: 0 }, [
-    div({ width: m.inner, height: 1, backgroundColor: COLORS.line1, marginBottom: Math.round(m.pad * 0.45) }),
+    div({ width: m.inner, height: 1, backgroundColor: COLORS.line, marginBottom: m.v(26) }),
     div({ width: m.inner, alignItems: 'center', justifyContent: 'space-between' }, [
-      // Deliberately not uppercased: the brand's "1" reads as an "I" in caps.
-      txt({
-        fontFamily: 'Display', fontSize: m.label, fontWeight: 700,
-        color: COLORS.fg2, letterSpacing: '0.16em',
-      }, 'f1gures.app'),
+      mark
+        ? wordmark(m, 300)
+        // Deliberately not uppercased: the brand's "1" reads as an "I" in caps.
+        : txt({ fontFamily: 'Mono', fontSize: m.f(23), fontWeight: 500, letterSpacing: '0.1em', color: COLORS.fg3 }, 'f1gures.app'),
       right
-        ? txt({ fontFamily: 'Mono', fontSize: m.label, fontWeight: 400, color: COLORS.fg3, letterSpacing: '0.02em' }, String(right))
+        ? txt({ fontFamily: 'Mono', fontSize: m.f(23), fontWeight: 500, letterSpacing: '0.1em', color: COLORS.fg3 }, String(right).toUpperCase())
         : div({}),
     ]),
   ]);
 }
 
 /**
- * The card shell: near-black ground, diagonal ruling, optional ghost numeral,
- * then the padded column of content between masthead and footer.
+ * The card shell: ground gradient, optional full-bleed art behind, then the
+ * padded content overlay.
+ *
+ * `bleed` paints under the overlay - photos and their scrims go there, so the
+ * headline can sit over the scrimmed edge.
  */
-export function card(m, children, { kicker, footerRight, ghost } = {}) {
+export function card(m, children, { ground = GROUNDS.flat, bleed = [], edgeToEdge = false } = {}) {
   return div({
-    width: m.w,
-    height: m.h,
-    position: 'relative',
-    flexDirection: 'column',
-    backgroundColor: COLORS.bg1,
-    color: COLORS.fg1,
-    fontFamily: 'Body',
+    width: m.w, height: m.h, position: 'relative', flexDirection: 'column',
+    backgroundColor: COLORS.bg, backgroundImage: ground,
+    color: COLORS.fg1, fontFamily: 'Body', overflow: 'hidden',
   }, [
-    // ground: a soft vertical lift, then the ruling over it
-    div({ position: 'absolute', top: 0, left: 0, width: m.w, height: m.h,
-      backgroundImage: `linear-gradient(165deg, ${COLORS.bg2} 0%, ${COLORS.bg1} 55%, ${COLORS.bg0} 100%)` }),
-    div({ position: 'absolute', top: 0, left: 0, width: m.w, height: m.h, backgroundImage: diagonalRuling() }),
-    ghost ? ghostMark(m, ghost) : div({}),
+    ...bleed,
     div({
       position: 'absolute', top: 0, left: 0, width: m.w, height: m.h,
       flexDirection: 'column',
-      paddingTop: m.safeTop, paddingBottom: m.safeBottom, paddingLeft: m.pad, paddingRight: m.pad,
-    }, [
-      kicker ? masthead(m, kicker) : div({}),
-      div({ flexDirection: 'column', flexGrow: 1, width: m.inner, justifyContent: 'center' }, children),
-      footer(m, footerRight),
-    ]),
-  ]);
-}
-
-/** Big mono number over a small tracked label. */
-export function statBlock(m, value, label, color = COLORS.fg1) {
-  return div({ flexDirection: 'column', marginRight: Math.round(m.pad * 0.85) }, [
-    txt({ fontFamily: 'Mono', fontSize: m.stat, fontWeight: 700, lineHeight: 1, color }, String(value)),
-    txt({
-      fontFamily: 'Display', fontSize: m.label, fontWeight: 400, color: COLORS.fg3,
-      textTransform: 'uppercase', letterSpacing: '0.14em', marginTop: 8,
-    }, String(label).toUpperCase()),
-  ]);
-}
-
-/** A team-colour tile carrying a short code - stands in for a missing logo. */
-export function badge(m, color, code) {
-  const s = Math.round(m.rowH * 0.7);
-  return div({
-    width: s, height: s, backgroundColor: color || COLORS.line1,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  }, [
-    txt({ fontFamily: 'Display', fontSize: Math.round(s * 0.36), fontWeight: 700, color: contrastText(color) },
-      String(code || '').slice(0, 4).toUpperCase()),
+      paddingTop: m.padTop, paddingBottom: m.padBottom,
+      // Cards whose bands bleed to the edges pad per row instead.
+      paddingLeft: edgeToEdge ? 0 : m.pad,
+      paddingRight: edgeToEdge ? 0 : m.pad,
+    }, children),
   ]);
 }
 
 /**
- * One leaderboard row, following the records hero pattern: a proportional
- * team-colour bar fills the row behind the content (a sanctioned use of team
- * colour), the rank takes podium metal for the top three, and every numeral is
- * mono so columns align down the card.
- *
- * `r.pct` (0..1) drives the bar; omit it for a flat row.
+ * A photo bleeding off the right edge, under two scrims.
+ * Spec: 560x920 on result cards, 600x900 on hero cards.
  */
-export function barRow(m, r, i) {
-  const h = m.rowH;
-  const rankColor = PODIUM_COLORS[i] || COLORS.fg3;
-  const barW = Math.max(0, Math.min(1, r.pct ?? 0)) * m.inner;
+export function photoBleed(m, src, { width = 560, height = 920, top = 0 } = {}) {
+  if (!src) return [];
+  const pw = m.wx(width);
+  const ph = m.v(height);
+  // The scrims sit over the PHOTO, not the card. Spanning the full width
+  // instead darkens everything above the photo's foot and nothing below it,
+  // leaving a horizontal seam straight across the card at that y.
+  return [
+    div({ position: 'absolute', top: m.v(top), right: 0, width: pw, height: ph, overflow: 'hidden' }, [
+      img(src, pw, ph, { objectFit: 'cover' }),
+    ]),
+    div({ position: 'absolute', top: m.v(top), right: 0, width: pw, height: ph, backgroundImage: SCRIM_LEFT }),
+    div({ position: 'absolute', top: m.v(top), right: 0, width: pw, height: ph, backgroundImage: SCRIM_FOOT }),
+  ];
+}
 
-  return div({
-    width: m.inner, height: h, alignItems: 'center', position: 'relative',
-    backgroundColor: COLORS.bg2, marginBottom: Math.round(h * 0.09), overflow: 'hidden', flexShrink: 0,
-  }, [
-    barW > 0
-      ? div({ position: 'absolute', top: 0, left: 0, width: Math.round(barW), height: h,
-          backgroundImage: `linear-gradient(90deg, ${alpha(r.color, 0.34)} 0%, ${alpha(r.color, 0.05)} 100%)` })
+/**
+ * One leaderboard row: a band whose length encodes the value, cut on the
+ * diagonal of the wordmark's speed streaks.
+ *
+ * The diagonal is a linear-gradient with a hard stop into transparency - no
+ * clip-path, no transform, so Satori can draw it.
+ */
+export function streakBand(m, { widthPct, height, surface, cut, tint }) {
+  const rgba0 = alpha(surface, 0);
+  return [
+    div({
+      position: 'absolute', top: 0, left: 0, height, width: `${widthPct}%`,
+      backgroundImage: `linear-gradient(108deg,${surface} 0%,${surface} ${cut}%,${rgba0} ${cut + 0.4}%)`,
+    }),
+    tint
+      ? div({
+          position: 'absolute', top: 0, left: 0, height, width: `${widthPct}%`,
+          backgroundImage: `linear-gradient(108deg,${tint} 0%,${alpha(tint.startsWith('#') ? tint : COLORS.accent, 0)} 60%)`,
+        })
       : div({}),
-    div({ position: 'absolute', top: 0, left: 0, width: 5, height: h, backgroundColor: r.color || COLORS.line2 }),
-    txt({
-      width: Math.round(h * 0.8), justifyContent: 'center', flexShrink: 0, marginLeft: 5,
-      fontFamily: 'Mono', fontSize: Math.round(h * 0.42), fontWeight: 700, color: rankColor,
-    }, String(r.rank ?? i + 1)),
-    r.img
-      ? img(r.img, Math.round(h * 0.7), Math.round(h * 0.7), { objectFit: 'cover', flexShrink: 0 })
-      : badge(m, r.color, r.code),
-    div({ flexDirection: 'column', marginLeft: Math.round(h * 0.22), flexGrow: 1, overflow: 'hidden' }, [
-      txt({
-        fontFamily: 'Display', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.01em',
-        fontSize: fitFontSize(r.name, { maxWidth: m.inner * 0.5, max: Math.round(h * 0.4), min: Math.round(h * 0.24) }),
-      }, String(r.name || '').toUpperCase()),
-      r.sub
-        ? txt({
-            fontFamily: 'Display', fontSize: Math.round(h * 0.2), fontWeight: 400, color: COLORS.fg3,
-            textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 3,
-          }, String(r.sub).toUpperCase())
-        : div({}),
-    ]),
-    div({ flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, marginRight: Math.round(h * 0.2) }, [
-      txt({ fontFamily: 'Mono', fontSize: Math.round(h * 0.38), fontWeight: 700 }, String(r.valueMain)),
-      r.valueUnit
-        ? txt({
-            fontFamily: 'Display', fontSize: Math.round(h * 0.18), fontWeight: 400, color: COLORS.fg3,
-            textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 3,
-          }, String(r.valueUnit).toUpperCase())
-        : div({}),
-    ]),
+  ];
+}
+
+/** Hero stat strip: rules top and bottom, 3-4 equal cells divided by hairlines. */
+export function statStrip(m, cells) {
+  return div({
+    width: m.inner, flexDirection: 'column', marginTop: m.v(44), flexShrink: 0,
+    borderTop: `1px solid ${COLORS.line}`, borderBottom: `1px solid ${COLORS.line}`,
+  }, [
+    div({ width: m.inner }, cells.map((c, i) =>
+      div({
+        flexGrow: 1, flexBasis: 0, flexDirection: 'column',
+        paddingTop: m.v(30), paddingBottom: m.v(28),
+        paddingLeft: i === 0 ? 0 : m.wx(34),
+        // Satori throws on an explicit `undefined` border value, so the key is
+        // omitted entirely rather than set to undefined.
+        ...(i === 0 ? {} : { borderLeft: `1px solid ${COLORS.line}` }),
+      }, [
+        txt({
+          fontFamily: 'Mono', fontSize: m.f(c.size || 88), fontWeight: 700,
+          lineHeight: 0.8, letterSpacing: '-0.03em', color: c.color || COLORS.fg1,
+        }, String(c.value)),
+        txt({
+          fontFamily: 'Display', fontSize: m.f(22), fontWeight: 600,
+          letterSpacing: '0.2em', color: COLORS.fg3, marginTop: m.v(14),
+        }, String(c.label).toUpperCase()),
+      ]),
+    )),
   ]);
 }
+

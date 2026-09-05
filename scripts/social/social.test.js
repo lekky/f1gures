@@ -10,7 +10,8 @@ import {
 } from './angles.mjs';
 import { composeCaption, LIMITS } from './caption.mjs';
 import { readHistory, appendHistory, hasPostFor } from './history.mjs';
-import { fitFontSize, alpha, contrastText, metrics, FORMATS } from './cardkit.mjs';
+import { fitFontSize, alpha, contrastText, metrics, clashesWithAccent, FORMATS, COLORS, RANK_INK } from './cardkit.mjs';
+import { BANDS, splitName, sessionValue } from './card.mjs';
 import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates } from './config.mjs';
 
 // ── format helpers ──
@@ -314,6 +315,70 @@ describe('card toolkit', () => {
       expect(m.inner).toBeLessThan(m.w);
       expect(m.inner).toBeGreaterThan(0);
       expect(m.safeTop + m.safeBottom).toBeLessThan(m.h / 2);
+    }
+  });
+
+  it('scales the same markup to all three formats', () => {
+    // Square and story are reflows of the portrait design, reached by three
+    // multipliers - not separate layouts.
+    const p = metrics('portrait');
+    const sq = metrics('square');
+    const st = metrics('story');
+    expect(p.f(100)).toBe(100);
+    expect(p.v(100)).toBe(100);
+    // Square is tighter vertically than portrait; story is looser.
+    expect(sq.v(100)).toBeLessThan(p.v(100));
+    expect(st.v(100)).toBeGreaterThan(p.v(100));
+    expect(sq.f(100)).toBeLessThan(p.f(100));
+    expect(st.f(100)).toBeGreaterThan(p.f(100));
+  });
+
+  it('inverts the chip only for teams that collide with the accent', () => {
+    // Ferrari #E80020 is within a few points of --accent #E8002D, so a red chip
+    // beside a Ferrari strip reads as a rendering fault (TOKENS.md calls this
+    // collision out).
+    expect(clashesWithAccent('#E80020')).toBe(true);
+    expect(clashesWithAccent('#FF8000')).toBe(false);  // McLaren
+    expect(clashesWithAccent('#27F4D2')).toBe(false);  // Mercedes
+    expect(clashesWithAccent('#3671C6')).toBe(false);  // Red Bull
+    expect(clashesWithAccent(null)).toBe(false);
+  });
+
+  it('ranks the podium in metal order', () => {
+    expect(RANK_INK[0]).toBe(COLORS.gold);
+    expect(RANK_INK[1]).toBe(COLORS.silver);
+    expect(RANK_INK[2]).toBe(COLORS.bronze);
+  });
+});
+
+// ── layout data shaping ──
+
+describe('layout helpers', () => {
+  it('splits a name for the two-line result treatment', () => {
+    expect(splitName('Lando Norris')).toEqual({ given: 'Lando', family: 'Norris' });
+    expect(splitName('Andrea Kimi Antonelli')).toEqual({ given: 'Andrea Kimi', family: 'Antonelli' });
+    expect(splitName('Verstappen')).toEqual({ given: '', family: 'Verstappen' });
+    expect(splitName('')).toEqual({ given: '', family: '' });
+  });
+
+  it('reads the right time field per session', () => {
+    const row = { time: '+11.536', q1: '1:22.6', q2: '1:22.0', q3: '1:21.7' };
+    expect(sessionValue('qualifying', row, true)).toBe('1:21.7');
+    expect(sessionValue('qualifying', { q1: '1:22.6' }, true)).toBe('1:22.6');
+    // A winner shows their race time; the others only a gap.
+    expect(sessionValue('race', { time: '2:04:44.859' }, true)).toBe('2:04:44.859');
+    expect(sessionValue('race', row, false)).toBe('+11.536');
+    expect(sessionValue('race', { time: '2:04:44.859' }, false)).toBe('');
+  });
+
+  it('gives every leaderboard family five descending band widths', () => {
+    for (const [name, widths] of Object.entries(BANDS)) {
+      expect(widths, name).toHaveLength(5);
+      expect(widths[0], name).toBe(100);
+      for (let i = 1; i < widths.length; i++) {
+        expect(widths[i], `${name}[${i}]`).toBeLessThanOrEqual(widths[i - 1]);
+        expect(widths[i], `${name}[${i}]`).toBeGreaterThan(0);
+      }
     }
   });
 });
