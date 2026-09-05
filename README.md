@@ -55,7 +55,8 @@ also generates a versioned JSON feed consumed by the native mobile apps.
 ├── docs/                         Feature/data-flow/app-feed/tech-debt docs
 ├── feedback-worker/              Cloudflare Worker: feedback form →
 │                                 GitHub issues (deployed separately)
-└── .github/workflows/            deploy.yml + refresh-current-season.yml
+├── ops/                          VPS ops loop (Dockerfile + loop.sh + watchdog.sh)
+└── .github/workflows/            ci.yml + dispatch-only deploy fallbacks
 ```
 
 ## Develop
@@ -97,16 +98,19 @@ listings, the search palette, and Compare Mode.
 
 ## Deploy
 
-Two GitHub Actions workflows (shared `concurrency: deploy` group):
+A single ops container on the Coolify VPS (`ops/`, see
+`docs/ops-vps.md`) polls `main` every 10 minutes: it fetches the current
+season from Jolpica and commits the bundle if it changed, then, whenever
+`main` has moved, runs `npm ci && npm run build` and SFTP-mirrors `dist/`
+to the live server. Because the mobile-app feed is regenerated on every
+deploy, the native apps pick up new results within minutes without an
+app release.
 
-- **`deploy.yml`** — on push to `main`: `npm ci && npm run build`, then
-  FTP-syncs `dist/` to the live server. OG images are restored from a
-  content-hashed cache to keep builds fast.
-- **`refresh-current-season.yml`** — nightly at 04:00 UTC and every 10
-  minutes Fri–Mon (race weekends): fetches the current season from
-  Jolpica, commits the bundle if changed, rebuilds and deploys. Because
-  the mobile-app feed is regenerated on every deploy, the native apps
-  pick up new results within minutes without an app release.
+The GitHub Actions workflows `deploy.yml`, `refresh-current-season.yml`
+and `check-principals.yml` are kept as `workflow_dispatch`-only fallbacks
+for when the VPS is down; `ci.yml` (vitest) still runs on every PR.
+FastF1 weekend data is fetched by a local job on a residential machine
+(F1's live-timing API refuses datacenter IPs) and pushed to `main`.
 
 The feedback Cloudflare Worker in `feedback-worker/` is deployed
 **separately and manually** with `npx wrangler deploy` — see its README.

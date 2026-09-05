@@ -10,8 +10,11 @@
     1. hard-syncs a DEDICATED clone to origin/main (never the dev working copy),
     2. runs scripts/fetch-fastf1.py --auto (fetches any finished session missing
        on disk),
-    3. if new session JSON appeared, commits + pushes it to main and dispatches
-       deploy.yml so the site rebuilds and the new tab goes live.
+    3. if new session JSON appeared, commits + pushes it to main. The ops loop
+       on the Coolify VPS (ops/loop.sh, docs/ops-vps.md) notices main moved on
+       its next 10-minute tick and builds + deploys - nothing to dispatch here.
+       (The VPS can't do the fetch itself: F1's live-timing host refuses its
+       datacenter IP just like GitHub's runners, verified 2026-09-01.)
 
   Intended to run on a schedule (Task Scheduler) every ~15 min during race
   weekends. Idempotent and safe to run any time: a no-op poll fetches nothing,
@@ -19,9 +22,8 @@
   `git reset --hard` without ever touching your development checkout.
 
 .NOTES
-  Set REPO_DIR to the dedicated clone. Requires python (+ fastf1), git, gh on
-  this machine. gh must be authenticated (gh auth status) so the deploy
-  dispatch works unattended.
+  Set REPO_DIR to the dedicated clone. Requires python (+ fastf1) and git on
+  this machine, with git credentials that can push to main unattended.
 #>
 
 $ErrorActionPreference = 'Stop'
@@ -77,12 +79,7 @@ try {
     git -c user.name='f1gures-fastf1-bot' -c user.email='rotsmane@gmail.com' commit -q -m $msg
     git push origin main --quiet
     $head = git rev-parse --short HEAD
-    Log "pushed new data: $head"
-    # gh can write progress to stderr too — merge inside cmd for the same reason.
-    cmd /c "gh workflow run deploy.yml 2>&1" | Tee-Object -FilePath $log -Append
-    $ghExit = $LASTEXITCODE
-    if ($ghExit -ne 0) { throw "gh workflow run deploy.yml exited with code $ghExit" }
-    Log "dispatched deploy.yml"
+    Log "pushed new data: $head - the VPS ops loop will build + deploy it on its next tick"
   }
   Log "=== run ok ==="
 }

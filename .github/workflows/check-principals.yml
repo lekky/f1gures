@@ -3,11 +3,13 @@
 # on drift it opens ONE GitHub issue (deduped by title) with the report; a
 # human verifies against real reporting and edits principals.mjs by hand.
 # Uses only Node built-ins, so no npm install: a run costs well under a minute.
+#
+# MANUAL FALLBACK ONLY: the daily run now happens on the Coolify VPS via
+# ops/watchdog.sh (see docs/ops-vps.md), which does the same check + deduped
+# issue. Dispatch this by hand if the VPS is down.
 name: Check team principals
 
 on:
-  schedule:
-    - cron: '20 5 * * *' # daily 05:20 UTC
   workflow_dispatch:
 
 permissions:

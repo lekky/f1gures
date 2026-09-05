@@ -136,10 +136,12 @@ persisted — Compare state lives in the URL, the temp unit is derived from
 
 ## Refresh cadence
 
-`.github/workflows/refresh-current-season.yml` runs nightly at 04:00 UTC
-**and every 10 minutes Fri–Mon UTC** (race weekends). It fetches the
-current year from Jolpica (`scripts/fetch-season.mjs`), commits
-`public/data/<year>.json` if it changed, then rebuilds and FTP-deploys.
+The ops loop on the Coolify VPS (`ops/loop.sh`, see [ops-vps.md](ops-vps.md))
+ticks **every 10 minutes, all week**. It fetches the current year from
+Jolpica (`scripts/fetch-season.mjs`), commits and pushes
+`public/data/<year>.json` if it changed, then rebuilds and SFTP-deploys.
+(`refresh-current-season.yml` does the same on GitHub Actions, but is
+dispatch-only now.)
 Because prebuild regenerates everything downstream (archive race pages for
 completed rounds, the current-season sync, the app feed), race results
 flow to the site and the mobile apps within minutes of landing — the fetch

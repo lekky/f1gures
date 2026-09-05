@@ -1,5 +1,10 @@
 # Deploy over SSH
 
+> Routine deploys now run from the VPS ops loop (`ops/loop.sh`, see
+> [ops-vps.md](ops-vps.md)). It uses the same key and lftp recipe described
+> here; `deploy.yml` is the dispatch-only fallback. The key setup below
+> applies to both - the VPS gets the key as `SSH_PRIVATE_KEY_B64` in Coolify.
+
 `deploy.yml` uploads the built `dist/` to the live server over **SFTP**
 (`lftp`, 10 parallel transfers) via the account's SSH access. SFTP is served by
 the SSH server's own subsystem, so it needs nothing installed in the cPanel
