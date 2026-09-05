@@ -299,24 +299,22 @@ html.light .nav-logo .wm-light { display: block; }
 .nav-item .caret.is-open { transform: rotate(180deg); }
 
 /* BMC widget - restyle the floating button from a yellow 64x64 circle into
-   a docked, hard-cornered "Support" tab in the site's own chrome: --bg-2
-   fill, 1 px --line-2 border, display-face tracked label, and an 8 px red
-   square as its only colour. The widget script sets its own inline styles,
-   so !important is needed to win. The button must never be display:none
-   (that breaks its modal); the coffee-cup <img> is just hidden.
-   Mobile (≤720px): 36 px tall, flush against the bottom nav at the right
-   edge — the footer's bottom padding (--bmc-h) keeps content clear of it.
-   Desktop: a 40 px icon-only square bottom-right; the label slides out on
-   hover / focus. */
+   a docked, hard-cornered "Support Us" CTA: solid --accent fill, white
+   display-face label, no radius. The widget script sets its own inline
+   styles, so !important is needed to win. The button must never be
+   display:none (that breaks its modal); the coffee-cup <img> is just
+   hidden. Always expanded - no icon-only collapsed state - on every
+   breakpoint. Mobile (<=720px): flush against the bottom nav at the right
+   edge; the footer's bottom padding (--bmc-h) keeps content clear of it. */
 #bmc-wbtn {
   width: auto !important;
   height: var(--bmc-h) !important;
   border-radius: 0 !important;
-  padding: 0 12px !important;
+  padding: 0 14px !important;
   gap: 8px !important;
-  background: var(--bg-2) !important;
-  color: var(--fg-1) !important;
-  border: 1px solid var(--line-2) !important;
+  background: var(--accent) !important;
+  color: #fff !important;
+  border: 1px solid var(--accent) !important;
   box-shadow: none !important;
   font-family: var(--f-display) !important;
   font-weight: 700 !important;
@@ -324,12 +322,11 @@ html.light .nav-logo .wm-light { display: block; }
   letter-spacing: 0.12em !important;
   text-transform: uppercase !important;
   line-height: 1 !important;
-  transition: border-color var(--mo) ease, background var(--mo) ease !important;
+  transition: background var(--mo) ease, border-color var(--mo) ease !important;
 }
-#bmc-wbtn:hover, #bmc-wbtn:focus-visible { background: var(--bg-3) !important; border-color: var(--line-3) !important; }
+#bmc-wbtn:hover, #bmc-wbtn:focus-visible { background: var(--accent-dim) !important; border-color: var(--accent-dim) !important; }
 #bmc-wbtn img { display: none !important; }
-#bmc-wbtn::before { content: ''; width: 8px; height: 8px; background: var(--accent); flex-shrink: 0; }
-#bmc-wbtn::after { content: 'Support'; }
+#bmc-wbtn::after { content: 'Support Us'; }
 @media (max-width: 720px) {
   #bmc-wbtn {
     right: 0 !important; left: auto !important; margin: 0 !important;
@@ -338,10 +335,7 @@ html.light .nav-logo .wm-light { display: block; }
   }
 }
 @media (min-width: 721px) {
-  #bmc-wbtn { width: 40px !important; height: 40px !important; padding: 0 !important; justify-content: center !important; }
-  #bmc-wbtn::after { display: none; }
-  #bmc-wbtn:hover, #bmc-wbtn:focus-visible { width: auto !important; padding: 0 12px !important; }
-  #bmc-wbtn:hover::after, #bmc-wbtn:focus-visible::after { display: inline; }
+  #bmc-wbtn { height: 40px !important; }
 }
 .nav-spacer { flex: 1; }
 .nav-controls { display: flex; align-items: center; gap: 8px; }
