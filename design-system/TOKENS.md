@@ -98,7 +98,7 @@ hue. Never colour text with the pure team hex.
 **Red budget — `--accent` means "now".** It is reserved for: the active
 season chip (live season), the next race (card outline, countdown, `.pill-next`),
 the live session dot / `.pill-live`, the championship-leader marker, the
-brand full stop after hero titles, the docked Support button's 8 px square,
+brand full stop after hero titles, the docked Support button,
 and `.btn-primary` (one per surface). Everything else is neutral ink:
 section-head / page-title marks are `--fg-1`, their rules `--line-2`; the
 active desktop-nav underline and active bottom-nav item are `--fg-1`; sort
@@ -295,13 +295,12 @@ compact right-aligned item — 6 px `--accent` dot + mono `--fg-3` text
 ### Support button — `#bmc-wbtn`
 
 The Buy Me a Coffee widget, restyled in `app.css` (the loader stays
-`is:inline` and the button is never `display: none`). `--bg-2` fill, 1 px
-`--line-2` border, radius 0, `--f-display` 11 px tracked uppercase "Support"
-in `--fg-1`; its only colour is an 8 px `--accent` square before the label.
-Mobile: `--bmc-h` (36 px) tall, docked flush against the bottom nav at the
-right edge — the footer's bottom padding adds `--bmc-h` so nothing ends
-under it. Desktop: a 40 px icon-only square bottom-right, label revealed on
-hover / focus.
+`is:inline` and the button is never `display: none`). Solid `--accent` fill,
+white `--f-display` 11 px tracked uppercase "Support Us", radius 0;
+`--accent-dim` on hover / focus. Always expanded — there is no icon-only
+collapsed state. Mobile: `--bmc-h` (36 px) tall, docked flush against the
+bottom nav at the right edge — the footer's bottom padding adds `--bmc-h` so
+nothing ends under it. Desktop: 40 px tall, bottom-right.
 
 ### Segmented controls
 
