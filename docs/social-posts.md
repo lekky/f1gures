@@ -123,14 +123,19 @@ Turn it off, or add networks, under `utm` in `config.mjs`.
 
 ### Fonts
 
-The cards use the brand's real faces — Barlow Condensed, Barlow, JetBrains
-Mono — fetched from the Fontsource CDN and cached in
-`node_modules/.cache/og-fonts/`. If the CDN is unreachable the renderer falls
-back to a system face and warns rather than failing the post. To preview with
-specific faces on a machine without CDN access, drop TTFs into a directory and
-point `SOCIAL_FONT_DIR` at it (filenames per `FONT_SPECS` in `cardkit.mjs`).
+The cards use the brand's real faces — Barlow Condensed (display), Barlow
+(body), JetBrains Mono (every numeral), per `design-system/TOKENS.md` §1.
 
----
+They come from `@fontsource` **devDependencies**, read out of `node_modules` at
+render time — not fetched from a CDN. That keeps a render reproducible (the
+exact faces are pinned by `package-lock.json`), removes a network call from the
+daily job, and means a CDN being blocked or moving a path cannot quietly
+degrade the typography. Fontsource ships `woff` and `woff2`; Satori parses
+`woff`, so that is what is read.
+
+`npm install` is all that is needed. If a face is somehow missing the renderer
+falls back to a system font and warns loudly rather than failing the post — if
+you ever see `brand faces missing from node_modules`, run `npm install`.
 
 ## Why Metricool rather than the platform APIs
 

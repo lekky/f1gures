@@ -54,48 +54,52 @@ export const COLORS = {
 export const PODIUM_COLORS = [COLORS.gold, COLORS.silver, COLORS.bronze];
 
 // ── fonts ──
-// The brand's three families (TOKENS §1): Barlow Condensed for display,
-// Barlow for body, JetBrains Mono for every numeral. Each spec lists candidate
-// URLs tried in order, then a local face, so a blocked or moved CDN degrades
-// the typography instead of failing the day's post.
-const FONTSOURCE = 'https://cdn.jsdelivr.net/fontsource/fonts';
+// The brand's three families (TOKENS §1): Barlow Condensed for display, Barlow
+// for body, JetBrains Mono for every numeral.
+//
+// They are read from @fontsource packages in node_modules rather than fetched
+// from a CDN at render time. That makes a render reproducible (the exact faces
+// are pinned by package-lock.json), removes a network call from the daily job,
+// and means a blocked or moved CDN cannot quietly degrade the typography.
+// Fontsource ships woff and woff2; Satori parses woff, so that is what we read.
+const FONTSOURCE_DIR = path.join(ROOT, 'node_modules/@fontsource');
 
 const FONT_SPECS = [
-  { family: 'Display', weight: 700, file: 'barlow-condensed-700.ttf',
-    urls: [`${FONTSOURCE}/barlow-condensed@5.2.5/latin-700-normal.ttf`, `${FONTSOURCE}/barlow-condensed@latest/latin-700-normal.ttf`],
-    local: ['BigShoulders-Bold.ttf'], system: ['/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Bold.ttf'] },
-  { family: 'Display', weight: 400, file: 'barlow-condensed-500.ttf',
-    urls: [`${FONTSOURCE}/barlow-condensed@5.2.5/latin-500-normal.ttf`, `${FONTSOURCE}/barlow-condensed@latest/latin-500-normal.ttf`],
-    local: ['BigShoulders-Regular.ttf'], system: ['/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Regular.ttf'] },
-  { family: 'Body', weight: 400, file: 'barlow-400.ttf',
-    urls: [`${FONTSOURCE}/barlow@5.2.5/latin-400-normal.ttf`, `${FONTSOURCE}/barlow@latest/latin-400-normal.ttf`],
-    local: [], system: ['/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'] },
-  { family: 'Body', weight: 700, file: 'barlow-600.ttf',
-    urls: [`${FONTSOURCE}/barlow@5.2.5/latin-600-normal.ttf`, `${FONTSOURCE}/barlow@latest/latin-600-normal.ttf`],
-    local: [], system: ['/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'] },
-  { family: 'Mono', weight: 700, file: 'jetbrains-mono-700.ttf',
-    urls: [`${FONTSOURCE}/jetbrains-mono@5.2.5/latin-700-normal.ttf`, `${FONTSOURCE}/jetbrains-mono@latest/latin-700-normal.ttf`],
-    local: ['JetBrainsMono-Bold.ttf'], system: ['/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf'] },
-  { family: 'Mono', weight: 400, file: 'jetbrains-mono-500.ttf',
-    urls: [`${FONTSOURCE}/jetbrains-mono@5.2.5/latin-500-normal.ttf`, `${FONTSOURCE}/jetbrains-mono@latest/latin-500-normal.ttf`],
-    local: ['JetBrainsMono-Regular.ttf'], system: ['/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf'] },
+  { family: 'Display', weight: 700, pkg: 'barlow-condensed', face: 700,
+    system: ['/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Bold.ttf'] },
+  // Registered at 400 because the layouts only ask for 400 or 700; Barlow
+  // Condensed 500 is the weight that reads right for small tracked labels.
+  { family: 'Display', weight: 400, pkg: 'barlow-condensed', face: 500,
+    system: ['/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Regular.ttf'] },
+  { family: 'Body', weight: 400, pkg: 'barlow', face: 400,
+    system: ['/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'] },
+  { family: 'Body', weight: 700, pkg: 'barlow', face: 600,
+    system: ['/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'] },
+  { family: 'Mono', weight: 700, pkg: 'jetbrains-mono', face: 700,
+    system: ['/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf'] },
+  { family: 'Mono', weight: 400, pkg: 'jetbrains-mono', face: 500,
+    system: ['/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf'] },
 ];
+
+const facePath = (spec) =>
+  path.join(FONTSOURCE_DIR, spec.pkg, 'files', `${spec.pkg}-latin-${spec.face}-normal.woff`);
 
 let _fontsPromise = null;
 
 export function loadFonts() {
-  if (!_fontsPromise) _fontsPromise = fetchFonts();
+  if (!_fontsPromise) _fontsPromise = collectFonts();
   return _fontsPromise;
 }
 
 /**
- * Local face lookup. SOCIAL_FONT_DIR lets a machine without CDN egress point
- * at a directory of stand-in faces so cards can still be previewed.
+ * Last-resort faces. SOCIAL_FONT_DIR lets a machine point at its own files;
+ * the system list keeps a card renderable (in the wrong face, loudly) rather
+ * than failing the day's post outright if node_modules is incomplete.
  */
-function localFace(spec) {
+function fallbackFace(spec) {
   const dir = process.env.SOCIAL_FONT_DIR;
   const candidates = [
-    ...(dir ? [path.join(dir, spec.file), ...spec.local.map((f) => path.join(dir, f))] : []),
+    ...(dir ? [path.join(dir, `${spec.pkg}-${spec.face}.woff`), path.join(dir, `${spec.pkg}-${spec.face}.ttf`)] : []),
     ...spec.system,
   ];
   for (const p of candidates) {
@@ -104,42 +108,30 @@ function localFace(spec) {
   return null;
 }
 
-async function fetchFonts() {
-  const cacheDir = path.join(ROOT, 'node_modules/.cache/og-fonts');
-  fs.mkdirSync(cacheDir, { recursive: true });
+async function collectFonts() {
   const out = [];
   const degraded = [];
 
   for (const spec of FONT_SPECS) {
-    const cachePath = path.join(cacheDir, spec.file);
+    const file = facePath(spec);
     let data = null;
 
-    if (fs.existsSync(cachePath)) {
-      data = fs.readFileSync(cachePath);
+    if (fs.existsSync(file)) {
+      data = fs.readFileSync(file);
     } else {
-      for (const url of spec.urls) {
-        try {
-          const resp = await fetch(url);
-          if (!resp.ok) continue;
-          data = Buffer.from(await resp.arrayBuffer());
-          fs.writeFileSync(cachePath, data);
-          break;
-        } catch {
-          /* try the next candidate URL */
-        }
+      data = fallbackFace(spec);
+      if (!data) {
+        throw new Error(
+          `Missing ${spec.family} ${spec.weight}: expected ${path.relative(ROOT, file)}. Run \`npm install\`.`,
+        );
       }
-    }
-
-    if (!data) {
-      data = localFace(spec);
-      if (!data) throw new Error(`No face available for ${spec.family} ${spec.weight} - set SOCIAL_FONT_DIR or allow ${FONTSOURCE}.`);
       degraded.push(`${spec.family} ${spec.weight}`);
     }
     out.push({ name: spec.family, data, weight: spec.weight, style: 'normal' });
   }
 
   if (degraded.length) {
-    console.warn(`[social] brand faces unavailable, using fallbacks for: ${degraded.join(', ')}`);
+    console.warn(`[social] brand faces missing from node_modules, using fallbacks for: ${degraded.join(', ')} - run \`npm install\`.`);
   }
   return out;
 }
