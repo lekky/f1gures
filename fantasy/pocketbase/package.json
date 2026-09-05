@@ -1,0 +1,13 @@
+{
+  "name": "f1gures-fantasy-pocketbase",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PocketBase backend for the f1gures fantasy game (migrations, hooks, dev tooling).",
+  "//type": "Pins .js files in this folder (pb_hooks/*.js) as CommonJS, which is what PocketBase's Goja runtime requires. The repo root is type=module.",
+  "type": "commonjs",
+  "scripts": {
+    "seed": "node seed-dev.mjs",
+    "seed:reset": "node seed-dev.mjs --reset"
+  },
+  "//deps": "Deliberately none. seed-dev.mjs uses Node 18+ global fetch so the seeder runs with no npm install. Site + scorer workstreams use the `pocketbase` SDK from the repo-root package.json instead."
+}
