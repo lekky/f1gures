@@ -4,6 +4,97 @@ Multi-page F1 stats site. **Astro 4 SSG with React 18 islands.** Every page is p
 
 Higher-level docs live in `docs/` (see `docs/README.md`). The known tech-debt / refactoring register is **`docs/tech-debt.md`** — check it before large refactors, and update it when you pay an item down or add new debt knowingly.
 
+## Session protocol
+
+Adapted from the sibling `lekky/landit` protocol — same shape, f1gures' stack and
+conventions. Two facts shape a session here. **Merging is not shipping**: `deploy.yml`
+runs on a batched 3x-daily schedule, so `main` and the live site are routinely
+different commits, and a `workflow_dispatch` is what publishes something now.
+And **several agent sessions run against this repo at once**, sharing local
+worktrees — which is why the branch and collision rules below are not optional.
+
+### Starting
+
+1. **Open with a TPO brief (Technical Product Owner), and get it agreed before
+   building anything.** It is the bookend of the closing summary in step 10, and it
+   has the same five parts every time so none of them quietly goes missing:
+   - **What changes** — behaviour a visitor would notice, in their words, not
+     implementation.
+   - **What gets measured** — which GA4 events this adds or touches (`track()` in
+     [src/lib/analytics.js](src/lib/analytics.js)), or one line saying why none: a
+     build script nobody sees, a data fix, something already counted. **Analytics is
+     part of the work, not a follow-up task.** Event names are snake_case; params
+     carry entity refs and F1 search terms, **never PII** — never free-text feedback
+     or emails.
+   - **What it costs** — anything that gets slower, larger, newly depended on, or
+     newly someone else's to run. Build minutes count: this repo is on a free plan
+     and a full build is ~2,300 pages.
+   - **Collisions** — step 2, named so the owner can sequence the sessions.
+   - **Decisions only the owner can make** — explicit and up front, because step 7
+     means there is no review in which to raise them later.
+
+   If the goal is unclear, ask in the brief rather than guessing. A brief the owner
+   corrects in one line has done its job.
+2. **Collision check, in the brief.** Other sessions are often mid-flight and
+   invisible: `git branch -a` and `git worktree list` (sessions that have not opened
+   a PR yet), plus open PRs and issues — `gh pr list` / `gh issue list` locally, or
+   the GitHub MCP tools in a web/remote session, where `gh` is not available. Name
+   any overlap so the owner can sequence the work.
+3. **One session = one task = one branch = one PR.** Branch names use the existing
+   prefixes: `feat/`, `fix/`, `chore/` (see Conventions). Agree it in the brief.
+4. **Always branch off up-to-date `main`:** `git fetch origin main && git checkout -b
+   <branch> origin/main`. Never commit onto `main`, and never reuse whatever branch
+   happens to be checked out — that is how concurrent sessions mix each other's
+   uncommitted work. Check `git branch --show-current` immediately before committing,
+   not only at the start. Commit early; the environment can re-park uncommitted changes.
+
+### Building and shipping
+
+5. **Gates before any commit:** `npm test` (vitest, and it must stay green — CI is
+   advisory only, since a private repo on a Free plan gets no enforced branch
+   protection). Run `npm run build` when the change touches Astro, islands, routes or
+   the build scripts; `npm run build:archive` alone is enough for importer-only work.
+   Judge on **exit codes**, never on piped output — a `| tail` swallows the status.
+   Read `git status` before committing; never `git add -A` blind. New UI ships with
+   its GA4 event in the same PR — the brief said which one.
+6. **Before opening or updating a PR:** `git fetch origin main`, rebase onto
+   `origin/main`, re-run the gates, push. Worktrees accumulate commits already merged
+   under different hashes (squash merges), so skipping the rebase can revert newer
+   `main` files. `.github/pull_request_template.md` scaffolds the body — its first
+   section is the same TPO brief that opened the session.
+7. **Merge policy: a session never raises a PR unasked, and "raise it" carries the
+   merge.** Build the work, run the gates, push the branch, and **stop there**: report
+   what is ready and wait to be asked. Green checks are not permission to raise
+   anything — they are the evidence you offer when you ask.
+   - **Unprompted, a session does:** build → gates → push → report, with the branch
+     name and what the checks actually say. Then wait. **Never open a PR on its own
+     initiative** — this is the gate the whole policy rests on.
+   - **"Raise a PR" grants** opening that PR *and* merging it, without a second yes.
+   - **It is per-PR and does not carry.** The next piece of work needs its own asking,
+     however similar.
+   - **Merge consent is not consent to merge something broken.** Checks failing or CI
+     unfinished → stop and report. Waiting for a run is the normal case.
+   - There is no branch protection, so nothing but this discipline stops an unasked PR.
+
+### Ending
+
+**A session ends on a pushed branch nobody has been asked about yet, and that is
+correct.** Do not raise a PR to "finish".
+
+8. **Verify, don't assume.** Report state as read from the tool, not as assumed. CI
+   runs on `pull_request`, so a branch never raised has no checks at all — say that
+   plainly rather than implying it passed something.
+9. **Write what the next session needs.** Anything noticed and not fixed becomes a
+   GitHub issue **now**, while the file paths are still in context. Known debt goes in
+   [docs/tech-debt.md](docs/tech-debt.md) — check it before large refactors, update it
+   when you pay one down or knowingly add one. **If writing the issue would take longer
+   than the fix, fix it** — a one-line correction in a file you already have open is not
+   scope creep. What still gets an issue: anything needing an owner decision, anything
+   touching code another session owns, anything you cannot verify before merging.
+10. **Close with a TPO-level summary** — what shipped in behaviour terms, what is still
+    open, and any decisions only the owner can make (explicit, never buried in prose).
+    If something failed or was skipped, say so with the evidence.
+
 ## Build pipeline
 
 ```
