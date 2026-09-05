@@ -100,7 +100,10 @@ jobs:
       #
       # --delete keeps the remote an exact mirror of dist/ (as the old deploy
       # did), but .well-known and cgi-bin are excluded so we never remove the
-      # hosting-managed dirs (cPanel AutoSSL validation, CGI).
+      # hosting-managed dirs (cPanel AutoSSL validation, CGI). social/ is
+      # excluded too: social-post.yml uploads the daily cards there and they
+      # are not part of dist/, so without this every deploy would delete the
+      # image the day's Instagram/TikTok/Facebook post points at.
       #
       # REMOTE_DIR is the site's web root RELATIVE TO THE SSH HOME dir. SSH lands
       # in /home/helloweb; f1gures.app is an addon domain whose docroot is the
@@ -165,5 +168,5 @@ jobs:
             set net:timeout 30;
             set mirror:parallel-transfer-count 10;
             open -u \"$SSH_USER,\" sftp://$SSH_HOST;
-            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin --verbose ./dist/ $REMOTE_DIR/;
+            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin -X social/ --verbose ./dist/ $REMOTE_DIR/;
           "

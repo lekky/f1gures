@@ -1,0 +1,133 @@
+name: Daily Social Post
+
+# Builds one social card + caption a day from the archive and sends it to
+# Metricool, which holds the Instagram / TikTok / Facebook connections.
+#
+# Nothing here invents facts: the post is assembled from public/data/archive,
+# which is generated from the same data the site renders. See
+# docs/social-posts.md for setup and docs/social-card-design.md for the design.
+#
+# The cards are uploaded to f1gures.app/social/ first, because all three
+# networks pull media from a public URL rather than accepting an upload from us.
+
+on:
+  schedule:
+    # 10:00 UTC daily. On a race weekend the race-result and quali-result
+    # angles outrank everything else, so the same slot covers Sunday's podium
+    # post without a second schedule.
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Post date (YYYY-MM-DD, default today)'
+        required: false
+      angle:
+        description: 'Force an angle (e.g. on-this-day, record-board)'
+        required: false
+      draft:
+        description: 'Park in the Metricool calendar instead of publishing'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Build and print only - upload nothing, publish nothing'
+        type: boolean
+        default: false
+
+concurrency:
+  group: social-post
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # commits the history log back to the branch
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The archive is gitignored, so it has to be regenerated here. This is
+      # just the CSV importer - no Astro build, no OG images.
+      - name: Build archive
+        run: npm run build:archive
+
+      - name: Build the day's post
+        id: build
+        run: |
+          set -euo pipefail
+          ARGS=()
+          [ -n "${{ inputs.date }}" ]  && ARGS+=("--date=${{ inputs.date }}")
+          [ -n "${{ inputs.angle }}" ] && ARGS+=("--angle=${{ inputs.angle }}")
+          node scripts/build-social-post.mjs "${ARGS[@]}"
+          echo "date=$(node -p "require('./.social-out/post.json').date")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload cards to the site
+        if: inputs.dry_run != true
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST || secrets.SFTP_HOST }}
+          SSH_USER: helloweb
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_DIR: f1gures.app/social
+        run: |
+          set -euo pipefail
+          if [ -z "${SSH_KEY:-}" ]; then
+            echo "::error::SSH_PRIVATE_KEY is not set - the networks cannot fetch the card without a public URL."
+            exit 1
+          fi
+          PORT="${SSH_PORT:-22}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          # Plain mirror, no --delete: this directory is additive and is
+          # excluded from deploy.yml's mirror precisely so it survives.
+          lftp -c "
+            set cmd:fail-exit true;
+            set sftp:auto-confirm yes;
+            set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new';
+            set net:max-retries 3;
+            set net:timeout 30;
+            open -u \"$SSH_USER,\" sftp://$SSH_HOST;
+            mkdir -p $REMOTE_DIR;
+            mirror --reverse --only-newer --verbose --include-glob '*.png' ./.social-out/ $REMOTE_DIR/;
+          "
+
+      - name: Publish
+        if: inputs.dry_run != true
+        env:
+          METRICOOL_USER_TOKEN: ${{ secrets.METRICOOL_USER_TOKEN }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          SOCIAL_MEDIA_BASE_URL: https://f1gures.app/social
+          SOCIAL_TIMEZONE: Europe/London
+        run: |
+          node scripts/publish-social-post.mjs ${{ inputs.draft == true && '--draft' || '' }}
+
+      - name: Dry run
+        if: inputs.dry_run == true
+        run: node scripts/publish-social-post.mjs --dry-run
+
+      # The history log is what stops the feed repeating itself, so it has to
+      # go back to the repo - it is state, not an artefact.
+      - name: Commit the history log
+        if: inputs.dry_run != true
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/social/history.json; then
+            echo "history unchanged"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/social/history.json
+          git commit -m "chore(social): log post for ${{ steps.build.outputs.date }}"
+          git push

@@ -17,6 +17,8 @@
     "fetch:weather": "node scripts/fetch-weather.mjs",
     "build:htaccess": "node scripts/build-htaccess.mjs",
     "build:appfeed": "node scripts/build-app-feed.mjs",
+    "social:build": "node scripts/build-social-post.mjs",
+    "social:publish": "node scripts/publish-social-post.mjs",
     "prebuild": "npm run build:archive && npm run build:og && npm run sync:current && npm run fetch:weather && npm run build:htaccess && npm run build:appfeed",
     "predev": "npm run build:archive && npm run sync:current",
     "build": "astro build",
