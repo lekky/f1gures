@@ -1,0 +1,48 @@
+---
+// /fantasy/standings/ — season, Split and per-round leaderboards.
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Leaderboards from '../../components/islands/fantasy/Leaderboards.jsx';
+import { fantasyConfigured } from '../../data/fantasyConfig.js';
+
+const configured = fantasyConfigured();
+
+const title = 'Fantasy standings | f1gures';
+const description = 'The f1gures fantasy leaderboards — season championship, each six-round Split, and every round with the lineups behind the scores.';
+const canonicalPath = '/fantasy/standings/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Fantasy', path: '/fantasy/' },
+  { name: 'Standings', path: canonicalPath },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  robots="noindex, nofollow"
+  breadcrumb={breadcrumb}
+>
+  <div class="page fx-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">Leaderboards</div>
+        <h1 class="page-title">Standings</h1>
+        <p class="page-sub">
+          The season championship, each six-round Split, and every round on its own. Open a row on
+          the round view to see the lineup behind the score — visible to everyone once that round
+          has locked.
+        </p>
+      </div>
+    </div>
+
+    {configured ? (
+      <Leaderboards client:load />
+    ) : (
+      <div class="fx-notice">
+        <div class="fx-notice-title">Fantasy isn’t configured on this build</div>
+        <p>The leaderboards appear once the fantasy backend is configured.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>
