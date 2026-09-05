@@ -128,6 +128,78 @@ historicDescribe('buildFromYearJson computeStandings (historic seasons via CSV i
   }
 });
 
+describe('buildFromYearJson computeStandings (mid-season team switch)', () => {
+  // Constructor points belong to the team the driver scored them FOR, not to
+  // whichever team the entry list has them at now. Pinned as a synthetic
+  // fixture rather than off the live bundle, so it keeps testing the rule
+  // after the real-world switch it came from (Lawson, Racing Bulls -> Red
+  // Bull, 2026) ages out of the current season.
+  const bundle = {
+    seasonYear: '2099',
+    teams: [
+      { id: 'big', name: 'Big Team',   short: 'BIG', color: '#000' },
+      { id: 'jr',  name: 'Junior Team', short: 'JR', color: '#111' },
+    ],
+    drivers: [
+      // SWAP is at 'big' in the entry list but scored round 1 for 'jr'.
+      { id: 'SWAP', first: 'Sam',  last: 'Swap',  team: 'big', num: 1 },
+      { id: 'STAY', first: 'Stan', last: 'Stay',  team: 'big', num: 2 },
+      { id: 'KID',  first: 'Kim',  last: 'Kidd',  team: 'jr',  num: 3 },
+    ],
+    calendar: [1, 2].map(round => ({ round, name: `R${round}`, circuit: 'x', date: '2099-01-01' })),
+    results: {
+      1: {
+        order: ['SWAP', 'STAY', 'KID'],
+        pole: 'SWAP',
+        fastest: 'SWAP',
+        detail: {
+          SWAP: { position: '1', points: 25, team: 'jr' },
+          STAY: { position: '2', points: 18, team: 'big' },
+          KID:  { position: '3', points: 15, team: 'jr' },
+        },
+      },
+      2: {
+        order: ['SWAP', 'STAY', 'KID'],
+        pole: 'STAY',
+        fastest: 'KID',
+        detail: {
+          SWAP: { position: '1', points: 25, team: 'big' },
+          STAY: { position: '2', points: 18, team: 'big' },
+          KID:  { position: '3', points: 15, team: 'jr' },
+        },
+      },
+    },
+  };
+  const { drivers, teams } = buildFromYearJson(bundle).computeStandings();
+  const team = Object.fromEntries(teams.map(r => [r.team.id, r]));
+
+  it('leaves the switching driver whole - points follow the driver', () => {
+    expect(drivers.find(r => r.driver.id === 'SWAP').points).toBe(50);
+  });
+
+  it('credits each round to the team the driver drove for at the time', () => {
+    expect(team.jr.points).toBe(25 + 15 + 15);  // SWAP's R1 win + KID both rounds
+    expect(team.big.points).toBe(18 + 25 + 18); // STAY both rounds + SWAP's R2 win
+  });
+
+  it('splits wins, podiums, poles and fastest laps the same way', () => {
+    expect(team.jr.wins).toBe(1);
+    expect(team.big.wins).toBe(1);
+    expect(team.jr.podiums).toBe(3);   // SWAP R1, KID R1 + R2
+    expect(team.big.podiums).toBe(3);  // STAY R1 + R2, SWAP R2
+    expect(team.jr.poles).toBe(1);     // SWAP took pole for jr in R1
+    expect(team.big.poles).toBe(1);    // STAY in R2
+    expect(team.jr.fastestLaps).toBe(2); // SWAP's for jr in R1, KID's in R2
+    expect(team.big.fastestLaps).toBe(0);
+  });
+
+  it('progression credits the old team and does not backdate the switch', () => {
+    const { teamProgression } = buildFromYearJson(bundle).computeStandings();
+    expect(teamProgression.jr.map(p => p.points)).toEqual([40, 55]);
+    expect(teamProgression.big.map(p => p.points)).toEqual([18, 61]);
+  });
+});
+
 describe('buildFromYearJson computeStandings (legacy fallback)', () => {
   // Older bundles (pre-detail) only carry `order`, `fastest`,
   // `sprintWinner`. Make sure those still produce a non-zero

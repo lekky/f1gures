@@ -124,8 +124,11 @@ export function TeamBars({ D, standings, leaderPoints, recentRounds }) {
         const gap = leaderPoints - row.points;
         const isOpen = openId === team.id;
         const teamHref = urlFor({ name: 'team', id: team.id, ref: team.id });
-        const poles = standings.drivers.reduce((s, r) => (r.driver.team === team.id ? s + (r.poles || 0) : s), 0);
-        const fastest = standings.drivers.reduce((s, r) => (r.driver.team === team.id ? s + (r.fastestLaps || 0) : s), 0);
+        // From computeStandings, which credits each round to the team the
+        // driver drove for at the time - re-deriving it here off the entry
+        // list would misattribute a mid-season switcher's earlier weekends.
+        const poles = row.poles || 0;
+        const fastest = row.fastestLaps || 0;
         const lineup = row.drivers
           .map(d => ({ d, r: drow[d.id] }))
           .filter(x => x.r)

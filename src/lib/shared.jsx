@@ -4,7 +4,7 @@
 // island composes (Panel, DriverCell, Countdown, etc.) plus URL/date helpers.
 
 import { useEffect, useState } from 'react';
-import { roundPointsMap } from './seasonStats.mjs';
+import { roundPointsMap, teamForRound } from './seasonStats.mjs';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 import { ICON_PATHS, ICON_STROKE } from './iconPaths.js';
 
@@ -344,9 +344,12 @@ export function driverPointsForRound(D, driverId, round) {
 export function teamPointsForRound(D, teamId, round) {
   const result = D.results[round];
   if (!result) return 0;
+  // Credit the round to whoever the driver drove for THAT round, falling back
+  // to the entry list for bundles that don't stamp it (see teamForRound).
   return Object.entries(roundPointsMap(result)).reduce((sum, [did, pts]) => {
     const drv = D.driverById(did);
-    return drv && drv.team === teamId ? sum + pts : sum;
+    const tid = teamForRound(result, did) || (drv && drv.team) || null;
+    return tid === teamId ? sum + pts : sum;
   }, 0);
 }
 

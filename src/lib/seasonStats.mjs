@@ -100,6 +100,20 @@ export function roundPointsMap(result) {
   return m;
 }
 
+// The team a driver actually drove for in one round. Hand-curated and Jolpica
+// bundles stamp it on each result row; the CSV-derived historic bundles don't,
+// so this returns null there and callers fall back to the entry list (which is
+// what they always used). Sprint detail is checked too, for the rare weekend
+// where a driver appears in one session's rows but not the other's.
+export function teamForRound(result, code) {
+  if (!result) return null;
+  const race = result.detail && result.detail[code];
+  if (race && race.team) return race.team;
+  const sprint = result.sprintResults && result.sprintResults.detail && result.sprintResults.detail[code];
+  if (sprint && sprint.team) return sprint.team;
+  return null;
+}
+
 // Full season standings: ranked drivers + teams, per-round progression,
 // position-change indicators. `season` needs { drivers, teams, results }
 // (extra fields are ignored, so a full bundle or F1 data object works).
@@ -206,16 +220,72 @@ export function computeStandings(season) {
   const lastRoundCSnap = lastRound != null && results[lastRound] && results[lastRound].constructorStandings
     ? results[lastRound].constructorStandings
     : null;
-  const teamPts = {}, teamWins = {}, teamPodiums = {}, teamFinishes = {};
-  teams.forEach(t => { teamPts[t.id] = 0; teamWins[t.id] = 0; teamPodiums[t.id] = 0; teamFinishes[t.id] = []; });
-  ranked.forEach(r => {
-    const tid = r.driver.team;
-    teamPts[tid] = (teamPts[tid] || 0) + r.points;
-    teamWins[tid] = (teamWins[tid] || 0) + r.wins;
-    teamPodiums[tid] = (teamPodiums[tid] || 0) + r.podiums;
-    const tf = teamFinishes[tid] || (teamFinishes[tid] = []);
-    (r.finishes || []).forEach((c, i) => { tf[i] = (tf[i] || 0) + (c || 0); });
+  //
+  // Which driver's points land on which team depends on whether the bundle
+  // records who they drove for in each round. Hand-curated and Jolpica bundles
+  // stamp it (detail[code].team), so those accumulate round by round -
+  // otherwise a mid-season switcher hands their old team's points to their new
+  // one, which in 2026 put Lawson's 43 Racing Bulls points onto Red Bull.
+  //
+  // The CSV-derived historic bundles don't stamp it, so they keep adding each
+  // driver's season total onto their entry-list team. That total is the FIA's
+  // post-drop championship number in the drop-rule eras, and re-summing raw
+  // round points would quietly overwrite it - which is a different (and for
+  // 1950-57, wrong) answer, not a better one.
+  const hasRoundTeams = completedRounds.some(r => {
+    const d = results[r] && results[r].detail;
+    return d && Object.values(d).some(row => row && row.team);
   });
+  const entryTeamOf = {};
+  drivers.forEach(d => { if (d.team) entryTeamOf[d.id] = d.team; });
+  const teamPts = {}, teamWins = {}, teamPodiums = {}, teamFinishes = {};
+  const teamPoles = {}, teamFastest = {};
+  teams.forEach(t => {
+    teamPts[t.id] = 0; teamWins[t.id] = 0; teamPodiums[t.id] = 0; teamFinishes[t.id] = [];
+    teamPoles[t.id] = 0; teamFastest[t.id] = 0;
+  });
+  // Cumulative team points after each round, for the progression chart below.
+  // Only filled on the per-round path; the other path has no per-round team to
+  // attribute to and keeps its original derivation in teamPointsAtRound.
+  const teamSnapshots = {};
+  if (hasRoundTeams) {
+    completedRounds.forEach(r => {
+      const res = results[r];
+      const teamOf = (code) => teamForRound(res, code) || entryTeamOf[code] || null;
+      for (const [code, pts] of Object.entries(roundPointsMap(res))) {
+        const tid = teamOf(code);
+        if (tid) teamPts[tid] = (teamPts[tid] || 0) + pts;
+      }
+      (res.order || []).forEach((code, i) => {
+        const tid = teamOf(code);
+        if (!tid) return;
+        if (i === 0) teamWins[tid] = (teamWins[tid] || 0) + 1;
+        if (i < 3) teamPodiums[tid] = (teamPodiums[tid] || 0) + 1;
+        const tf = teamFinishes[tid] || (teamFinishes[tid] = []);
+        tf[i] = (tf[i] || 0) + 1;
+      });
+      if (res.pole) {
+        const tid = teamOf(res.pole);
+        if (tid) teamPoles[tid] = (teamPoles[tid] || 0) + 1;
+      }
+      if (res.fastest) {
+        const tid = teamOf(res.fastest);
+        if (tid) teamFastest[tid] = (teamFastest[tid] || 0) + 1;
+      }
+      teamSnapshots[r] = { ...teamPts };
+    });
+  } else {
+    ranked.forEach(r => {
+      const tid = r.driver.team;
+      teamPts[tid] = (teamPts[tid] || 0) + r.points;
+      teamWins[tid] = (teamWins[tid] || 0) + r.wins;
+      teamPodiums[tid] = (teamPodiums[tid] || 0) + r.podiums;
+      teamPoles[tid] = (teamPoles[tid] || 0) + (r.poles || 0);
+      teamFastest[tid] = (teamFastest[tid] || 0) + (r.fastestLaps || 0);
+      const tf = teamFinishes[tid] || (teamFinishes[tid] = []);
+      (r.finishes || []).forEach((c, i) => { tf[i] = (tf[i] || 0) + (c || 0); });
+    });
+  }
   const teamRanked = teams.map(t => {
     const snap = lastRoundCSnap && lastRoundCSnap[t.id];
     return {
@@ -223,6 +293,8 @@ export function computeStandings(season) {
       points: snap ? snap.points : (teamPts[t.id] || 0),
       wins: snap ? snap.wins : (teamWins[t.id] || 0),
       podiums: teamPodiums[t.id] || 0,
+      poles: teamPoles[t.id] || 0,
+      fastestLaps: teamFastest[t.id] || 0,
       finishes: teamFinishes[t.id] || [],
       drivers: drivers.filter(d => d.team === t.id),
     };
@@ -240,6 +312,7 @@ export function computeStandings(season) {
   const teamPointsAtRound = (tid, r) => {
     const snap = results[r] && results[r].constructorStandings;
     if (snap && snap[tid]) return snap[tid].points;
+    if (hasRoundTeams) return (teamSnapshots[r] && teamSnapshots[r][tid]) || 0;
     const raceSnap = snapshots[r] || {};
     return drivers.filter(d => d.team === tid).reduce((sum, d) => sum + (raceSnap[d.id] || 0), 0);
   };
