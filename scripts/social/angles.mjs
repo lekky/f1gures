@@ -469,14 +469,19 @@ const PROVIDERS = {
   trivia: triviaCandidates,
 };
 
-/** Run every provider (or just `only`) for a date. Exposed for `--list`. */
+/**
+ * Run every provider for a date, or just the angles in `only`.
+ * @param {string} date
+ * @param {{only?: string|string[]|null}} opts  one angle id, or an allowlist
+ */
 export function collectCandidates(date, { only = null } = {}) {
   const ctx = {
     date,
     year: Number(date.slice(0, 4)),
     monthDay: date.slice(5, 10),
   };
-  const ids = only ? [only] : ANGLE_IDS;
+  const allow = only == null ? null : (Array.isArray(only) ? only : [only]);
+  const ids = allow ? ANGLE_IDS.filter((id) => allow.includes(id)) : ANGLE_IDS;
   const byAngle = new Map();
   for (const id of ids) {
     const provider = PROVIDERS[id];
@@ -512,36 +517,59 @@ export function selectFromCandidates(byAngle, { date, history = [] }) {
   if (!byAngle || !byAngle.size) return null;
   const rng = makeRng(`f1gures-social:${date}`);
 
-  // Stage 1 - the angle.
-  const angleChoices = [];
+  // Angles still in play. An angle whose every candidate is on key cooldown is
+  // dropped and the draw is retried, rather than falling through to a repeat -
+  // batch mode builds a fortnight in one run, so a "post it anyway" fallback
+  // there yields two identical posts a week apart.
+  const remaining = new Map();
   for (const [id, list] of byAngle) {
-    if (!list?.length) continue;
-    const sinceAngle = daysSince(history, (p) => p.angle === id, date);
-    // A recently-used angle is heavily damped but never fully excluded, so a
-    // quiet winter week can still fall back to it rather than posting nothing.
-    const penalty = sinceAngle < ANGLE_COOLDOWN_DAYS ? 0.12 : 1;
-    angleChoices.push({ id, list, weight: (ANGLE_WEIGHTS[id] ?? 5) * penalty });
+    if (list?.length) remaining.set(id, list);
   }
-  const chosenAngle = weightedPick(angleChoices, rng);
-  if (!chosenAngle) return null;
 
-  // Stage 2 - the candidate.
-  const scored = chosenAngle.list.map((c) => {
-    const sinceKey = daysSince(history, (p) => p.key === c.key, date);
-    const sinceSubject = daysSince(history, (p) => p.subject === c.subject, date);
-    let weight = c.weight;
-    if (sinceKey < KEY_COOLDOWN_DAYS) weight = 0;                  // hard block
-    else if (sinceSubject < SUBJECT_COOLDOWN_DAYS) weight *= 0.1;  // soft space-out
-    return { ...c, weight };
-  });
+  while (remaining.size) {
+    // Stage 1 - the angle.
+    const angleChoices = [];
+    for (const [id, list] of remaining) {
+      const sinceAngle = daysSince(history, (p) => p.angle === id, date);
+      // A recently-used angle is heavily damped but never excluded outright, so
+      // a quiet winter week can still fall back to it rather than post nothing.
+      const penalty = sinceAngle < ANGLE_COOLDOWN_DAYS ? 0.12 : 1;
+      angleChoices.push({ id, list, weight: (ANGLE_WEIGHTS[id] ?? 5) * penalty });
+    }
+    const chosenAngle = weightedPick(angleChoices, rng);
+    if (!chosenAngle) break;
 
-  const chosen =
-    weightedPick(scored, rng) ||
-    // Everything in this angle is on cooldown - fall back to the raw weights so
-    // the pipeline still produces a post rather than failing the workflow.
-    weightedPick(chosenAngle.list, rng);
+    // Stage 2 - the candidate.
+    const scored = chosenAngle.list.map((c) => {
+      const sinceKey = daysSince(history, (p) => p.key === c.key, date);
+      const sinceSubject = daysSince(history, (p) => p.subject === c.subject, date);
+      let weight = c.weight;
+      if (sinceKey < KEY_COOLDOWN_DAYS) weight = 0;                  // hard block
+      else if (sinceSubject < SUBJECT_COOLDOWN_DAYS) weight *= 0.1;  // soft space-out
+      return { ...c, weight };
+    });
 
-  return chosen ? { ...chosen, date } : null;
+    const chosen = weightedPick(scored, rng);
+    if (chosen) return { ...chosen, date };
+
+    // Every candidate here is spent - take this angle out and draw again.
+    remaining.delete(chosenAngle.id);
+  }
+
+  // Nothing anywhere is off cooldown. Rather than post nothing, take the
+  // candidate whose key was used longest ago (or never).
+  let stalest = null;
+  let stalestAge = -1;
+  for (const list of byAngle.values()) {
+    for (const c of list) {
+      const age = daysSince(history, (p) => p.key === c.key, date);
+      if (age > stalestAge) {
+        stalestAge = age;
+        stalest = c;
+      }
+    }
+  }
+  return stalest ? { ...stalest, date } : null;
 }
 
 /**
@@ -550,7 +578,7 @@ export function selectFromCandidates(byAngle, { date, history = [] }) {
  * @param {object}   opts
  * @param {string}   opts.date     ISO YYYY-MM-DD
  * @param {object[]} opts.history  prior posts: [{ date, angle, key, subject }]
- * @param {string}   [opts.angle]  force a specific angle
+ * @param {string|string[]} [opts.angle]  force an angle, or allow only these
  * @param {string}   [opts.key]    force a specific candidate
  * @returns {object|null} the chosen candidate, with `date` attached
  */

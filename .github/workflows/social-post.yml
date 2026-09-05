@@ -1,50 +1,68 @@
-name: Daily Social Post
+name: Social Posts
 
-# Builds one social card + caption a day from the archive and sends it to
-# Metricool, which holds the Instagram / TikTok / Facebook connections.
+# Two jobs, one file, because they share every step but the angle set.
 #
-# Nothing here invents facts: the post is assembled from public/data/archive,
-# which is generated from the same data the site renders. See
-# docs/social-posts.md for setup and docs/social-card-design.md for the design.
+#   batch  — fortnightly. Fills the Metricool calendar with the next
+#            config.batchDays of evergreen posts (records, on-this-day,
+#            birthdays, spotlights, previews). Skips the days around a race.
+#   live   — daily. ONLY result posts (pole, sprint, podium), which cannot be
+#            scheduled ahead because the result does not exist yet. Exits in
+#            seconds on a day with no result.
 #
-# The cards are uploaded to f1gures.app/social/ first, because all three
-# networks pull media from a public URL rather than accepting an upload from us.
+# Settings (post time, networks, draft mode, horizon) live in
+# scripts/social/config.mjs - not here. See docs/social-posts.md.
 
 on:
   schedule:
-    # 10:00 UTC daily. On a race weekend the race-result and quali-result
-    # angles outrank everything else, so the same slot covers Sunday's podium
-    # post without a second schedule.
+    # Fortnightly-ish: 1st and 15th, 09:00 UTC. Fills the calendar ahead.
+    - cron: '0 9 1,15 * *'
+    # Daily 10:00 UTC: race results only. Cheap no-op most days.
     - cron: '0 10 * * *'
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'Which job to run'
+        type: choice
+        options: [batch, live]
+        default: batch
       date:
-        description: 'Post date (YYYY-MM-DD, default today)'
+        description: 'Start date (YYYY-MM-DD, default today)'
         required: false
-      angle:
-        description: 'Force an angle (e.g. on-this-day, record-board)'
+      days:
+        description: 'Batch only: days to fill (default: config.batchDays)'
         required: false
-      draft:
-        description: 'Park in the Metricool calendar instead of publishing'
-        type: boolean
-        default: false
       dry_run:
-        description: 'Build and print only - upload nothing, publish nothing'
+        description: 'Build and print only — upload nothing, schedule nothing'
         type: boolean
-        default: false
+        default: true
 
 concurrency:
   group: social-post
   cancel-in-progress: false
 
 permissions:
-  contents: write   # commits the history log back to the branch
+  contents: write   # commits the history log
 
 jobs:
   post:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Which job is this? The two crons differ only in the angles they allow.
+      - name: Resolve mode
+        id: mode
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODE="${{ inputs.mode }}"
+          elif [ "${{ github.event.schedule }}" = "0 9 1,15 * *" ]; then
+            MODE="batch"
+          else
+            MODE="live"
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Running in $MODE mode."
 
       - uses: actions/setup-node@v4
         with:
@@ -54,23 +72,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The archive is gitignored, so it has to be regenerated here. This is
-      # just the CSV importer - no Astro build, no OG images.
+      # The archive is gitignored, so regenerate it. Importer only - no Astro
+      # build, no OG images.
       - name: Build archive
         run: npm run build:archive
 
-      - name: Build the day's post
+      - name: Build posts
         id: build
         run: |
           set -euo pipefail
           ARGS=()
-          [ -n "${{ inputs.date }}" ]  && ARGS+=("--date=${{ inputs.date }}")
-          [ -n "${{ inputs.angle }}" ] && ARGS+=("--angle=${{ inputs.angle }}")
+          [ -n "${{ inputs.date }}" ] && ARGS+=("--date=${{ inputs.date }}")
+          if [ "${{ steps.mode.outputs.mode }}" = "batch" ]; then
+            ARGS+=("--days=${{ inputs.days || '14' }}")
+          else
+            # Result angles only; the batch job already owns every other day.
+            ARGS+=("--angles=race-result,quali-result,sprint-result")
+          fi
           node scripts/build-social-post.mjs "${ARGS[@]}"
-          echo "date=$(node -p "require('./.social-out/post.json').date")" >> "$GITHUB_OUTPUT"
+          COUNT=$(node -p "require('./.social-out/batch.json').posts.length")
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Built $COUNT post(s)."
+
+      # A live run on a day with no session result is the normal case, not a
+      # failure - stop here rather than uploading an empty directory.
+      - name: Nothing to post
+        if: steps.build.outputs.count == '0'
+        run: echo "No posts for this run. Exiting cleanly."
 
       - name: Upload cards to the site
-        if: inputs.dry_run != true
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
         env:
           SSH_HOST: ${{ secrets.SSH_HOST || secrets.SFTP_HOST }}
           SSH_USER: helloweb
@@ -80,7 +111,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${SSH_KEY:-}" ]; then
-            echo "::error::SSH_PRIVATE_KEY is not set - the networks cannot fetch the card without a public URL."
+            echo "::error::SSH_PRIVATE_KEY is not set - the networks cannot fetch a card without a public URL."
             exit 1
           fi
           PORT="${SSH_PORT:-22}"
@@ -88,7 +119,7 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          # Plain mirror, no --delete: this directory is additive and is
+          # Plain mirror, no --delete: this directory is additive, and is
           # excluded from deploy.yml's mirror precisely so it survives.
           lftp -c "
             set cmd:fail-exit true;
@@ -101,25 +132,23 @@ jobs:
             mirror --reverse --only-newer --verbose --include-glob '*.png' ./.social-out/ $REMOTE_DIR/;
           "
 
-      - name: Publish
-        if: inputs.dry_run != true
+      - name: Schedule via Metricool
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
         env:
           METRICOOL_USER_TOKEN: ${{ secrets.METRICOOL_USER_TOKEN }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           SOCIAL_MEDIA_BASE_URL: https://f1gures.app/social
-          SOCIAL_TIMEZONE: Europe/London
-        run: |
-          node scripts/publish-social-post.mjs ${{ inputs.draft == true && '--draft' || '' }}
+        run: node scripts/publish-social-post.mjs
 
       - name: Dry run
-        if: inputs.dry_run == true
+        if: steps.build.outputs.count != '0' && inputs.dry_run == true
         run: node scripts/publish-social-post.mjs --dry-run
 
-      # The history log is what stops the feed repeating itself, so it has to
-      # go back to the repo - it is state, not an artefact.
+      # The history log is state, not an artefact: it is what stops the feed
+      # repeating itself, so it has to go back to the repo.
       - name: Commit the history log
-        if: inputs.dry_run != true
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
         run: |
           set -euo pipefail
           if git diff --quiet -- data/social/history.json; then
@@ -129,5 +158,6 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/social/history.json
-          git commit -m "chore(social): log post for ${{ steps.build.outputs.date }}"
+          git commit -m "chore(social): log ${{ steps.build.outputs.count }} post(s) [skip-deploy]"
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
           git push

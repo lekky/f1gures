@@ -11,6 +11,7 @@ import {
 import { composeCaption, LIMITS } from './caption.mjs';
 import { readHistory, appendHistory, hasPostFor } from './history.mjs';
 import { fitFontSize, alpha, contrastText, metrics, FORMATS } from './cardkit.mjs';
+import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates } from './config.mjs';
 
 // ── format helpers ──
 
@@ -314,5 +315,97 @@ describe('card toolkit', () => {
       expect(m.inner).toBeGreaterThan(0);
       expect(m.safeTop + m.safeBottom).toBeLessThan(m.h / 2);
     }
+  });
+});
+
+// ── config ──
+
+describe('config', () => {
+  it('builds an offset-free publish datetime (the timezone field carries it)', () => {
+    expect(publishAtFor('2026-09-06')).toBe('2026-09-06T10:00:00');
+    expect(publishAtFor('2026-09-06', { ...SOCIAL_CONFIG, postTime: '7:5' })).toBe('2026-09-06T07:05:00');
+  });
+
+  it('tags links for Facebook only', () => {
+    // Instagram and TikTok render URLs as unclickable text, so a utm string
+    // there is clutter that buys nothing.
+    const url = 'https://f1gures.app/records/wins/';
+    expect(withUtm(url, 'facebook')).toContain('utm_source=facebook');
+    expect(withUtm(url, 'instagram')).toBe(url);
+    expect(withUtm(url, 'tiktok')).toBe(url);
+  });
+
+  it('preserves an existing query string when tagging', () => {
+    const tagged = withUtm('https://f1gures.app/compare/?type=driver&a=senna', 'facebook');
+    expect(tagged).toContain('type=driver');
+    expect(tagged).toContain('a=senna');
+    expect(tagged).toContain('utm_campaign=daily-post');
+  });
+
+  it('leaves an unparseable url alone', () => {
+    expect(withUtm('not a url', 'facebook')).toBe('not a url');
+  });
+
+  it('reserves the days around a race for the live job', () => {
+    const owned = raceOwnedDates([{ date: '2026-09-06' }]);
+    expect([...owned].sort()).toEqual(['2026-09-05', '2026-09-06', '2026-09-07']);
+    expect(owned.has('2026-09-04')).toBe(false);
+    expect(owned.has('2026-09-08')).toBe(false);
+  });
+
+  it('ignores undated calendar rows', () => {
+    expect(raceOwnedDates([{ date: null }, { date: 'nonsense' }]).size).toBe(0);
+  });
+
+  it('renders a card shape for every configured network', () => {
+    for (const n of SOCIAL_CONFIG.networks) {
+      expect(SOCIAL_CONFIG.formatForNetwork[n], `no format for ${n}`).toBeTruthy();
+      expect(Object.keys(FORMATS)).toContain(SOCIAL_CONFIG.formatForNetwork[n]);
+    }
+  });
+
+  it('only allows the live job angles that genuinely cannot be scheduled ahead', () => {
+    for (const a of SOCIAL_CONFIG.liveAngles) expect(ANGLE_IDS).toContain(a);
+    // A preview IS knowable in advance (the calendar is fixed), so it belongs
+    // to the batch job, not the live one.
+    expect(SOCIAL_CONFIG.liveAngles).not.toContain('race-preview');
+  });
+});
+
+// ── batch behaviour ──
+
+describe('batch selection', () => {
+  it('never schedules the same post twice inside one batch', () => {
+    // The bug this guards: when every candidate in the drawn angle was on key
+    // cooldown, selection fell back to "post it anyway" and produced two
+    // identical posts a week apart in the same fortnight.
+    const byAngle = new Map([
+      // A single-candidate angle is the trap - once used, it has nothing left.
+      ['standings-snapshot', [candidate('standings-snapshot', 'standings:2026-12', 100, 'standings:2026')]],
+      ['record-board', Array.from({ length: 12 }, (_, i) => candidate('record-board', `rec${i}`, 12, `record:${i}`))],
+      ['trivia', Array.from({ length: 12 }, (_, i) => candidate('trivia', `t${i}`, 5, `trivia:${i}`))],
+    ]);
+    // 25 candidates for 14 days: comfortably more supply than horizon, which is
+    // the real case (the live pools carry 600+). With fewer candidates than
+    // days a repeat is unavoidable, and the last-resort branch below covers it.
+
+    const history = [];
+    const seen = [];
+    let day = Date.parse('2026-09-05T00:00:00Z');
+    for (let i = 0; i < 14; i++) {
+      const date = new Date(day + i * 86400000).toISOString().slice(0, 10);
+      const picked = selectFromCandidates(byAngle, { date, history });
+      expect(picked, date).not.toBeNull();
+      seen.push(picked.key);
+      history.push({ date, angle: picked.angle, key: picked.key, subject: picked.subject });
+    }
+    expect(new Set(seen).size).toBe(seen.length);
+  });
+
+  it('still returns a post once every candidate is exhausted', () => {
+    const byAngle = new Map([['trivia', [candidate('trivia', 'only', 5, 's')]]]);
+    const history = [{ date: '2026-09-05', angle: 'trivia', key: 'only', subject: 's' }];
+    const picked = selectFromCandidates(byAngle, { date: '2026-09-06', history });
+    expect(picked?.key).toBe('only');
   });
 });

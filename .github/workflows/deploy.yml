@@ -59,10 +59,25 @@ jobs:
           if [ -n "$LAST" ] && [ "$LAST" = "$GITHUB_SHA" ]; then
             echo "main ($GITHUB_SHA) unchanged since last successful deploy - skipping build."
             echo "deploy=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "main changed since last deploy (last=$LAST, now=$GITHUB_SHA) - deploying."
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          # main HAS moved - but social-post.yml commits data/social/history.json
+          # here on every posting run, and that file ships nothing: it is the
+          # social pipeline's own anti-repetition log, not site content. Without
+          # this check each of those commits would trigger a full ~2,300-page
+          # rebuild and a full re-upload, undoing the batching this workflow
+          # exists for. Compare via the API so we don't need full git history.
+          if [ -n "$LAST" ]; then
+            CHANGED=$(gh api "repos/$GITHUB_REPOSITORY/compare/$LAST...$GITHUB_SHA"                         --jq '.files[].filename' 2>/dev/null || echo "")
+            if [ -n "$CHANGED" ] && ! echo "$CHANGED" | grep -qv '^data/social/'; then
+              echo "Only data/social/ changed since $LAST - nothing to deploy."
+              echo "$CHANGED" | sed 's/^/  /'
+              echo "deploy=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "main changed since last deploy (last=$LAST, now=$GITHUB_SHA) - deploying."
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         if: steps.decide.outputs.deploy == 'true'

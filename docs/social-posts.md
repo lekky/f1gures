@@ -7,7 +7,11 @@ archive the site renders and scheduled through Metricool.
   `public/data/archive/`. Every number comes from the archive; nothing is
   generated prose, which is what makes unattended posting safe.
 - **Design** — see [`social-card-design.md`](./social-card-design.md).
-- **Cadence** — `.github/workflows/social-post.yml`, daily at 10:00 UTC.
+- **Cadence** — two jobs in `.github/workflows/social-post.yml`: a fortnightly
+  **batch** that fills the calendar ahead, and a daily **live** job for results.
+- **Settings** — [`scripts/social/config.mjs`](../scripts/social/config.mjs) is the
+  one file to edit: post time, timezone, networks, draft mode, how far ahead to
+  schedule, and link tagging.
 
 ---
 
@@ -15,6 +19,7 @@ archive the site renders and scheduled through Metricool.
 
 | File | Role |
 |---|---|
+| `scripts/social/config.mjs` | **All the knobs** — time, networks, draft, horizon |
 | `scripts/social/sources.mjs` | Memoized read-only accessors over the archive |
 | `scripts/social/angles.mjs` | The 13 angles + deterministic daily selection |
 | `scripts/social/caption.mjs` | Caption, hashtags, alt text per angle |
@@ -59,23 +64,62 @@ out. Repetition is held off by three cooldowns in `angles.mjs`:
 If everything in an angle is on cooldown it falls back to the raw weights
 rather than failing — the workflow always produces a post.
 
+## Two jobs, because results cannot be scheduled ahead
+
+Most posts are knowable weeks in advance: an on-this-day, a record leaderboard, a
+driver's birthday, even a race preview (the calendar is fixed). A podium is not —
+it does not exist until the race ends.
+
+So the work splits:
+
+| | **batch** | **live** |
+|---|---|---|
+| Runs | 1st and 15th, 09:00 UTC | daily, 10:00 UTC |
+| Posts | everything except results | pole, sprint, podium only |
+| Horizon | next `config.batchDays` (14) | that day |
+| On a quiet day | n/a | exits in seconds, posts nothing |
+
+The batch job **skips the days around a race** (`config.raceWindow`, ±1 day) and
+leaves them to the live job, so the two never both post on the same date.
+
+This is why the calendar fills up in two runs a month rather than 30: you review
+a fortnight of posts in one sitting in Metricool, and only genuinely time-
+sensitive results arrive day-of.
+
 ## Running it locally
 
 ```bash
 npm run build:archive          # the pipeline reads public/data/archive/
 
-npm run social:build                          # today
-npm run social:build -- --date=2026-09-06     # a specific day
-npm run social:build -- --angle=on-this-day   # force an angle
+npm run social:build -- --days=14             # a fortnight, as the batch job runs it
+npm run social:build                          # one post for today
+npm run social:build -- --date=2026-09-06
+npm run social:build -- --angles=race-result,quali-result,sprint-result
 npm run social:build -- --list                # every candidate for the date
-npm run social:publish -- --dry-run           # print the exact request, send nothing
+
+npm run social:publish -- --dry-run           # print exactly what would be sent
 ```
 
-Output lands in `.social-out/` (gitignored): one PNG per format plus
-`post.json`.
+Output lands in `.social-out/` (gitignored): the PNGs plus `batch.json`.
 
 Formats: `portrait` 1080×1350 (Instagram + Facebook), `square` 1080×1080,
-`story` 1080×1920 (TikTok).
+`story` 1080×1920 (TikTok). Only the shapes the configured networks need are
+rendered.
+
+## Links in captions
+
+**Only Facebook makes a URL in a post clickable.** Instagram and TikTok render
+URLs in a caption as plain text, so campaign tags there are unclickable clutter
+that also reads as spam.
+
+The pipeline therefore sends Facebook as its own scheduled post, with
+`?utm_source=facebook&utm_medium=social&utm_campaign=daily-post` appended to
+every f1gures link, while Instagram and TikTok get the clean URL. GA4 will
+attribute the Facebook traffic; **Instagram and TikTok performance is read in
+Metricool's own per-post analytics**, not in GA4 — expect their referred traffic
+to land under direct.
+
+Turn it off, or add networks, under `utm` in `config.mjs`.
 
 ### Fonts
 
@@ -157,6 +201,13 @@ that exclusion every site deploy would delete the image the live post points
 at, because the cards are not part of `dist/`. `refresh-current-season.yml`
 uses a state-file FTP sync that only removes files it previously uploaded, so
 it needs no equivalent guard.
+
+**`deploy.yml`'s "should I deploy?" gate also ignores social-only commits.** The
+posting job commits `data/social/history.json`, which ships nothing. Without the
+check, each of those commits would look like "main moved" and trigger a full
+~2,300-page rebuild and re-upload — undoing the batched-deploy saving that
+workflow exists for. The gate now compares the changed files and skips when they
+are all under `data/social/`.
 
 The directory is additive and grows by three PNGs a day (~700 KB). Prune it by
 hand occasionally, or add a retention step if it ever matters.
