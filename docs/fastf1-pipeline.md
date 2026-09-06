@@ -17,6 +17,36 @@ scripts/fetch-fastf1.py  ──►  public/data/fastf1/<year>/<round>/
      RaceWeekendIsland.jsx (client) ─ fetches the session JSONs ─► charts
 ```
 
+## Provisional results on race evening
+
+FastF1 reads F1's own live timing, so `race.json` lands within minutes of the
+chequered flag. Jolpica — the source behind `public/data/<year>.json` — can take
+hours: on 2026-09-06 the Italian GP finished ~15:00 UTC and the 19:14 poll still
+reported `12/13 rounds, +quali for round 13`.
+
+That gap used to leave the race page showing an empty Race tab all evening even
+though the finishing order was already committed to the repo. It no longer does:
+when a round is still a holding page (not in `bundle.results`) but
+`public/data/fastf1/<y>/<r>/race.json` exists, `build-archive.mjs` calls
+`buildProvisionalResults()` (`scripts/provisionalResults.mjs`) and attaches the
+order as **`provisionalResults`** on the race doc. `RaceWeekendIsland` prefers
+`results` and falls back to it, rendering a "Provisional" notice and a reduced
+column set (Pos / Driver / Team / Laps / Stops).
+
+Two rules keep this honest:
+
+- **It is never written to `results`.** Every standings, championship, records,
+  circuit-history and driver-doc pass in `build-archive.mjs` treats "in
+  `results`" as "race completed". A provisional order therefore cannot reach
+  career stats, points totals or leaderboards by construction.
+- **Points are never computed from it.** Scoring lives in
+  `src/lib/seasonStats.mjs` and stays there. Grid slots, gaps, classification
+  status and fastest-lap rank aren't in FastF1's session data either, so all of
+  them stay `null` and the UI drops those columns rather than showing a guess.
+
+The whole thing is superseded the moment the round lands in `bundle.results` and
+the completed-race pass takes over.
+
 ## The Python side (`scripts/fetch-fastf1.py`)
 
 Run by hand or by the `fetch-fastf1.yml` workflow — **not** part of

@@ -157,6 +157,19 @@ const NO_ASSETS = { faces: {}, logos: {}, refs: {}, teams: {} };
 export default function RaceWeekendIsland({ race, weekend, assets }) {
   const { year, round, sessions, available, sprintWeekend } = weekend;
   const ax = assets || NO_ASSETS;
+  // Race evening: FastF1 has the timing but our results source hasn't published
+  // the classification yet, so build-archive attached a provisional order
+  // instead of `results` (scripts/provisionalResults.mjs). Resolve once here so
+  // every consumer below - podium, classification, winner highlight, driver
+  // filter, series styling - works off the same rows, and flag it so the table
+  // says which it is showing. Official results always win.
+  // useMemo, not a bare expression: a fresh array identity every render would
+  // bust the meta/dashMap/filter memos below that now depend on it.
+  const results = useMemo(
+    () => (race.results?.length ? race.results : (race.provisionalResults || [])),
+    [race],
+  );
+  const isProvisional = !race.results?.length && results.length > 0;
   const defaultTab = available.length ? available[available.length - 1] : sessions[sessions.length - 1]?.id;
 
   const [tab, setTab] = useState(defaultTab);
@@ -248,11 +261,11 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
         m[d.code] = { name: d.name, team: d.team, teamId: d.teamId, color: d.color, ...m[d.code] };
       }
     }
-    for (const r of race.results || []) {
+    for (const r of results) {
       if (r.code) m[r.code] = { name: r.driverName, team: r.constructorName, teamId: r.constructorRef, color: r.constructorColor, ...m[r.code] };
     }
     return m;
-  }, [data, race]);
+  }, [data, results]);
 
   // Line style per driver: the first car of a team (in the active session's
   // classification order) draws solid, the teammate dashed — the shared team
@@ -264,10 +277,10 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     const seen = new Set();
     const push = (c) => { if (c && !seen.has(c)) { seen.add(c); order.push(c); } };
     (sessDrivers || []).forEach((d) => push(d.code));
-    (race.results || []).forEach((r) => push(r.code));
+    results.forEach((r) => push(r.code));
     Object.keys(meta).forEach(push);
     return assignSeriesStyles(order, { idOf: (c) => c, groupOf: (c) => meta[c]?.teamId || meta[c]?.team || null });
-  }, [sessDrivers, race, meta]);
+  }, [sessDrivers, results, meta]);
 
   const ctx = useMemo(() => ({
     colorOf: (c) => meta[c]?.color || '#8A8B93',
@@ -291,9 +304,9 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   // driver filter (race tab)
   const defaultSel = useMemo(() => {
     const order = raceR?.finishOrder
-      || (race.results || []).filter((r) => r.code).map((r) => r.code);
+      || results.filter((r) => r.code).map((r) => r.code);
     return order.slice(0, 6);
-  }, [raceR, race]);
+  }, [raceR, results]);
   const sel = useMemo(() => new Set(selArr ?? defaultSel), [selArr, defaultSel]);
 
   const activeSess = data[tab];
@@ -313,12 +326,12 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
 
   // ── session bar ──
   const sessInfo = useMemo(() => {
-    const winner = (race.results || []).find((r) => r.position === 1);
+    const winner = results.find((r) => r.position === 1);
     const pole = (race.qualifying || [])[0];
     const sprintRows = Array.isArray(race.sprint) ? race.sprint : [];
     const sprintWinner = sprintRows.find((r) => r.position === 1);
     return { winner, pole, sprintWinner };
-  }, [race]);
+  }, [race, results]);
 
   const subLabelFor = (s) => {
     const done = available.includes(s.id);
@@ -502,14 +515,14 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   }, [raceR]);
 
   const filterPresets = useMemo(() => {
-    const order = raceR?.finishOrder || (race.results || []).filter((r) => r.code).map((r) => r.code);
+    const order = raceR?.finishOrder || results.filter((r) => r.code).map((r) => r.code);
     return [
       { label: 'The story', primary: true, apply: () => setSelArr(defaultSel) },
       { label: 'Top 10', apply: () => setSelArr(order.slice(0, 10)) },
       { label: 'All', apply: () => setSelArr(order) },
       { label: 'None', apply: () => setSelArr([]) },
     ];
-  }, [raceR, race, defaultSel]);
+  }, [raceR, results, defaultSel]);
 
   const renderSessionBlock = () => {
     if (tab === 'race') {
@@ -518,9 +531,9 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
           <SessionHeader title="Race" startIso={activeSchedule?.start} weather={raceSess?.weather}
             extra={raceR ? `${raceR.totalLaps} LAPS` : undefined}
             highlight={sessInfo.winner ? { txt: `${sessInfo.winner.driverName?.toUpperCase()} WINS`, kind: 'green' } : null} />
-          <RacePodium3 results={race.results || []} ctx={ctx} />
+          <RacePodium3 results={results} ctx={ctx} />
           {raceChips && <StatChips chips={raceChips} />}
-          <RaceClassification results={race.results || []} stopsOf={raceR ? stopsOf : null} allRows={allRows} onToggle={() => setAllRows(!allRows)} ctx={ctx} />
+          <RaceClassification results={results} provisional={isProvisional} stopsOf={raceR ? stopsOf : null} allRows={allRows} onToggle={() => setAllRows(!allRows)} ctx={ctx} />
           <KeyMoments moments={keyMomentsFrom(raceSess)} />
         </>
       );
@@ -646,7 +659,7 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
     if (!openViz) return null;
     const loading = !activeSess;
     const showFilter = !!openViz.filter && (tab === 'race' || tab === 'sprint');
-    const filterOrder = raceR?.finishOrder || (race.results || []).filter((r) => r.code).map((r) => r.code);
+    const filterOrder = raceR?.finishOrder || results.filter((r) => r.code).map((r) => r.code);
     return (
       <div className="rw-mviz-overlay" onClick={closeVizModal}>
         <div className="rw-mviz" onClick={(e) => e.stopPropagation()}

@@ -80,7 +80,7 @@ export function RacePodium3({ results, ctx }) {
                 {r.constructorName?.toUpperCase()} · {i === 0 ? (r.time || 'WINNER') : (r.time || '—')}
               </div>
             </div>
-            <div className="rw-podium-pts"><b>{r.points}</b> <span>PTS</span></div>
+            <div className="rw-podium-pts">{r.points != null ? <><b>{r.points}</b> <span>PTS</span></> : <span>—</span>}</div>
           </div>
         );
       })}
@@ -124,19 +124,43 @@ export function TeamCell({ code, name, ctx }) {
   );
 }
 
-export function RaceClassification({ results, stopsOf, allRows, onToggle, ctx }) {
+// `provisional` means these rows came from FastF1 timing rather than a
+// published classification (see scripts/provisionalResults.mjs). Grid, gap,
+// points, fastest lap and status simply aren't in that data, so those columns
+// are dropped rather than filled with a row of dashes - and the notice says so
+// instead of letting the reader assume the numbers are missing.
+export function RaceClassification({ results, provisional = false, stopsOf, allRows, onToggle, ctx }) {
   const rows = allRows ? results : results.slice(0, 10);
   return (
     <div className="panel rw-table-card">
       <SectionRule label="Classification" />
+      {provisional && (
+        <p className="rw-provisional">
+          <span className="rw-provisional-tag">Provisional</span>
+          Finishing order from live timing. Points, grid, gaps and classification follow once the official result is published.
+        </p>
+      )}
       <div className="rw-tbl-scroll">
         <table className="rw-tbl">
           <thead>
-            <tr><th>Pos</th><th>Driver</th><th>Team</th><th>Grid</th><th>Gap</th><th>Pts</th><th>Stops</th><th>FL</th><th>Status</th></tr>
+            {provisional
+              ? <tr><th>Pos</th><th>Driver</th><th>Team</th><th>Laps</th><th>Stops</th></tr>
+              : <tr><th>Pos</th><th>Driver</th><th>Team</th><th>Grid</th><th>Gap</th><th>Pts</th><th>Stops</th><th>FL</th><th>Status</th></tr>}
           </thead>
           <tbody>
             {rows.map((r, i) => {
               const dnf = r.positionText === 'R' || /retired|accident|collision|dnf/i.test(r.status || '');
+              if (provisional) {
+                return (
+                  <tr key={i}>
+                    <td className="rw-pos" style={{ color: POSC[r.position] || undefined }}>{r.position ?? r.positionText}</td>
+                    <td><DriverCell code={r.code} name={r.driverName} driverRef={r.driverRef} color={r.constructorColor} ctx={ctx} /></td>
+                    <td className="rw-team"><TeamCell code={r.code} name={r.constructorName} ctx={ctx} /></td>
+                    <td className="t-mono">{r.laps ?? '—'}</td>
+                    <td className="t-mono">{stopsOf ? stopsOf(r.code) ?? '—' : '—'}</td>
+                  </tr>
+                );
+              }
               return (
                 <tr key={i}>
                   <td className="rw-pos" style={{ color: POSC[r.position] || undefined }}>{dnf ? 'DNF' : r.position ?? r.positionText}</td>

@@ -18,6 +18,7 @@ import { NATIONALITY, natInfo } from '../src/lib/nationality.js';
 import { hasDriverFace } from '../src/lib/driverFaceExists.js';
 import { teamLogoPath } from '../src/lib/teamLogo.js';
 import { buildCompareSuggestions } from './compareSuggestions.mjs';
+import { buildProvisionalResults } from './provisionalResults.mjs';
 import { DRIVER_MATCHUPS as CURATED_DRIVER_MATCHUPS, TEAM_MATCHUPS as CURATED_TEAM_MATCHUPS } from '../src/data/compareMatchups.js';
 
 // ─── Static lookups ───────────────────────────────────────────────────
@@ -995,6 +996,19 @@ for (let i = 0; i < allBundleRounds.length; i++) {
 
   const fastCode = rData.fastest;
   const fastDet = (rData.detail || {})[fastCode] || {};
+  // FastF1 lands a finished race within minutes; Jolpica can take hours. When
+  // the session file is already on disk for a round the bundle still treats as
+  // un-run, derive a provisional classification from it.
+  let provisionalResults = [];
+  const ff1RacePath = join(ROOT, 'public', 'data', 'fastf1', String(bYear), String(round), 'race.json');
+  if (existsSync(ff1RacePath)) {
+    try {
+      provisionalResults = buildProvisionalResults(JSON.parse(readFileSync(ff1RacePath, 'utf8')));
+    } catch (err) {
+      console.warn(`[archive] could not read FastF1 race data for ${bYear}/${round}: ${err.message}`);
+    }
+  }
+
   const raceDoc = {
     raceId: `${bYear}_${round}`,
     year: bYear, round,
@@ -1207,6 +1221,19 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
     }
   }
 
+  // FastF1 lands a finished race within minutes; Jolpica can take hours. When
+  // the session file is already on disk for a round the bundle still treats as
+  // un-run, derive a provisional classification from it.
+  let provisionalResults = [];
+  const ff1RacePath = join(ROOT, 'public', 'data', 'fastf1', String(bYear), String(round), 'race.json');
+  if (existsSync(ff1RacePath)) {
+    try {
+      provisionalResults = buildProvisionalResults(JSON.parse(readFileSync(ff1RacePath, 'utf8')));
+    } catch (err) {
+      console.warn(`[archive] could not read FastF1 race data for ${bYear}/${round}: ${err.message}`);
+    }
+  }
+
   const raceDoc = {
     raceId: `${bYear}_${round}`,
     year: bYear,
@@ -1234,6 +1261,12 @@ for (let i = 0; i < allBundleCalendars.length; i++) {
     fastestLapTime: null,
     winner: null,
     results: [],
+    // The race has run but our results source hasn't published it yet, while
+    // FastF1 already has the timing on disk: show that order, flagged
+    // provisional. Kept out of `results` on purpose - every standings /
+    // championship / records / driver-doc pass treats "in results" as "race
+    // completed". See scripts/provisionalResults.mjs.
+    provisionalResults,
     qualifying,
     sprint_results: sprintRows,
     prev,
