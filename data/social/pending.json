@@ -1,7 +1,338 @@
 {
-  "updatedAt": null,
+  "updatedAt": "2026-09-06T23:21:23.274Z",
   "blogId": "6692452",
   "brandLabel": "F1gures",
   "timezone": "Europe/London",
-  "posts": []
+  "posts": [
+    {
+      "date": "2026-09-08",
+      "publishAt": "2026-09-08T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "on-this-day",
+      "key": "on-this-day:1991-12",
+      "subject": "driver:mansell",
+      "headline": "Nigel Mansell wins the 1991 Italian Grand Prix",
+      "link": "https://f1gures.app/races/1991/12/",
+      "tiktokTitle": "Nigel Mansell wins the 1991 Italian Grand Prix",
+      "alt": "On this day card: Nigel Mansell won the 1991 Italian Grand Prix. P1 Nigel Mansell (Williams), P2 Ayrton Senna (McLaren), P3 Alain Prost (Ferrari).",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "On this day in 1991 — 35 years ago — Nigel Mansell won the Italian Grand Prix at Autodromo Nazionale di Monza.\n\nP1 Nigel Mansell (Williams)\nP2 Ayrton Senna (McLaren)\nP3 Alain Prost (Ferrari)\n\n#F1 #Formula1 #f1gures #OnThisDay #NigelMansell #Williams #ItalianGrandPrix #Italy #F1History",
+          "networks": [
+            "instagram",
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-08-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "On this day in 1991 — 35 years ago — Nigel Mansell won the Italian Grand Prix at Autodromo Nazionale di Monza.\n\nP1 Nigel Mansell (Williams)\nP2 Ayrton Senna (McLaren)\nP3 Alain Prost (Ferrari)\n\n#F1 #Formula1 #f1gures #OnThisDay #NigelMansell #Williams #ItalianGrandPrix #Italy #F1History",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-08-story.png"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-09",
+      "publishAt": "2026-09-09T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "head-to-head",
+      "key": "head-to-head:driver:norris-mario_andretti",
+      "subject": "driver:norris",
+      "headline": "Norris vs Andretti",
+      "link": "https://f1gures.app/compare/?type=driver&a=norris&b=mario_andretti",
+      "tiktokTitle": "Norris vs Andretti",
+      "alt": "Head-to-head card: Lando Norris versus Mario Andretti.",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "Both 1-time World Champion.\n\nLando Norris — 1 title · 13 wins · 18 poles · 48 podiums\nMario Andretti — 1 title · 12 wins · 18 poles · 19 podiums\n\nCompare them side by side: https://f1gures.app/compare/?type=driver&a=norris&b=mario_andretti\n\n#F1 #Formula1 #f1gures #LandoNorris #MarioAndretti #F1Rivalry #HeadToHead #F1History",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-09-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "Both 1-time World Champion.\n\nLando Norris — 1 title · 13 wins · 18 poles · 48 podiums\nMario Andretti — 1 title · 12 wins · 18 poles · 19 podiums\n\nCompare them side by side: https://f1gures.app/compare/?type=driver&a=norris&b=mario_andretti&utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #LandoNorris #MarioAndretti #F1Rivalry #HeadToHead #F1History",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-09-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "Both 1-time World Champion.\n\nLando Norris — 1 title · 13 wins · 18 poles · 48 podiums\nMario Andretti — 1 title · 12 wins · 18 poles · 19 podiums\n\nCompare them side by side: https://f1gures.app/compare/?type=driver&a=norris&b=mario_andretti\n\n#F1 #Formula1 #f1gures #LandoNorris #MarioAndretti #F1Rivalry #HeadToHead #F1History",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-09-story.png"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-10",
+      "publishAt": "2026-09-10T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "record-board",
+      "key": "record-board:poles-at-circuit",
+      "subject": "record:poles-at-circuit",
+      "headline": "Most poles by one driver at one circuit",
+      "link": "https://f1gures.app/records/poles-at-circuit/",
+      "tiktokTitle": "Most poles by one driver at one circuit",
+      "alt": "Leaderboard card: Most poles by one driver at one circuit. 1. Lewis Hamilton — 9 poles. 2. Ayrton Senna — 8 poles. 3. Michael Schumacher — 8 poles. 4. Lewis Hamilton — 8 poles. 5. Michael Schumacher — 7 poles.",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "Most poles by one driver at one circuit — the all-time top five.\n\n1. Lewis Hamilton — 9 poles\n2. Ayrton Senna — 8 poles\n3. Michael Schumacher — 8 poles\n4. Lewis Hamilton — 8 poles\n5. Michael Schumacher — 7 poles\n\nFull top 50, plus modern and classic era splits: https://f1gures.app/records/poles-at-circuit/\n\n#F1 #Formula1 #f1gures #F1Records #F1Stats #LewisHamilton #AyrtonSenna #MichaelSchumacher",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-10-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "Most poles by one driver at one circuit — the all-time top five.\n\n1. Lewis Hamilton — 9 poles\n2. Ayrton Senna — 8 poles\n3. Michael Schumacher — 8 poles\n4. Lewis Hamilton — 8 poles\n5. Michael Schumacher — 7 poles\n\nFull top 50, plus modern and classic era splits: https://f1gures.app/records/poles-at-circuit/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #F1Records #F1Stats #LewisHamilton #AyrtonSenna #MichaelSchumacher",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-10-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "Most poles by one driver at one circuit — the all-time top five.\n\n1. Lewis Hamilton — 9 poles\n2. Ayrton Senna — 8 poles\n3. Michael Schumacher — 8 poles\n4. Lewis Hamilton — 8 poles\n5. Michael Schumacher — 7 poles\n\nFull top 50, plus modern and classic era splits: https://f1gures.app/records/poles-at-circuit/\n\n#F1 #Formula1 #f1gures #F1Records #F1Stats #LewisHamilton #AyrtonSenna #MichaelSchumacher",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-10-story.png"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-11",
+      "publishAt": "2026-09-11T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "race-preview",
+      "key": "race-preview:2026-14",
+      "subject": "race:2026-14",
+      "headline": "Next up: the Spanish Grand Prix",
+      "link": "https://f1gures.app/races/2026/14/",
+      "tiktokTitle": "Next up: the Spanish Grand Prix",
+      "alt": "Preview card for the 2026 Spanish Grand Prix at Spanish Grand Prix.",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "Round 14 of the 2026 season goes racing in 2 days at Spanish Grand Prix.\n\nSession times, weather and the full form guide: https://f1gures.app/races/2026/14/\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #Madring #RaceWeek #GrandPrix",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "Round 14 of the 2026 season goes racing in 2 days at Spanish Grand Prix.\n\nSession times, weather and the full form guide: https://f1gures.app/races/2026/14/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #Madring #RaceWeek #GrandPrix",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "Round 14 of the 2026 season goes racing in 2 days at Spanish Grand Prix.\n\nSession times, weather and the full form guide: https://f1gures.app/races/2026/14/\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #Madring #RaceWeek #GrandPrix",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-story.png"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-15",
+      "publishAt": "2026-09-15T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "standings-snapshot",
+      "key": "standings-snapshot:2026-13",
+      "subject": "standings:2026",
+      "headline": "After 13 rounds",
+      "link": "https://f1gures.app/standings-drivers/",
+      "tiktokTitle": "After 13 rounds",
+      "alt": "Standings card: 2026 drivers' championship after 13 rounds. 1. Andrea Kimi Antonelli — 267 pts. 2. George Russell — 201 pts. 3. Lewis Hamilton — 191 pts. 4. Lando Norris — 171 pts. 5. Charles Leclerc — 155 pts.",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "The 2026 drivers' championship after the Italian Grand Prix — 13 of 23 rounds done.\n\n1. Andrea Kimi Antonelli — 267 pts\n2. George Russell — 201 pts\n3. Lewis Hamilton — 191 pts\n4. Lando Norris — 171 pts\n5. Charles Leclerc — 155 pts\n\nAntonelli leads by 66 points.\nLive standings: https://f1gures.app/standings-drivers/\n\n#F1 #Formula1 #f1gures #F12026 #F1Standings #Championship #Antonelli #Russell #Hamilton",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-15-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "The 2026 drivers' championship after the Italian Grand Prix — 13 of 23 rounds done.\n\n1. Andrea Kimi Antonelli — 267 pts\n2. George Russell — 201 pts\n3. Lewis Hamilton — 191 pts\n4. Lando Norris — 171 pts\n5. Charles Leclerc — 155 pts\n\nAntonelli leads by 66 points.\nLive standings: https://f1gures.app/standings-drivers/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #F12026 #F1Standings #Championship #Antonelli #Russell #Hamilton",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-15-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "The 2026 drivers' championship after the Italian Grand Prix — 13 of 23 rounds done.\n\n1. Andrea Kimi Antonelli — 267 pts\n2. George Russell — 201 pts\n3. Lewis Hamilton — 191 pts\n4. Lando Norris — 171 pts\n5. Charles Leclerc — 155 pts\n\nAntonelli leads by 66 points.\nLive standings: https://f1gures.app/standings-drivers/\n\n#F1 #Formula1 #f1gures #F12026 #F1Standings #Championship #Antonelli #Russell #Hamilton",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-15-story.png"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-16",
+      "publishAt": "2026-09-16T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "trivia",
+      "key": "trivia:95",
+      "subject": "trivia:tech",
+      "headline": "The 2006 Cosworth V8 reportedly revved past 20,000 rpm before rev limits were brought in to cap engines.",
+      "link": "https://f1gures.app/",
+      "tiktokTitle": "The 2006 Cosworth V8 reportedly revved past 20,000 rpm before rev limits were brought in…",
+      "alt": "Fact card: The 2006 Cosworth V8 reportedly revved past 20,000 rpm before rev limits were brought in to cap engines.",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "The 2006 Cosworth V8 reportedly revved past 20,000 rpm before rev limits were brought in to cap engines.\n\nMore F1 numbers than you can use: https://f1gures.app\n\n#F1 #Formula1 #f1gures #F1Facts #DidYouKnow #F1History #F1Stats",
+          "networks": [
+            "instagram",
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-16-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "The 2006 Cosworth V8 reportedly revved past 20,000 rpm before rev limits were brought in to cap engines.\n\nMore F1 numbers than you can use: https://f1gures.app\n\n#F1 #Formula1 #f1gures #F1Facts #DidYouKnow #F1History #F1Stats",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-16-story.png"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-17",
+      "publishAt": "2026-09-17T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "driver-birthday",
+      "key": "driver-birthday:moss",
+      "subject": "driver:moss",
+      "headline": "Stirling Moss",
+      "link": "https://f1gures.app/drivers/moss/",
+      "tiktokTitle": "Stirling Moss",
+      "alt": "Card marking Stirling Moss, born 17 September 1929. 16 wins · 17 poles · 24 podiums.",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "Stirling Moss was born on this day in 1929.\nBritish · 1951–1961 · 73 starts\n16 wins · 17 poles · 24 podiums\n\nFull career record: https://f1gures.app/drivers/moss/\n\n#F1 #Formula1 #f1gures #StirlingMoss #British #F1History #OnThisDay",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-17-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "Stirling Moss was born on this day in 1929.\nBritish · 1951–1961 · 73 starts\n16 wins · 17 poles · 24 podiums\n\nFull career record: https://f1gures.app/drivers/moss/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #StirlingMoss #British #F1History #OnThisDay",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-17-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "Stirling Moss was born on this day in 1929.\nBritish · 1951–1961 · 73 starts\n16 wins · 17 poles · 24 podiums\n\nFull career record: https://f1gures.app/drivers/moss/\n\n#F1 #Formula1 #f1gures #StirlingMoss #British #F1History #OnThisDay",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-17-story.png"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-18",
+      "publishAt": "2026-09-18T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "on-this-day",
+      "key": "on-this-day:2016-15",
+      "subject": "driver:rosberg",
+      "headline": "Nico Rosberg wins the 2016 Singapore Grand Prix",
+      "link": "https://f1gures.app/races/2016/15/",
+      "tiktokTitle": "Nico Rosberg wins the 2016 Singapore Grand Prix",
+      "alt": "On this day card: Nico Rosberg won the 2016 Singapore Grand Prix. P1 Nico Rosberg (Mercedes), P2 Daniel Ricciardo (Red Bull), P3 Lewis Hamilton (Mercedes).",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "On this day in 2016 — 10 years ago — Nico Rosberg won the Singapore Grand Prix at Marina Bay Street Circuit.\n\nP1 Nico Rosberg (Mercedes)\nP2 Daniel Ricciardo (Red Bull)\nP3 Lewis Hamilton (Mercedes)\n\n#F1 #Formula1 #f1gures #OnThisDay #NicoRosberg #Mercedes #SingaporeGrandPrix #Singapore #F1History",
+          "networks": [
+            "instagram",
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-18-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "On this day in 2016 — 10 years ago — Nico Rosberg won the Singapore Grand Prix at Marina Bay Street Circuit.\n\nP1 Nico Rosberg (Mercedes)\nP2 Daniel Ricciardo (Red Bull)\nP3 Lewis Hamilton (Mercedes)\n\n#F1 #Formula1 #f1gures #OnThisDay #NicoRosberg #Mercedes #SingaporeGrandPrix #Singapore #F1History",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-18-story.png"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-19",
+      "publishAt": "2026-09-19T10:00:00",
+      "timezone": "Europe/London",
+      "angle": "driver-spotlight",
+      "key": "driver-spotlight:russell",
+      "subject": "driver:russell",
+      "headline": "George Russell",
+      "link": "https://f1gures.app/drivers/russell/",
+      "tiktokTitle": "George Russell",
+      "alt": "Driver card for George Russell. 7 wins · 12 poles · 31 podiums.",
+      "draft": true,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "George Russell — British, 2019–2026.\n7 wins · 12 poles · 31 podiums\nBest championship finish: 2nd in 2026 with Mercedes.\n\nEvery race, every teammate duel: https://f1gures.app/drivers/russell/\n\n#F1 #Formula1 #f1gures #GeorgeRussell #British #F1Stats #F1History",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-19-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "George Russell — British, 2019–2026.\n7 wins · 12 poles · 31 podiums\nBest championship finish: 2nd in 2026 with Mercedes.\n\nEvery race, every teammate duel: https://f1gures.app/drivers/russell/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #GeorgeRussell #British #F1Stats #F1History",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-19-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "George Russell — British, 2019–2026.\n7 wins · 12 poles · 31 podiums\nBest championship finish: 2nd in 2026 with Mercedes.\n\nEvery race, every teammate duel: https://f1gures.app/drivers/russell/\n\n#F1 #Formula1 #f1gures #GeorgeRussell #British #F1Stats #F1History",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-19-story.png"
+        }
+      ]
+    }
+  ]
 }
