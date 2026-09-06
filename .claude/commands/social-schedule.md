@@ -58,9 +58,17 @@ failure here.** Call `getBrandSettings` once and confirm the queue's `blogId`
 is the brand whose label matches `brandLabel`. If it does not match, stop.
 
 Then spot-check one `imageUrl` per run actually resolves. Instagram, TikTok and
-Facebook all *pull* the image from that URL — a 404 fails at Metricool's end.
-If the URLs are dead the upload step failed: stop, and say the posts need
-rebuilding rather than rescheduling.
+Facebook all *pull* the image from that URL — a 404 fails at Metricool's end,
+after the post is already in the calendar.
+
+**If the URLs are dead, stop and schedule nothing.** Two causes, and the fix
+differs:
+
+- **`updatedAt` is recent** → the workflow's upload step failed. Report it; the
+  posts need rebuilding, not rescheduling.
+- **`updatedAt` is old, or the dates are in the past** → the queue is stale,
+  most likely left over from a local test run that never uploaded anything. Say
+  so and suggest clearing it rather than trying to schedule it.
 
 ## 3. Schedule each group
 
