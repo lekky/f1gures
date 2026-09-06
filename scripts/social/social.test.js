@@ -10,7 +10,7 @@ import {
 } from './angles.mjs';
 import { composeCaption, LIMITS } from './caption.mjs';
 import { readHistory, appendHistory, hasPostFor } from './history.mjs';
-import { readPending, writePending, queuePending, clearPending } from './pending.mjs';
+import { readPending, writePending, queuePending, clearPending, reslotPending } from './pending.mjs';
 import { fitFontSize, alpha, contrastText, metrics, clashesWithAccent, FORMATS, COLORS, RANK_INK } from './cardkit.mjs';
 import { BANDS, splitName, sessionValue } from './card.mjs';
 import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates, localWallClock } from './config.mjs';
@@ -577,6 +577,50 @@ describe('pending queue', () => {
     queuePending([post('2026-09-08'), post('2026-09-09')], f);
     writePending([post('2026-10-01')], f);
     expect(readPending(f).map((p) => p.date)).toEqual(['2026-10-01']);
+  });
+});
+
+describe('re-slotting a stale queue', () => {
+  // The gap this closes: a podium card is built with publishAt = "as soon as
+  // the scheduler will take it", but on the mcp route nothing is placed until
+  // /social-schedule runs. Hours later that time has gone, and Metricool either
+  // rejects the post or fires it the instant it is created.
+  const q = (date, publishAt) => ({ date, publishAt, angle: 'race-result' });
+
+  it('moves a publish time that has gone past', () => {
+    const { posts, moved } = reslotPending(
+      [q('2026-09-06', '2026-09-06T17:30:00')],
+      '2026-09-07T11:20:00',
+    );
+    expect(moved).toHaveLength(1);
+    expect(moved[0]).toMatchObject({ date: '2026-09-06', from: '2026-09-06T17:30:00', to: '2026-09-07T11:20:00' });
+    expect(posts[0].publishAt).toBe('2026-09-07T11:20:00');
+  });
+
+  it('leaves a future slot alone, untouched by identity', () => {
+    // Every batch-scheduled 19:00 evening slot lands here, so a no-op run must
+    // not rewrite the file.
+    const original = q('2026-09-20', '2026-09-20T19:00:00');
+    const { posts, moved } = reslotPending([original], '2026-09-07T11:20:00');
+    expect(moved).toHaveLength(0);
+    expect(posts[0]).toBe(original);
+  });
+
+  it('re-slots only the stale entries in a mixed queue', () => {
+    const { posts, moved } = reslotPending([
+      q('2026-09-06', '2026-09-06T23:30:00'),
+      q('2026-09-08', '2026-09-08T19:00:00'),
+      q('2026-09-20', '2026-09-20T19:00:00'),
+    ], '2026-09-07T00:20:00');
+    expect(moved.map((m) => m.date)).toEqual(['2026-09-06']);
+    expect(posts.map((p) => p.publishAt)).toEqual([
+      '2026-09-07T00:20:00', '2026-09-08T19:00:00', '2026-09-20T19:00:00',
+    ]);
+  });
+
+  it('treats a slot exactly on the lead boundary as still good', () => {
+    const { moved } = reslotPending([q('2026-09-07', '2026-09-07T11:20:00')], '2026-09-07T11:20:00');
+    expect(moved).toHaveLength(0);
   });
 });
 

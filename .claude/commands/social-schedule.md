@@ -18,9 +18,18 @@ other way.
 ## 1. Read the queue
 
 ```bash
-git pull                      # the workflow commits the queue; get the latest
+git pull                                          # the workflow commits the queue
+node scripts/publish-social-post.mjs --reslot     # fix any publish time that has gone past
 cat data/social/pending.json
 ```
+
+**Always run `--reslot` first.** Result posts (pole, sprint, podium) are queued
+with `publishAt` = "as soon as the scheduler will take it", measured when the
+workflow built them. By the time this command runs that moment has usually
+gone, and Metricool would either reject the post or fire it the instant it is
+created. `--reslot` pushes anything stale to now + `config.minLeadMinutes` and
+leaves every future slot exactly as it is - it prints what it moved, and
+rewrites nothing when there is nothing to move.
 
 The file carries the brand at the top level and the posts under `posts`:
 
@@ -66,9 +75,11 @@ differs:
 
 - **`updatedAt` is recent** → the workflow's upload step failed. Report it; the
   posts need rebuilding, not rescheduling.
-- **`updatedAt` is old, or the dates are in the past** → the queue is stale,
-  most likely left over from a local test run that never uploaded anything. Say
-  so and suggest clearing it rather than trying to schedule it.
+- **`updatedAt` is old, or the post *dates* are in the past** → the queue is
+  stale, most likely left over from a local test run that never uploaded
+  anything. Say so and suggest clearing it rather than trying to schedule it.
+  (A past `publishAt` on a *current* date is not this - that is the normal
+  result-post case, and `--reslot` in step 1 has already dealt with it.)
 
 ## 3. Schedule each group
 

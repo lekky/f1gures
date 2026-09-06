@@ -94,6 +94,14 @@ ten minutes after the flag is news, and waiting until 19:00 the next day would
 throw that away. Evergreen posts get the 19:00 London slot instead — something
 to scroll past after work.
 
+On the **mcp route** `asap` is measured when the workflow builds the post, not
+when it is placed, so it has usually gone by the time `/social-schedule` runs.
+The command's first step is therefore `node scripts/publish-social-post.mjs
+--reslot`, which pushes any stale `publishAt` to now + `minLeadMinutes` and
+leaves future slots alone. Without it Metricool would reject the post or fire it
+the instant it was created. Run the Routine at least once shortly after each
+live job (17:00 and 23:00 UTC) so results do not sit in the queue all day.
+
 The batch job **skips the days around a race** (`config.raceWindow`, ±1 day) and
 leaves them to the live job, so the two never both post on the same date.
 
