@@ -5,16 +5,15 @@ argument-hint: "[optional] 'dry' to preview without scheduling"
 
 # Schedule the queued social posts
 
-The daily/fortnightly workflow builds the posts, renders the cards, uploads them
-to `f1gures.app/social/` and parks them in **`data/social/pending.json`**. It
+The workflow builds the posts, renders the cards, uploads them to
+`f1gures.app/social/` and parks them in **`data/social/pending.json`**. It
 cannot schedule them itself: the Metricool MCP signs in as a person, and a cron
 job has no browser session. That last step is this command.
 
-**Prerequisite:** the Metricool MCP must be connected in this session. If no
-`post_schedule_post` tool is available, stop and tell the user to add
-`https://ai.metricool.com/mcp` as a connector and authorise it — do not try to
-schedule any other way, and never fall back to the REST API (this account's plan
-does not include it).
+**Prerequisite:** the Metricool connector must be enabled in this session. If
+`createScheduledPost` is not available, stop and say so — do not fall back to
+the REST API (this account's plan does not include it) and do not schedule any
+other way.
 
 ## 1. Read the queue
 
@@ -23,61 +22,95 @@ git pull                      # the workflow commits the queue; get the latest
 cat data/social/pending.json
 ```
 
-Each entry carries everything needed, already composed — **do not rewrite any of
-it**. The captions are generated from the archive and the numbers in them are
-verified; editing them by hand is how a wrong stat reaches a live account.
+The file carries the brand at the top level and the posts under `posts`:
 
 ```
-date          the calendar day the post is for
-publishAt     local datetime, no offset  e.g. "2026-09-08T10:00:00"
-timezone      the zone publishAt is expressed in  e.g. "Europe/London"
-draft         true = park in the calendar for review, false = let it publish
-groups[]      one entry per Metricool post:
-  networks[]    which networks this group goes to
-  format        which card shape (portrait / story)
-  imageUrl      the public URL of the card, already uploaded
-  caption       the exact text to post
-tiktokTitle   short title for TikTok (max 90 chars)
-alt           alt text
+blogId        Metricool brand id — pass verbatim, never look it up by name
+brandLabel    "F1gures", for the sanity check in step 2
+timezone      IANA zone, e.g. "Europe/London"
+posts[]
+  date          the calendar day  e.g. "2026-09-10"
+  publishAt     local datetime, NO offset  e.g. "2026-09-10T10:00:00"
+  draft         true = park in the calendar, false = let it publish
+  tiktokTitle   short title for TikTok (≤90 chars)
+  alt           alt text
+  groups[]      one Metricool post each:
+    networks[]    e.g. ["instagram"] / ["facebook"] / ["tiktok"]
+    format        portrait (IG+FB) or story (TikTok)
+    imageUrl      public URL of the card, already uploaded
+    caption       the exact text to post
 ```
 
-**Why groups, not one post per date:** Metricool takes one media URL per post.
+**Do not rewrite any of it.** The captions are generated from the archive and
+their numbers are verified; hand-editing is how a wrong stat reaches a live
+account.
+
+**Why three groups per date:** Metricool takes one media set per post.
 Instagram and Facebook take the 4:5 portrait card, TikTok takes the 9:16 story
-card, and Facebook's caption carries UTM-tagged links the other two do not (only
-Facebook makes URLs clickable). So one date is typically three Metricool posts.
+card, and Facebook's caption carries UTM-tagged links the other two do not
+(only Facebook makes URLs clickable).
 
-## 2. Check the cards are actually live
+## 2. Check the brand, then the cards
 
-Spot-check one `imageUrl` per run. Instagram, TikTok and Facebook all *pull*
-the image from that URL — if it 404s, the post fails at Metricool's end, not
-ours. If the URLs are dead, stop: the workflow's upload step failed and the
-posts need rebuilding, not rescheduling.
+This account has several brands — House On The Fairway, BBM, HelloWebDesign,
+F1gures, Frontdeskly. **Posting F1 content to the wrong one is the worst
+failure here.** Call `getBrandSettings` once and confirm the queue's `blogId`
+is the brand whose label matches `brandLabel`. If it does not match, stop.
+
+Then spot-check one `imageUrl` per run actually resolves. Instagram, TikTok and
+Facebook all *pull* the image from that URL — a 404 fails at Metricool's end.
+If the URLs are dead the upload step failed: stop, and say the posts need
+rebuilding rather than rescheduling.
 
 ## 3. Schedule each group
 
-For every entry, for every group, call **`post_schedule_post`** with the
-caption, the image URL, the networks, and `publishAt` + `timezone` exactly as
-given. Set draft/autopublish to match the entry's `draft` field.
+For every post, for every group, call **`createScheduledPost`**:
 
-Work through them in date order. If a call fails, **keep going with the rest** —
-a failure on one day should not block the other thirteen — and collect what
-failed.
+- `blogId` — from the queue, as a string
+- `date` — `publishAt` **with the UTC offset for that date appended**
+  (`Europe/London` is `+01:00` in BST, `+00:00` in GMT — check which applies)
+- `info` — a **JSON string** with:
 
-If `$ARGUMENTS` is `dry`, print what you would schedule and stop here. Schedule
+```json
+{
+  "autoPublish": true,
+  "draft": <the post's draft flag>,
+  "text": "<the group's caption>",
+  "media": ["<the group's imageUrl>"],
+  "mediaAltText": ["<the post's alt>"],
+  "providers": [{"network": "<each network in the group>"}],
+  "publicationDate": {"dateTime": "<publishAt>", "timezone": "<the queue's timezone>"},
+  "<network>Data": { ... }
+}
+```
+
+`networkData` per network:
+
+- `"instagramData": {"type": "POST"}` — a still image is a POST, not a REEL
+- `"facebookData": {"type": "POST"}`
+- `"tiktokData": {"title": "<tiktokTitle>", "photoCoverIndex": 0, "privacyOption": "PUBLIC_TO_EVERYONE"}`
+
+**`autoPublish` is not the draft flag.** `autoPublish: false` means "send a push
+notification to the mobile app so a human publishes it by hand" — not a draft.
+Keep `autoPublish: true` and use the separate `draft` field for review.
+
+Work in date order. If a call fails, **keep going with the rest** — one bad day
+should not block the other thirteen — and collect what failed.
+
+If `$ARGUMENTS` is `dry`, print the payloads you would send and stop. Schedule
 nothing, confirm nothing.
 
 ## 4. Confirm only what actually landed
 
-This is the step that keeps the pipeline honest. `data/social/history.json` is
-what stops the feed repeating itself, so it must record what was *really*
-scheduled — never what was attempted.
+`data/social/history.json` is what stops the feed repeating itself, so it must
+record what was *really* scheduled — never what was attempted.
 
 ```bash
-node scripts/publish-social-post.mjs --confirm --dates=2026-09-08,2026-09-10
+node scripts/publish-social-post.mjs --confirm --dates=2026-09-10,2026-09-11
 ```
 
-Pass **only the dates that succeeded**. Anything omitted stays in the queue and
-gets picked up next time. Then commit both files:
+Pass **only the dates that succeeded**. Anything omitted stays queued for next
+time. Then commit both files:
 
 ```bash
 git add data/social/history.json data/social/pending.json
@@ -85,23 +118,24 @@ git commit -m "chore(social): schedule N post(s) via Metricool MCP"
 git push
 ```
 
-`deploy.yml` ignores commits that only touch `data/social/`, so this will not
+`deploy.yml` ignores commits touching only `data/social/`, so this will not
 trigger a site rebuild.
 
 ## 5. Report
 
-Tell the user: how many were scheduled, for which dates, whether they went in as
-drafts or live, and anything that failed with the reason. If posts remain in the
-queue, say so and why.
+How many scheduled, for which dates, draft or live, and anything that failed
+with its reason. If posts remain queued, say so and why.
 
 ## Notes
 
 - **Plan limits.** Metricool caps how many posts can sit scheduled at once. If a
-  call is rejected for hitting the cap, stop scheduling, report it, and suggest
-  lowering `batchDays` in `scripts/social/config.mjs`.
+  call is rejected for hitting the cap, stop, report it, and suggest lowering
+  `batchDays` in `scripts/social/config.mjs`.
 - **Never invent a post.** If the queue is empty, say so — do not compose one.
-  Everything posted here is generated from `public/data/archive/`, which is what
-  makes it safe to run unattended.
-- **Race results** (pole, sprint, podium) are queued by the daily job on race
-  weekends and are time-sensitive. If the queue holds one from more than a day
-  or two ago, mention it rather than scheduling stale news.
+  Everything here is generated from `public/data/archive/`, which is what makes
+  it safe to run unattended.
+- **Instagram needs media.** Every queued post has a card, but if `media` is
+  ever empty the call will be rejected — that is a bug upstream, not something
+  to work around by dropping Instagram.
+- **Race results are time-sensitive.** If the queue holds a pole or podium card
+  from more than a day or two ago, mention it rather than scheduling stale news.

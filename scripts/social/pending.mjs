@@ -34,9 +34,19 @@ export function readPending(file = pendingPath()) {
  * Writing an empty list leaves an empty file rather than deleting it, so the
  * queue's existence is never ambiguous in a diff.
  */
-export function writePending(posts, file = pendingPath()) {
+export function writePending(posts, file = pendingPath(), cfg = SOCIAL_CONFIG) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify({ updatedAt: new Date().toISOString(), posts }, null, 2)}\n`);
+  // The brand is written into the file so whoever places these posts does not
+  // have to look it up - this account has several brands and picking the wrong
+  // one puts F1 content on someone else's feed.
+  const body = {
+    updatedAt: new Date().toISOString(),
+    blogId: cfg.blogId,
+    brandLabel: cfg.brandLabel,
+    timezone: cfg.timezone,
+    posts,
+  };
+  fs.writeFileSync(file, `${JSON.stringify(body, null, 2)}\n`);
   return posts;
 }
 

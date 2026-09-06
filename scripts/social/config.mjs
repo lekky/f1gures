@@ -19,6 +19,14 @@ export const SOCIAL_CONFIG = {
   // re-run - it skips dates already in the history log.
   batchDays: 14,
 
+  // ── Which Metricool brand ──────────────────────────────────────────────────
+  // This account has several brands. Posting f1gures content to the wrong one
+  // is the worst failure mode here, so the id is pinned rather than resolved by
+  // name at runtime. From getBrandSettings: F1gures, Instagram @f1gures.app,
+  // TikTok @f1gures.app, Facebook page 1163379676862979.
+  blogId: '6692452',
+  brandLabel: 'F1gures',
+
   // ── Where posts go ─────────────────────────────────────────────────────────
   // Drop a network from this list to stop posting there.
   networks: ['instagram', 'facebook', 'tiktok'],
