@@ -6,6 +6,8 @@ Reference docs for the project. Code-level conventions live in [CLAUDE.md](../CL
 - [data-flow.md](data-flow.md) - the build-time pipeline (CSV archive, season bundles, weather, app feed) and the few client-side fetches
 - [app-data-feed.md](app-data-feed.md) - the versioned JSON contract the native mobile apps consume - **read before touching `scripts/build-app-feed.mjs`**
 - [fastf1-pipeline.md](fastf1-pipeline.md) - the FastF1 weekend pipeline + the race pages' Weekend Analysis / Visualisation Explorer - **read before touching `scripts/fetch-fastf1.py` or the raceweekend island**
+- [social-posts.md](social-posts.md) - the automated daily Instagram/TikTok/Facebook post pipeline - **read before touching `scripts/social/` or `scripts/*-social-post.mjs`**
+- [social-card-design.md](social-card-design.md) - the design philosophy behind the social cards, and how it binds to `design-system/TOKENS.md`
 - [tech-debt.md](tech-debt.md) - the verified tech-debt / refactoring register, ranked, with reasons
 - [seo/strategy.md](seo/strategy.md) - off-page SEO playbook (Search Console, link building)
 - `superpowers/` - historical plans/specs from past feature work (point-in-time documents, not kept current)

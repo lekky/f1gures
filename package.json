@@ -17,6 +17,8 @@
     "fetch:weather": "node scripts/fetch-weather.mjs",
     "build:htaccess": "node scripts/build-htaccess.mjs",
     "build:appfeed": "node scripts/build-app-feed.mjs",
+    "social:build": "node scripts/build-social-post.mjs",
+    "social:publish": "node scripts/publish-social-post.mjs",
     "prebuild": "npm run build:archive && npm run build:og && npm run sync:current && npm run fetch:weather && npm run build:htaccess && npm run build:appfeed",
     "predev": "npm run build:archive && npm run sync:current",
     "build": "astro build",
@@ -40,6 +42,9 @@
     "recharts": "^2.13.3"
   },
   "devDependencies": {
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "@resvg/resvg-js": "^2.6.2",
     "flag-icons": "^7.5.0",
     "satori": "^0.26.0",

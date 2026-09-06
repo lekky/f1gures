@@ -48,3 +48,6 @@ public/.htaccess
 
 # Python bytecode (scripts/fetch-fastf1.py)
 __pycache__/
+
+# Social post build output (rendered cards + manifest)
+.social-out/

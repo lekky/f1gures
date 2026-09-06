@@ -1,0 +1,179 @@
+name: Social Posts
+
+# Two jobs, one file, because they share every step but the angle set.
+#
+#   batch  — fortnightly. Fills the Metricool calendar with the next
+#            config.batchDays of evergreen posts (records, on-this-day,
+#            birthdays, spotlights, previews). Skips the days around a race.
+#   live   — daily. ONLY result posts (pole, sprint, podium), which cannot be
+#            scheduled ahead because the result does not exist yet. Exits in
+#            seconds on a day with no result.
+#
+# Neither job posts anything by itself. This account's Metricool plan does not
+# include REST API access, so scheduling goes through the Metricool MCP, which
+# signs in as a person - a cron job has no browser session. CI therefore builds
+# the posts, uploads the cards, and commits them to data/social/pending.json;
+# a Claude session with the MCP connected runs /social-schedule to place them.
+# Set publishVia: 'api' in config once the plan includes the API and this same
+# workflow will schedule them itself, unattended.
+#
+# Settings (post time, networks, draft mode, horizon, publish route) live in
+# scripts/social/config.mjs - not here. See docs/social-posts.md.
+
+on:
+  schedule:
+    # Fortnightly-ish: 1st and 15th, 09:00 UTC. Fills the calendar ahead.
+    - cron: '0 9 1,15 * *'
+    # Daily 10:00 UTC: race results only. Cheap no-op most days.
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Which job to run'
+        type: choice
+        options: [batch, live]
+        default: batch
+      date:
+        description: 'Start date (YYYY-MM-DD, default today)'
+        required: false
+      days:
+        description: 'Batch only: days to fill (default: config.batchDays)'
+        required: false
+      dry_run:
+        description: 'Build and print only — upload nothing, schedule nothing'
+        type: boolean
+        default: true
+
+concurrency:
+  group: social-post
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # commits the history log
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Which job is this? The two crons differ only in the angles they allow.
+      - name: Resolve mode
+        id: mode
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODE="${{ inputs.mode }}"
+          elif [ "${{ github.event.schedule }}" = "0 9 1,15 * *" ]; then
+            MODE="batch"
+          else
+            MODE="live"
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Running in $MODE mode."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The archive is gitignored, so regenerate it. Importer only - no Astro
+      # build, no OG images.
+      - name: Build archive
+        run: npm run build:archive
+
+      - name: Build posts
+        id: build
+        run: |
+          set -euo pipefail
+          ARGS=()
+          [ -n "${{ inputs.date }}" ] && ARGS+=("--date=${{ inputs.date }}")
+          if [ "${{ steps.mode.outputs.mode }}" = "batch" ]; then
+            ARGS+=("--days=${{ inputs.days || '14' }}")
+          else
+            # Result angles only; the batch job already owns every other day.
+            ARGS+=("--angles=race-result,quali-result,sprint-result")
+          fi
+          node scripts/build-social-post.mjs "${ARGS[@]}"
+          COUNT=$(node -p "require('./.social-out/batch.json').posts.length")
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Built $COUNT post(s)."
+
+      # A live run on a day with no session result is the normal case, not a
+      # failure - stop here rather than uploading an empty directory.
+      - name: Nothing to post
+        if: steps.build.outputs.count == '0'
+        run: echo "No posts for this run. Exiting cleanly."
+
+      - name: Upload cards to the site
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST || secrets.SFTP_HOST }}
+          SSH_USER: helloweb
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_DIR: f1gures.app/social
+        run: |
+          set -euo pipefail
+          if [ -z "${SSH_KEY:-}" ]; then
+            echo "::error::SSH_PRIVATE_KEY is not set - the networks cannot fetch a card without a public URL."
+            exit 1
+          fi
+          PORT="${SSH_PORT:-22}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          # Plain mirror, no --delete: this directory is additive, and is
+          # excluded from deploy.yml's mirror precisely so it survives.
+          lftp -c "
+            set cmd:fail-exit true;
+            set sftp:auto-confirm yes;
+            set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new';
+            set net:max-retries 3;
+            set net:timeout 30;
+            open -u \"$SSH_USER,\" sftp://$SSH_HOST;
+            mkdir -p $REMOTE_DIR;
+            mirror --reverse --only-newer --verbose --include-glob '*.png' ./.social-out/ $REMOTE_DIR/;
+          "
+
+      # On the mcp route this queues the posts; on the api route it schedules
+      # them. Which one runs is config.publishVia, not a workflow decision.
+      - name: Queue or schedule
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
+        env:
+          METRICOOL_USER_TOKEN: ${{ secrets.METRICOOL_USER_TOKEN }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          SOCIAL_MEDIA_BASE_URL: https://f1gures.app/social
+        run: node scripts/publish-social-post.mjs
+
+      - name: Dry run
+        if: steps.build.outputs.count != '0' && inputs.dry_run == true
+        run: node scripts/publish-social-post.mjs --dry-run
+
+      # The pending queue and the history log are state, not artefacts: the
+      # queue is the posts waiting to be scheduled, the log is what stops the
+      # feed repeating itself. Both have to go back to the repo.
+      - name: Commit the queue and history
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/social/; then
+            echo "nothing changed under data/social/"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/social/
+          git commit -m "chore(social): queue ${{ steps.build.outputs.count }} post(s)"
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push
+
+      - name: Next step
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
+        run: |
+          echo "::notice::${{ steps.build.outputs.count }} post(s) queued in data/social/pending.json. Open a Claude session with the Metricool MCP connected and run /social-schedule to place them."

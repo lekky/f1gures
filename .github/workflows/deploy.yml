@@ -59,10 +59,25 @@ jobs:
           if [ -n "$LAST" ] && [ "$LAST" = "$GITHUB_SHA" ]; then
             echo "main ($GITHUB_SHA) unchanged since last successful deploy - skipping build."
             echo "deploy=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "main changed since last deploy (last=$LAST, now=$GITHUB_SHA) - deploying."
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          # main HAS moved - but social-post.yml commits data/social/history.json
+          # here on every posting run, and that file ships nothing: it is the
+          # social pipeline's own anti-repetition log, not site content. Without
+          # this check each of those commits would trigger a full ~2,300-page
+          # rebuild and a full re-upload, undoing the batching this workflow
+          # exists for. Compare via the API so we don't need full git history.
+          if [ -n "$LAST" ]; then
+            CHANGED=$(gh api "repos/$GITHUB_REPOSITORY/compare/$LAST...$GITHUB_SHA"                         --jq '.files[].filename' 2>/dev/null || echo "")
+            if [ -n "$CHANGED" ] && ! echo "$CHANGED" | grep -qv '^data/social/'; then
+              echo "Only data/social/ changed since $LAST - nothing to deploy."
+              echo "$CHANGED" | sed 's/^/  /'
+              echo "deploy=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "main changed since last deploy (last=$LAST, now=$GITHUB_SHA) - deploying."
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         if: steps.decide.outputs.deploy == 'true'
@@ -100,7 +115,10 @@ jobs:
       #
       # --delete keeps the remote an exact mirror of dist/ (as the old deploy
       # did), but .well-known and cgi-bin are excluded so we never remove the
-      # hosting-managed dirs (cPanel AutoSSL validation, CGI).
+      # hosting-managed dirs (cPanel AutoSSL validation, CGI). social/ is
+      # excluded too: social-post.yml uploads the daily cards there and they
+      # are not part of dist/, so without this every deploy would delete the
+      # image the day's Instagram/TikTok/Facebook post points at.
       #
       # REMOTE_DIR is the site's web root RELATIVE TO THE SSH HOME dir. SSH lands
       # in /home/helloweb; f1gures.app is an addon domain whose docroot is the
@@ -165,5 +183,5 @@ jobs:
             set net:timeout 30;
             set mirror:parallel-transfer-count 10;
             open -u \"$SSH_USER,\" sftp://$SSH_HOST;
-            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin --verbose ./dist/ $REMOTE_DIR/;
+            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin -X social/ --verbose ./dist/ $REMOTE_DIR/;
           "
