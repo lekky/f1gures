@@ -127,16 +127,26 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          # Plain mirror, no --delete: this directory is additive, and is
-          # excluded from deploy.yml's mirror precisely so it survives.
-          lftp -c "
-            set cmd:fail-exit true;
+          LFTP_OPEN="
             set sftp:auto-confirm yes;
             set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new';
             set net:max-retries 3;
             set net:timeout 30;
             open -u \"$SSH_USER,\" sftp://$SSH_HOST;
-            mkdir -p $REMOTE_DIR;
+          "
+
+          # Create the remote directory on first use. lftp's `mkdir -p` is NOT
+          # shell's: it still errors when the target already exists, and with
+          # cmd:fail-exit that aborts the whole script. So this runs on its own
+          # and is allowed to fail - a genuine access problem still surfaces on
+          # the mirror below, which is strict.
+          lftp -c "$LFTP_OPEN mkdir -p $REMOTE_DIR;" || echo "remote dir already present (or mkdir not needed)"
+
+          # Plain mirror, no --delete: this directory is additive, and is
+          # excluded from deploy.yml's mirror precisely so it survives.
+          lftp -c "
+            set cmd:fail-exit true;
+            $LFTP_OPEN
             mirror --reverse --only-newer --verbose --include-glob '*.png' ./.social-out/ $REMOTE_DIR/;
           "
 
