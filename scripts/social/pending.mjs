@@ -62,6 +62,32 @@ export function queuePending(posts, file = pendingPath()) {
   return writePending(merged, file);
 }
 
+/**
+ * Push stale publish times forward, pure.
+ *
+ * A result post is built with publishAt = "as soon as the scheduler will take
+ * it", but on the mcp route nothing is placed until a person (or the Routine)
+ * runs /social-schedule. By then that time has usually gone, and Metricool
+ * either rejects the post or fires it the instant it is created.
+ *
+ * Anything at or behind `earliest` moves to it; anything still comfortably
+ * ahead - every batch-scheduled evening slot on a future date - is returned
+ * untouched, same object identity, so a no-op run rewrites nothing.
+ *
+ * @param {Array} posts    the queue
+ * @param {string} earliest local wall clock, "YYYY-MM-DDTHH:MM:SS"
+ * @returns {{posts: Array, moved: Array<{date, from, to}>}}
+ */
+export function reslotPending(posts, earliest) {
+  const moved = [];
+  const next = posts.map((post) => {
+    if (String(post.publishAt) >= earliest) return post;
+    moved.push({ date: post.date, from: post.publishAt, to: earliest });
+    return { ...post, publishAt: earliest };
+  });
+  return { posts: next, moved };
+}
+
 /** Drop the given dates from the queue - called once they are scheduled. */
 export function clearPending(dates, file = pendingPath()) {
   const drop = new Set(dates);

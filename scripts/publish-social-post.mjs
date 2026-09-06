@@ -23,8 +23,8 @@ import path from 'node:path';
 import { ROOT } from './social/sources.mjs';
 import { readConfig, schedulePost, MetricoolError } from './social/publish/metricool.mjs';
 import { appendHistory, readHistory } from './social/history.mjs';
-import { readPending, queuePending, clearPending } from './social/pending.mjs';
-import { SOCIAL_CONFIG, withUtm } from './social/config.mjs';
+import { readPending, writePending, queuePending, clearPending, reslotPending } from './social/pending.mjs';
+import { SOCIAL_CONFIG, withUtm, localWallClock } from './social/config.mjs';
 
 const cfg = SOCIAL_CONFIG;
 
@@ -43,6 +43,7 @@ function parseArgs(argv) {
       case '--draft': args.draft = true; break;
       case '--live': args.live = true; break;
       case '--force': args.force = true; break;
+      case '--reslot': args.reslot = true; break;
       case '--help': args.help = true; break;
       default:
         throw new Error(`Unknown flag "${flag}". Try --help.`);
@@ -62,6 +63,10 @@ Get built social posts to Metricool. Settings: scripts/social/config.mjs
   --draft / --live  override config.draft (currently ${cfg.draft ? 'draft' : 'live'})
   --dry-run         print what would happen, change nothing
   --force           include dates already in the history log
+
+  --reslot          mcp route: push any queued publishAt that has gone past
+                    (or is inside config.minLeadMinutes) forward to the soonest
+                    time the scheduler will accept. Run it before placing.
 
   --confirm --dates=YYYY-MM-DD,...
                     mcp route: mark those queued posts as scheduled - moves them
@@ -107,6 +112,24 @@ function planFor(post, networks, baseUrl) {
   return [...groups.values()];
 }
 
+/** Read the queue, re-slot anything stale (see reslotPending), write it back. */
+function reslot(cfg = SOCIAL_CONFIG, now = new Date()) {
+  const pending = readPending();
+  if (!pending.length) {
+    console.log('[social] nothing in the pending queue.');
+    return [];
+  }
+  const earliest = localWallClock(new Date(now.getTime() + (cfg.minLeadMinutes ?? 20) * 60000), cfg.timezone);
+  const { posts: next, moved } = reslotPending(pending, earliest);
+  if (!moved.length) {
+    console.log(`[social] ${pending.length} queued post(s), all still ahead of ${earliest} - nothing to re-slot.`);
+    return [];
+  }
+  writePending(next);
+  for (const m of moved) console.log(`[social] re-slotted ${m.date}: ${m.from} -> ${m.to} (${cfg.timezone})`);
+  return moved;
+}
+
 /** Mark queued posts as scheduled: pending → history. */
 function confirm(args) {
   const pending = readPending();
@@ -140,6 +163,10 @@ async function main() {
   const args = parseArgs(process.argv);
   if (args.help) {
     console.log(USAGE);
+    return;
+  }
+  if (args.reslot) {
+    reslot();
     return;
   }
   if (args.confirm) {
