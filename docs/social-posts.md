@@ -35,7 +35,7 @@ archive the site renders and scheduled through Metricool.
 ## Angles
 
 Thirteen, in descending topicality. Race-weekend angles outrank everything, so
-the single daily slot covers Saturday's pole and Sunday's podium without extra
+the live job covers Saturday's pole and Sunday's podium without extra
 schedules.
 
 | Angle | Fires when | Layout |
@@ -76,10 +76,23 @@ So the work splits:
 
 | | **batch** | **live** |
 |---|---|---|
-| Runs | 1st and 15th, 09:00 UTC | daily, 10:00 UTC |
+| Runs | 1st and 15th, 09:00 UTC | twice daily, 17:00 and 23:00 UTC |
 | Posts | everything except results | pole, sprint, podium only |
+| Publishes at | `config.postTime` (19:00 London) | `config.livePostTime` (`asap`) |
 | Horizon | next `config.batchDays` (14) | that day |
 | On a quiet day | n/a | exits in seconds, posts nothing |
+
+The live job runs twice because "after the session" is not one time of day.
+**17:00 UTC** covers Europe, the Middle East and Asia-Pacific; **23:00 UTC**
+catches the Americas the same night (Austin, Mexico, Miami, Interlagos and Las
+Vegas all finish between 21:00 and 06:00 UTC). A date already queued or already
+in the history log is skipped downstream, so the overlap costs a build, never a
+duplicate post.
+
+Result posts publish `asap` rather than at the evening slot: a podium card built
+ten minutes after the flag is news, and waiting until 19:00 the next day would
+throw that away. Evergreen posts get the 19:00 London slot instead — something
+to scroll past after work.
 
 The batch job **skips the days around a race** (`config.raceWindow`, ±1 day) and
 leaves them to the live job, so the two never both post on the same date.

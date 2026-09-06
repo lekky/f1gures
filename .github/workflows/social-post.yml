@@ -5,9 +5,11 @@ name: Social Posts
 #   batch  — fortnightly. Fills the Metricool calendar with the next
 #            config.batchDays of evergreen posts (records, on-this-day,
 #            birthdays, spotlights, previews). Skips the days around a race.
-#   live   — daily. ONLY result posts (pole, sprint, podium), which cannot be
-#            scheduled ahead because the result does not exist yet. Exits in
-#            seconds on a day with no result.
+#   live   — twice daily, after the sessions that can have finished. ONLY
+#            result posts (pole, sprint, podium), which cannot be scheduled
+#            ahead because the result does not exist yet, and which publish as
+#            soon as the scheduler allows rather than at the evening slot.
+#            Exits in seconds on a day with no result.
 #
 # Neither job posts anything by itself. This account's Metricool plan does not
 # include REST API access, so scheduling goes through the Metricool MCP, which
@@ -24,8 +26,16 @@ on:
   schedule:
     # Fortnightly-ish: 1st and 15th, 09:00 UTC. Fills the calendar ahead.
     - cron: '0 9 1,15 * *'
-    # Daily 10:00 UTC: race results only. Cheap no-op most days.
-    - cron: '0 10 * * *'
+    # Race results only - cheap no-op on the ~90% of days with no session.
+    # Twice daily, because "after the session" is not one time of day:
+    #   17:00 UTC catches Europe, the Middle East and Asia-Pacific (a European
+    #          race ends ~15:00 UTC, Suzuka/Melbourne by 07:00 UTC).
+    #   23:00 UTC catches the Americas the same night (Austin, Mexico, Miami,
+    #          Interlagos and Las Vegas all end between 21:00 and 06:00 UTC).
+    # A day already queued or posted is skipped downstream, so the overlap
+    # costs a build, never a duplicate post.
+    - cron: '0 17 * * *'
+    - cron: '0 23 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -37,7 +47,7 @@ on:
         description: 'Start date (YYYY-MM-DD, default today)'
         required: false
       days:
-        description: 'Batch only: days to fill (default: config.batchDays)'
+        description: 'Batch only: days to fill (default 14)'
         required: false
       dry_run:
         description: 'Build and print only — upload nothing, schedule nothing'
@@ -95,7 +105,9 @@ jobs:
             ARGS+=("--days=${{ inputs.days || '14' }}")
           else
             # Result angles only; the batch job already owns every other day.
-            ARGS+=("--angles=race-result,quali-result,sprint-result")
+            # --asap: a podium card is news, so it goes out now rather than
+            # waiting for config.postTime.
+            ARGS+=("--angles=race-result,quali-result,sprint-result" "--asap")
           fi
           node scripts/build-social-post.mjs "${ARGS[@]}"
           COUNT=$(node -p "require('./.social-out/batch.json').posts.length")
