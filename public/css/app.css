@@ -5624,6 +5624,21 @@ html.light .rw-pill-purple { background: #F3EEFF; }
 
 /* ── tables ── */
 .rw-table-card { padding: 14px 18px 16px; }
+/* Provisional-classification notice: shown when the finishing order came from
+   live timing rather than a published result. Tokens only - the light-mode
+   block below remaps --warn, so this reads correctly in both themes. */
+.rw-provisional {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 8px;
+  margin: 10px 0 0; padding: 8px 10px;
+  border-left: 3px solid var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  color: var(--fg-2); font-size: 12px; line-height: 1.45;
+}
+.rw-provisional-tag {
+  font-family: var(--f-mono);
+  text-transform: uppercase; letter-spacing: .06em; font-size: 10px;
+  color: var(--warn); font-weight: 700; white-space: nowrap;
+}
 .rw-tbl-scroll { overflow-x: auto; margin-top: 10px; }
 .rw-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .rw-tbl th {
