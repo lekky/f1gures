@@ -31,6 +31,20 @@ export const SOCIAL_CONFIG = {
     tiktok: 'story',
   },
 
+  // ── How posts reach Metricool ──────────────────────────────────────────────
+  // 'mcp' - CI builds the posts, uploads the cards and writes a hand-off file.
+  //         You schedule them from a Claude session with the Metricool MCP
+  //         connected (run /social-schedule). Works on ANY Metricool plan,
+  //         because the MCP signs in as you rather than using an API token.
+  // 'api' - CI schedules them itself over the REST API, fully unattended.
+  //         Needs Metricool Advanced or Custom (the API is not on lower plans)
+  //         plus the three METRICOOL_* repository secrets.
+  publishVia: 'mcp',
+
+  // Where the MCP hand-off file is written. Committed, so the posts waiting to
+  // be scheduled are visible in the repo and survive a runner being recycled.
+  pendingPath: 'data/social/pending.json',
+
   // ── Draft vs live ──────────────────────────────────────────────────────────
   // true  = posts land in the Metricool calendar for you to review and approve.
   // false = Metricool publishes them automatically at postTime.

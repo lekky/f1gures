@@ -9,7 +9,15 @@ name: Social Posts
 #            scheduled ahead because the result does not exist yet. Exits in
 #            seconds on a day with no result.
 #
-# Settings (post time, networks, draft mode, horizon) live in
+# Neither job posts anything by itself. This account's Metricool plan does not
+# include REST API access, so scheduling goes through the Metricool MCP, which
+# signs in as a person - a cron job has no browser session. CI therefore builds
+# the posts, uploads the cards, and commits them to data/social/pending.json;
+# a Claude session with the MCP connected runs /social-schedule to place them.
+# Set publishVia: 'api' in config once the plan includes the API and this same
+# workflow will schedule them itself, unattended.
+#
+# Settings (post time, networks, draft mode, horizon, publish route) live in
 # scripts/social/config.mjs - not here. See docs/social-posts.md.
 
 on:
@@ -132,7 +140,9 @@ jobs:
             mirror --reverse --only-newer --verbose --include-glob '*.png' ./.social-out/ $REMOTE_DIR/;
           "
 
-      - name: Schedule via Metricool
+      # On the mcp route this queues the posts; on the api route it schedules
+      # them. Which one runs is config.publishVia, not a workflow decision.
+      - name: Queue or schedule
         if: steps.build.outputs.count != '0' && inputs.dry_run != true
         env:
           METRICOOL_USER_TOKEN: ${{ secrets.METRICOOL_USER_TOKEN }}
@@ -145,19 +155,25 @@ jobs:
         if: steps.build.outputs.count != '0' && inputs.dry_run == true
         run: node scripts/publish-social-post.mjs --dry-run
 
-      # The history log is state, not an artefact: it is what stops the feed
-      # repeating itself, so it has to go back to the repo.
-      - name: Commit the history log
+      # The pending queue and the history log are state, not artefacts: the
+      # queue is the posts waiting to be scheduled, the log is what stops the
+      # feed repeating itself. Both have to go back to the repo.
+      - name: Commit the queue and history
         if: steps.build.outputs.count != '0' && inputs.dry_run != true
         run: |
           set -euo pipefail
-          if git diff --quiet -- data/social/history.json; then
-            echo "history unchanged"
+          if git diff --quiet -- data/social/; then
+            echo "nothing changed under data/social/"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/social/history.json
-          git commit -m "chore(social): log ${{ steps.build.outputs.count }} post(s) [skip-deploy]"
+          git add data/social/
+          git commit -m "chore(social): queue ${{ steps.build.outputs.count }} post(s)"
           git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
           git push
+
+      - name: Next step
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
+        run: |
+          echo "::notice::${{ steps.build.outputs.count }} post(s) queued in data/social/pending.json. Open a Claude session with the Metricool MCP connected and run /social-schedule to place them."

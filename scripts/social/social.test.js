@@ -10,6 +10,7 @@ import {
 } from './angles.mjs';
 import { composeCaption, LIMITS } from './caption.mjs';
 import { readHistory, appendHistory, hasPostFor } from './history.mjs';
+import { readPending, writePending, queuePending, clearPending } from './pending.mjs';
 import { fitFontSize, alpha, contrastText, metrics, clashesWithAccent, FORMATS, COLORS, RANK_INK } from './cardkit.mjs';
 import { BANDS, splitName, sessionValue } from './card.mjs';
 import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates } from './config.mjs';
@@ -472,5 +473,73 @@ describe('batch selection', () => {
     const history = [{ date: '2026-09-05', angle: 'trivia', key: 'only', subject: 's' }];
     const picked = selectFromCandidates(byAngle, { date: '2026-09-06', history });
     expect(picked?.key).toBe('only');
+  });
+});
+
+// ── the MCP hand-off queue ──
+
+describe('pending queue', () => {
+  const tmpFiles = [];
+  const tmp = () => {
+    const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'f1g-pending-')), 'pending.json');
+    tmpFiles.push(f);
+    return f;
+  };
+  afterEach(() => {
+    for (const f of tmpFiles.splice(0)) fs.rmSync(path.dirname(f), { recursive: true, force: true });
+  });
+
+  const post = (date, extra = {}) => ({ date, angle: 'trivia', key: `k-${date}`, subject: 's', groups: [], ...extra });
+
+  it('reads empty for a missing file', () => {
+    expect(readPending(path.join(os.tmpdir(), 'nope-pending.json'))).toEqual([]);
+  });
+
+  it('queues and reads back in date order', () => {
+    const f = tmp();
+    queuePending([post('2026-09-10'), post('2026-09-08')], f);
+    expect(readPending(f).map((p) => p.date)).toEqual(['2026-09-08', '2026-09-10']);
+  });
+
+  it('replaces rather than duplicates when a build re-runs', () => {
+    const f = tmp();
+    queuePending([post('2026-09-08', { headline: 'first' })], f);
+    queuePending([post('2026-09-08', { headline: 'second' })], f);
+    const rows = readPending(f);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].headline).toBe('second');
+  });
+
+  it('clears only the dates that were scheduled', () => {
+    const f = tmp();
+    queuePending([post('2026-09-08'), post('2026-09-09'), post('2026-09-10')], f);
+    // A partial success must leave the rest queued for next time.
+    const left = clearPending(['2026-09-09'], f);
+    expect(left.map((p) => p.date)).toEqual(['2026-09-08', '2026-09-10']);
+    expect(readPending(f).map((p) => p.date)).toEqual(['2026-09-08', '2026-09-10']);
+  });
+
+  it('keeps an empty file rather than deleting it, so the queue is never ambiguous', () => {
+    const f = tmp();
+    queuePending([post('2026-09-08')], f);
+    clearPending(['2026-09-08'], f);
+    expect(fs.existsSync(f)).toBe(true);
+    expect(readPending(f)).toEqual([]);
+  });
+
+  it('writePending replaces the whole queue', () => {
+    const f = tmp();
+    queuePending([post('2026-09-08'), post('2026-09-09')], f);
+    writePending([post('2026-10-01')], f);
+    expect(readPending(f).map((p) => p.date)).toEqual(['2026-10-01']);
+  });
+});
+
+describe('publish route config', () => {
+  it('defaults to the MCP hand-off, which works on any Metricool plan', () => {
+    // The REST API needs Advanced or Custom; the MCP signs in as a person and
+    // works on every plan, so it is the safe default.
+    expect(['mcp', 'api']).toContain(SOCIAL_CONFIG.publishVia);
+    expect(SOCIAL_CONFIG.pendingPath).toMatch(/^data\/social\//);
   });
 });

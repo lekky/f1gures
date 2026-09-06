@@ -26,7 +26,9 @@ archive the site renders and scheduled through Metricool.
 | `scripts/social/cardkit.mjs` | Satori primitives: brand type, palette, rows, texture |
 | `scripts/social/card.mjs` | The four layouts and the angle → layout mapping |
 | `scripts/social/history.mjs` | `data/social/history.json`, the anti-repetition log |
-| `scripts/social/publish/metricool.mjs` | Metricool scheduler client |
+| `scripts/social/pending.mjs` | `data/social/pending.json`, the MCP hand-off queue |
+| `scripts/social/publish/metricool.mjs` | Metricool REST client (the `api` route) |
+| `.claude/commands/social-schedule.md` | `/social-schedule` — places the queue via the MCP |
 | `scripts/build-social-post.mjs` | Pick + render + write `.social-out/` |
 | `scripts/publish-social-post.mjs` | Upload manifest → Metricool → append history |
 
@@ -137,62 +139,71 @@ degrade the typography. Fontsource ships `woff` and `woff2`; Satori parses
 falls back to a system font and warns loudly rather than failing the post — if
 you ever see `brand faces missing from node_modules`, run `npm install`.
 
-## Why Metricool rather than the platform APIs
+## Publishing: two routes, and why the default is the slower one
 
 Instagram, TikTok and Facebook are the three hardest networks to post to
-unattended:
+unattended — Instagram needs a Business account and a container-then-publish
+call, TikTok's direct-post API needs app audit and rotates its token every 24
+hours, and Meta's long-lived tokens expire every 60 days. Metricool already
+holds those connections, so the pipeline hands it the work.
 
-- **Instagram** needs a Business/Creator account linked to a Facebook Page, and
-  a two-step create-container-then-publish call.
-- **TikTok**'s direct-post API requires the app to pass audit — until then posts
-  can only land as private — and its access token expires every 24 hours.
-- **Meta** long-lived tokens expire every 60 days.
+Metricool exposes that two ways, and **they are different products with
+different plan requirements**:
 
-Metricool already holds those connections, so the pipeline sends it one request
-and lets it own the OAuth, the token rotation and the per-network quirks. The
-adapter is a single file (`publish/metricool.mjs`); swapping in direct platform
-clients later means replacing only that.
+| | **MCP** (default) | **REST API** |
+|---|---|---|
+| Plans | any, including Free | Advanced / Custom only |
+| Auth | OAuth — signs in as *you* | `X-Mc-Auth` token |
+| Can a cron use it? | **No** — no browser session | Yes |
+| Set by | `publishVia: 'mcp'` | `publishVia: 'api'` |
 
-### Setup
+On this account's plan the API is not available, so the default route is
+**MCP**, and that has one real consequence: **CI cannot post by itself.** It
+does everything up to the last step — picks the angles, renders the cards,
+uploads them, composes the captions — and parks the finished posts in
+`data/social/pending.json`. Placing them takes a Claude session with the
+Metricool MCP connected.
 
-1. In Metricool: **Account Settings → API**, copy the access token. API access
-   is a paid-plan feature — if the endpoint 401s, that is the first thing to
-   check.
-2. Find your `userId` and `blogId` (the `blogId` identifies the brand; one
-   token covers every brand on the account).
-3. Add three repository secrets:
+This is why the fortnightly batch matters: it is about two minutes of your time
+every two weeks, not a daily chore.
 
-   | Secret | Value |
-   |---|---|
-   | `METRICOOL_USER_TOKEN` | the access token |
-   | `METRICOOL_USER_ID` | your user id |
-   | `METRICOOL_BLOG_ID` | the f1gures brand id |
+### Placing the queued posts
 
-4. Connect Instagram, TikTok and Facebook inside Metricool (once).
-5. Run the workflow by hand with **draft = true** first. Posts land in the
-   Metricool calendar for review instead of going out. When the first few look
-   right, let the schedule run.
+1. Connect the MCP once: add `https://ai.metricool.com/mcp` as a connector in
+   Claude and authorise it in the browser.
+2. Whenever the queue has posts in it, run **`/social-schedule`**
+   (`.claude/commands/social-schedule.md`).
 
-### API contract, and what to check if a call starts failing
+That command reads the queue, calls `post_schedule_post` for each group, then
+runs `--confirm` for **only the dates that actually landed** — anything that
+failed stays queued for next time — and commits the queue and history log.
 
-Confirmed from Metricool's API documentation:
+```bash
+node scripts/publish-social-post.mjs --confirm --dates=2026-09-08,2026-09-10
+```
 
-- token goes in an **`X-Mc-Auth`** header (not `Authorization: Bearer`)
-- **`userId`** and **`blogId`** are query parameters on *every* call
-- schedule endpoint: `POST https://app.metricool.com/api/v2/scheduler/posts`
-- media normalize: `GET https://app.metricool.com/api/actions/normalize/image/url?url=…`
-- `publicationDate` is `{ dateTime, timezone }` with an ISO datetime carrying
-  **no offset** (the timezone field supplies it)
+### Race results are not unattended either
 
-The exact request-body field names for `providers`, `draft`/`autoPublish` and
-the per-network option objects were taken from the same docs but have **not yet
-been exercised against a live account**. If a call starts returning 400, that is
-the likely cause: `publish/metricool.mjs` logs the response body verbatim for
-exactly this reason. Check the current schema at
-<https://app.metricool.com/resources/apidocs/index.html> and adjust
-`schedulePost()` — nothing else needs to change.
+The daily live job builds and queues pole/sprint/podium cards, but it cannot
+place them, so a result post reaches the feed only once you run
+`/social-schedule` (or post the PNG by hand — `.social-out/` has all three
+formats). On a race weekend that is worth knowing: the card exists within
+minutes, but nothing goes out on its own.
 
----
+### Switching to the unattended route later
+
+If the Metricool plan gains API access, set `publishVia: 'api'` in
+`scripts/social/config.mjs` and add three repository secrets —
+`METRICOOL_USER_TOKEN`, `METRICOOL_USER_ID`, `METRICOOL_BLOG_ID` (Account
+Settings → API). The same workflow then schedules everything itself; no other
+change is needed.
+
+The REST client's auth contract is confirmed from Metricool's docs (`X-Mc-Auth`
+header, `userId`/`blogId` as query params, `POST /api/v2/scheduler/posts`,
+`publicationDate` as `{ dateTime, timezone }` with no offset). The exact
+request-body field names have **not been exercised against a live account** —
+`publish/metricool.mjs` logs response bodies verbatim so a schema mismatch is a
+one-line fix.
 
 ## Image hosting
 
