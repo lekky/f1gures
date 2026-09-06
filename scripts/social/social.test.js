@@ -13,7 +13,7 @@ import { readHistory, appendHistory, hasPostFor } from './history.mjs';
 import { readPending, writePending, queuePending, clearPending } from './pending.mjs';
 import { fitFontSize, alpha, contrastText, metrics, clashesWithAccent, FORMATS, COLORS, RANK_INK } from './cardkit.mjs';
 import { BANDS, splitName, sessionValue } from './card.mjs';
-import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates } from './config.mjs';
+import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates, localWallClock } from './config.mjs';
 
 // ── format helpers ──
 
@@ -388,8 +388,33 @@ describe('layout helpers', () => {
 
 describe('config', () => {
   it('builds an offset-free publish datetime (the timezone field carries it)', () => {
-    expect(publishAtFor('2026-09-06')).toBe('2026-09-06T10:00:00');
-    expect(publishAtFor('2026-09-06', { ...SOCIAL_CONFIG, postTime: '7:5' })).toBe('2026-09-06T07:05:00');
+    // "now" has to be comfortably before the slot, not just before it: at
+    // 06:00Z (07:00 BST) a 07:05 slot is inside the 20-minute lead and is
+    // correctly pushed out.
+    const early = new Date('2026-09-05T00:00:00Z');
+    expect(publishAtFor('2026-09-06', SOCIAL_CONFIG, early)).toBe('2026-09-06T10:00:00');
+    expect(publishAtFor('2026-09-06', { ...SOCIAL_CONFIG, postTime: '7:5' }, early)).toBe('2026-09-06T07:05:00');
+  });
+
+  it('never schedules a post in the past', () => {
+    // The bug this guards: a manual dispatch at 23:10 queued a post for 10:00
+    // that morning - thirteen hours gone. Metricool either rejects that or
+    // fires it immediately.
+    const late = new Date('2026-09-06T23:10:00Z');
+    const at = publishAtFor('2026-09-06', SOCIAL_CONFIG, late);
+    expect(at > localWallClock(late, SOCIAL_CONFIG.timezone)).toBe(true);
+  });
+
+  it('leaves a future slot alone rather than always pushing it out', () => {
+    const late = new Date('2026-09-06T23:10:00Z');
+    expect(publishAtFor('2026-09-20', SOCIAL_CONFIG, late)).toBe('2026-09-20T10:00:00');
+  });
+
+  it('compares in the target zone, not UTC', () => {
+    // Europe/London is BST in September, so local wall clock is an hour ahead
+    // of UTC - comparing against a UTC "now" would clamp an hour too late.
+    expect(localWallClock(new Date('2026-09-06T23:10:00Z'), 'Europe/London')).toBe('2026-09-07T00:10:00');
+    expect(localWallClock(new Date('2026-01-15T23:10:00Z'), 'Europe/London')).toBe('2026-01-15T23:10:00');
   });
 
   it('tags links for Facebook only', () => {
