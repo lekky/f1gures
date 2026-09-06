@@ -2,14 +2,14 @@ name: Refresh Current Season
 
 # Pulls the latest race results, qualifying, sprint and standings for the
 # current calendar year from the Jolpica API, commits the bundle (so future
-# builds have it cached), then rebuilds and FTP-deploys the site so the
+# builds have it cached), then rebuilds and SFTP-deploys the site so the
 # prerendered HTML reflects the new standings.
 #
-# Build + FTP are gated on the bundle actually having changed. So is
+# Build + upload are gated on the bundle actually having changed. So is
 # `npm ci`: the fetch + change-detection path uses only Node built-ins
 # (fetch-season.mjs imports nothing from node_modules), so a no-op poll
 # skips dependency install entirely and bills ~1 minute instead of 2-3.
-# Only a real data change pays for npm ci + build + FTP. workflow_dispatch
+# Only a real data change pays for npm ci + build + upload. workflow_dispatch
 # bypasses the gate so you can force a redeploy.
 
 on:
@@ -90,12 +90,53 @@ jobs:
         if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: npm run build
 
-      - name: Deploy via FTP
+      # Same upload as deploy.yml - keep the two steps in sync (see the long
+      # rationale there and docs/deploy-ssh.md).
+      #
+      # This step used to be SamKirkland/FTP-Deploy-Action over plain FTP, left
+      # behind when deploy.yml moved to SFTP. That combination was broken: the
+      # FTP action diffs against a `.ftp-deploy-sync-state-dist.json` it keeps
+      # on the server, and deploy.yml's `mirror --delete` prunes that file, so
+      # every refresh run saw an "empty" remote and re-uploaded the whole tree
+      # (~1 GB / 13k files) down one FTP connection. Those uploads died with
+      # ECONNRESET - most visibly on 2026-09-06, when the run carrying the
+      # Italian GP results built fine but never reached the server, leaving
+      # /races/2026/13/ showing an empty race tab until the next deploy.yml run.
+      - name: Deploy via SFTP (parallel)
         if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.SFTP_HOST }}
-          username: ${{ secrets.SFTP_USER }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          local-dir: ./dist/
-          state-name: .ftp-deploy-sync-state-dist.json
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST || secrets.SFTP_HOST }}
+          SSH_USER: helloweb
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_DIR: f1gures.app
+        run: |
+          set -euo pipefail
+          if [ -z "${SSH_KEY:-}" ]; then
+            echo "::error::SSH_PRIVATE_KEY secret is not set - add it before deploying (see docs/deploy-ssh.md)."
+            exit 1
+          fi
+          # Safety net for --delete: never mirror a broken/empty build over the
+          # live site. The real dist/ has ~5,000 files; anything under 1,000
+          # means the build misfired, so refuse rather than prune production.
+          FILES=$(find ./dist -type f | wc -l)
+          echo "dist/ contains $FILES files"
+          if [ "$FILES" -lt 1000 ]; then
+            echo "::error::dist/ has only $FILES files (<1000) - refusing to mirror --delete against the live site."
+            exit 1
+          fi
+          PORT="${SSH_PORT:-22}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -c "
+            set cmd:fail-exit true;
+            set sftp:auto-confirm yes;
+            set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new';
+            set net:max-retries 3;
+            set net:timeout 30;
+            set mirror:parallel-transfer-count 10;
+            open -u \"$SSH_USER,\" sftp://$SSH_HOST;
+            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin --verbose ./dist/ $REMOTE_DIR/;
+          "

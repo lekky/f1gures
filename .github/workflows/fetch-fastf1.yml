@@ -100,12 +100,43 @@ jobs:
         if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: npm run build
 
-      - name: Deploy via FTP
+      # Same upload as deploy.yml / refresh-current-season.yml - keep the three
+      # in sync (rationale in deploy.yml, setup in docs/deploy-ssh.md).
+      - name: Deploy via SFTP (parallel)
         if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.SFTP_HOST }}
-          username: ${{ secrets.SFTP_USER }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          local-dir: ./dist/
-          state-name: .ftp-deploy-sync-state-dist.json
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST || secrets.SFTP_HOST }}
+          SSH_USER: helloweb
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_DIR: f1gures.app
+        run: |
+          set -euo pipefail
+          if [ -z "${SSH_KEY:-}" ]; then
+            echo "::error::SSH_PRIVATE_KEY secret is not set - add it before deploying (see docs/deploy-ssh.md)."
+            exit 1
+          fi
+          # Safety net for --delete: never mirror a broken/empty build over the
+          # live site. The real dist/ has ~5,000 files; anything under 1,000
+          # means the build misfired, so refuse rather than prune production.
+          FILES=$(find ./dist -type f | wc -l)
+          echo "dist/ contains $FILES files"
+          if [ "$FILES" -lt 1000 ]; then
+            echo "::error::dist/ has only $FILES files (<1000) - refusing to mirror --delete against the live site."
+            exit 1
+          fi
+          PORT="${SSH_PORT:-22}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -c "
+            set cmd:fail-exit true;
+            set sftp:auto-confirm yes;
+            set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new';
+            set net:max-retries 3;
+            set net:timeout 30;
+            set mirror:parallel-transfer-count 10;
+            open -u \"$SSH_USER,\" sftp://$SSH_HOST;
+            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin --verbose ./dist/ $REMOTE_DIR/;
+          "
