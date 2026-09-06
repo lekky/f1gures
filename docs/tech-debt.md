@@ -84,12 +84,22 @@ not anchors.
     but lftp mirror can't diff by content (fresh build timestamps) so it
     re-uploaded all ~5,000 files every run (~20 min) and its blunt
     `--delete` pruned stale server files. rsync fixes both.
-- **Still open:** `refresh-current-season.yml` still uses the plaintext
-  FTP-Deploy-Action (fine for now - it uploads only the few data-changed
-  pages per run, so it's not slow, but it's still cleartext). The
-  `SFTP_*` secret names remain misleading (host/user now feed SSH).
-- **Fix (remaining):** move `refresh-current-season.yml` to the same
-  rsync/SSH step; rename `SFTP_*` secrets to match reality.
+- **`refresh-current-season.yml` / `fetch-fastf1.yml`: addressed
+  (2026-09-06).** Both now run the same SFTP/lftp step as `deploy.yml`.
+  The "fine for now, it only uploads the few data-changed pages" note
+  above was wrong: the FTP action diffs against a
+  `.ftp-deploy-sync-state-dist.json` it keeps on the server, and
+  `deploy.yml`'s `mirror --delete` prunes that file - so each refresh run
+  saw an empty remote and re-uploaded the whole tree (1.08 GB / 13,451
+  files) down one FTP connection. Those uploads died with `ECONNRESET`.
+  On 2026-09-06 that swallowed the Italian GP results: the run that
+  fetched them built fine but never reached the server, so
+  `/races/2026/13/` served an empty race tab until the next `deploy.yml`
+  run. The three upload steps are now byte-identical - **change one,
+  change all three.**
+- **Still open:** the `SFTP_*` secret names are misleading (host/user now
+  feed SSH; `SFTP_USER`/`SFTP_PASSWORD` are no longer read by any
+  workflow). Rename them to `SSH_*` and drop the unused pair.
 
 ### 5. Feedback worker: committed code ≠ deployed code, no tests
 - `feedback-worker/` is deployed manually via `npx wrangler deploy` from
