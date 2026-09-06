@@ -8,10 +8,18 @@
 
 export const SOCIAL_CONFIG = {
   // ── When posts go out ──────────────────────────────────────────────────────
-  // Local time of day for a scheduled post, 24h "HH:MM". Metricool is told this
-  // time in `timezone`, so it stays correct across BST/GMT on its own.
-  postTime: '10:00',
+  // Local time of day for a *batch-scheduled* post, 24h "HH:MM". Metricool is
+  // told this time in `timezone`, so it stays correct across BST/GMT on its
+  // own. Evening beats morning here: the evergreen posts are something to
+  // scroll past after work, not commuting reading.
+  postTime: '19:00',
   timezone: 'Europe/London',
+
+  // Result posts are news, and news does not wait for a slot: a podium card
+  // built ten minutes after the flag should go out then, not at 19:00 the
+  // following evening. 'asap' means now + minLeadMinutes. Set an "HH:MM" here
+  // instead if you would rather they all landed at a fixed hour.
+  livePostTime: 'asap',
 
   // A post is never scheduled closer than this to now. Without it a run that
   // happens after postTime - a manual dispatch in the evening, or a delayed
@@ -61,7 +69,7 @@ export const SOCIAL_CONFIG = {
 
   // ── Draft vs live ──────────────────────────────────────────────────────────
   // true  = posts land in the Metricool calendar for you to review and approve.
-  // false = Metricool publishes them automatically at postTime.
+  // false = Metricool publishes them automatically at the scheduled time.
   // Start true. Flip to false when you are happy with a couple of weeks' worth.
   draft: true,
 
@@ -108,8 +116,9 @@ export function localWallClock(when, timezone) {
 }
 
 /**
- * "10:00" + "2026-09-06" -> "2026-09-06T10:00:00" (no offset; timezone carries
- * it), clamped so it is never in the past.
+ * "19:00" + "2026-09-06" -> "2026-09-06T19:00:00" (no offset; timezone carries
+ * it), clamped so it is never in the past. `timeOfDay` overrides config.postTime
+ * - the live job passes config.livePostTime.
  *
  * The daily slot has usually not passed when the job runs, but a manual
  * dispatch in the evening would otherwise queue a post for that morning -
@@ -117,11 +126,14 @@ export function localWallClock(when, timezone) {
  * lexicographically as ISO strings in the same zone, so a string compare is
  * the whole comparison.
  */
-export function publishAtFor(date, cfg = SOCIAL_CONFIG, now = new Date()) {
-  const [h = '10', m = '00'] = String(cfg.postTime).split(':');
-  const slot = `${date}T${h.padStart(2, '0')}:${m.padStart(2, '0')}:00`;
+export function publishAtFor(date, cfg = SOCIAL_CONFIG, now = new Date(), timeOfDay = cfg.postTime) {
   const lead = new Date(now.getTime() + (cfg.minLeadMinutes ?? 20) * 60000);
   const earliest = localWallClock(lead, cfg.timezone);
+  // 'asap' (what result posts use) is the clamp on its own: the soonest time
+  // the scheduler will accept.
+  if (String(timeOfDay).toLowerCase() === 'asap') return earliest;
+  const [h = '19', m = '00'] = String(timeOfDay).split(':');
+  const slot = `${date}T${h.padStart(2, '0')}:${m.padStart(2, '0')}:00`;
   return slot >= earliest ? slot : earliest;
 }
 

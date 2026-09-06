@@ -235,6 +235,17 @@ describe('caption composition', () => {
     for (const t of copy.tags) expect(t).not.toMatch(/[^\x00-\x7F]/);
   });
 
+  it('never uses an em dash', () => {
+    // They read as an AI tell on social, and the networks' fonts render them
+    // inconsistently. Composers avoid them; stripEmDashes() is the backstop.
+    for (const [angle, data] of Object.entries(CASES)) {
+      const copy = composeCaption({ angle, data, link: '/test/', key: `${angle}:x`, subject: 's' });
+      for (const field of ['headline', 'kicker', 'body', 'caption', 'alt', 'tiktokTitle']) {
+        expect(copy[field] ?? '', `${angle}.${field}`).not.toContain('\u2014');
+      }
+    }
+  });
+
   it('keeps blank-line spacing in the body', () => {
     const copy = composeCaption({ angle: 'record-board', data: CASES['record-board'], link: '/', key: 'k', subject: 's' });
     expect(copy.body).toContain('\n\n');
@@ -392,8 +403,17 @@ describe('config', () => {
     // 06:00Z (07:00 BST) a 07:05 slot is inside the 20-minute lead and is
     // correctly pushed out.
     const early = new Date('2026-09-05T00:00:00Z');
-    expect(publishAtFor('2026-09-06', SOCIAL_CONFIG, early)).toBe('2026-09-06T10:00:00');
+    expect(publishAtFor('2026-09-06', SOCIAL_CONFIG, early)).toBe('2026-09-06T19:00:00');
     expect(publishAtFor('2026-09-06', { ...SOCIAL_CONFIG, postTime: '7:5' }, early)).toBe('2026-09-06T07:05:00');
+  });
+
+  it("publishes result posts 'asap' rather than at the evening slot", () => {
+    // A podium card built at 16:10 BST must not wait until 19:00 - and, on the
+    // late job, must not be pushed to 19:00 the *next* day either.
+    const afterRace = new Date('2026-09-06T15:10:00Z');
+    expect(publishAtFor('2026-09-06', SOCIAL_CONFIG, afterRace, 'asap')).toBe('2026-09-06T16:30:00');
+    const lateNight = new Date('2026-09-06T22:10:00Z');
+    expect(publishAtFor('2026-09-06', SOCIAL_CONFIG, lateNight, 'asap')).toBe('2026-09-06T23:30:00');
   });
 
   it('never schedules a post in the past', () => {
@@ -407,7 +427,7 @@ describe('config', () => {
 
   it('leaves a future slot alone rather than always pushing it out', () => {
     const late = new Date('2026-09-06T23:10:00Z');
-    expect(publishAtFor('2026-09-20', SOCIAL_CONFIG, late)).toBe('2026-09-20T10:00:00');
+    expect(publishAtFor('2026-09-20', SOCIAL_CONFIG, late)).toBe('2026-09-20T19:00:00');
   });
 
   it('compares in the target zone, not UTC', () => {

@@ -30,7 +30,7 @@ brandLabel    "F1gures", for the sanity check in step 2
 timezone      IANA zone, e.g. "Europe/London"
 posts[]
   date          the calendar day  e.g. "2026-09-10"
-  publishAt     local datetime, NO offset  e.g. "2026-09-10T10:00:00"
+  publishAt     local datetime, NO offset  e.g. "2026-09-10T19:00:00"
   draft         true = park in the calendar, false = let it publish
   tiktokTitle   short title for TikTok (≤90 chars)
   alt           alt text

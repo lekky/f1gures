@@ -108,6 +108,8 @@ const COMPOSERS = {
         ...rows,
         '',
         winner.grid ? `Started ${ordinal(winner.grid)} on the grid.` : null,
+        '',
+        `Full result, lap charts and telemetry: ${SITE}/races/${race.year}/${race.round}/`,
       ),
       tags: tagsFor([
         tag(race.name), tag(winner.driverName), tag(winner.constructorName),
@@ -187,11 +189,13 @@ const COMPOSERS = {
       kicker: `On this day · ${race.year}`,
       headline: `${winner.driverName} wins the ${race.year} ${race.name}`,
       body: lines(
-        `On this day in ${race.year} — ${plural(age, 'year')} ago — ${winner.driverName} won the ${race.name} at ${race.circuit?.name || 'the circuit'}.`,
+        `On this day in ${race.year}, ${plural(age, 'year')} ago, ${winner.driverName} won the ${race.name} at ${race.circuit?.name || 'the circuit'}.`,
         isFirstWin ? `It was the first grand prix win of ${possessive(winner.driverName)} career.` : null,
         isFinale && champion ? `It closed the ${race.year} season, with ${champion} taking the title.` : null,
         '',
         ...rows,
+        '',
+        `Full result and the story of the season: ${SITE}/races/${race.year}/${race.round}/`,
       ),
       tags: tagsFor([
         'OnThisDay', tag(winner.driverName), tag(winner.constructorName),
@@ -222,12 +226,12 @@ const COMPOSERS = {
   },
 
   'record-board'({ config, rows }) {
-    const listed = rows.map((r, i) => `${i + 1}. ${r.name} — ${r.valueLabel || r.value}`);
+    const listed = rows.map((r, i) => `${i + 1}. ${r.name}: ${r.valueLabel || r.value}`);
     return {
       kicker: 'All-time record',
       headline: config.title,
       body: lines(
-        `${config.title} — the all-time top five.`,
+        `${config.title}. The all-time top five.`,
         '',
         ...listed,
         '',
@@ -243,7 +247,7 @@ const COMPOSERS = {
   'standings-snapshot'({ year, roundsDone, roundsTotal, rows, afterRaceName }) {
     const listed = rows.map((r, i) => {
       const d = r.driver || {};
-      return `${i + 1}. ${d.first ? `${d.first} ${d.last}` : d.last || ''} — ${r.points} pts`;
+      return `${i + 1}. ${d.first ? `${d.first} ${d.last}` : d.last || ''}: ${r.points} pts`;
     });
     const gap = rows.length > 1 ? rows[0].points - rows[1].points : 0;
     const leader = rows[0]?.driver?.last || 'The leader';
@@ -251,7 +255,7 @@ const COMPOSERS = {
       kicker: `${year} championship`,
       headline: `After ${plural(roundsDone, 'round')}`,
       body: lines(
-        `The ${year} drivers' championship after ${afterRaceName ? `the ${afterRaceName}` : `round ${roundsDone}`} — ${roundsDone} of ${roundsTotal} rounds done.`,
+        `The ${year} drivers' championship after ${afterRaceName ? `the ${afterRaceName}` : `round ${roundsDone}`}. ${roundsDone} of ${roundsTotal} rounds done.`,
         '',
         ...listed,
         '',
@@ -272,7 +276,7 @@ const COMPOSERS = {
       kicker: 'Driver profile',
       headline: name,
       body: lines(
-        `${name} — ${driver.nationality || ''}, ${c.firstYear}–${c.lastYear}.`.replace(' — ,', ' —'),
+        `${name}. ${driver.nationality ? `${driver.nationality}, ` : ''}${c.firstYear} to ${c.lastYear}.`,
         careerLine(c),
         titles.length
           ? `World champion in ${titles.join(', ')}.`
@@ -293,9 +297,9 @@ const COMPOSERS = {
       kicker: 'Constructor profile',
       headline: team.name,
       body: lines(
-        `${team.name} — ${c.firstYear}–${c.lastYear}, ${plural(c.seasons || 0, 'season')} in Formula 1.`,
+        `${team.name}. ${c.firstYear} to ${c.lastYear}, ${plural(c.seasons || 0, 'season')} in Formula 1.`,
         careerLine(c),
-        bs ? `Best season: ${bs.year} — ${plural(bs.wins, 'win')} from ${plural(bs.races, 'race')}.` : null,
+        bs ? `Best season: ${bs.year}, ${plural(bs.wins, 'win')} from ${plural(bs.races, 'race')}.` : null,
         topDriver ? `Most wins for the team: ${topDriver.name} with ${topDriver.wins}.` : null,
         '',
         `Full team history: ${SITE}/teams/${team.constructorRef}/`,
@@ -313,7 +317,7 @@ const COMPOSERS = {
       kicker: 'Circuit profile',
       headline: circuit.name,
       body: lines(
-        `${circuit.name} — ${circuit.location}, ${circuit.countryName}.`,
+        `${circuit.name}. ${circuit.location}, ${circuit.countryName}.`,
         `${plural(circuit.raceCount || 0, 'world championship race')} held here, ${circuit.firstYear}–${circuit.lastYear}.`,
         most ? `Most wins: ${most.name} (${most.count}).` : null,
         pole ? `Most poles: ${pole.name} (${pole.count}).` : null,
@@ -329,7 +333,7 @@ const COMPOSERS = {
   'head-to-head'({ matchup, a, b }) {
     const ac = a?.career || {};
     const bc = b?.career || {};
-    const line = (d, c) => `${driverName(d)} — ${careerLine(c)}`;
+    const line = (d, c) => `${driverName(d)}: ${careerLine(c)}`;
     return {
       kicker: matchup.tag || 'Head to head',
       headline: `${matchup.aLabel} vs ${matchup.bLabel}`,
@@ -339,7 +343,10 @@ const COMPOSERS = {
         line(a, ac),
         line(b, bc),
         '',
-        `Compare them side by side: ${SITE}/compare/?type=driver&a=${matchup.a}&b=${matchup.b}`,
+        // A bare /compare/ rather than ?type=driver&a=..&b=.. : Instagram and
+        // TikTok render the URL as plain text, so query params are unreadable
+        // clutter nobody can click through anyway.
+        `Compare any two drivers head to head: ${SITE}/compare/`,
       ),
       tags: tagsFor([tag(matchup.aName), tag(matchup.bName), 'F1Rivalry', 'HeadToHead', 'F1History']),
       alt: `Head-to-head card: ${matchup.aName} versus ${matchup.bName}.`,
@@ -362,6 +369,20 @@ const COMPOSERS = {
 };
 
 /**
+ * No em dashes in anything we post.
+ *
+ * The composers are written without them, but this is the backstop: a new
+ * angle, or a name or context string coming out of the archive, must not be
+ * able to reintroduce one. Applied to every string that reaches a network.
+ */
+export function stripEmDashes(text) {
+  return String(text ?? '')
+    // " — " as a clause break becomes a comma; anything else becomes a hyphen.
+    .replace(/\s+—\s+/g, ', ')
+    .replace(/—/g, '-');
+}
+
+/**
  * Compose the post copy for a hydrated candidate.
  * @returns {{headline, kicker, body, alt, tags, link, caption, tiktokTitle}}
  */
@@ -372,6 +393,10 @@ export function composeCaption(candidate) {
 
   const link = candidate.link ? `${SITE}${candidate.link}` : SITE;
   const hashtagLine = parts.tags.map((t) => `#${t}`).join(' ');
+
+  for (const field of ['headline', 'kicker', 'body', 'alt']) {
+    if (parts[field] != null) parts[field] = stripEmDashes(parts[field]);
+  }
 
   // Instagram does not linkify captions, so the URL is included as readable
   // text and repeated in the body where it is most useful.

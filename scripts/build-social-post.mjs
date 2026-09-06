@@ -52,6 +52,7 @@ function parseArgs(argv) {
       case '--out': args.out = value; break;
       case '--formats': args.formats = value.split(',').map((f) => f.trim()).filter(Boolean); break;
       case '--include-race-days': args.includeRaceDays = true; break;
+      case '--asap': args.asap = true; break;
       case '--list': args.list = true; break;
       case '--json': args.json = true; break;
       case '--help': args.help = true; break;
@@ -72,6 +73,8 @@ Build f1gures social posts. Settings live in scripts/social/config.mjs.
   --key=<candidate>     force one exact candidate (re-render a past post)
   --formats=a,b         card formats (default: from config — ${neededFormats().join(',')}); available: ${Object.keys(FORMATS).join(', ')}
   --include-race-days   batch mode: do not skip the days the live job owns
+  --asap                publish as soon as the scheduler allows rather than at
+                        config.postTime - what the live (result) job uses
   --out=<dir>           output directory (default: .social-out)
   --list                print every candidate for the date, then exit
   --json                print the manifest as JSON only
@@ -80,7 +83,7 @@ Build f1gures social posts. Settings live in scripts/social/config.mjs.
 const iso = (d) => d.toISOString().slice(0, 10);
 const addDays = (date, n) => iso(new Date(Date.parse(`${date}T00:00:00Z`) + n * 86400000));
 
-async function buildOne({ date, history, angles, key, formats, outDir }) {
+async function buildOne({ date, history, angles, key, formats, outDir, timeOfDay }) {
   const chosen = pickPost({ date, history, angle: angles || null, key: key || null });
   if (!chosen) return null;
 
@@ -96,7 +99,7 @@ async function buildOne({ date, history, angles, key, formats, outDir }) {
 
   return {
     date,
-    publishAt: publishAtFor(date, cfg),
+    publishAt: publishAtFor(date, cfg, new Date(), timeOfDay),
     timezone: cfg.timezone,
     angle: candidate.angle,
     key: candidate.key,
@@ -145,6 +148,9 @@ async function main() {
 
   // The committed log, plus this run's own picks, so a batch does not repeat
   // itself inside its own fortnight.
+  // Result posts go out now; evergreen ones wait for the evening slot.
+  const timeOfDay = args.asap ? cfg.livePostTime : cfg.postTime;
+
   const history = readHistory();
   const posts = [];
   const skipped = [];
@@ -161,7 +167,7 @@ async function main() {
         skipped.push({ date, reason: 'already posted' });
         continue;
       }
-      const post = await buildOne({ date, history, angles: args.angles, formats, outDir });
+      const post = await buildOne({ date, history, angles: args.angles, formats, outDir, timeOfDay });
       if (!post) {
         skipped.push({ date, reason: 'no candidate' });
         continue;
@@ -171,7 +177,7 @@ async function main() {
       history.push({ date, angle: post.angle, key: post.key, subject: post.subject });
     }
   } else {
-    const post = await buildOne({ date: startDate, history, angles: args.angles, key: args.key, formats, outDir });
+    const post = await buildOne({ date: startDate, history, angles: args.angles, key: args.key, formats, outDir, timeOfDay });
     if (post) posts.push(post);
   }
 
