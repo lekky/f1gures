@@ -1,47 +1,7 @@
 {
-  "updatedAt": "2026-09-06T23:09:48.386Z",
+  "updatedAt": null,
   "blogId": "6692452",
   "brandLabel": "F1gures",
   "timezone": "Europe/London",
-  "posts": [
-    {
-      "date": "2026-09-06",
-      "publishAt": "2026-09-06T10:00:00",
-      "timezone": "Europe/London",
-      "angle": "quali-result",
-      "key": "quali-result:2026-13",
-      "subject": "race:2026-13",
-      "headline": "Pierre Gasly takes pole for the Italian Grand Prix",
-      "link": "https://f1gures.app/races/2026/13/",
-      "tiktokTitle": "Pierre Gasly takes pole for the Italian Grand Prix",
-      "alt": "Qualifying card: Pierre Gasly on pole for the 2026 Italian Grand Prix. P1 Pierre Gasly (Alpine F1 Team), P2 George Russell (Mercedes), P3 Oscar Piastri (McLaren).",
-      "draft": true,
-      "groups": [
-        {
-          "format": "portrait",
-          "caption": "Pierre Gasly starts the Italian Grand Prix from pole, with a 1:21.786.\n\nP1 Pierre Gasly (Alpine F1 Team)\nP2 George Russell (Mercedes)\nP3 Oscar Piastri (McLaren)\n\nFull grid and session times: https://f1gures.app/races/2026/13/\n\n#F1 #Formula1 #f1gures #ItalianGrandPrix #PierreGasly #AlpineF1Team #Qualifying #Pole #GrandPrix",
-          "networks": [
-            "instagram"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-06-portrait.png"
-        },
-        {
-          "format": "portrait",
-          "caption": "Pierre Gasly starts the Italian Grand Prix from pole, with a 1:21.786.\n\nP1 Pierre Gasly (Alpine F1 Team)\nP2 George Russell (Mercedes)\nP3 Oscar Piastri (McLaren)\n\nFull grid and session times: https://f1gures.app/races/2026/13/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #ItalianGrandPrix #PierreGasly #AlpineF1Team #Qualifying #Pole #GrandPrix",
-          "networks": [
-            "facebook"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-06-portrait.png"
-        },
-        {
-          "format": "story",
-          "caption": "Pierre Gasly starts the Italian Grand Prix from pole, with a 1:21.786.\n\nP1 Pierre Gasly (Alpine F1 Team)\nP2 George Russell (Mercedes)\nP3 Oscar Piastri (McLaren)\n\nFull grid and session times: https://f1gures.app/races/2026/13/\n\n#F1 #Formula1 #f1gures #ItalianGrandPrix #PierreGasly #AlpineF1Team #Qualifying #Pole #GrandPrix",
-          "networks": [
-            "tiktok"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-06-story.png"
-        }
-      ]
-    }
-  ]
+  "posts": []
 }

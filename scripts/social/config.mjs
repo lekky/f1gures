@@ -13,6 +13,12 @@ export const SOCIAL_CONFIG = {
   postTime: '10:00',
   timezone: 'Europe/London',
 
+  // A post is never scheduled closer than this to now. Without it a run that
+  // happens after postTime - a manual dispatch in the evening, or a delayed
+  // job - produces a publishAt in the past, which Metricool either rejects or
+  // fires immediately.
+  minLeadMinutes: 20,
+
   // ── How far ahead the evergreen batch schedules ────────────────────────────
   // The batch job fills the Metricool calendar this many days forward. Raise it
   // to review a month at a time; lower it to stay nimble. The job is safe to
@@ -83,10 +89,40 @@ export const SOCIAL_CONFIG = {
   },
 };
 
-/** "10:00" + "2026-09-06" -> "2026-09-06T10:00:00" (no offset; timezone carries it). */
-export function publishAtFor(date, cfg = SOCIAL_CONFIG) {
+/**
+ * Wall-clock time in a named zone, as "YYYY-MM-DDTHH:MM:SS".
+ *
+ * The scheduler wants a local datetime with no offset (the timezone field
+ * carries it), so comparisons have to happen in that same wall clock - not UTC.
+ */
+export function localWallClock(when, timezone) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  }).formatToParts(when).reduce((acc, p) => ({ ...acc, [p.type]: p.value }), {});
+  // en-CA gives ISO-ordered parts; hour can come back as "24" at midnight.
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}:${parts.second}`;
+}
+
+/**
+ * "10:00" + "2026-09-06" -> "2026-09-06T10:00:00" (no offset; timezone carries
+ * it), clamped so it is never in the past.
+ *
+ * The daily slot has usually not passed when the job runs, but a manual
+ * dispatch in the evening would otherwise queue a post for that morning -
+ * scheduling something for a time that has already gone. Both formats sort
+ * lexicographically as ISO strings in the same zone, so a string compare is
+ * the whole comparison.
+ */
+export function publishAtFor(date, cfg = SOCIAL_CONFIG, now = new Date()) {
   const [h = '10', m = '00'] = String(cfg.postTime).split(':');
-  return `${date}T${h.padStart(2, '0')}:${m.padStart(2, '0')}:00`;
+  const slot = `${date}T${h.padStart(2, '0')}:${m.padStart(2, '0')}:00`;
+  const lead = new Date(now.getTime() + (cfg.minLeadMinutes ?? 20) * 60000);
+  const earliest = localWallClock(lead, cfg.timezone);
+  return slot >= earliest ? slot : earliest;
 }
 
 /** Append campaign tags to a URL. Existing query strings are preserved. */
