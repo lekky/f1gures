@@ -1,3 +1,264 @@
 {
-  "posts": []
+  "posts": [
+    {
+      "date": "2026-09-08",
+      "angle": "on-this-day",
+      "key": "on-this-day:1991-12",
+      "subject": "driver:mansell",
+      "headline": "Nigel Mansell wins the 1991 Italian Grand Prix",
+      "link": "https://f1gures.app/races/1991/12/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.085Z"
+    },
+    {
+      "date": "2026-09-09",
+      "angle": "head-to-head",
+      "key": "head-to-head:driver:norris-mario_andretti",
+      "subject": "driver:norris",
+      "headline": "Norris vs Andretti",
+      "link": "https://f1gures.app/compare/?type=driver&a=norris&b=mario_andretti",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.098Z"
+    },
+    {
+      "date": "2026-09-10",
+      "angle": "record-board",
+      "key": "record-board:poles-at-circuit",
+      "subject": "record:poles-at-circuit",
+      "headline": "Most poles by one driver at one circuit",
+      "link": "https://f1gures.app/records/poles-at-circuit/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.122Z"
+    },
+    {
+      "date": "2026-09-11",
+      "angle": "race-preview",
+      "key": "race-preview:2026-14",
+      "subject": "race:2026-14",
+      "headline": "Next up: the Spanish Grand Prix",
+      "link": "https://f1gures.app/races/2026/14/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.122Z"
+    },
+    {
+      "date": "2026-09-15",
+      "angle": "standings-snapshot",
+      "key": "standings-snapshot:2026-13",
+      "subject": "standings:2026",
+      "headline": "After 13 rounds",
+      "link": "https://f1gures.app/standings-drivers/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.122Z"
+    },
+    {
+      "date": "2026-09-16",
+      "angle": "trivia",
+      "key": "trivia:95",
+      "subject": "trivia:tech",
+      "headline": "The 2006 Cosworth V8 reportedly revved past 20,000 rpm before rev limits were brought in to cap engines.",
+      "link": "https://f1gures.app/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.122Z"
+    },
+    {
+      "date": "2026-09-17",
+      "angle": "driver-birthday",
+      "key": "driver-birthday:moss",
+      "subject": "driver:moss",
+      "headline": "Stirling Moss",
+      "link": "https://f1gures.app/drivers/moss/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.123Z"
+    },
+    {
+      "date": "2026-09-18",
+      "angle": "on-this-day",
+      "key": "on-this-day:2016-15",
+      "subject": "driver:rosberg",
+      "headline": "Nico Rosberg wins the 2016 Singapore Grand Prix",
+      "link": "https://f1gures.app/races/2016/15/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.123Z"
+    },
+    {
+      "date": "2026-09-19",
+      "angle": "driver-spotlight",
+      "key": "driver-spotlight:russell",
+      "subject": "driver:russell",
+      "headline": "George Russell",
+      "link": "https://f1gures.app/drivers/russell/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.123Z"
+    },
+    {
+      "date": "2026-09-20",
+      "angle": "driver-birthday",
+      "key": "driver-birthday:montoya",
+      "subject": "driver:montoya",
+      "headline": "Juan Pablo Montoya",
+      "link": "https://f1gures.app/drivers/montoya/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T10:02:52.124Z"
+    }
+  ]
 }
