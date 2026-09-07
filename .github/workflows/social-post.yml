@@ -159,7 +159,7 @@ jobs:
           lftp -c "
             set cmd:fail-exit true;
             $LFTP_OPEN
-            mirror --reverse --only-newer --verbose --include-glob '*.png' ./.social-out/ $REMOTE_DIR/;
+            mirror --reverse --only-newer --verbose --include-glob '*.png' --include-glob '*.jpg' ./.social-out/ $REMOTE_DIR/;
           "
 
       # On the mcp route this queues the posts; on the api route it schedules

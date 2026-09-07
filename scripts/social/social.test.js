@@ -13,7 +13,7 @@ import { readHistory, appendHistory, hasPostFor } from './history.mjs';
 import { readPending, writePending, queuePending, clearPending, reslotPending } from './pending.mjs';
 import { fitFontSize, alpha, contrastText, metrics, clashesWithAccent, FORMATS, COLORS, RANK_INK } from './cardkit.mjs';
 import { BANDS, splitName, sessionValue } from './card.mjs';
-import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates, localWallClock } from './config.mjs';
+import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates, localWallClock, imageTypeFor } from './config.mjs';
 
 // ── format helpers ──
 
@@ -541,6 +541,34 @@ describe('config', () => {
 });
 
 // ── batch behaviour ──
+
+describe('per-network image type', () => {
+  // The bug this guards: TikTok rejected a photo post outright with "The
+  // 'image/png' type is not allowed, use 'image/jpeg' or 'image/webp'", while
+  // the same card published fine on Instagram and Facebook.
+  it('sends TikTok a jpeg and everyone else a png', () => {
+    expect(imageTypeFor('tiktok')).toBe('jpeg');
+    expect(imageTypeFor('instagram')).toBe('png');
+    expect(imageTypeFor('facebook')).toBe('png');
+  });
+
+  it('defaults an unknown network to png', () => {
+    expect(imageTypeFor('bluesky')).toBe('png');
+    expect(imageTypeFor(undefined)).toBe('png');
+  });
+
+  it('honours an override, and treats anything but "jpeg" as png', () => {
+    const cfg = { ...SOCIAL_CONFIG, imageTypeForNetwork: { instagram: 'jpeg', tiktok: 'gif' } };
+    expect(imageTypeFor('instagram', cfg)).toBe('jpeg');
+    expect(imageTypeFor('tiktok', cfg)).toBe('png');
+  });
+
+  it('covers every configured network', () => {
+    for (const n of SOCIAL_CONFIG.networks) {
+      expect(['png', 'jpeg'], n).toContain(imageTypeFor(n));
+    }
+  });
+});
 
 describe('batch selection', () => {
   it('never schedules the same post twice inside one batch', () => {

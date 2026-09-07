@@ -53,6 +53,17 @@ export const SOCIAL_CONFIG = {
     tiktok: 'story',
   },
 
+  // Which file type each network is sent. TikTok rejects a photo post outright
+  // - "The 'image/png' type is not allowed, use 'image/jpeg' or 'image/webp'"
+  // - while Instagram and Facebook publish PNG happily. PNG keeps the cards'
+  // fine mono type crisp, so only the network that refuses it is converted.
+  // Both files are rendered either way, so switching one here needs no rebuild.
+  imageTypeForNetwork: {
+    instagram: 'png',
+    facebook: 'png',
+    tiktok: 'jpeg',
+  },
+
   // ── How posts reach Metricool ──────────────────────────────────────────────
   // 'mcp' - CI builds the posts, uploads the cards and writes a hand-off file.
   //         You schedule them from a Claude session with the Metricool MCP
@@ -137,6 +148,14 @@ export function publishAtFor(date, cfg = SOCIAL_CONFIG, now = new Date(), timeOf
   const [h = '19', m = '00'] = String(timeOfDay).split(':');
   const slot = `${date}T${h.padStart(2, '0')}:${m.padStart(2, '0')}:00`;
   return slot >= earliest ? slot : earliest;
+}
+
+/**
+ * File type for a network's card: 'png' or 'jpeg'. Unknown networks get PNG,
+ * which is what every network but TikTok accepts.
+ */
+export function imageTypeFor(network, cfg = SOCIAL_CONFIG) {
+  return cfg.imageTypeForNetwork?.[network] === 'jpeg' ? 'jpeg' : 'png';
 }
 
 /** Append campaign tags to a URL. Existing query strings are preserved. */

@@ -24,7 +24,7 @@ import { ROOT } from './social/sources.mjs';
 import { readConfig, schedulePost, MetricoolError } from './social/publish/metricool.mjs';
 import { appendHistory, readHistory } from './social/history.mjs';
 import { readPending, writePending, queuePending, clearPending, reslotPending } from './social/pending.mjs';
-import { SOCIAL_CONFIG, withUtm, localWallClock } from './social/config.mjs';
+import { SOCIAL_CONFIG, withUtm, localWallClock, imageTypeFor } from './social/config.mjs';
 
 const cfg = SOCIAL_CONFIG;
 
@@ -102,10 +102,19 @@ function planFor(post, networks, baseUrl) {
     if (!byFormat.has(format)) {
       throw new Error(`${post.date}: no "${format}" card rendered for ${network}.`);
     }
+    const card = byFormat.get(format);
+    const type = imageTypeFor(network, cfg);
+    // Older queues carry only `file`; new ones carry both.
+    const fileName = (type === 'jpeg' ? card.jpeg : card.png) || card.file;
+    if (!fileName) {
+      throw new Error(`${post.date}: no ${type} card rendered for ${network}.`);
+    }
     const caption = captionFor(post.caption, network);
-    const groupKey = `${format}::${caption}`;
+    // Type is part of the key: two networks sharing a shape still need separate
+    // posts when one of them will not take the other's file type.
+    const groupKey = `${format}::${type}::${caption}`;
     if (!groups.has(groupKey)) {
-      groups.set(groupKey, { format, caption, networks: [], imageUrl: `${baseUrl}/${byFormat.get(format).file}` });
+      groups.set(groupKey, { format, caption, networks: [], imageUrl: `${baseUrl}/${fileName}` });
     }
     groups.get(groupKey).networks.push(network);
   }

@@ -23,6 +23,7 @@
 // Output lands in .social-out/ (gitignored): the PNGs plus batch.json.
 
 import fs from 'node:fs';
+import sharp from 'sharp';
 import path from 'node:path';
 import { assertArchive, ROOT, racesIndex } from './social/sources.mjs';
 import { pickPost, hydrate, collectCandidates, ANGLE_IDS } from './social/angles.mjs';
@@ -91,11 +92,28 @@ async function buildOne({ date, history, angles, key, formats, outDir, timeOfDay
   const copy = composeCaption(candidate);
   const cards = await renderCards(candidate, copy, formats);
 
-  const files = cards.map((card) => {
-    const name = `${date}-${card.format}.png`;
-    fs.writeFileSync(path.join(outDir, name), card.buffer);
-    return { format: card.format, file: name, width: card.width, height: card.height, bytes: card.buffer.length };
-  });
+  // Both file types, every time. TikTok refuses image/png on a photo post and
+  // the others prefer PNG, so rather than deciding here - where the network is
+  // not known - each card is written twice and the publisher picks per network.
+  const files = [];
+  for (const card of cards) {
+    const base = `${date}-${card.format}`;
+    fs.writeFileSync(path.join(outDir, `${base}.png`), card.buffer);
+    // 4:4:4 chroma: the cards are condensed type and hairline rules on a dark
+    // ground, which is exactly what subsampling smears.
+    const jpeg = await sharp(card.buffer).jpeg({ quality: 92, chromaSubsampling: '4:4:4' }).toBuffer();
+    fs.writeFileSync(path.join(outDir, `${base}.jpg`), jpeg);
+    files.push({
+      format: card.format,
+      file: `${base}.png`,
+      png: `${base}.png`,
+      jpeg: `${base}.jpg`,
+      width: card.width,
+      height: card.height,
+      bytes: card.buffer.length,
+      jpegBytes: jpeg.length,
+    });
+  }
 
   return {
     date,

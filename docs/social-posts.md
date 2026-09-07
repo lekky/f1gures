@@ -32,6 +32,12 @@ archive the site renders and scheduled through Metricool.
 | `scripts/build-social-post.mjs` | Pick + render + write `.social-out/` |
 | `scripts/publish-social-post.mjs` | Upload manifest → Metricool → append history |
 
+Each card is rendered as **both** a `.png` and a `.jpg`, and the publisher picks
+per network (`config.imageTypeForNetwork`). TikTok rejects `image/png` on a
+photo post - "use 'image/jpeg' or 'image/webp'" - while Instagram and Facebook
+publish PNG happily, and PNG keeps the condensed type crisp. Rendering both
+means changing that mapping needs no rebuild.
+
 ## Angles
 
 Thirteen, in descending topicality. Race-weekend angles outrank everything, so

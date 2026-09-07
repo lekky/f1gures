@@ -66,7 +66,10 @@ account.
 **Why three groups per date:** Metricool takes one media set per post.
 Instagram and Facebook take the 4:5 portrait card, TikTok takes the 9:16 story
 card, and Facebook's caption carries UTM-tagged links the other two do not
-(only Facebook makes URLs clickable).
+(only Facebook makes URLs clickable). TikTok is also sent a **.jpg** where the
+other two get a .png - it rejects `image/png` on a photo post. Every card is
+rendered in both types, so use the `imageUrl` the queue gives you verbatim
+rather than swapping the extension.
 
 ## 2. Check the brand, then the cards
 
