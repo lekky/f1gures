@@ -5786,8 +5786,11 @@ html.light .rw-gal, html.light .rw-mviz-overlay {
 .rw-mviz-src { display: inline-block; font-size: 10px; letter-spacing: 0.1em; color: var(--vx-fg3); background: var(--vx-pill); padding: 6px 10px; }
 
 /* ── tooltip ── */
+/* Above the chart modal (z-index 110) but below the share sheet (130): the
+   charts are hoverable inside the expanded modal, so a lower tooltip would
+   render behind the overlay. pointer-events: none keeps it click-through. */
 .rw-tooltip {
-  position: fixed; z-index: 99; background: #1B1C22; border: 1px solid #33343C; color: #F2F2F4;
+  position: fixed; z-index: 120; background: #1B1C22; border: 1px solid #33343C; color: #F2F2F4;
   padding: 10px 12px; pointer-events: none; min-width: 130px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); animation: rwTtFade var(--mo) ease;
 }
