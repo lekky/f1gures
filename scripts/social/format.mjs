@@ -69,9 +69,22 @@ export function possessive(name) {
 export function clamp(text, max) {
   const s = String(text || '');
   if (s.length <= max) return s;
-  const cut = s.slice(0, max - 1);
+  const cut = dropLoneSurrogate(s.slice(0, max - 1));
   const lastSpace = cut.lastIndexOf(' ');
-  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+  const kept = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${dropLoneSurrogate(kept).trimEnd()}…`;
+}
+
+/**
+ * Drop a trailing half of a surrogate pair.
+ *
+ * Emoji are two UTF-16 units, so slicing by .length can land inside one and
+ * leave an unpaired surrogate - which renders as a replacement glyph and can
+ * break JSON round-trips. Captions carry emoji, so every cut goes through here.
+ */
+function dropLoneSurrogate(s) {
+  const last = s.charCodeAt(s.length - 1);
+  return last >= 0xd800 && last <= 0xdbff ? s.slice(0, -1) : s;
 }
 
 /** Title-cases a kebab/snake slug for display: "wins-at-circuit" -> "Wins At Circuit". */

@@ -235,6 +235,46 @@ describe('caption composition', () => {
     for (const t of copy.tags) expect(t).not.toMatch(/[^\x00-\x7F]/);
   });
 
+  it('puts the excitement where the news is', () => {
+    // Race day should read like race day. The reference angles should not.
+    const loud = composeCaption({ angle: 'race-result', data: CASES['race-result'], link: '/', key: 'k', subject: 's' });
+    expect(loud.body).toContain('!');
+    expect(loud.headline).toContain('!');
+    expect(loud.body).toMatch(/\u{1F947}/u);   // gold medal on P1
+    expect(loud.body).toMatch(/\u{1F3C1}/u);   // chequered flag
+
+    const quiet = composeCaption({ angle: 'circuit-spotlight', data: CASES['circuit-spotlight'], link: '/', key: 'k', subject: 's' });
+    expect(quiet.headline).not.toContain('!');
+  });
+
+  it('keeps alt text plain', () => {
+    // A screen reader announcing "chequered flag" mid-sentence is noise, so
+    // the enthusiasm stays in the caption and out of the accessibility text.
+    for (const [angle, data] of Object.entries(CASES)) {
+      const copy = composeCaption({ angle, data, link: '/test/', key: `${angle}:x`, subject: 's' });
+      expect(copy.alt, `${angle} alt`).not.toMatch(/\p{Extended_Pictographic}/u);
+    }
+  });
+
+  it('stays the right side of emoji spam', () => {
+    for (const [angle, data] of Object.entries(CASES)) {
+      const copy = composeCaption({ angle, data, link: '/test/', key: `${angle}:x`, subject: 's' });
+      const count = (copy.body.match(/\p{Extended_Pictographic}/gu) || []).length;
+      // Three podium medals plus the two that frame a race win is the ceiling.
+      expect(count, `${angle} has ${count} emoji`).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('never cuts an emoji in half when clamping the TikTok title', () => {
+    // Titles cap at 90 and now carry emoji, so a naive slice could leave half
+    // a surrogate pair behind.
+    for (const [angle, data] of Object.entries(CASES)) {
+      const copy = composeCaption({ angle, data, link: '/test/', key: `${angle}:x`, subject: 's' });
+      expect(copy.tiktokTitle, `${angle} title`).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+      expect(copy.tiktokTitle.length, angle).toBeLessThanOrEqual(LIMITS.tiktok.title);
+    }
+  });
+
   it('never uses an em dash', () => {
     // They read as an AI tell on social, and the networks' fonts render them
     // inconsistently. Composers avoid them; stripEmDashes() is the backstop.
@@ -252,7 +292,7 @@ describe('caption composition', () => {
     // With no name known the clause is dropped rather than faked.
     const race = { ...CASES['race-preview'].race, name: 'Spanish Grand Prix' };
     const copy = composeCaption({ angle: 'race-preview', data: { race, circuit: null, lastWinner: null, inDays: 2 }, link: '/', key: 'k', subject: 's' });
-    expect(copy.body).toContain('goes racing in 2 days.');
+    expect(copy.body).toContain('goes racing in 2 days!');
     expect(copy.body).not.toContain('at Spanish Grand Prix');
     expect(copy.alt).not.toContain('at Spanish Grand Prix');
   });
@@ -260,21 +300,21 @@ describe('caption composition', () => {
   it('drops the venue clause when the circuit name only echoes the race name', () => {
     const race = { ...CASES['race-preview'].race, name: 'Spanish Grand Prix' };
     const copy = composeCaption({ angle: 'race-preview', data: { race, circuit: { name: 'Spanish Grand Prix' }, lastWinner: null, inDays: 1 }, link: '/', key: 'k', subject: 's' });
-    expect(copy.body).toContain('goes racing tomorrow.');
+    expect(copy.body).toContain('goes racing tomorrow!');
   });
 
   it('says so when a circuit is making its debut', () => {
     const race = { ...CASES['race-preview'].race, name: 'Spanish Grand Prix' };
     const circuit = { name: 'Madrid Street Circuit', location: 'Madrid', countryName: 'Spain', debut: true };
     const copy = composeCaption({ angle: 'race-preview', data: { race, circuit, lastWinner: null, inDays: 2 }, link: '/', key: 'k', subject: 's' });
-    expect(copy.body).toContain('at Madrid Street Circuit.');
-    expect(copy.body).toContain('The first world championship race held here.');
+    expect(copy.body).toContain('at Madrid Street Circuit!');
+    expect(copy.body).toContain('The first world championship race ever held here!');
   });
 
   it('does not call an established circuit a debut', () => {
     const copy = composeCaption({ angle: 'race-preview', data: CASES['race-preview'], link: '/', key: 'k', subject: 's' });
     expect(copy.body).not.toContain('first world championship race held here');
-    expect(copy.body).toContain('at Interlagos.');
+    expect(copy.body).toContain('at Interlagos!');
   });
 
   it('names the circuit on a driver-at-circuit leaderboard', () => {

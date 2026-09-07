@@ -38,6 +38,21 @@ photo post - "use 'image/jpeg' or 'image/webp'" - while Instagram and Facebook
 publish PNG happily, and PNG keeps the condensed type crisp. Rendering both
 means changing that mapping needs no rebuild.
 
+### Voice
+
+Warm and excited, loudest where the news is: a race win gets the chequered
+flag, a trophy, medals on the podium and an exclamation; a circuit profile gets
+one car and a full stop. At most a couple of emoji per caption and each has to
+earn its place, so the rule of thumb is that a medal beside P1 is fine and a
+sprinkle of confetti is not. The whole vocabulary sits in `EMOJI` at the top of
+`caption.mjs` - empty a value there to quieten one angle, or all of them to turn
+it off.
+
+Two things it deliberately does not touch. **Cards** never see it: `propsFor()`
+builds them from the candidate data and never reads the caption, so Satori is
+never asked to render an emoji glyph. **Alt text** stays plain, because a screen
+reader announcing "chequered flag" mid-sentence is noise rather than enthusiasm.
+
 ## Angles
 
 Thirteen, in descending topicality. Race-weekend angles outrank everything, so
