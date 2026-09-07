@@ -18,9 +18,18 @@ other way.
 ## 1. Read the queue
 
 ```bash
-git pull                                          # the workflow commits the queue
-node scripts/publish-social-post.mjs --reslot     # fix any publish time that has gone past
+git checkout main && git pull origin main         # the workflow commits the queue to main
 cat data/social/pending.json
+```
+
+**If `posts` is empty, stop here.** Say "queue empty, nothing to schedule" and
+do nothing else - no reslot, no commit, no push. Most runs end here, and that
+is the system working.
+
+Otherwise, re-slot before reading any further:
+
+```bash
+node scripts/publish-social-post.mjs --reslot     # fix any publish time that has gone past
 ```
 
 **Always run `--reslot` first.** Result posts (pole, sprint, podium) are queued
@@ -134,8 +143,17 @@ time. Then commit both files:
 ```bash
 git add data/social/history.json data/social/pending.json
 git commit -m "chore(social): schedule N post(s) via Metricool MCP"
-git push
+git pull --rebase origin main
+git push origin main
 ```
+
+**It has to land on `main`.** That is where the Social Posts workflow reads the
+queue from and writes the next batch to, so a history log sitting on a side
+branch stops nothing: the next batch re-queues the same days and they get
+scheduled twice. If the push to main is rejected, **report the error verbatim
+and stop** - do not open a pull request and do not push to a side branch
+instead. A run that scheduled posts but could not record them is worth knowing
+about immediately, because the duplicates arrive on the next batch.
 
 `deploy.yml` ignores commits touching only `data/social/`, so this will not
 trigger a site rebuild.
