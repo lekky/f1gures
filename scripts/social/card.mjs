@@ -19,7 +19,7 @@ import { loadFace, loadTrackMap, loadFlag, loadFlagCC } from '../og-templates/og
 import { seasonBundle } from './sources.mjs';
 import {
   FORMATS, DEFAULT_FORMATS, renderPng, metrics, card, div, txt, img, grow,
-  kickerRow, kicker, chip, footer, statStrip, photoBleed, streakBand, wordmark,
+  kickerRow, kicker, chip, footer, statStrip, photoBleed, streakBand, wordmark, wordmarkHeight,
   fitFontSize, alpha, clashesWithAccent, COLORS, GROUNDS, RANK_INK,
 } from './cardkit.mjs';
 import { plural } from './format.mjs';
@@ -234,7 +234,12 @@ async function heroLayout(m, { kickerText, chipText, name, meta, nationality, co
   const bleed = [];
   if (face) bleed.push(...photoBleed(m, face, { width: 600, height: 900 }));
   if (track) {
-    bleed.push(div({ position: 'absolute', top: m.v(64), right: m.wx(44), width: m.wx(440), height: m.v(440), alignItems: 'center', justifyContent: 'center' }, [
+    // Clear the wordmark rather than running the track outline through it: the
+    // mark sits top-right in the kicker row, and both were anchored to roughly
+    // the same y. Its box is taller than the lettering (mostly streaks), so the
+    // offset is measured, not eyeballed.
+    const trackTop = m.padTop + wordmarkHeight(m) + m.v(28);
+    bleed.push(div({ position: 'absolute', top: trackTop, right: m.wx(44), width: m.wx(440), height: m.v(440), alignItems: 'center', justifyContent: 'center' }, [
       img(track, m.wx(440), m.v(440), { objectFit: 'contain' }),
     ]));
   }
