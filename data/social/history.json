@@ -1,6 +1,32 @@
 {
   "posts": [
     {
+      "date": "2026-09-07",
+      "angle": "race-result",
+      "key": "race-result:2026-13",
+      "subject": "race:2026-13",
+      "headline": "Andrea Kimi Antonelli wins the Italian Grand Prix",
+      "link": "https://f1gures.app/races/2026/13/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-07T18:21:59.839Z"
+    },
+    {
       "date": "2026-09-08",
       "angle": "on-this-day",
       "key": "on-this-day:1991-12",
