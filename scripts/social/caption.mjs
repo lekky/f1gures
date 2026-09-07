@@ -13,6 +13,18 @@
 //     written about someone who has died.
 //   - Nothing is called a "record" unless it is literally row 1 of a records
 //     leaderboard.
+//
+// Voice: warm and excited, loudest where the news is. A race win gets the
+// chequered flag and an exclamation; a circuit profile does not. The rule of
+// thumb is at most a couple of emoji per caption, each earning its place
+// (medals on a podium, a cake on a birthday), and exclamation marks reserved
+// for the line that actually carries the news. The emoji live in EMOJI below
+// so the whole tone can be turned up or down in one place.
+//
+// None of this reaches the cards: propsFor() in card.mjs builds them from the
+// candidate data and never reads this copy, so Satori never has to render an
+// emoji glyph. Alt text is also kept plain - a screen reader announcing
+// "chequered flag" mid-sentence is noise, not enthusiasm.
 
 import { longDate, dayMonth, ordinal, plural, possessive, clamp } from './format.mjs';
 
@@ -26,6 +38,22 @@ export const LIMITS = {
 };
 
 const BASE_TAGS = ['F1', 'Formula1', 'f1gures'];
+
+/** The whole emoji vocabulary. Empty any value to quieten that angle. */
+const EMOJI = {
+  race: '\u{1F3C1}',        // chequered flag - a result is in
+  trophy: '\u{1F3C6}',      // trophy - the win itself
+  gold: '\u{1F947}',
+  silver: '\u{1F948}',
+  bronze: '\u{1F949}',
+  pole: '\u26A1',           // lightning - one flying lap
+  car: '\u{1F3CE}\uFE0F',  // race car - a weekend ahead
+  crown: '\u{1F451}',       // championship lead or title
+  cake: '\u{1F382}',
+  duel: '\u2694\uFE0F',
+  bulb: '\u{1F4A1}',
+  chart: '\u{1F4CA}',
+};
 
 /** Strip a name/word down to a usable hashtag token. */
 function tag(...parts) {
@@ -75,9 +103,18 @@ function championYears(driver) {
     .sort((a, b) => a - b);
 }
 
-/** "P1 Max Verstappen (Red Bull)" style podium line. */
-function podiumLines(rows) {
-  return rows.map((r) => `P${r.position} ${r.driverName}${r.constructorName ? ` (${r.constructorName})` : ''}`);
+/**
+ * "P1 Max Verstappen (Red Bull)" style podium line, optionally medalled.
+ *
+ * Medals are the one place emoji carry meaning rather than decoration: they
+ * say the same thing as the position and read faster in a feed.
+ */
+function podiumLines(rows, { medals = false } = {}) {
+  const medal = [EMOJI.gold, EMOJI.silver, EMOJI.bronze];
+  return rows.map((r, i) => {
+    const prefix = medals && medal[i] ? `${medal[i]} ` : '';
+    return `${prefix}P${r.position} ${r.driverName}${r.constructorName ? ` (${r.constructorName})` : ''}`;
+  });
 }
 
 /** "106 wins · 104 poles · 7 titles" - only the non-zero parts. */
@@ -98,16 +135,24 @@ function careerLine(career = {}) {
 const COMPOSERS = {
   'race-result'({ race, podium }) {
     const winner = podium[0];
-    const rows = podiumLines(podium);
+    const rows = podiumLines(podium, { medals: true });
+    const plainRows = podiumLines(podium);
+    // A win from deep in the field is the story; from the front row it is a
+    // footnote. Same fact either way, so only the framing changes.
+    const climb = winner.grid && winner.grid >= 5;
     return {
       kicker: `${race.year} · Round ${race.round}`,
-      headline: `${winner.driverName} wins the ${race.name}`,
+      headline: `${winner.driverName} wins the ${race.name}! ${EMOJI.race}`,
       body: lines(
-        `${winner.driverName} takes victory at ${race.circuit?.name || race.name}.`,
+        `${EMOJI.race} ${winner.driverName} takes victory at ${race.circuit?.name || race.name}! ${EMOJI.trophy}`,
         '',
         ...rows,
         '',
-        winner.grid ? `Started ${ordinal(winner.grid)} on the grid.` : null,
+        winner.grid
+          ? climb
+            ? `And all the way from ${ordinal(winner.grid)} on the grid!`
+            : `Started ${ordinal(winner.grid)} on the grid.`
+          : null,
         '',
         `Full result, lap charts and telemetry: ${SITE}/races/${race.year}/${race.round}/`,
       ),
@@ -115,18 +160,19 @@ const COMPOSERS = {
         tag(race.name), tag(winner.driverName), tag(winner.constructorName),
         tag(race.circuit?.countryName), 'GrandPrix',
       ]),
-      alt: `Result card: ${winner.driverName} won the ${race.year} ${race.name}. ${rows.join(', ')}.`,
+      alt: `Result card: ${winner.driverName} won the ${race.year} ${race.name}. ${plainRows.join(', ')}.`,
     };
   },
 
   'quali-result'({ race, podium }) {
     const pole = podium[0];
-    const rows = podium.map((r) => `P${r.position} ${r.driverName}${r.constructorName ? ` (${r.constructorName})` : ''}`);
+    const rows = podiumLines(podium, { medals: true });
+    const plainRows = podiumLines(podium);
     return {
       kicker: `${race.year} · Qualifying`,
-      headline: `${pole.driverName} takes pole for the ${race.name}`,
+      headline: `${pole.driverName} takes pole for the ${race.name}! ${EMOJI.pole}`,
       body: lines(
-        `${pole.driverName} starts the ${race.name} from pole${pole.q3 ? `, with a ${pole.q3}` : ''}.`,
+        `${EMOJI.pole} Pole position for ${pole.driverName} at the ${race.name}${pole.q3 ? `, with a ${pole.q3}` : ''}!`,
         '',
         ...rows,
         '',
@@ -136,18 +182,19 @@ const COMPOSERS = {
         tag(race.name), tag(pole.driverName), tag(pole.constructorName),
         'Qualifying', 'Pole', 'GrandPrix',
       ]),
-      alt: `Qualifying card: ${pole.driverName} on pole for the ${race.year} ${race.name}. ${rows.join(', ')}.`,
+      alt: `Qualifying card: ${pole.driverName} on pole for the ${race.year} ${race.name}. ${plainRows.join(', ')}.`,
     };
   },
 
   'sprint-result'({ race, podium }) {
     const winner = podium[0];
-    const rows = podium.map((r) => `P${r.position} ${r.driverName}${r.constructorName ? ` (${r.constructorName})` : ''}`);
+    const rows = podiumLines(podium, { medals: true });
+    const plainRows = podiumLines(podium);
     return {
       kicker: `${race.year} · Sprint`,
-      headline: `${winner.driverName} wins the ${race.name} sprint`,
+      headline: `${winner.driverName} wins the ${race.name} sprint! ${EMOJI.race}`,
       body: lines(
-        `${winner.driverName} takes the sprint at ${race.circuit?.name || race.name}.`,
+        `${EMOJI.race} ${winner.driverName} takes the sprint at ${race.circuit?.name || race.name}!`,
         '',
         ...rows,
         '',
@@ -157,7 +204,7 @@ const COMPOSERS = {
         tag(race.name), tag(winner.driverName), tag(winner.constructorName),
         'F1Sprint', 'GrandPrix',
       ]),
-      alt: `Sprint result card: ${winner.driverName} won the ${race.year} ${race.name} sprint. ${rows.join(', ')}.`,
+      alt: `Sprint result card: ${winner.driverName} won the ${race.year} ${race.name} sprint. ${plainRows.join(', ')}.`,
     };
   },
 
@@ -170,10 +217,10 @@ const COMPOSERS = {
     const most = (circuit?.mostWins || [])[0];
     return {
       kicker: `${race.year} · Round ${race.round}`,
-      headline: `Next up: the ${race.name}`,
+      headline: `Next up: the ${race.name} ${EMOJI.car}`,
       body: lines(
-        `Round ${race.round} of the ${race.year} season goes racing ${when}${at}.`,
-        circuit?.debut ? 'The first world championship race held here.' : null,
+        `${EMOJI.car} Round ${race.round} of the ${race.year} season goes racing ${when}${at}!`,
+        circuit?.debut ? 'The first world championship race ever held here!' : null,
         lastWinner ? `Last time out here: ${lastWinner.winnerName} won in ${lastWinner.year}.` : null,
         most ? `All-time wins at this circuit: ${most.name} with ${most.count}.` : null,
         '',
@@ -188,13 +235,14 @@ const COMPOSERS = {
 
   'on-this-day'({ race, podium, age, isFirstWin, isFinale, champion }) {
     const winner = podium[0];
-    const rows = podiumLines(podium);
+    const rows = podiumLines(podium, { medals: true });
+    const plainRows = podiumLines(podium);
     return {
       kicker: `On this day · ${race.year}`,
       headline: `${winner.driverName} wins the ${race.year} ${race.name}`,
       body: lines(
         `On this day in ${race.year}, ${plural(age, 'year')} ago, ${winner.driverName} won the ${race.name} at ${race.circuit?.name || 'the circuit'}.`,
-        isFirstWin ? `It was the first grand prix win of ${possessive(winner.driverName)} career.` : null,
+        isFirstWin ? `The first grand prix win of ${possessive(winner.driverName)} career!` : null,
         isFinale && champion ? `It closed the ${race.year} season, with ${champion} taking the title.` : null,
         '',
         ...rows,
@@ -205,7 +253,7 @@ const COMPOSERS = {
         'OnThisDay', tag(winner.driverName), tag(winner.constructorName),
         tag(race.name), tag(race.circuit?.countryName), 'F1History',
       ]),
-      alt: `On this day card: ${winner.driverName} won the ${race.year} ${race.name}. ${rows.join(', ')}.`,
+      alt: `On this day card: ${winner.driverName} won the ${race.year} ${race.name}. ${plainRows.join(', ')}.`,
     };
   },
 
@@ -217,10 +265,10 @@ const COMPOSERS = {
       kicker: 'Born on this day',
       headline: name,
       body: lines(
-        `${name} was born on this day in ${bornYear}.`,
+        `${EMOJI.cake} ${name} was born on this day in ${bornYear}.`,
         `${driver.nationality || ''} · ${c.firstYear}–${c.lastYear} · ${plural(c.races || 0, 'start')}`.trim(),
         careerLine(c),
-        titles.length ? `World champion in ${titles.join(', ')}.` : null,
+        titles.length ? `World champion in ${titles.join(', ')}! ${EMOJI.crown}` : null,
         '',
         `Full career record: ${SITE}/drivers/${driver.driverRef}/`,
       ),
@@ -243,7 +291,7 @@ const COMPOSERS = {
       kicker: 'All-time record',
       headline: config.title,
       body: lines(
-        `${config.title}. The all-time top five.`,
+        `${EMOJI.chart} ${config.title}. The all-time top five!`,
         '',
         ...listed,
         '',
@@ -271,7 +319,9 @@ const COMPOSERS = {
         '',
         ...listed,
         '',
-        gap > 0 ? `${leader} leads by ${plural(gap, 'point')}.` : 'The top two are level on points.',
+        gap > 0
+          ? `${leader} leads by ${plural(gap, 'point')}! ${EMOJI.crown}`
+          : `Level on points at the top! ${EMOJI.crown}`,
         `Live standings: ${SITE}/standings-drivers/`,
       ),
       tags: tagsFor([`F1${year}`, 'F1Standings', 'Championship', ...rows.slice(0, 3).map((r) => tag(r.driver?.last))]),
@@ -291,7 +341,7 @@ const COMPOSERS = {
         `${name}. ${driver.nationality ? `${driver.nationality}, ` : ''}${c.firstYear} to ${c.lastYear}.`,
         careerLine(c),
         titles.length
-          ? `World champion in ${titles.join(', ')}.`
+          ? `World champion in ${titles.join(', ')}! ${EMOJI.crown}`
           : best ? `Best championship finish: ${ordinal(best.position)} in ${best.year} with ${best.constructorName}.` : null,
         '',
         `Every race, every teammate duel: ${SITE}/drivers/${driver.driverRef}/`,
@@ -311,7 +361,7 @@ const COMPOSERS = {
       body: lines(
         `${team.name}. ${c.firstYear} to ${c.lastYear}, ${plural(c.seasons || 0, 'season')} in Formula 1.`,
         careerLine(c),
-        bs ? `Best season: ${bs.year}, ${plural(bs.wins, 'win')} from ${plural(bs.races, 'race')}.` : null,
+        bs ? `Best season: ${bs.year}, ${plural(bs.wins, 'win')} from ${plural(bs.races, 'race')}! ${EMOJI.trophy}` : null,
         topDriver ? `Most wins for the team: ${topDriver.name} with ${topDriver.wins}.` : null,
         '',
         `Full team history: ${SITE}/teams/${team.constructorRef}/`,
@@ -329,7 +379,7 @@ const COMPOSERS = {
       kicker: 'Circuit profile',
       headline: circuit.name,
       body: lines(
-        `${circuit.name}. ${circuit.location}, ${circuit.countryName}.`,
+        `${EMOJI.car} ${circuit.name}. ${circuit.location}, ${circuit.countryName}.`,
         `${plural(circuit.raceCount || 0, 'world championship race')} held here, ${circuit.firstYear}–${circuit.lastYear}.`,
         most ? `Most wins: ${most.name} (${most.count}).` : null,
         pole ? `Most poles: ${pole.name} (${pole.count}).` : null,
@@ -348,9 +398,9 @@ const COMPOSERS = {
     const line = (d, c) => `${driverName(d)}: ${careerLine(c)}`;
     return {
       kicker: matchup.tag || 'Head to head',
-      headline: `${matchup.aLabel} vs ${matchup.bLabel}`,
+      headline: `${matchup.aLabel} vs ${matchup.bLabel} ${EMOJI.duel}`,
       body: lines(
-        matchup.reason || `${matchup.aName} against ${matchup.bName}.`,
+        `${EMOJI.duel} ${matchup.reason || `${matchup.aName} against ${matchup.bName}.`}`,
         '',
         line(a, ac),
         line(b, bc),
@@ -370,7 +420,7 @@ const COMPOSERS = {
       kicker: 'Did you know?',
       headline: clamp(fact.text, 120),
       body: lines(
-        fact.text,
+        `${EMOJI.bulb} ${fact.text}`,
         '',
         `More F1 numbers than you can use: ${SITE}`,
       ),
