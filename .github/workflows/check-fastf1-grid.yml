@@ -1,0 +1,53 @@
+# FastF1 grid watchdog: daily check that no committed race/sprint session was
+# written before the official results published, leaving every driver with a
+# null grid slot. Flag-only - on a gap it opens ONE GitHub issue (deduped by
+# title) naming the rounds and the exact re-fetch commands.
+#
+# It cannot repair anything itself: F1's live-timing API refuses GitHub's
+# datacenter IPs, so the re-fetch is a local job on a residential machine (same
+# constraint as fetch-fastf1.yml). `fetch-fastf1.py --auto` retries such a
+# session for a week on its own, so this should only ever fire when the local
+# bot did not run in that window - which is exactly the case that let 2026 R11
+# sit broken from 26 July to 7 September.
+#
+# Uses only Node built-ins, so no npm install: a run costs well under a minute.
+name: Check FastF1 grid data
+
+on:
+  schedule:
+    - cron: '40 5 * * *' # daily 05:40 UTC, just after the principals watchdog
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run watchdog
+        id: watchdog
+        run: |
+          set +e
+          node scripts/check-fastf1-grid.mjs | tee report.md
+          echo "status=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Open issue on a gap (deduped)
+        if: steps.watchdog.outputs.status != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="FastF1 grid watchdog: a race session has no grid positions"
+          open_count=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length')
+          if [ "$open_count" != "0" ]; then
+            echo "An open watchdog issue already exists - not filing another."
+          else
+            gh issue create --title "$title" --body-file report.md
+          fi
