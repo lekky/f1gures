@@ -563,11 +563,21 @@ async function propsFor(candidate, copy, m) {
         meta: [c.location, c.countryName].filter(Boolean).join(', '),
         accent: COLORS.accent,
         ghostNumber: d.race.round,
-        stats: [
-          { value: c.raceCount ?? '—', label: 'GPs held' },
-          { value: c.firstYear ?? '—', label: 'First' },
-          d.lastWinner ? { value: d.lastWinner.year, label: 'Last held' } : null,
-        ].filter(Boolean),
+        // A debut venue has no history, and two tiles reading "—" is worse
+        // than no strip at all. It does have curated track facts, which are
+        // the more interesting thing to show about a circuit nobody has raced
+        // on yet. heroLayout drops the strip entirely on an empty array.
+        stats: (c.debut
+          ? [
+            c.length != null ? { value: `${c.length}`, label: 'km' } : null,
+            c.laps != null ? { value: c.laps, label: 'Laps' } : null,
+            c.corners != null ? { value: c.corners, label: 'Corners' } : null,
+          ]
+          : [
+            c.raceCount != null ? { value: c.raceCount, label: 'GPs held' } : null,
+            c.firstYear != null ? { value: c.firstYear, label: 'First' } : null,
+            d.lastWinner ? { value: d.lastWinner.year, label: 'Last held' } : null,
+          ]).filter(Boolean),
         footerRight: d.race.date,
       }];
     }

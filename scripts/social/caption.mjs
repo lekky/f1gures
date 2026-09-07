@@ -163,13 +163,17 @@ const COMPOSERS = {
 
   'race-preview'({ race, circuit, lastWinner, inDays }) {
     const when = inDays === 0 ? 'today' : inDays === 1 ? 'tomorrow' : `in ${plural(inDays, 'day')}`;
-    const venue = circuit?.name || race.name;
+    // Never stand the race name in for the venue: "at Spanish Grand Prix" is
+    // how that read. If no circuit name is known, the clause is dropped.
+    const venue = circuit?.name && circuit.name !== race.name ? circuit.name : null;
+    const at = venue ? ` at ${venue}` : '';
     const most = (circuit?.mostWins || [])[0];
     return {
       kicker: `${race.year} · Round ${race.round}`,
       headline: `Next up: the ${race.name}`,
       body: lines(
-        `Round ${race.round} of the ${race.year} season goes racing ${when} at ${venue}.`,
+        `Round ${race.round} of the ${race.year} season goes racing ${when}${at}.`,
+        circuit?.debut ? 'The first world championship race held here.' : null,
         lastWinner ? `Last time out here: ${lastWinner.winnerName} won in ${lastWinner.year}.` : null,
         most ? `All-time wins at this circuit: ${most.name} with ${most.count}.` : null,
         '',
@@ -178,7 +182,7 @@ const COMPOSERS = {
       tags: tagsFor([
         tag(race.name), tag(circuit?.countryName || race.circuitRef), 'RaceWeek', 'GrandPrix',
       ]),
-      alt: `Preview card for the ${race.year} ${race.name} at ${venue}.`,
+      alt: `Preview card for the ${race.year} ${race.name}${at}.`,
     };
   },
 
@@ -226,7 +230,15 @@ const COMPOSERS = {
   },
 
   'record-board'({ config, rows }) {
-    const listed = rows.map((r, i) => `${i + 1}. ${r.name}: ${r.valueLabel || r.value}`);
+    // Two of the twenty boards rank a driver *at one circuit*, so the same
+    // name legitimately appears more than once. Without the venue the caption
+    // reads like a bug - "1. Lewis Hamilton ... 4. Lewis Hamilton" - even
+    // though the card already carries it as the row sub.
+    const atCircuit = config.subjectType === 'driver-at-circuit';
+    const listed = rows.map((r, i) => {
+      const who = atCircuit && r.circuitName ? `${r.name} at ${r.circuitName}` : r.name;
+      return `${i + 1}. ${who}: ${r.valueLabel || r.value}`;
+    });
     return {
       kicker: 'All-time record',
       headline: config.title,

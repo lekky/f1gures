@@ -25,6 +25,7 @@ import {
   trivia, seasons, racesByMonthDay, driverIndexMap, circuitIndexMap, seasonBundle,
 } from './sources.mjs';
 import { computeStandings } from '../../src/lib/seasonStats.mjs';
+import { circuitProfiles } from '../../src/data/circuitProfiles.js';
 import { yearsBetween, daysBetween } from './format.mjs';
 
 // ── cooldowns (days) ──
@@ -200,7 +201,35 @@ function racePreviewCandidates({ date }) {
   if (!upcoming.length) return [];
 
   const { r, inDays } = upcoming[0];
-  const circuit = circuitDoc(r.circuitRef) || circuitIndexMap().get(r.circuitRef) || null;
+  let circuit = circuitDoc(r.circuitRef) || circuitIndexMap().get(r.circuitRef) || null;
+  // A brand-new venue has no Ergast entry and so no circuit doc at all - the
+  // 2026 Madring is the live case. The site's hand-curated profiles are then
+  // the only source of a real name, and without one the preview composer fell
+  // back to the race name and printed "at Spanish Grand Prix". Only names and
+  // place are borrowed: race counts and lap records would be claims about a
+  // circuit that has not run yet.
+  //
+  // No alias mapping is needed here (circuitProfiles keys some circuits by a
+  // short id) because this branch is only reached when the archive has nothing
+  // at all, which never happens for a circuit Ergast has heard of.
+  if (!circuit) {
+    const profile = circuitProfiles[r.circuitRef];
+    if (profile) {
+      circuit = {
+        circuitRef: r.circuitRef,
+        name: profile.name,
+        location: profile.city,
+        countryName: profile.country,
+        races: [],
+        // Track facts, not history: a debut venue has no race count or past
+        // winner, so these are what the card can honestly show instead.
+        debut: true,
+        length: profile.length,
+        laps: profile.laps,
+        corners: profile.corners,
+      };
+    }
+  }
   // Last time this circuit hosted a race, and who won it.
   const past = (circuit?.races || []).filter((x) => x.year < r.year).sort((a, b) => b.year - a.year);
   const lastWinner = past[0] || null;
