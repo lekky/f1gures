@@ -756,9 +756,12 @@ def process_weekend(year, rnd, only_session=None, force=False):
             print(f"  {sid}: not finished yet ({start.isoformat()}) — skipping")
             continue
         if out_path.exists() and not force:
-            print(f"  {sid}: already on disk — skipping (use --force to refetch)")
-            have.append(sid)
-            continue
+            if missing_grid(out_path, sid, start, now):
+                print(f"  {sid}: on disk but no grid positions — refetching")
+            else:
+                print(f"  {sid}: already on disk — skipping (use --force to refetch)")
+                have.append(sid)
+                continue
         try:
             print(f"  {sid}: fetching…")
             payload = fetch_session(year, rnd, sid, colors, refs)
@@ -794,9 +797,50 @@ def process_weekend(year, rnd, only_session=None, force=False):
     return wrote_any
 
 
+# ── Incomplete-session detection ─────────────────────────────────────
+# FastF1 serves timing data within minutes of the flag but leaves
+# GridPosition empty until the official results are published, which can be
+# hours later. A race session fetched in that window writes a file that LOOKS
+# complete - laps, positions, stints, pit stops - but has no grid slot for any
+# driver. The old "already on disk" check then treated the round as finished
+# for ever: 2026 R11 was fetched 1h15m after the flag on 26 July and sat with
+# 22 null grids until 7 September, when R13 hit the same window and someone
+# finally noticed.
+#
+# So a race/sprint file with no grid at all counts as unfinished and --auto
+# picks it up again on a later pass. Bounded on purpose: if the grid still
+# isn't published a week out it never will be, and re-fetching a session for
+# ever is a worse failure than the gap.
+GRID_RETRY_DAYS = 7
+
+
+def missing_grid(path, sid, start=None, now=None):
+    """True when a race/sprint file on disk has no grid slot for any driver
+    and the session is recent enough that one may still be published."""
+    if sid not in ("race", "sprint"):
+        return False
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return False  # unreadable is a different problem; --force is the tool
+    drivers = data.get("drivers") or []
+    if not drivers:
+        return False
+    if any(d.get("grid") is not None for d in drivers):
+        return False
+    if start is not None:
+        now = now or datetime.now(timezone.utc)
+        start = start if start.tzinfo else start.replace(tzinfo=timezone.utc)
+        if now - start > timedelta(days=GRID_RETRY_DAYS):
+            return False
+    return True
+
+
 def auto_rounds(now=None):
     """(year, [rounds]) worth checking: completed rounds of the current season
-    whose weekend has begun and that are missing at least one session file."""
+    whose weekend has begun and that are missing at least one session file, or
+    whose race/sprint file was written before the grid was published."""
     now = now or datetime.now(timezone.utc)
     year = now.year
     bundle = load_bundle(year)
@@ -811,7 +855,10 @@ def auto_rounds(now=None):
             continue
         pending = []
         for sid, start in sched:
-            if is_finished(start, sid, now) and not (OUT_ROOT / str(year) / str(rnd) / f"{sid}.json").exists():
+            p = OUT_ROOT / str(year) / str(rnd) / f"{sid}.json"
+            if not is_finished(start, sid, now):
+                continue
+            if not p.exists() or missing_grid(p, sid, start, now):
                 pending.append(sid)
         if pending:
             todo.append(rnd)
