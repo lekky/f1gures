@@ -246,6 +246,63 @@ describe('caption composition', () => {
     }
   });
 
+  it('never stands the race name in for the venue', () => {
+    // A brand-new circuit (Madring, 2026) has no archive doc, and the old
+    // `circuit?.name || race.name` fallback printed "at Spanish Grand Prix".
+    // With no name known the clause is dropped rather than faked.
+    const race = { ...CASES['race-preview'].race, name: 'Spanish Grand Prix' };
+    const copy = composeCaption({ angle: 'race-preview', data: { race, circuit: null, lastWinner: null, inDays: 2 }, link: '/', key: 'k', subject: 's' });
+    expect(copy.body).toContain('goes racing in 2 days.');
+    expect(copy.body).not.toContain('at Spanish Grand Prix');
+    expect(copy.alt).not.toContain('at Spanish Grand Prix');
+  });
+
+  it('drops the venue clause when the circuit name only echoes the race name', () => {
+    const race = { ...CASES['race-preview'].race, name: 'Spanish Grand Prix' };
+    const copy = composeCaption({ angle: 'race-preview', data: { race, circuit: { name: 'Spanish Grand Prix' }, lastWinner: null, inDays: 1 }, link: '/', key: 'k', subject: 's' });
+    expect(copy.body).toContain('goes racing tomorrow.');
+  });
+
+  it('says so when a circuit is making its debut', () => {
+    const race = { ...CASES['race-preview'].race, name: 'Spanish Grand Prix' };
+    const circuit = { name: 'Madrid Street Circuit', location: 'Madrid', countryName: 'Spain', debut: true };
+    const copy = composeCaption({ angle: 'race-preview', data: { race, circuit, lastWinner: null, inDays: 2 }, link: '/', key: 'k', subject: 's' });
+    expect(copy.body).toContain('at Madrid Street Circuit.');
+    expect(copy.body).toContain('The first world championship race held here.');
+  });
+
+  it('does not call an established circuit a debut', () => {
+    const copy = composeCaption({ angle: 'race-preview', data: CASES['race-preview'], link: '/', key: 'k', subject: 's' });
+    expect(copy.body).not.toContain('first world championship race held here');
+    expect(copy.body).toContain('at Interlagos.');
+  });
+
+  it('names the circuit on a driver-at-circuit leaderboard', () => {
+    // Those boards rank a driver AT a venue, so one name can appear twice.
+    // Without the circuit the caption reads as a duplicate-row bug.
+    const copy = composeCaption({
+      angle: 'record-board',
+      data: {
+        config: { id: 'poles-at-circuit', title: 'Most poles at one circuit', subjectType: 'driver-at-circuit' },
+        rows: [
+          { rank: 1, name: 'Lewis Hamilton', value: 9, valueLabel: '9 poles', circuitName: 'Hungaroring' },
+          { rank: 2, name: 'Lewis Hamilton', value: 8, valueLabel: '8 poles', circuitName: 'Albert Park Grand Prix Circuit' },
+        ],
+      },
+      link: '/', key: 'k', subject: 's',
+    });
+    expect(copy.body).toContain('1. Lewis Hamilton at Hungaroring: 9 poles');
+    expect(copy.body).toContain('2. Lewis Hamilton at Albert Park Grand Prix Circuit: 8 poles');
+  });
+
+  it('leaves a plain driver leaderboard unchanged', () => {
+    // The other eighteen boards carry a year range as context; repeating it
+    // per row would be noise, so only driver-at-circuit rows get a venue.
+    const copy = composeCaption({ angle: 'record-board', data: CASES['record-board'], link: '/', key: 'k', subject: 's' });
+    expect(copy.body).toContain('1. Lewis Hamilton: 106 wins');
+    expect(copy.body).not.toContain(' at ');
+  });
+
   it('keeps blank-line spacing in the body', () => {
     const copy = composeCaption({ angle: 'record-board', data: CASES['record-board'], link: '/', key: 'k', subject: 's' });
     expect(copy.body).toContain('\n\n');
