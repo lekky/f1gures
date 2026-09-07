@@ -38,7 +38,7 @@ const RACE_VIZ = [
     desc: 'Box plots of clean race laps per team, fastest first — the honest pecking order behind the result.',
     render: (a) => <TeamPaceChart pace={a.pace} ctx={a.ctx} /> },
   { key: 'overtakes', tag: 'PASS', title: 'On-track passes', src: 'laps["Position"] deltas',
-    desc: 'Who passed whom, when, and on what tyre — net racing passes only, grouped by the overtaker. Excludes lap 1, pit-stop swaps and SC/VSC laps, so the tally runs below the official "overtakes made" count.',
+    desc: 'Who passed whom, when, and on what tyre — net racing passes only, grouped by the overtaker. Includes lap 1; excludes pit-stop swaps and safety-car laps, so the tally can run below the official "overtakes made" count.',
     render: (a) => <OvertakeMatrix R={a.R} ctx={a.ctx} /> },
   { key: 'undercut', tag: 'WINDOW', title: 'Undercut calculator', src: 'laps around PitInTime windows',
     desc: 'For each green-flag stop: time gained or lost against every rival within five seconds.',

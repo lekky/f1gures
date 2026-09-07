@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount,
+  decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount, neutralLaps,
   fastestLap, lap1Gains, hasGridData, duelGap, teamPace, degSeries, undercutWindows,
   segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, compoundOffsets,
   fuelCorrectedPace, fmtLap,
@@ -106,6 +106,77 @@ describe('fastestLap', () => {
       AAA: [row(1, 80, 1), row(2, 91, 1), row(3, 85, 1, { neutral: true }), row(4, 90, 1)],
     });
     expect(fastestLap(laps)).toEqual({ code: 'AAA', lap: 4, t: 90 });
+  });
+});
+
+describe('neutralLaps', () => {
+  // Two cars, `n` laps. `slow` lists laps run far above green pace.
+  const build = (n, slow = [], nulls = []) => decodeLaps(Object.fromEntries(
+    ['AAA', 'BBB'].map((c) => [c, Array.from({ length: n }, (_, i) => {
+      const lap = i + 1;
+      const t = nulls.includes(lap) ? null : (slow.includes(lap) ? 160 : 80);
+      return [lap, t, 1, 'M', 1, 1, 0, 0, 1];
+    })]),
+  ));
+
+  it('is empty when nothing was reported', () => {
+    expect([...neutralLaps(build(10), [], 10)]).toEqual([]);
+    expect([...neutralLaps(build(10), null, 10)]).toEqual([]);
+  });
+
+  it('includes the reported band', () => {
+    const set = neutralLaps(build(10), [{ from: 4, to: 5, type: 'SC' }], 10);
+    expect([...set].sort((a, b) => a - b)).toEqual([4, 5]);
+  });
+
+  // Regression: Monza 2026 reported "laps 2-3" while the field ran 1.5x race
+  // pace through lap 6, so the pit cycle unwinding read as on-track passes.
+  it('grows a band forward over the slow laps it under-reports', () => {
+    const set = neutralLaps(build(12, [2, 3, 4, 5, 6]), [{ from: 2, to: 3, type: 'SC' }], 12);
+    expect([...set].sort((a, b) => a - b)).toEqual([2, 3, 4, 5, 6]);
+  });
+
+  it('treats laps with no times as slow', () => {
+    const set = neutralLaps(build(12, [2, 3], [4, 5]), [{ from: 2, to: 3, type: 'SC' }], 12);
+    expect([...set].sort((a, b) => a - b)).toEqual([2, 3, 4, 5]);
+  });
+
+  it('stops growing at the first green lap', () => {
+    const set = neutralLaps(build(12, [2, 3, 4, 8]), [{ from: 2, to: 3, type: 'SC' }], 12);
+    expect([...set].sort((a, b) => a - b)).toEqual([2, 3, 4]); // lap 8 is slow but not adjacent
+  });
+
+  // A wet race runs well above green pace for many laps with no neutralisation,
+  // and those passes are real. Only a reported band may grow.
+  it('never invents neutralisation away from a reported band', () => {
+    const set = neutralLaps(build(12, [2, 3]), [{ from: 9, to: 9, type: 'VSC' }], 12);
+    expect([...set].sort((a, b) => a - b)).toEqual([9]);
+  });
+
+  it('never grows back onto lap 1, which is slow by nature', () => {
+    const set = neutralLaps(build(12, [1, 2, 3]), [{ from: 3, to: 3, type: 'SC' }], 12);
+    expect(set.has(1)).toBe(false);
+    expect([...set].sort((a, b) => a - b)).toEqual([2, 3]);
+  });
+});
+
+describe('overtakeList lap 1', () => {
+  const row = (n, pos) => [n, 80, pos, 'M', 1, 1, 0, 0, 1];
+
+  it('counts places taken on lap 1 as passes', () => {
+    const laps = decodeLaps({ AAA: [row(1, 1), row(2, 1)], BBB: [row(1, 2), row(2, 2)] });
+    // AAA started P2 behind BBB and is ahead by the end of lap 1.
+    const pos = { AAA: [2, 1, 1], BBB: [1, 2, 2] };
+    const passes = overtakeList(laps, pos);
+    expect(passes).toEqual([{ by: 'AAA', on: 'BBB', lap: 1, tyre: 'M' }]);
+    expect(overtakeCount(laps, pos)).toBe(1);
+  });
+
+  it('drops passes on a neutralised lap', () => {
+    const laps = decodeLaps({ AAA: [row(1, 1), row(2, 1)], BBB: [row(1, 2), row(2, 2)] });
+    const pos = { AAA: [2, 1, 1], BBB: [1, 2, 2] };
+    expect(overtakeList(laps, pos, new Set([1]))).toEqual([]);
+    expect(overtakeCount(laps, pos, new Set([1]))).toBe(0);
   });
 });
 

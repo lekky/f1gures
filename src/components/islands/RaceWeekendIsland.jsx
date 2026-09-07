@@ -13,7 +13,7 @@
 // /data/fastf1/<year>/<round>/<session>.json written by scripts/fetch-fastf1.py.
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
-  decodeLaps, cumTimes, gapByLap, posByLap, overtakeCount, overtakeList,
+  decodeLaps, cumTimes, gapByLap, posByLap, overtakeCount, overtakeList, neutralLaps,
   fastestLap, lap1Gains, degSeries, teamPace, fmtLap,
 } from './raceweekend/derive.js';
 import { assignSeriesStyles } from '../../lib/chartSeries.js';
@@ -53,14 +53,16 @@ function deriveRace(sess) {
   const pits = (sess.pitStops || []).filter(
     (p) => p.lap != null && p.lap > 0 && p.lap < (lastLapOf[p.code] ?? totalLaps),
   );
+  // Reported SC/VSC bands, grown over the slow laps they under-report.
+  const neutral = neutralLaps(laps, sess.trackStatus || [], totalLaps);
   return {
     laps, cum, gaps, pos, posFinal, finishOrder, gridOf,
     totalLaps,
     stints: sess.stints || [],
     pits,
     bands: sess.trackStatus || [],
-    passes: overtakeList(laps, pos),
-    overtakes: overtakeCount(laps, pos),
+    passes: overtakeList(laps, pos, neutral),
+    overtakes: overtakeCount(laps, pos, neutral),
     fl: fastestLap(laps),
     lap1: lap1Gains(pos, gridOf),
   };
