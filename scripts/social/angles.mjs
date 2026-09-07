@@ -215,11 +215,16 @@ function racePreviewCandidates({ date }) {
   if (!circuit) {
     const profile = circuitProfiles[r.circuitRef];
     if (profile) {
+      // The profiles name the country ("Spain"); the flag needs the ISO code,
+      // which the season bundle's calendar entry carries.
+      const entry = (seasonBundle(r.year)?.calendar || [])
+        .find((x) => Number(x.round) === Number(r.round));
       circuit = {
         circuitRef: r.circuitRef,
         name: profile.name,
         location: profile.city,
         countryName: profile.country,
+        country: entry?.country || null,
         races: [],
         // Track facts, not history: a debut venue has no race count or past
         // winner, so these are what the card can honestly show instead.

@@ -280,6 +280,17 @@ const WORDMARK_URI = (() => {
 })();
 
 /** The wordmark lockup at a spec width (250x80 top-right, 300x96 bottom-left). */
+/**
+ * Rendered height of the wordmark at a given width.
+ *
+ * The art is mostly speed streaks - letters are about a third of it - so the
+ * box is much taller than the lettering suggests, and anything placed near it
+ * has to clear the whole thing. See src/lib/brandMark.mjs.
+ */
+export function wordmarkHeight(m, width = 250) {
+  return Math.round((WORDMARK_NATIVE.h / WORDMARK_NATIVE.w) * m.wx(width));
+}
+
 export function wordmark(m, width = 250) {
   const wpx = m.wx(width);
   const hpx = Math.round((WORDMARK_NATIVE.h / WORDMARK_NATIVE.w) * wpx);
