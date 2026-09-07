@@ -15,7 +15,7 @@
 // Measurements come from the spec and are deliberate - change them there, not
 // here. A new angle should map onto an existing skeleton rather than add one.
 
-import { loadFace, loadTrackMap, loadFlag } from '../og-templates/og-shared.mjs';
+import { loadFace, loadTrackMap, loadFlag, loadFlagCC } from '../og-templates/og-shared.mjs';
 import { seasonBundle } from './sources.mjs';
 import {
   FORMATS, DEFAULT_FORMATS, renderPng, metrics, card, div, txt, img, grow,
@@ -209,11 +209,15 @@ async function leaderboardLayout(m, { kickerText, title, sub, rows, bandWidths, 
 // 4a — Hero cards
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function heroLayout(m, { kickerText, chipText, name, meta, nationality, stats, accent, faceRef, trackRef, ghostNumber, footerRight }) {
+async function heroLayout(m, { kickerText, chipText, name, meta, nationality, countryCode, stats, accent, faceRef, trackRef, ghostNumber, footerRight }) {
   const [face, track, flag] = await Promise.all([
     faceRef ? loadFace(faceRef, m.wx(600), m.v(900)) : null,
     trackRef ? loadTrackMap(trackRef, m.wx(440), m.v(440)) : null,
-    nationality ? loadFlag(nationality, m.wx(56), m.v(42)) : null,
+    // People are keyed by demonym ("British"), places by ISO alpha-2 ("ES") -
+    // circuit docs carry the latter. Either fills the same slot beside `meta`.
+    nationality ? loadFlag(nationality, m.wx(56), m.v(42))
+      : countryCode ? loadFlagCC(countryCode, m.wx(56), m.v(42))
+        : null,
   ]);
 
   const { given, family } = splitName(name);
@@ -561,6 +565,7 @@ async function propsFor(candidate, copy, m) {
         chipText: 'Next up',
         name: d.race.name,
         meta: [c.location, c.countryName].filter(Boolean).join(', '),
+        countryCode: c.country,
         accent: COLORS.accent,
         ghostNumber: d.race.round,
         // A debut venue has no history, and two tiles reading "—" is worse
@@ -611,6 +616,7 @@ async function propsFor(candidate, copy, m) {
         kickerText: 'Circuit profile',
         name: c.name,
         meta: `${c.location}, ${c.countryName}`,
+        countryCode: c.country,
         accent: COLORS.accent,
         trackRef: c.circuitRef,
         stats: [
