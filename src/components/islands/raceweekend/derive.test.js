@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   decodeLaps, cumTimes, gapByLap, posByLap, overtakeList, overtakeCount,
-  fastestLap, lap1Gains, duelGap, teamPace, degSeries, undercutWindows,
+  fastestLap, lap1Gains, hasGridData, duelGap, teamPace, degSeries, undercutWindows,
   segmentBests, theoreticalBest, progressionRows, spreadLabels, cornerMarkers, placeCornerLabels, compoundOffsets,
   fuelCorrectedPace, fmtLap,
 } from './derive.js';
@@ -109,12 +109,60 @@ describe('fastestLap', () => {
   });
 });
 
+describe('posByLap grid seeding', () => {
+  const row = (n, t, pos) => [n, t, pos, 'M', 1, 1, 0, 0, 1];
+
+  it('uses the real grid slot at index 0 when there is one', () => {
+    const laps = decodeLaps({ AAA: [row(1, 80, 1)], BBB: [row(1, 81, 2)] });
+    const pos = posByLap(laps, cumTimes(laps), (c) => (c === 'AAA' ? 4 : 9));
+    expect(pos.AAA[0]).toBe(4);
+    expect(pos.BBB[0]).toBe(9);
+  });
+
+  // Regression: index 0 used to fall back to the field size, asserting that
+  // every car started last — which is what produced the bogus lap-1 gains.
+  it('falls back to the car own lap-1 position, not the field size', () => {
+    const laps = decodeLaps({
+      AAA: [row(1, 80, 1), row(2, 80, 1)],
+      BBB: [row(1, 81, 2), row(2, 81, 2)],
+      CCC: [row(1, 82, 3), row(2, 82, 3)],
+    });
+    const pos = posByLap(laps, cumTimes(laps), () => null);
+    expect(pos.AAA[0]).toBe(1);
+    expect(pos.BBB[0]).toBe(2);
+    expect(pos.CCC[0]).toBe(3);
+    // and therefore no car shows a phantom lap-1 gain
+    expect(lap1Gains(pos, () => null)).toEqual([]);
+  });
+});
+
 describe('lap1Gains', () => {
   it('ranks by places gained', () => {
     const pos = { AAA: [5, 2], BBB: [1, 3] };
     const gains = lap1Gains(pos, (c) => (c === 'AAA' ? 5 : 1));
     expect(gains[0]).toEqual({ code: 'AAA', grid: 5, after: 2, delta: 3 });
     expect(gains[1].delta).toBe(-2);
+  });
+
+  // Regression: 2026 R13. FastF1 had no GridPosition for any car yet, so every
+  // grid slot read as the field size and the polesitter showed "+21 places on
+  // lap 1". With no grid data the chart must say nothing at all.
+  it('returns nothing when the session carries no grid slots', () => {
+    const pos = { AAA: [1, 1], BBB: [2, 2] };
+    expect(lap1Gains(pos, () => null)).toEqual([]);
+  });
+
+  it('drops individual cars with no grid slot rather than inventing one', () => {
+    const pos = { AAA: [5, 2], BBB: [1, 3] };
+    const gains = lap1Gains(pos, (c) => (c === 'AAA' ? 5 : null));
+    expect(gains.map((g) => g.code)).toEqual(['AAA']);
+  });
+});
+
+describe('hasGridData', () => {
+  it('is false only when every car is missing a slot', () => {
+    expect(hasGridData(['A', 'B'], () => null)).toBe(false);
+    expect(hasGridData(['A', 'B'], (c) => (c === 'A' ? 3 : null))).toBe(true);
   });
 });
 

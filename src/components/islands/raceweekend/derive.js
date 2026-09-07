@@ -79,11 +79,18 @@ export function gapByLap(laps, cum) {
 // { code: [grid, posL1, posL2, ...] }. Prefers the feed's Position column and
 // only ranks by cumulative time for cars whose position is null — a single
 // null (typically a retiree) must not discard the whole lap's reliable order.
+//
+// Index 0 used to fall back to `codes.length` when a car had no grid slot,
+// which quietly asserts "started last". When FastF1 has no GridPosition at all
+// — the normal state for a couple of hours after the flag, before the results
+// table is published — that made EVERY car start P22, so the polesitter showed
+// as gaining 21 places on lap 1. Unknown grids now fall back to that car's own
+// lap-1 position, which claims nothing that isn't in the data.
 export function posByLap(laps, cum, gridOf) {
   const codes = Object.keys(laps);
   const maxLap = Math.max(0, ...codes.map((c) => laps[c].length));
   const out = {};
-  for (const c of codes) out[c] = [gridOf(c) ?? codes.length];
+  for (const c of codes) out[c] = [gridOf(c) ?? null];
   for (let i = 0; i < maxLap; i++) {
     const running = codes.filter((c) => i < laps[c].length);
     const known = running.filter((c) => laps[c][i].pos != null);
@@ -109,7 +116,16 @@ export function posByLap(laps, cum, gridOf) {
       merged.forEach((c, k) => out[c].push(k + 1));
     }
   }
+  // Patch unknown grid slots with the car's own lap-1 position (see above).
+  for (const c of codes) if (out[c][0] == null) out[c][0] = out[c][1] ?? null;
   return out;
+}
+
+// True when the session actually carries grid slots. FastF1 leaves
+// GridPosition empty until the official results are published, and a chart
+// about the start is meaningless without them.
+export function hasGridData(codes, gridOf) {
+  return codes.some((c) => gridOf(c) != null);
 }
 
 // Net on-track passes (excludes lap 1, pit laps and SC/VSC laps on either side).
@@ -164,12 +180,19 @@ export function fastestLap(laps) {
 }
 
 // Lap-1 gains: [{code, grid, after, delta}] sorted by delta desc.
+//
+// Returns [] when the session has no grid slots at all — the chart is about
+// places gained off the line, so with no grid there is nothing to say and a
+// fabricated one reads as a real result. Cars individually missing a slot are
+// dropped for the same reason.
 export function lap1Gains(pos, gridOf) {
-  return Object.keys(pos)
+  const codes = Object.keys(pos);
+  if (!hasGridData(codes, gridOf)) return [];
+  return codes
     .map((c) => {
-      const grid = gridOf(c) ?? pos[c][0];
+      const grid = gridOf(c);
       const after = pos[c][1];
-      if (after == null) return null;
+      if (grid == null || after == null) return null;
       return { code: c, grid, after, delta: grid - after };
     })
     .filter(Boolean)

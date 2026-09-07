@@ -363,12 +363,15 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
   const activeSchedule = sessions.find((s) => s.id === tab);
 
   // ── viz gallery + modal state ──
-  const vlist = vizListFor(tab);
+  const vizArgs = { sess: activeSess, R: activeR, deg, pace, ctx, sel, raceSess, raceR };
+  // A def may declare `available` when its chart needs data the session might
+  // not carry (e.g. grid slots, absent until the official results publish).
+  // Hide the card rather than show an empty or invented one.
+  const vlist = vizListFor(tab).filter((d) => !d.available || !activeR || d.available(vizArgs));
   const openIdx = openKey ? vlist.findIndex((d) => d.key === openKey) : -1;
   const openViz = openIdx >= 0 ? vlist[openIdx] : null;
   const sessLabel = (activeSchedule?.label || tab).toUpperCase();
 
-  const vizArgs = { sess: activeSess, R: activeR, deg, pace, ctx, sel, raceSess, raceR };
 
   const openVizModal = (key, method = 'card') => {
     const wasClosed = !openKeyRef.current;

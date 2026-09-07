@@ -17,6 +17,34 @@ scripts/fetch-fastf1.py  ──►  public/data/fastf1/<year>/<round>/
      RaceWeekendIsland.jsx (client) ─ fetches the session JSONs ─► charts
 ```
 
+## Grid positions land late (and what depends on them)
+
+FastF1 leaves `GridPosition` empty until the session's official results are
+published, which can be hours after the flag. The local bot fetches within
+minutes, so a round fetched straight after a race can ship a `race.json` whose
+`drivers[].grid` is null for **every** car. As of 2026-09-07 that is true of
+2026 R11 and R13; all 135 other rounds carry grid data.
+
+This used to corrupt the charts rather than omit them. `posByLap` seeded index
+0 (the grid slot) with `codes.length` when a car had no slot — quietly claiming
+"started last" — so with no grid data at all every car "started P22" and the
+Lap 1 gains chart showed the polesitter gaining 21 places. Fixed: an unknown
+grid falls back to that car's own lap-1 position, `lap1Gains` returns nothing
+when the session has no slots, and the viz def carries an `available` predicate
+so the gallery hides the card instead of rendering an empty or invented one.
+
+**To repair an affected round, re-fetch it** — the API serves grid once the
+results are up:
+
+```
+python scripts/fetch-fastf1.py 2026 13 --session race --force
+```
+
+This must run on a **residential IP**. F1's live-timing API refuses datacenter
+IPs: from CI (or a cloud agent) every request fails with "Failed to load driver
+list and session results!" and the script exits having written nothing, leaving
+the existing files untouched. Same constraint as the rest of this pipeline.
+
 ## Provisional results on race evening
 
 FastF1 reads F1's own live timing, so `race.json` lands within minutes of the
