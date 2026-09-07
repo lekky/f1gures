@@ -79,6 +79,19 @@ Then spot-check one `imageUrl` per run actually resolves. Instagram, TikTok and
 Facebook all *pull* the image from that URL — a 404 fails at Metricool's end,
 after the post is already in the calendar.
 
+**In a cloud/remote session, `f1gures.app` may be unreachable from the sandbox
+itself** — its egress proxy can block the domain outright (`curl` fails the
+CONNECT tunnel, `WebFetch` returns `EGRESS_BLOCKED`), which says nothing about
+whether the URL is actually live. Don't skip the check — verify indirectly
+instead: look up the most recent `social-post.yml` run (`actions_list` /
+`list_workflow_runs`) and confirm it finished with `conclusion: success` at a
+timestamp matching (or just before) `pending.json`'s `updatedAt`. That
+workflow's upload step is strict and fails the job loudly on a real transport
+problem, so a matching successful run is equivalent evidence to a resolved
+URL. Only fall back to this when a direct fetch is blocked by the sandbox
+itself (a connection/proxy error) — a genuine 404 or timeout from the image
+host is still a real dead-URL signal and stops the run as below.
+
 **If the URLs are dead, stop and schedule nothing.** Two causes, and the fix
 differs:
 
