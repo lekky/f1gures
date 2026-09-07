@@ -70,8 +70,10 @@ export const SOCIAL_CONFIG = {
   // ── Draft vs live ──────────────────────────────────────────────────────────
   // true  = posts land in the Metricool calendar for you to review and approve.
   // false = Metricool publishes them automatically at the scheduled time.
-  // Start true. Flip to false when you are happy with a couple of weeks' worth.
-  draft: true,
+  // Flipped to false on 2026-09-07, after a fortnight's worth was reviewed in
+  // draft. Set it back to true to put the feed under review again - it takes
+  // effect on the next batch, not on anything already in the calendar.
+  draft: false,
 
   // ── Race weekends ──────────────────────────────────────────────────────────
   // Result posts (pole, sprint, podium) cannot be scheduled in advance - the
