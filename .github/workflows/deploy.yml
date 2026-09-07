@@ -90,6 +90,7 @@ jobs:
         run: npm ci
 
       - name: Cache OG images
+        id: og-cache
         if: steps.decide.outputs.deploy == 'true'
         uses: actions/cache@v4
         with:
@@ -155,6 +156,7 @@ jobs:
           SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_DIR: f1gures.app
+          OG_CACHE_HIT: ${{ steps.og-cache.outputs.cache-hit }}
         run: |
           set -euo pipefail
           if [ -z "${SSH_KEY:-}" ]; then
@@ -175,7 +177,7 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          lftp -c "
+          LFTP_SETUP="
             set cmd:fail-exit true;
             set sftp:auto-confirm yes;
             set sftp:connect-program 'ssh -a -x -i $HOME/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=accept-new';
@@ -183,5 +185,29 @@ jobs:
             set net:timeout 30;
             set mirror:parallel-transfer-count 10;
             open -u \"$SSH_USER,\" sftp://$SSH_HOST;
-            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin -X social/ --verbose ./dist/ $REMOTE_DIR/;
           "
+          # The ~2,300 generated OG PNGs are ~500 MB of a ~1 GB tree, and SFTP
+          # has no content diff, so without this they are re-uploaded in full on
+          # every deploy. They only change when the OG cache key moves (it
+          # covers the season data, build-archive/generate-og-images and the
+          # templates), so: always exclude them from the main mirror, then sync
+          # that one directory afterwards only when the cache MISSED - i.e. when
+          # generate-og-images actually rebuilt them.
+          #
+          # The exclude is anchored at the mirror root on purpose: the basename
+          # form (-X og/) would also match any other directory named "og"
+          # anywhere in the tree. Excluded paths are exempt from --delete, so
+          # the remote OG images are left intact rather than pruned.
+          lftp -c "$LFTP_SETUP
+            mirror --reverse --delete --parallel=10 -X .well-known -X cgi-bin -X social/ -x '^images/og/' --verbose ./dist/ $REMOTE_DIR/;
+          "
+          if [ "${OG_CACHE_HIT:-}" = "true" ]; then
+            echo "OG cache hit - skipped ~500 MB of unchanged OG images."
+          elif [ -d ./dist/images/og ]; then
+            echo "OG cache missed - images were regenerated, syncing them."
+            lftp -c "$LFTP_SETUP
+              mirror --reverse --delete --parallel=10 --verbose ./dist/images/og/ $REMOTE_DIR/images/og/;
+            "
+          else
+            echo "::warning::No dist/images/og directory - skipping the OG sync."
+          fi
