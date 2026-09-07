@@ -1,7 +1,47 @@
 {
-  "updatedAt": "2026-09-07T10:02:52.125Z",
+  "updatedAt": "2026-09-07T18:17:18.360Z",
   "blogId": "6692452",
   "brandLabel": "F1gures",
   "timezone": "Europe/London",
-  "posts": []
+  "posts": [
+    {
+      "date": "2026-09-07",
+      "publishAt": "2026-09-07T19:37:02",
+      "timezone": "Europe/London",
+      "angle": "race-result",
+      "key": "race-result:2026-13",
+      "subject": "race:2026-13",
+      "headline": "Andrea Kimi Antonelli wins the Italian Grand Prix",
+      "link": "https://f1gures.app/races/2026/13/",
+      "tiktokTitle": "Andrea Kimi Antonelli wins the Italian Grand Prix",
+      "alt": "Result card: Andrea Kimi Antonelli won the 2026 Italian Grand Prix. P1 Andrea Kimi Antonelli (Mercedes), P2 George Russell (Mercedes), P3 Max Verstappen (Red Bull).",
+      "draft": false,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "Andrea Kimi Antonelli takes victory at Autodromo Nazionale di Monza.\n\nP1 Andrea Kimi Antonelli (Mercedes)\nP2 George Russell (Mercedes)\nP3 Max Verstappen (Red Bull)\n\nStarted 19th on the grid.\n\nFull result, lap charts and telemetry: https://f1gures.app/races/2026/13/\n\n#F1 #Formula1 #f1gures #ItalianGrandPrix #AndreaKimiAntonelli #Mercedes #Italy #GrandPrix",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-07-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "Andrea Kimi Antonelli takes victory at Autodromo Nazionale di Monza.\n\nP1 Andrea Kimi Antonelli (Mercedes)\nP2 George Russell (Mercedes)\nP3 Max Verstappen (Red Bull)\n\nStarted 19th on the grid.\n\nFull result, lap charts and telemetry: https://f1gures.app/races/2026/13/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #ItalianGrandPrix #AndreaKimiAntonelli #Mercedes #Italy #GrandPrix",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-07-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "Andrea Kimi Antonelli takes victory at Autodromo Nazionale di Monza.\n\nP1 Andrea Kimi Antonelli (Mercedes)\nP2 George Russell (Mercedes)\nP3 Max Verstappen (Red Bull)\n\nStarted 19th on the grid.\n\nFull result, lap charts and telemetry: https://f1gures.app/races/2026/13/\n\n#F1 #Formula1 #f1gures #ItalianGrandPrix #AndreaKimiAntonelli #Mercedes #Italy #GrandPrix",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-07-story.png"
+        }
+      ]
+    }
+  ]
 }
