@@ -128,15 +128,77 @@ export function hasGridData(codes, gridOf) {
   return codes.some((c) => gridOf(c) != null);
 }
 
-// Net on-track passes (excludes lap 1, pit laps and SC/VSC laps on either side).
-export function overtakeList(laps, pos) {
+// Laps to treat as neutralised.
+//
+// FastF1's TrackStatus bands under-report the end of a safety car: the field is
+// still circulating slowly, and often still unwinding a pit cycle, for a lap or
+// three after the band closes. At Monza 2026 the band read "laps 2-3" while the
+// field ran 1.56x race pace through lap 6 with everyone having pitted — so the
+// whole field re-sorting got counted as on-track passes.
+//
+// So each reported band is GROWN outward while the adjacent lap is still slow
+// (or has no lap times at all). Deliberately only grown from a reported band,
+// never invented: a wet race runs far above green pace for many laps with no
+// neutralisation at all, and those passes are real. Across the 137 committed
+// races this adds 34 laps over 15 races and leaves every unrelated slow stint
+// untouched.
+const SLOW_LAP_RATIO = 1.25;
+
+export function neutralLaps(laps, bands, totalLaps) {
+  const out = new Set();
+  if (!bands?.length) return out;
+  const codes = Object.keys(laps || {});
+  if (!codes.length) return out;
+  const total = totalLaps || Math.max(0, ...codes.map((c) => laps[c].length));
+
+  const reported = new Set();
+  for (const b of bands) for (let L = b.from; L <= b.to; L++) reported.add(L);
+
+  // Median lap time per lap, and the green-flag baseline (laps outside any
+  // reported band, skipping lap 1 — a standing start is always slow).
+  const med = new Map();
+  const nullShare = new Map();
+  for (let L = 1; L <= total; L++) {
+    const rows = codes.map((c) => laps[c][L - 1]).filter((r) => r && r.lap === L);
+    if (!rows.length) continue;
+    const ts = rows.map((r) => r.t).filter((t) => t != null).sort((a, b) => a - b);
+    med.set(L, ts.length ? ts[Math.floor(ts.length / 2)] : null);
+    nullShare.set(L, (rows.length - ts.length) / rows.length);
+  }
+  const green = [...med.entries()]
+    .filter(([L, m]) => m != null && L > 1 && !reported.has(L))
+    .map(([, m]) => m)
+    .sort((a, b) => a - b);
+  if (!green.length) return reported;
+  const baseline = green[Math.floor(green.length / 2)];
+
+  const slow = (L) => {
+    if (!med.has(L)) return false;
+    const m = med.get(L);
+    return m == null || nullShare.get(L) > 0.5 || m / baseline >= SLOW_LAP_RATIO;
+  };
+
+  for (const L of reported) out.add(L);
+  for (const b of bands) {
+    for (let L = b.to + 1; L <= total && slow(L); L++) out.add(L);
+    // Never grow back onto lap 1: it is slow by nature, not by neutralisation,
+    // and its passes are real racing.
+    for (let L = b.from - 1; L >= 2 && slow(L); L--) out.add(L);
+  }
+  return out;
+}
+
+// Net on-track passes. Lap 1 counts — places taken off the line and through
+// the first corners are overtakes like any other — but pit laps and
+// neutralised laps (see neutralLaps) do not.
+export function overtakeList(laps, pos, neutral) {
   const passes = [];
   const codes = Object.keys(laps);
   for (const c of codes) {
     const arr = pos[c];
-    for (let lap = 2; lap < arr.length; lap++) {
+    for (let lap = 1; lap < arr.length; lap++) {
       const l = laps[c][lap - 1];
-      if (!l || l.pit || l.neutral) continue;
+      if (!l || l.pit || l.neutral || neutral?.has(lap)) continue;
       const gained = arr[lap - 1] - arr[lap];
       if (gained <= 0) continue;
       // who did they pass? drivers whose position at `lap` is now behind but was ahead
@@ -154,13 +216,13 @@ export function overtakeList(laps, pos) {
   return passes;
 }
 
-export function overtakeCount(laps, pos) {
+export function overtakeCount(laps, pos, neutral) {
   let n = 0;
   for (const c of Object.keys(laps)) {
     const arr = pos[c];
-    for (let lap = 2; lap < arr.length; lap++) {
+    for (let lap = 1; lap < arr.length; lap++) {
       const l = laps[c][lap - 1];
-      if (!l || l.pit || l.neutral) continue;
+      if (!l || l.pit || l.neutral || neutral?.has(lap)) continue;
       if (arr[lap] < arr[lap - 1]) n += arr[lap - 1] - arr[lap];
     }
   }
