@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Watchdog for FastF1 race sessions written before the grid was published.
 //
 // FastF1 serves timing within minutes of the flag but leaves GridPosition

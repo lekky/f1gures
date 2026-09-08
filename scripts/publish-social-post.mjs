@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/publish-social-post.mjs
 //
 // Takes what build-social-post.mjs produced and gets it to Metricool, by one of
