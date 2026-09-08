@@ -1,0 +1,423 @@
+---
+// /fantasy/tiers/ — "How tiers work": a plain-language explainer of the
+// f1gures Fantasy form-tier system (Rulebook §3), with a static illustrative
+// example and a placeholder where the frontend workstream mounts the live
+// tier table (`#fantasy-live-tiers[data-fantasy-tiers]`).
+//
+// Static, server-rendered, no islands and no client JS. Tokens only. The
+// fantasy beta is private, so the page is served with `noindex` until launch.
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const title = 'How Fantasy Tiers Work | f1gures';
+const description = 'How the f1gures fantasy form tiers are built: drivers ranked by their average fantasy points over the last six rounds, cut into four tiers with a stability rule, seeded from the previous season, and published before picks open.';
+const canonicalPath = '/fantasy/tiers/';
+const ORIGIN = 'https://f1gures.app';
+
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Fantasy', path: '/fantasy/' },
+  { name: 'How tiers work', path: canonicalPath },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'How Fantasy tiers work',
+  description,
+  author: { '@type': 'Organization', name: 'f1gures', url: ORIGIN + '/' },
+  publisher: {
+    '@type': 'Organization',
+    name: 'f1gures',
+    url: ORIGIN + '/',
+    logo: { '@type': 'ImageObject', url: ORIGIN + '/images/og-default.png' },
+  },
+  mainEntityOfPage: { '@type': 'WebPage', '@id': ORIGIN + canonicalPath },
+};
+
+const SECTIONS = [
+  { n: 1, id: 'what-a-tier-is', title: 'What a tier is' },
+  { n: 2, id: 'the-ranking', title: 'The ranking' },
+  { n: 3, id: 'the-cut', title: 'The cut' },
+  { n: 4, id: 'stability-rule', title: 'The stability rule' },
+  { n: 5, id: 'season-start', title: 'Season start' },
+  { n: 6, id: 'rookies', title: 'Rookies and call-ups' },
+  { n: 7, id: 'publication', title: 'When tiers are published' },
+  { n: 8, id: 'example', title: 'An example grid' },
+  { n: 9, id: 'live', title: 'Live tiers' },
+];
+
+// Tier sizes by entry-list size. The rule: cut into four tiers as equally
+// as possible; any remainder goes to the LOWER tiers (D first, then C…).
+const CUTS = [
+  { n: 20, sizes: [5, 5, 5, 5] },
+  { n: 21, sizes: [5, 5, 5, 6] },
+  { n: 22, sizes: [5, 5, 6, 6] },
+  { n: 23, sizes: [5, 6, 6, 6] },
+  { n: 24, sizes: [6, 6, 6, 6] },
+];
+
+// Illustrative example — a 22-car entry list (the 2026 grid shape), with
+// invented six-round averages. Numbers are NOT live data; the live table is
+// mounted in #fantasy-live-tiers below. Two rows show the stability rule
+// (ALB / GAS) and one shows rookie seeding (LIN).
+type Row = { rank: number; code: string; team: string; avg: string; prev: string; tier: string; note?: string };
+const EXAMPLE: Row[] = [
+  { rank: 1, code: 'NOR', team: 'McLaren', avg: '62.3', prev: 'A', tier: 'A' },
+  { rank: 2, code: 'VER', team: 'Red Bull', avg: '55.8', prev: 'A', tier: 'A' },
+  { rank: 3, code: 'LEC', team: 'Ferrari', avg: '51.0', prev: 'A', tier: 'A' },
+  { rank: 4, code: 'RUS', team: 'Mercedes', avg: '48.7', prev: 'A', tier: 'A' },
+  { rank: 5, code: 'PIA', team: 'McLaren', avg: '47.2', prev: 'A', tier: 'A' },
+  { rank: 6, code: 'HAM', team: 'Ferrari', avg: '41.5', prev: 'B', tier: 'B' },
+  { rank: 7, code: 'ANT', team: 'Mercedes', avg: '39.8', prev: 'B', tier: 'B' },
+  { rank: 8, code: 'ALO', team: 'Aston Martin', avg: '30.2', prev: 'B', tier: 'B' },
+  { rank: 9, code: 'SAI', team: 'Williams', avg: '27.5', prev: 'B', tier: 'B' },
+  { rank: 10, code: 'GAS', team: 'Alpine', avg: '24.0', prev: 'C', tier: 'C', note: 'Rank 10 would be Tier B on a pure cut, but Gasly was Tier C last round and is within 2 places of the B/C boundary, so he is held in C.' },
+  { rank: 11, code: 'ALB', team: 'Williams', avg: '23.7', prev: 'B', tier: 'B', note: 'Likewise held: within 2 places of the boundary and was Tier B last round, so Albon stays B. The two swaps cancel and the re-cut keeps 5/5/6/6 exactly.' },
+  { rank: 12, code: 'HUL', team: 'Audi', avg: '21.3', prev: 'C', tier: 'C' },
+  { rank: 13, code: 'LAW', team: 'Red Bull', avg: '19.8', prev: 'C', tier: 'C' },
+  { rank: 14, code: 'TSU', team: 'Racing Bulls', avg: '18.5', prev: 'C', tier: 'C' },
+  { rank: 15, code: 'LIN', team: 'Racing Bulls', avg: '18.5', prev: '—', tier: 'C', note: 'No history: seeded at the team’s expectation (the mean of his teammates’ averages — here Tsunoda’s 18.5).' },
+  { rank: 16, code: 'STR', team: 'Aston Martin', avg: '17.0', prev: 'C', tier: 'C' },
+  { rank: 17, code: 'BEA', team: 'Haas', avg: '15.2', prev: 'D', tier: 'D' },
+  { rank: 18, code: 'OCO', team: 'Haas', avg: '13.8', prev: 'D', tier: 'D' },
+  { rank: 19, code: 'BOR', team: 'Audi', avg: '11.7', prev: 'D', tier: 'D' },
+  { rank: 20, code: 'COL', team: 'Alpine', avg: '9.2', prev: 'D', tier: 'D' },
+  { rank: 21, code: 'BOT', team: 'Cadillac', avg: '8.5', prev: 'D', tier: 'D' },
+  { rank: 22, code: 'PER', team: 'Cadillac', avg: '7.9', prev: 'D', tier: 'D' },
+];
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogType="article"
+  jsonLd={jsonLd}
+  breadcrumb={breadcrumb}
+  robots="noindex, nofollow"
+>
+  <div class="page ft">
+    <div class="ft-grid">
+      <aside class="ft-rail">
+        <a class="ft-back" href="/fantasy/"><span aria-hidden="true">‹</span> Fantasy</a>
+        <div class="ft-rail-sec">
+          <div class="ft-rail-h">Contents</div>
+          <nav class="ft-toc" aria-label="Sections">
+            {SECTIONS.map((s) => (
+              <a href={`#${s.id}`}><span class="tn">{pad2(s.n)}</span><span>{s.title}</span></a>
+            ))}
+          </nav>
+        </div>
+        <div class="ft-meta">
+          <div class="m"><span class="k">Window</span><span class="v">6 rounds</span></div>
+          <div class="m"><span class="k">Tiers</span><span class="v">4 (A–D)</span></div>
+          <div class="m"><span class="k">Stability</span><span class="v">±2 places</span></div>
+          <div class="m"><span class="k">Rules</span><span class="v"><a href="/fantasy/rules/#form-tiers">Rulebook §3</a></span></div>
+        </div>
+      </aside>
+
+      <article class="ft-body">
+        <div class="ft-eyebrow">f1gures Fantasy &middot; explainer</div>
+        <h1 class="ft-title">How tiers work</h1>
+        <p class="ft-lead">Every weekend you field one driver from each of four form tiers. Here is exactly how those tiers are built: what goes into the ranking, where the cuts fall, why a driver doesn’t bounce between tiers on one result, and how rookies get a starting point. No secret sauce — everything on this page is the whole formula.</p>
+        <div class="ft-rule"></div>
+
+        {/* 1 */}
+        <section class="ft-sec" id="what-a-tier-is">
+          <h2 class="ft-h2"><span class="n">01</span><span class="t">What a tier is</span><span class="line"></span></h2>
+          <p>A tier is a form bracket. Tier A holds the drivers who have been scoring the most fantasy points lately; Tier D holds the drivers scoring the least. Your weekend team needs <strong>one driver from each</strong> of A, B, C and D, so you can’t simply stack the four best cars — the game is about finding the right pick in each bracket, and choosing when to spend your <a href="/fantasy/rules/#usage-caps">limited starts</a> on them.</p>
+          <p>Tiers replace the budget you’d find in other fantasy games. There are no prices to track. A driver’s “cost” is simply which tier they sit in this week, and that is decided by results, not by a pricing committee.</p>
+        </section>
+
+        {/* 2 */}
+        <section class="ft-sec" id="the-ranking">
+          <h2 class="ft-h2"><span class="n">02</span><span class="t">The ranking</span><span class="line"></span></h2>
+          <p>Every driver entered for the weekend is ranked by their <strong>average fantasy points over the last 6 rounds</strong>. That is the same weekend score you see on the leaderboard — race finish, qualifying, positions gained, form beat, teammate head-to-head, fastest lap, laps consolation and sprint, as defined in <a href="/fantasy/rules/#driver-scoring">Rulebook §6</a> — added up per round and averaged.</p>
+          <ul>
+            <li>The window is a <strong>rolling six rounds</strong>: each new result pushes the oldest one out.</li>
+            <li>A driver who has fewer than six rounds of history (a call-up, say) is averaged over the rounds they do have — see §6 for a driver with none at all.</li>
+            <li>The average uses the driver’s own base score only. Your Boost or an emergency half-points pick never changes a driver’s ranking.</li>
+            <li>Sprint weekends count once, like any other round; the sprint points are simply part of that round’s total.</li>
+          </ul>
+          <div class="ft-note-box">
+            <div class="ft-note-lbl">Why an average, not a total</div>
+            <p>An average means a driver who missed a round (injury, a one-off substitute) isn’t punished for the missing weekend, and a driver coming back from a spell out is ranked on what they actually did when they raced.</p>
+          </div>
+        </section>
+
+        {/* 3 */}
+        <section class="ft-sec" id="the-cut">
+          <h2 class="ft-h2"><span class="n">03</span><span class="t">The cut</span><span class="line"></span></h2>
+          <p>The ranked list is cut into <strong>four tiers of equal size</strong>: the top group is Tier A, the next Tier B, and so on down to D. On a 20-car grid that is five drivers per tier.</p>
+          <p>When the entry list isn’t divisible by four, the leftover drivers go to the <strong>lower tiers</strong> — D gets the first extra, then C. That keeps the top brackets tight and puts the wider choice where the scores are closest together.</p>
+          <div class="panel ft-tblpanel">
+            <div class="tbl-wrap">
+              <table class="tbl tbl-static ft-cuts">
+                <thead>
+                  <tr>
+                    <th>Entry list</th>
+                    <th class="right">Tier A</th>
+                    <th class="right">Tier B</th>
+                    <th class="right">Tier C</th>
+                    <th class="right">Tier D</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CUTS.map((c) => (
+                    <tr>
+                      <td class="t-mono">{c.n} drivers</td>
+                      {c.sizes.map((s) => <td class="right t-mono">{s}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="ft-note">The entry list is the set of drivers who take part in the weekend’s qualifying or race. Practice-only drivers are not tiered and cannot be picked.</p>
+        </section>
+
+        {/* 4 */}
+        <section class="ft-sec" id="stability-rule">
+          <h2 class="ft-h2"><span class="n">04</span><span class="t">The stability rule</span><span class="line"></span></h2>
+          <p>A pure re-rank every week would have midfield drivers hopping between B and C on a single good or bad Sunday. To stop that, the cut has a little hysteresis:</p>
+          <ul>
+            <li>After ranking, any driver who sits <strong>within 2 places of a tier boundary</strong> and would be moving tier is <strong>held in the tier they had last round</strong>.</li>
+            <li>The tiers are then <strong>re-cut back to their exact sizes</strong>. A driver held in a higher tier means someone else near that boundary moves down to make room (and vice versa), so every tier stays the size the table above says.</li>
+            <li>A driver who has moved <em>more</em> than 2 places past a boundary changes tier normally. Sustained form always wins through; the rule only filters out one-weekend noise.</li>
+          </ul>
+          <p>Put simply: to change tier you need to clear the boundary by a margin, not just nudge across it.</p>
+        </section>
+
+        {/* 5 */}
+        <section class="ft-sec" id="season-start">
+          <h2 class="ft-h2"><span class="n">05</span><span class="t">Season start</span><span class="line"></span></h2>
+          <p>Round 1 has no current-season history, so the tiers are seeded from the <strong>final 6 rounds of the previous season</strong>, rescored under this season’s rules. It is the same six-round average, just looking back across the winter. As the new season’s rounds arrive they replace the previous season’s rounds one by one, so by round 7 the ranking is entirely this year’s form.</p>
+          <p>Drivers who switch teams over the winter carry their own history with them: tiers follow the <em>person</em>, not the seat.</p>
+        </section>
+
+        {/* 6 */}
+        <section class="ft-sec" id="rookies">
+          <h2 class="ft-h2"><span class="n">06</span><span class="t">Rookies and call-ups</span><span class="line"></span></h2>
+          <p>A driver with no scored rounds at all — a rookie at round 1, or a mid-season substitute — has no average to rank on. Rather than dropping them to Tier D by default, they are <strong>seeded at their team’s current level</strong>: the mean of their teammates’ six-round averages. A rookie in a front-running car therefore starts in a high tier, priced like the car they are driving.</p>
+          <ul>
+            <li>If the driver has no teammate with history either (a brand-new team), the seed is 0 and they start in Tier D.</li>
+            <li>The seed only lasts until they have results of their own; from their first scored round, their own average takes over.</li>
+          </ul>
+        </section>
+
+        {/* 7 */}
+        <section class="ft-sec" id="publication">
+          <h2 class="ft-h2"><span class="n">07</span><span class="t">When tiers are published</span><span class="line"></span></h2>
+          <p>Tiers are <strong>recomputed after every round</strong> and published here — with the full ranking and each driver’s six-round average — <strong>before picks open</strong> for the next weekend. Once published, the tiers for a round do not change: a stewards’ decision that rescores the previous race can move the leaderboard, but it never reshuffles a tier table you have already picked against.</p>
+          <p>The formula on this page is the whole formula. There is nothing hidden to reverse-engineer, and no paid way to see it earlier.</p>
+        </section>
+
+        {/* 8 */}
+        <section class="ft-sec" id="example">
+          <h2 class="ft-h2"><span class="n">08</span><span class="t">An example grid</span><span class="line"></span></h2>
+          <p>An illustrative 22-car entry list, cut 5/5/6/6. The averages are <strong>invented for the example</strong> — they are not live data — but the mechanics are exact. Watch ranks 10 and 11 for the stability rule, and rank 15 for rookie seeding.</p>
+          <div class="panel ft-tblpanel">
+            <div class="tbl-wrap">
+              <table class="tbl tbl-static ft-example">
+                <thead>
+                  <tr>
+                    <th class="right">Rank</th>
+                    <th>Driver</th>
+                    <th>Team</th>
+                    <th class="right">6-rd avg</th>
+                    <th class="center">Last tier</th>
+                    <th class="center">Tier</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {EXAMPLE.map((r, i) => {
+                    const boundary = i > 0 && EXAMPLE[i - 1].tier !== r.tier;
+                    return (
+                      <tr class:list={[{ 'is-boundary': boundary, 'is-noted': !!r.note }]}>
+                        <td class="right t-mono">{r.rank}</td>
+                        <td class="ft-code"><span class="t-mono">{r.code}</span></td>
+                        <td class="ft-team">{r.team}</td>
+                        <td class="right t-mono">{r.avg}{r.prev === '—' ? <span class="seed" title="Seeded from the team’s average">*</span> : null}</td>
+                        <td class="center t-mono ft-prev">{r.prev}</td>
+                        <td class="center"><span class:list={['ft-tier', `ft-tier-${r.tier.toLowerCase()}`]}>{r.tier}</span></td>
+                        <td class="wrap ft-notecell">{r.note || ''}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="ft-note">* Seeded value — the driver has no scored rounds yet. Ties in the average are shown in list order; the live table shows the exact tie order the engine used.</p>
+        </section>
+
+        {/* 9 — live table placeholder (mounted by the fantasy frontend) */}
+        <section class="ft-sec" id="live">
+          <h2 class="ft-h2"><span class="n">09</span><span class="t">Live tiers</span><span class="line"></span></h2>
+          <p>The current tiers for the next round — the real ranking, with every driver’s six-round average — appear here once the season is live.</p>
+          <div id="fantasy-live-tiers" data-fantasy-tiers class="ft-live">
+            <div class="ft-live-eyebrow">Next round</div>
+            <div class="ft-live-title">Live tier table</div>
+            <p class="ft-live-sub">Not available yet. When the fantasy game is live this space shows the published tiers for the upcoming weekend, updated after every round.</p>
+          </div>
+        </section>
+
+        <p class="ft-colophon">Tier mechanics as specified in <a href="/fantasy/rules/#form-tiers">Rulebook §3</a> (edition 1, rules v0.2). Rule changes between seasons are announced before round 1 and never mid-season.</p>
+      </article>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  /* Layout mirrors the guide article: sticky contents rail + reading column. */
+  .ft-grid {
+    display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 56px;
+    align-items: start; max-width: 1120px; margin: 0 auto;
+  }
+  .ft-rail {
+    position: sticky; top: calc(var(--nav-h) + 24px);
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .ft-back {
+    font-family: var(--f-display); font-weight: 700; font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3);
+    display: inline-flex; align-items: center; gap: 8px;
+    text-decoration: none; transition: color var(--mo) ease, gap var(--mo) ease;
+  }
+  .ft-back:hover { color: var(--accent-text); gap: 12px; }
+  .ft-rail-h {
+    font-family: var(--f-display); font-weight: 700; font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3);
+    margin-bottom: 11px; padding-bottom: 9px; border-bottom: 1px solid var(--line-1);
+  }
+  .ft-toc { display: flex; flex-direction: column; }
+  .ft-toc a {
+    display: flex; gap: 10px; align-items: baseline; padding: 6px 0;
+    font-size: 13px; color: var(--fg-2); line-height: 1.4; text-decoration: none;
+    transition: color var(--mo) ease;
+  }
+  .ft-toc a .tn { font-family: var(--f-mono); font-size: 10px; color: var(--fg-3); flex-shrink: 0; }
+  .ft-toc a:hover { color: var(--fg-1); }
+  .ft-toc a:hover .tn { color: var(--accent-text); }
+  .ft-meta { display: flex; flex-direction: column; }
+  .ft-meta .m {
+    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    padding: 9px 0; border-top: 1px solid var(--line-1);
+  }
+  .ft-meta .m:first-child { border-top: 0; }
+  .ft-meta .m .k {
+    font-family: var(--f-display); font-weight: 700; font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .ft-meta .m .v { font-family: var(--f-mono); font-size: 12px; color: var(--fg-1); font-variant-numeric: tabular-nums; }
+  .ft-meta .m .v a { color: inherit; }
+
+  /* Reading column */
+  .ft-body { max-width: 720px; min-width: 0; font-size: 16px; line-height: 1.7; color: var(--fg-1); }
+  .ft-eyebrow {
+    font-family: var(--f-display); font-weight: 700; font-size: 12px;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent-text);
+  }
+  .ft-title {
+    font-family: var(--f-display); font-weight: 800; font-size: clamp(40px, 5.5vw, 60px);
+    text-transform: uppercase; line-height: 0.9; letter-spacing: -0.015em; margin-top: 12px;
+  }
+  .ft-lead { font-size: 18px; line-height: 1.6; color: var(--fg-2); margin-top: 18px; max-width: 60ch; }
+  .ft-rule { height: 2px; background: linear-gradient(90deg, var(--fg-1) 0 64px, var(--line-2) 64px); margin: 30px 0 8px; }
+
+  .ft-sec { scroll-margin-top: calc(var(--nav-h) + 20px); }
+  .ft-body p { margin: 0 0 16px; }
+  .ft-body ul { margin: 0 0 16px; padding-left: 22px; }
+  .ft-body li { margin: 0 0 6px; }
+  .ft-body a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; }
+  .ft-body a:hover { text-decoration-thickness: 2px; }
+
+  .ft-h2 {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--f-display); font-weight: 800; font-size: 24px;
+    letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.1;
+    margin: 44px 0 14px;
+  }
+  .ft-h2 .n {
+    font-family: var(--f-mono); font-weight: 600; font-size: 13px; letter-spacing: 0;
+    color: var(--accent-text); flex-shrink: 0; font-variant-numeric: tabular-nums;
+  }
+  .ft-h2 .t { min-width: 0; }
+  .ft-h2 .line { flex: 1 1 40px; min-width: 24px; height: 2px; background: var(--rule); }
+
+  /* Tables: the site's static table inside a panel with a scroll wrapper. */
+  .ft-tblpanel { margin: 12px 0 10px; }
+  .ft-tblpanel .tbl-wrap { overflow-x: auto; }
+  .ft-tblpanel .tbl th { position: static; white-space: nowrap; }
+  .ft-tblpanel .tbl td { font-size: 14px; }
+  .ft-tblpanel .tbl td.wrap { white-space: normal; min-width: 22ch; }
+  .ft-cuts td:first-child { color: var(--fg-2); }
+
+  .ft-example td { vertical-align: top; }
+  .ft-example .ft-code { font-weight: 700; letter-spacing: 0.04em; }
+  .ft-example .ft-team { color: var(--fg-2); }
+  .ft-example .ft-prev { color: var(--fg-3); }
+  .ft-example .seed { color: var(--accent-text); margin-left: 2px; }
+  .ft-example .ft-notecell { color: var(--fg-3); font-size: 13px; line-height: 1.45; }
+  .ft-example tr.is-noted td { background: color-mix(in srgb, var(--fg-1) 4%, transparent); }
+  /* Tier boundaries: a heavier rule where the cut falls. */
+  .ft-example tr.is-boundary td { border-top: 2px solid var(--line-3); }
+
+  /* Tier chip: a bordered mono letter. Neutral by default; A carries the
+     accent border as the "top bracket" signal (never a fill). */
+  .ft-tier {
+    display: inline-block; min-width: 22px; padding: 1px 6px; text-align: center;
+    font-family: var(--f-mono); font-weight: 600; font-size: 12px;
+    color: var(--fg-1); border: 1px solid var(--line-2); background: var(--bg-3);
+  }
+  .ft-tier-a { border-color: var(--accent); color: var(--accent-text); }
+  .ft-tier-d { color: var(--fg-2); }
+
+  .ft-note { color: var(--fg-3); font-size: 13.5px; line-height: 1.55; }
+
+  .ft-note-box {
+    border-left: 3px solid var(--accent); background: var(--bg-2);
+    padding: 14px 18px; margin: 18px 0; color: var(--fg-2);
+    font-size: 14.5px; line-height: 1.6; max-width: 64ch;
+  }
+  .ft-note-box .ft-note-lbl {
+    margin-bottom: 5px; font-family: var(--f-display); font-weight: 700; font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-text);
+  }
+  .ft-note-box p { margin: 0; }
+
+  /* Live-table placeholder. The frontend island replaces the children of
+     #fantasy-live-tiers; keep the mount point itself unstyled beyond a box. */
+  .ft-live {
+    border: 1px dashed var(--line-2); background: var(--bg-2);
+    padding: 22px 20px; margin: 12px 0 0;
+  }
+  .ft-live-eyebrow {
+    font-family: var(--f-display); font-weight: 600; font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .ft-live-title {
+    font-family: var(--f-display); font-weight: 800; font-size: 22px;
+    letter-spacing: 0; text-transform: uppercase; line-height: 1.05; margin-top: 4px;
+  }
+  .ft-live-sub { color: var(--fg-3); font-size: 13.5px; margin: 8px 0 0; max-width: 60ch; }
+
+  .ft-colophon { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line-1); color: var(--fg-3); font-size: 13px; line-height: 1.55; }
+
+  @media (max-width: 720px) {
+    .ft-grid { grid-template-columns: 1fr; gap: 0; }
+    .ft-rail { position: static; gap: 14px; margin-bottom: 18px; }
+    .ft-toc { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .ft-toc a {
+      padding: 4px 8px; border: 1px solid var(--line-1); background: var(--bg-2);
+      font-size: 12px; gap: 6px;
+    }
+    .ft-meta { flex-direction: row; flex-wrap: wrap; gap: 8px 18px; }
+    .ft-meta .m { flex-direction: column; gap: 2px; border-top: 0; padding: 0; }
+    .ft-body { font-size: 15px; }
+    .ft-h2 { font-size: 21px; margin-top: 36px; }
+  }
+</style>
