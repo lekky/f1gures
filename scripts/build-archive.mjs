@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Builds per-entity JSON files from the Ergast CSV dump in data/history/
 // for use by Astro getStaticPaths at build time. Run as `npm run prebuild`.
 //

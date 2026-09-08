@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Build-time OG image generator. Renders one PNG per detail page using Satori
 // + @resvg/resvg-js. Output: public/images/og/<type>/<slug>.png.
 //

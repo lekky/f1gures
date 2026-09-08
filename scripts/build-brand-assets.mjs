@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Brand-asset bake. MANUAL (not in prebuild) - run it only when the artwork in
  * design-system/brand/source/ changes:

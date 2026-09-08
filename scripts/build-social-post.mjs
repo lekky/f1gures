@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/build-social-post.mjs
 //
 // Picks posts, renders their cards, and writes a manifest. It publishes

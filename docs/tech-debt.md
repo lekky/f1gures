@@ -336,6 +336,16 @@ Untested but complex and cheap to test:
 - Node version pinned as `22` independently in both workflows; no
   `engines` field or `.nvmrc` → add one source and use
   `node-version-file`.
+- No `.gitattributes`, so a `core.autocrlf=true` Windows checkout lands
+  every text file as CRLF. That broke vitest on two `scripts/*.mjs`
+  suites (issue #305: a `#!/usr/bin/env node` shebang reaches the
+  evaluator as an invalid token). Fixed by dropping the shebangs — nothing
+  invokes those scripts as executables; `package.json` and the workflows
+  all go through `node scripts/...`. **Do not re-add shebangs to
+  `scripts/*.mjs`.** Owner call still open: add `* text=auto eol=lf` (or
+  `*.mjs text eol=lf`) to fix the class for good — it is quiet in `git
+  status` but re-normalises every dev working tree once on the next
+  checkout, which is noisy while several agent sessions share worktrees.
 - `astro.config.mjs` sitemap `customPages` workaround is pinned to
   `@astrojs/sitemap` 3.2.1 (exact pin, so the upstream fix never arrives
   via `^`); add a "retest on upgrade" TODO with an issue link.

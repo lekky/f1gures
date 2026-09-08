@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // scripts/check-principals.mjs
 // Watchdog for the hand-curated team-principal data (scripts/principals.mjs).
 // Only the current grid's open-ended tenures can go stale, so this checks
