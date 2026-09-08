@@ -1,0 +1,50 @@
+---
+// /fantasy/pick/ — the pick board for the open round.
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PickBoard from '../../components/islands/fantasy/PickBoard.jsx';
+import { fantasyConfigured } from '../../data/fantasyConfig.js';
+
+const configured = fantasyConfigured();
+
+const title = 'Set your fantasy team | f1gures';
+const description = 'Pick one driver from each form tier, a constructor and a boost before qualifying locks the round.';
+const canonicalPath = '/fantasy/pick/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Fantasy', path: '/fantasy/' },
+  { name: 'Pick', path: canonicalPath },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  robots="noindex, nofollow"
+  breadcrumb={breadcrumb}
+>
+  <div class="page fx-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">Your weekend team</div>
+        <h1 class="page-title">Pick</h1>
+        <p class="page-sub">
+          One driver from each tier, one constructor, one boost on your Tier C or D pick. Change it
+          as often as you like until qualifying starts. <a href="/fantasy/rules/">Full rules</a>.
+        </p>
+      </div>
+    </div>
+
+    {configured ? (
+      <PickBoard client:load />
+    ) : (
+      <div class="fx-notice">
+        <div class="fx-notice-title">Fantasy isn’t configured on this build</div>
+        <p>
+          The game needs its PocketBase server. Once <code>pocketbaseUrl</code> is set in
+          <code>src/data/fantasyConfig.js</code>, the pick board appears here.
+        </p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

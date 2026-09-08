@@ -1,0 +1,50 @@
+---
+// /fantasy/account/ — sign in / register, profile, verification, sign out.
+//
+// This is also the redirect target PocketBase should use for its verification
+// and password-reset emails (see fantasy/pocketbase/README.md §6).
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AccountPanel from '../../components/islands/fantasy/AccountPanel.jsx';
+import { fantasyConfigured } from '../../data/fantasyConfig.js';
+
+const configured = fantasyConfigured();
+
+const title = 'Fantasy account | f1gures';
+const description = 'Sign in, create an account, or manage your f1gures fantasy profile.';
+const canonicalPath = '/fantasy/account/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Fantasy', path: '/fantasy/' },
+  { name: 'Account', path: canonicalPath },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  robots="noindex, nofollow"
+  breadcrumb={breadcrumb}
+>
+  <div class="page fx-page fx-page-narrow">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">Fantasy</div>
+        <h1 class="page-title">Account</h1>
+        <p class="page-sub">
+          One account per person, one team per account. Your email is only ever used to verify you
+          and to reset your password — leaderboards show your display name.
+        </p>
+      </div>
+    </div>
+
+    {configured ? (
+      <AccountPanel client:load />
+    ) : (
+      <div class="fx-notice">
+        <div class="fx-notice-title">Fantasy isn’t configured on this build</div>
+        <p>Accounts appear once the fantasy backend is configured.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

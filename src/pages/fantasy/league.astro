@@ -1,0 +1,47 @@
+---
+// /fantasy/league/ — create a league, join one with ?code=, manage members.
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import LeagueManager from '../../components/islands/fantasy/LeagueManager.jsx';
+import { fantasyConfigured } from '../../data/fantasyConfig.js';
+
+const configured = fantasyConfigured();
+
+const title = 'Fantasy leagues | f1gures';
+const description = 'Create a private f1gures fantasy league, share the join code, and see how your friends are doing across the season.';
+const canonicalPath = '/fantasy/league/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Fantasy', path: '/fantasy/' },
+  { name: 'Leagues', path: canonicalPath },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  robots="noindex, nofollow"
+  breadcrumb={breadcrumb}
+>
+  <div class="page fx-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">Play with friends</div>
+        <h1 class="page-title">Leagues</h1>
+        <p class="page-sub">
+          A league is a view of the same global leaderboard, not a separate ruleset — everyone plays
+          the same game. Create one and share the six-character code, or paste a friend’s below.
+        </p>
+      </div>
+    </div>
+
+    {configured ? (
+      <LeagueManager client:load />
+    ) : (
+      <div class="fx-notice">
+        <div class="fx-notice-title">Fantasy isn’t configured on this build</div>
+        <p>Leagues appear once the fantasy backend is configured.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

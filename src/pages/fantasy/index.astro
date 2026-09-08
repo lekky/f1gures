@@ -1,0 +1,85 @@
+---
+// /fantasy/ — the private-beta hub.
+//
+// Static shell (what the game is, where everything lives) plus two islands:
+// the status strip (round, lock countdown, your team) and a read-only tier
+// snapshot. `noindex` until public launch; no nav changes.
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FantasyHub from '../../components/islands/fantasy/FantasyHub.jsx';
+import TierTable from '../../components/islands/fantasy/TierTable.jsx';
+import { fantasyConfigured } from '../../data/fantasyConfig.js';
+
+const configured = fantasyConfigured();
+
+const title = 'Fantasy | f1gures';
+const description = 'Four drivers, one constructor, one boost, locked before qualifying. The f1gures fantasy game — free, no prices, no transfer market.';
+const canonicalPath = '/fantasy/';
+const breadcrumb = [
+  { name: 'Home', path: '/' },
+  { name: 'Fantasy', path: canonicalPath },
+];
+
+const LINKS = [
+  { href: '/fantasy/pick/', label: 'Set your team', sub: 'The board for the open round' },
+  { href: '/fantasy/standings/', label: 'Standings', sub: 'Season, Splits and every round' },
+  { href: '/fantasy/league/', label: 'Leagues', sub: 'Create one, or join with a code' },
+  { href: '/fantasy/rules/', label: 'Rulebook', sub: 'Every rule, in full' },
+  { href: '/fantasy/tiers/', label: 'How tiers work', sub: 'The form ranking explained' },
+  { href: '/fantasy/account/', label: 'Account', sub: 'Name, verification, sign out' },
+];
+---
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  robots="noindex, nofollow"
+  breadcrumb={breadcrumb}
+>
+  <div class="page fx-page">
+    <div class="page-head">
+      <div>
+        <div class="t-eyebrow">Private beta</div>
+        <h1 class="page-title">Fantasy</h1>
+        <p class="page-sub">
+          Each Grand Prix weekend you field four drivers — one from each form tier — plus a
+          constructor, and boost your Tier C or D pick. Everything locks at the start of qualifying
+          and scores from what actually happened on track. Free, no prices, no transfer market:
+          the game is deciding <em>when</em> to spend your five starts on each driver.
+        </p>
+      </div>
+    </div>
+
+    {configured ? (
+      <FantasyHub client:load />
+    ) : (
+      <div class="fx-notice">
+        <div class="fx-notice-title">Fantasy isn’t configured on this build</div>
+        <p>
+          The game needs its PocketBase server. Once <code>pocketbaseUrl</code> is set in
+          <code>src/data/fantasyConfig.js</code> (or <code>PUBLIC_FANTASY_PB_URL</code> is set at
+          build time), the fantasy screens appear here.
+        </p>
+      </div>
+    )}
+
+    <nav class="fx-linkgrid" aria-label="Fantasy sections">
+      {LINKS.map((l) => (
+        <a class="fx-linkcard" href={l.href}>
+          <span class="fx-linkcard-label">{l.label}</span>
+          <span class="fx-linkcard-sub">{l.sub}</span>
+        </a>
+      ))}
+    </nav>
+
+    {configured && (
+      <section class="fx-section">
+        <div class="section-head">
+          <h2>This round’s tiers</h2>
+          <div class="section-rule"></div>
+        </div>
+        <TierTable client:visible dense />
+      </section>
+    )}
+  </div>
+</BaseLayout>
