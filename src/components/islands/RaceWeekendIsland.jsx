@@ -20,6 +20,7 @@ import { assignSeriesStyles } from '../../lib/chartSeries.js';
 import { useFocusTrap } from '../../lib/useFocusTrap.js';
 import { vizListFor } from './raceweekend/vizdefs.jsx';
 import { Icon } from '../../lib/shared.jsx';
+import { countdownCells } from '../../lib/countdown.js';
 import { setPanelTheme } from './raceweekend/primitives.jsx';
 import { renderShareCard, shareFileName, SHARE_FORMATS } from './raceweekend/share.js';
 import {
@@ -584,12 +585,8 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
 
   const upcomingView = () => {
     const start = activeSchedule ? new Date(activeSchedule.start).getTime() : null;
-    const t = now && start ? Math.max(0, Math.floor((start - now) / 1000)) : null;
-    const pad = (n) => String(Math.max(0, n)).padStart(2, '0');
-    const cells = t != null
-      ? [{ v: pad(Math.floor(t / 86400)), l: 'Days' }, { v: pad(Math.floor(t / 3600) % 24), l: 'Hours' },
-         { v: pad(Math.floor(t / 60) % 60), l: 'Min' }, { v: pad(t % 60), l: 'Sec' }]
-      : null;
+    // Same cells + per-unit plural labels as the home-page Countdown.
+    const cells = now && start ? countdownCells(start - now) : null;
     const started = now && start && now >= start;
     const latest = available[available.length - 1];
     return (
@@ -599,8 +596,8 @@ export default function RaceWeekendIsland({ race, weekend, assets }) {
         {!started && cells && (
           <div className="countdown rw-upcoming-cd">
             {cells.map((c) => (
-              <div className="countdown-cell" key={c.l}>
-                <div className="rw-cd-v">{c.v}</div>
+              <div className="countdown-cell" key={c.key}>
+                <div className="rw-cd-v">{c.text}</div>
                 <div className="rw-cd-l">{c.l}</div>
               </div>
             ))}

@@ -4,6 +4,7 @@
 // island composes (Panel, DriverCell, Countdown, etc.) plus URL/date helpers.
 
 import { useEffect, useState } from 'react';
+import { countdownCells } from './countdown.js';
 import { roundPointsMap, teamForRound } from './seasonStats.mjs';
 import { ARCHIVE_MAX_YEAR } from '../data/archiveMeta.js';
 import { ICON_PATHS, ICON_STROKE } from './iconPaths.js';
@@ -302,20 +303,13 @@ export function Countdown({ target }) {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  const diff = Math.max(0, target.getTime() - now.getTime());
-  const days = Math.floor(diff / 86400000);
-  const hours = Math.floor((diff % 86400000) / 3600000);
-  const mins = Math.floor((diff % 3600000) / 60000);
-  const secs = Math.floor((diff % 60000) / 1000);
-  const cells = [
-    { v: days, l: 'Days' }, { v: hours, l: 'Hours' },
-    { v: mins, l: 'Mins' }, { v: secs, l: 'Secs' },
-  ];
+  // Labels pluralise per unit ("1 Hour", "2 Hours") via the shared helper.
+  const cells = countdownCells(target.getTime() - now.getTime());
   return (
     <div className="countdown">
       {cells.map(c => (
-        <div className="countdown-cell" key={c.l}>
-          <div className="countdown-num">{String(c.v).padStart(2, '0')}</div>
+        <div className="countdown-cell" key={c.key}>
+          <div className="countdown-num">{c.text}</div>
           <div className="countdown-lbl">{c.l}</div>
         </div>
       ))}
