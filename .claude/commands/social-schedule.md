@@ -51,6 +51,7 @@ posts[]
   publishAt     local datetime, NO offset  e.g. "2026-09-10T19:00:00"
   draft         true = park in the calendar, false = let it publish
   tiktokTitle   short title for TikTok (≤90 chars)
+  tiktokAutoAddMusic  true = let TikTok attach one of its own library tracks
   alt           alt text
   groups[]      one Metricool post each:
     networks[]    e.g. ["instagram"] / ["facebook"] / ["tiktok"]
@@ -119,7 +120,13 @@ For every post, for every group, call **`createScheduledPost`**:
 
 - `"instagramData": {"type": "POST"}` — a still image is a POST, not a REEL
 - `"facebookData": {"type": "POST"}`
-- `"tiktokData": {"title": "<tiktokTitle>", "photoCoverIndex": 0, "privacyOption": "PUBLIC_TO_EVERYONE"}`
+- `"tiktokData": {"title": "<tiktokTitle>", "autoAddMusic": <the post's tiktokAutoAddMusic>, "photoCoverIndex": 0, "privacyOption": "PUBLIC_TO_EVERYONE"}`
+
+**`autoAddMusic` must be sent on every TikTok post.** Metricool defaults it to
+`false`, and a TikTok photo post with no track is silent — which reads as a
+broken post on a sound-first network. `true` lets TikTok pick from its own
+commercially-cleared library at publish time. Take the value from the queue
+rather than hardcoding it; it is `config.tiktok.autoAddMusic`.
 
 **`autoPublish` is not the draft flag.** `autoPublish: false` means "send a push
 notification to the mobile app so a human publishes it by hand" — not a draft.

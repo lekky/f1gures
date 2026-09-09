@@ -8,8 +8,14 @@
 //
 //   --days=N   BATCH. Builds the next N days of evergreen posts in one go
 //              (records, on-this-day, birthdays, spotlights, previews...),
-//              skipping the days around a race, which the live job owns
-//              because their results do not exist yet.
+//              skipping the days around a race (the live job owns those,
+//              because their results do not exist yet) and any date already
+//              posted or already sitting in the pending queue.
+//
+//              The scheduled job runs --days=1, one evening ahead. Anything
+//              larger is a manual backfill: a card is a picture of the archive
+//              at the moment it was rendered, so a fortnight-wide batch posts
+//              fortnight-old numbers. See docs/social-posts.md.
 //
 //   (default)  ONE post for a single date. What the live race-weekend job runs.
 //
@@ -30,6 +36,7 @@ import { composeCaption } from './social/caption.mjs';
 import { renderCards } from './social/card.mjs';
 import { FORMATS } from './social/cardkit.mjs';
 import { readHistory } from './social/history.mjs';
+import { readPending } from './social/pending.mjs';
 import { SOCIAL_CONFIG, publishAtFor, raceOwnedDates } from './social/config.mjs';
 
 const cfg = SOCIAL_CONFIG;
@@ -53,6 +60,7 @@ function parseArgs(argv) {
       case '--formats': args.formats = value.split(',').map((f) => f.trim()).filter(Boolean); break;
       case '--include-race-days': args.includeRaceDays = true; break;
       case '--asap': args.asap = true; break;
+      case '--append': args.append = true; break;
       case '--list': args.list = true; break;
       case '--json': args.json = true; break;
       case '--help': args.help = true; break;
@@ -75,6 +83,9 @@ Build f1gures social posts. Settings live in scripts/social/config.mjs.
   --include-race-days   batch mode: do not skip the days the live job owns
   --asap                publish as soon as the scheduler allows rather than at
                         config.postTime - what the live (result) job uses
+  --append              keep whatever is already in the output directory and add
+                        to its batch.json, rather than wiping it. Lets one job
+                        build a result post and an evergreen one in two passes.
   --out=<dir>           output directory (default: .social-out)
   --list                print every candidate for the date, then exit
   --json                print the manifest as JSON only
@@ -160,7 +171,21 @@ async function main() {
 
   const formats = args.formats || neededFormats();
   const outDir = path.resolve(ROOT, args.out || '.social-out');
-  fs.rmSync(outDir, { recursive: true, force: true });
+  const manifestPath = path.join(outDir, 'batch.json');
+
+  // --append keeps an earlier pass's cards and posts. One job builds a result
+  // post and then tomorrow's evergreen one, and a second wipe would delete the
+  // PNGs the first pass just rendered.
+  let carried = [];
+  if (args.append && fs.existsSync(manifestPath)) {
+    try {
+      carried = JSON.parse(fs.readFileSync(manifestPath, 'utf8')).posts || [];
+    } catch {
+      carried = [];
+    }
+  } else {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
   fs.mkdirSync(outDir, { recursive: true });
 
   // The committed log, plus this run's own picks, so a batch does not repeat
@@ -172,8 +197,12 @@ async function main() {
   const posts = [];
   const skipped = [];
 
+  // An earlier pass in this same run has already claimed these dates.
+  for (const p of carried) history.push({ date: p.date, angle: p.angle, key: p.key, subject: p.subject });
+
   if (args.days) {
     const owned = args.includeRaceDays ? new Set() : raceOwnedDates(racesIndex(), cfg);
+    const queued = new Set(readPending().map((p) => p.date));
     for (let i = 0; i < args.days; i++) {
       const date = addDays(startDate, i);
       if (owned.has(date)) {
@@ -182,6 +211,13 @@ async function main() {
       }
       if (history.some((p) => p.date === date)) {
         skipped.push({ date, reason: 'already posted' });
+        continue;
+      }
+      // Built but not yet placed. On the mcp route a post sits in the queue
+      // until a Claude session schedules it, so the history log alone would let
+      // the next run rebuild the same day and replace a card mid-hand-off.
+      if (queued.has(date)) {
+        skipped.push({ date, reason: 'already queued, waiting to be scheduled' });
         continue;
       }
       const post = await buildOne({ date, history, angles: args.angles, formats, outDir, timeOfDay });
@@ -198,8 +234,9 @@ async function main() {
     if (post) posts.push(post);
   }
 
-  const manifest = { generatedAt: new Date().toISOString(), draft: cfg.draft, posts, skipped };
-  fs.writeFileSync(path.join(outDir, 'batch.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  const allPosts = [...carried, ...posts].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const manifest = { generatedAt: new Date().toISOString(), draft: cfg.draft, posts: allPosts, skipped };
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
   if (args.json) {
     console.log(JSON.stringify(manifest, null, 2));
@@ -207,8 +244,9 @@ async function main() {
   }
 
   if (!posts.length) {
-    console.log(`[social] nothing to post${args.angles ? ` for angles: ${args.angles.join(', ')}` : ''}.`);
+    console.log(`[social] nothing new to post${args.angles ? ` for angles: ${args.angles.join(', ')}` : ''}.`);
     for (const s of skipped) console.log(`  ${s.date}  skipped — ${s.reason}`);
+    if (carried.length) console.log(`[social] ${carried.length} post(s) carried from an earlier pass remain in batch.json.`);
     return;
   }
 
@@ -219,6 +257,9 @@ async function main() {
   if (skipped.length) {
     console.log(`\nskipped ${skipped.length}:`);
     for (const s of skipped) console.log(`  ${s.date}  ${s.reason}`);
+  }
+  if (carried.length) {
+    console.log(`\ncarried from an earlier pass: ${carried.map((p) => p.date).join(', ')}`);
   }
   if (posts.length === 1) {
     console.log(`\n${posts[0].caption}\n`);

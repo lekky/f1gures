@@ -7,8 +7,10 @@ archive the site renders and scheduled through Metricool.
   `public/data/archive/`. Every number comes from the archive; nothing is
   generated prose, which is what makes unattended posting safe.
 - **Design** — see [`social-card-design.md`](./social-card-design.md).
-- **Cadence** — two jobs in `.github/workflows/social-post.yml`: a fortnightly
-  **batch** that fills the calendar ahead, and a daily **live** job for results.
+- **Cadence** — one job in `.github/workflows/social-post.yml`, running twice a
+  day. The 23:00 UTC run posts any result and builds **tomorrow's** evergreen
+  post; the 17:00 UTC run posts a result that landed in the European afternoon.
+  Nothing is ever rendered more than about a day before it goes out.
 - **Settings** — [`scripts/social/config.mjs`](../scripts/social/config.mjs) is the
   one file to edit: post time, timezone, networks, draft mode, how far ahead to
   schedule, and link tagging.
@@ -87,28 +89,60 @@ out. Repetition is held off by three cooldowns in `angles.mjs`:
 If everything in an angle is on cooldown it falls back to the raw weights
 rather than failing — the workflow always produces a post.
 
-## Two jobs, because results cannot be scheduled ahead
+## Why nothing is rendered more than a day ahead
 
-Most posts are knowable weeks in advance: an on-this-day, a record leaderboard, a
-driver's birthday, even a race preview (the calendar is fixed). A podium is not —
-it does not exist until the race ends.
+A card is a **picture of the archive at the moment Satori drew it**, and the
+caption's numbers freeze with it. Once the PNG is uploaded, nothing downstream
+can correct it.
 
-So the work splits:
+This used to be a fortnightly batch: one run on the 1st and the 15th rendered
+fourteen days of cards. That posted numbers up to a fortnight old — a "drivers'
+championship after 13 rounds" card went out two days *after* round 14, and a
+current driver's career-wins total went out six days after a race that could
+have changed it.
 
-| | **batch** | **live** |
+Roughly half the angles are frozen history and would survive it (`on-this-day`,
+`driver-birthday`, `trivia`, spotlights of retired drivers). The other half read
+live season state — `standings-snapshot`, `record-board`, `head-to-head`, and any
+spotlight of an active driver — and a single grand prix between render and post
+breaks them. So the horizon is one day for all of them: **short enough that no
+race can fall in the gap**, because race days and the day either side are handed
+to the result passes and skipped by the evergreen one.
+
+`config.batchDays` (14) now applies only to a manual `--days=N` dispatch, for
+backfills you are watching.
+
+## One job, two shapes
+
+A podium cannot be scheduled ahead — it does not exist until the race ends — so
+each run does up to two passes:
+
+| | **daily** (23:00 UTC) | **live** (17:00 UTC) |
 |---|---|---|
-| Runs | 1st and 15th, 09:00 UTC | twice daily, 17:00 and 23:00 UTC |
-| Posts | everything except results | pole, sprint, podium only |
-| Publishes at | `config.postTime` (19:00 London) | `config.livePostTime` (`asap`) |
-| Horizon | next `config.batchDays` (14) | that day |
-| On a quiet day | n/a | exits in seconds, posts nothing |
+| Pass 1 — results | pole, sprint, podium, `asap` | same |
+| Pass 2 — evergreen | **tomorrow**, ~20h of lead | **today**, catch-up only |
+| Publishes at | `config.postTime` (19:00 London) | same |
+| On a quiet day | one evergreen post | exits in seconds |
 
-The live job runs twice because "after the session" is not one time of day.
-**17:00 UTC** covers Europe, the Middle East and Asia-Pacific; **23:00 UTC**
-catches the Americas the same night (Austin, Mexico, Miami, Interlagos and Las
-Vegas all finish between 21:00 and 06:00 UTC). A date already queued or already
-in the history log is skipped downstream, so the overlap costs a build, never a
-duplicate post.
+**17:00 UTC** covers Europe, the Middle East and Asia-Pacific (a European race
+ends ~15:00–16:00 UTC, Suzuka/Melbourne by 07:00 UTC); **23:00 UTC** catches the
+Americas the same night (Austin, Mexico, Miami, Interlagos and Las Vegas all
+finish between 21:00 and 06:00 UTC).
+
+The 17:00 evergreen pass is a **catch-up, normally a no-op**: the build skips any
+date already in the history log *or* already sitting in the pending queue, so it
+only produces something when the previous night's run failed to claim today.
+
+Building the night before is also what absorbs **GitHub cron drift**, which is
+real — these schedules have fired up to 2h45m late. A run that starts at 01:45
+UTC instead of 23:00 still leaves seventeen hours before the 19:00 slot; a
+same-day 17:00 build would have missed the slot entirely.
+
+Pass 2 uses `--append` so it adds to pass 1's `batch.json` instead of wiping the
+cards pass 1 just rendered.
+
+A date already queued or already in the history log is skipped downstream too,
+so the overlap between the two runs costs a build, never a duplicate post.
 
 Result posts publish `asap` rather than at the evening slot: a podium card built
 ten minutes after the flag is news, and waiting until 19:00 the next day would
@@ -151,6 +185,19 @@ Formats: `portrait` 1080×1350 (Instagram + Facebook), `square` 1080×1080,
 rendered.
 
 ## Links in captions
+
+### TikTok music
+
+TikTok is a sound-first network, and a photo post with no track attached
+publishes **silent** — which reads as broken rather than minimal. Metricool's
+`tiktokData.autoAddMusic` defaults to `false`, so it has to be sent explicitly
+on every post; `config.tiktok.autoAddMusic` (default `true`) is the knob, and
+the flag is carried into `pending.json` as `tiktokAutoAddMusic` so the session
+placing the post does not have to remember it.
+
+`true` lets TikTok pick a track from its own commercially-cleared library at
+publish time. Choosing a *specific* track is not an option here: it would need a
+sound id per post and the rights to use it, neither of which a scheduler has.
 
 **Only Facebook makes a URL in a post clickable.** Instagram and TikTok render
 URLs in a caption as plain text, so campaign tags there are unclickable clutter

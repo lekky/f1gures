@@ -28,9 +28,19 @@ export const SOCIAL_CONFIG = {
   minLeadMinutes: 20,
 
   // ── How far ahead the evergreen batch schedules ────────────────────────────
-  // The batch job fills the Metricool calendar this many days forward. Raise it
-  // to review a month at a time; lower it to stay nimble. The job is safe to
-  // re-run - it skips dates already in the history log.
+  // ONLY used by a manual `--days=N` dispatch. The scheduled job builds one
+  // evening ahead and nothing more, on purpose.
+  //
+  // A card is a picture of the archive at the moment Satori rendered it, and a
+  // caption's numbers are frozen with it. Scheduling a fortnight out therefore
+  // posted fortnight-old figures: a "drivers' championship after 13 rounds"
+  // card went out two days after round 14, and a current driver's career-wins
+  // total went out six days after a race that could have changed it. Nothing
+  // downstream can repair that - the PNG is already uploaded.
+  //
+  // So the horizon is one day, which is short enough that no grand prix can
+  // ever fall between the render and the post (race days are handed to the live
+  // job and skipped here). Raise this only for a backfill you are watching.
   batchDays: 14,
 
   // ── Which Metricool brand ──────────────────────────────────────────────────
@@ -62,6 +72,18 @@ export const SOCIAL_CONFIG = {
     instagram: 'png',
     facebook: 'png',
     tiktok: 'jpeg',
+  },
+
+  // ── TikTok ─────────────────────────────────────────────────────────────────
+  // TikTok photo posts are silent unless a track is attached. autoAddMusic lets
+  // TikTok pick one from its own commercially-cleared library at publish time,
+  // which is the only sound option available to a scheduler: picking a specific
+  // track would need a sound id per post and the rights to use it.
+  //
+  // Metricool defaults this to false, so it has to be sent explicitly on every
+  // post. Set it to false to go back to silent cards.
+  tiktok: {
+    autoAddMusic: true,
   },
 
   // ── How posts reach Metricool ──────────────────────────────────────────────
@@ -148,6 +170,11 @@ export function publishAtFor(date, cfg = SOCIAL_CONFIG, now = new Date(), timeOf
   const [h = '19', m = '00'] = String(timeOfDay).split(':');
   const slot = `${date}T${h.padStart(2, '0')}:${m.padStart(2, '0')}:00`;
   return slot >= earliest ? slot : earliest;
+}
+
+/** Whether TikTok should attach one of its own library tracks to the post. */
+export function tiktokAutoAddMusic(cfg = SOCIAL_CONFIG) {
+  return cfg.tiktok?.autoAddMusic !== false;
 }
 
 /**
