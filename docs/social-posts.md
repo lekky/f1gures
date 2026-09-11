@@ -129,6 +129,45 @@ ends ~15:00–16:00 UTC, Suzuka/Melbourne by 07:00 UTC); **23:00 UTC** catches t
 Americas the same night (Austin, Mexico, Miami, Interlagos and Las Vegas all
 finish between 21:00 and 06:00 UTC).
 
+### The Monday after a race
+
+Qualifying Saturday and race Sunday belong to the result passes. **Monday does
+not** — it gets an evergreen post of its own, built Sunday evening.
+
+It used to be held back too (`raceWindow.after: 1`), on the theory that a late
+result might need it. Nothing did: every 2026 race finishes before the same
+day's last run, the latest (Austin, Mexico City) by about 22:00 UTC, and cron
+drift only ever runs a job late. So Monday had no result to wait for and no
+evergreen post either — and the result angle, which fires for *any* race
+finished in the last three days, refilled the empty day with Sunday's podium a
+second time, then again on Tuesday.
+
+Two things stop that now. `raceWindow.after` is `0`, so Monday is the evergreen
+pass's. And a key inside `KEY_COOLDOWN_DAYS` can no longer come back through the
+stalest-candidate fallback — see **A posted result is never re-posted** below.
+
+A result that genuinely does land on a Monday (a drifted run crossing midnight
+UTC) still posts: that day's own result pass builds it and it replaces the
+queued evergreen for the date.
+
+### A posted result is never re-posted
+
+Stage 2 of the draw hard-blocks a spent key by zeroing its weight. The fallback
+underneath — "rather than post nothing, take the candidate used longest ago" —
+used to hand that same key straight back, so the block only held while some
+*other* candidate survived.
+
+The evergreen pool is hundreds of candidates and never runs dry, so this only
+ever bit on a narrow pool: the results-only pass, where the pool is one race.
+The fallback now skips any key still inside its cooldown and returns `null`
+instead, which for a result already posted is the right answer — the news has
+gone out.
+
+The cooldowns also count posts sitting in `pending.json`, not just
+`history.json`. On the mcp route a post is not "used" until a Claude session
+places it, so without that a result queued on Sunday would be rebuilt on Monday
+in the window before the Routine runs.
+
 The 17:00 evergreen pass is a **catch-up, normally a no-op**: the build skips any
 date already in the history log *or* already sitting in the pending queue, so it
 only produces something when the previous night's run failed to claim today.

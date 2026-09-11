@@ -104,13 +104,23 @@ describe('angle selection', () => {
     expect(KEY_COOLDOWN_DAYS).toBeGreaterThan(90);
   });
 
-  it('falls back rather than returning nothing when everything is on cooldown', () => {
+  it('falls back rather than returning nothing when everything is angle-cooled', () => {
+    // Angle and subject cooldowns damp a candidate; they never strand the day.
     const only = candidate('trivia', 'only', 10, 'sA');
     const byAngle = new Map([['trivia', [only]]]);
-    const history = [{ date: '2026-04-01', angle: 'trivia', key: 'only', subject: 'sA' }];
+    const history = [{ date: '2026-04-01', angle: 'trivia', key: 'somethingElse', subject: 'sA' }];
     const picked = selectFromCandidates(byAngle, { date: '2026-04-02', history });
     expect(picked).not.toBeNull();
     expect(picked.key).toBe('only');
+  });
+
+  it('will not fall back onto a key still inside its own cooldown', () => {
+    // The key block is the one hard block. The fallback used to hand the key
+    // straight back, which is how a posted podium re-posted the next day.
+    const only = candidate('trivia', 'only', 10, 'sA');
+    const byAngle = new Map([['trivia', [only]]]);
+    const history = [{ date: '2026-04-01', angle: 'trivia', key: 'only', subject: 'sA' }];
+    expect(selectFromCandidates(byAngle, { date: '2026-04-02', history })).toBeNull();
   });
 
   it('damps a subject used recently', () => {
@@ -556,9 +566,11 @@ describe('config', () => {
 
   it('reserves the days around a race for the live job', () => {
     const owned = raceOwnedDates([{ date: '2026-09-06' }]);
-    expect([...owned].sort()).toEqual(['2026-09-05', '2026-09-06', '2026-09-07']);
+    // Qualifying Saturday and race Sunday only - the Monday is the evergreen
+    // pass's again, because no 2026 race finishes late enough to need it.
+    expect([...owned].sort()).toEqual(['2026-09-05', '2026-09-06']);
     expect(owned.has('2026-09-04')).toBe(false);
-    expect(owned.has('2026-09-08')).toBe(false);
+    expect(owned.has('2026-09-07')).toBe(false);
   });
 
   it('ignores undated calendar rows', () => {
@@ -638,11 +650,10 @@ describe('batch selection', () => {
     expect(new Set(seen).size).toBe(seen.length);
   });
 
-  it('still returns a post once every candidate is exhausted', () => {
+  it('returns nothing once every candidate is spent, rather than repeating one', () => {
     const byAngle = new Map([['trivia', [candidate('trivia', 'only', 5, 's')]]]);
     const history = [{ date: '2026-09-05', angle: 'trivia', key: 'only', subject: 's' }];
-    const picked = selectFromCandidates(byAngle, { date: '2026-09-06', history });
-    expect(picked?.key).toBe('only');
+    expect(selectFromCandidates(byAngle, { date: '2026-09-06', history })).toBeNull();
   });
 });
 
@@ -779,14 +790,16 @@ describe('tiktok autoAddMusic', () => {
 
 describe('render horizon', () => {
   it('leaves no race between an evergreen render and its post', () => {
-    // The evergreen pass builds one day ahead and skips race day ±1, so the
-    // render→post gap can never span a session.
+    // The evergreen pass builds one day ahead and skips qualifying Saturday and
+    // race Sunday, so the render→post gap can never span a session.
     const races = [{ date: '2026-09-13' }];
     const owned = raceOwnedDates(races, SOCIAL_CONFIG);
-    for (const d of ['2026-09-12', '2026-09-13', '2026-09-14']) {
+    for (const d of ['2026-09-12', '2026-09-13']) {
       expect(owned.has(d)).toBe(true);
     }
-    // The day after the window is buildable, and the race is already behind it.
+    // Monday is buildable, and the race is already behind it: the post is
+    // rendered on Sunday evening, hours after the flag.
+    expect(owned.has('2026-09-14')).toBe(false);
     expect(owned.has('2026-09-15')).toBe(false);
   });
 
@@ -799,5 +812,61 @@ describe('render horizon', () => {
     );
     expect(wf).toContain('--days=1 --append');
     expect(wf).not.toContain("cron: '0 9 1,15 * *'");
+  });
+});
+
+// ── a posted result is never re-posted ──
+//
+// The Monday-after-a-race bug: the result angle fires for any race finished in
+// the last three days, and the stalest-candidate fallback handed back a key
+// stage 2 had just hard-blocked. Sunday's podium went out again on Monday, and
+// again on Tuesday.
+
+describe('spent keys stay spent', () => {
+  const raceResult = (key) => ({
+    angle: 'race-result', key, weight: 100, subject: 'race:2026-14', layout: 'podium',
+  });
+
+  it('returns nothing rather than repeat the only candidate', () => {
+    const byAngle = new Map([['race-result', [raceResult('race-result:2026-14')]]]);
+    const history = [{ date: '2026-09-13', angle: 'race-result', key: 'race-result:2026-14', subject: 'race:2026-14' }];
+    // Monday, the day after the race.
+    expect(selectFromCandidates(byAngle, { date: '2026-09-14', history })).toBeNull();
+    // ...and still nothing two days later.
+    expect(selectFromCandidates(byAngle, { date: '2026-09-15', history })).toBeNull();
+  });
+
+  it('still posts a result that has not gone out yet', () => {
+    const byAngle = new Map([['race-result', [raceResult('race-result:2026-14')]]]);
+    const chosen = selectFromCandidates(byAngle, { date: '2026-09-13', history: [] });
+    expect(chosen?.key).toBe('race-result:2026-14');
+  });
+
+  it('falls back past a spent key to one that is free', () => {
+    const byAngle = new Map([['race-result', [
+      raceResult('race-result:2026-14'),
+      raceResult('race-result:2026-15'),
+    ]]]);
+    const history = [{ date: '2026-09-13', angle: 'race-result', key: 'race-result:2026-14', subject: 'race:2026-14' }];
+    const chosen = selectFromCandidates(byAngle, { date: '2026-09-14', history });
+    expect(chosen?.key).toBe('race-result:2026-15');
+  });
+
+  it('releases a key once the cooldown has fully elapsed', () => {
+    const byAngle = new Map([['race-result', [raceResult('race-result:2026-14')]]]);
+    const history = [{ date: '2026-09-13', angle: 'race-result', key: 'race-result:2026-14', subject: 'race:2026-14' }];
+    const wayLater = '2028-09-13'; // well past KEY_COOLDOWN_DAYS
+    expect(selectFromCandidates(byAngle, { date: wayLater, history })?.key).toBe('race-result:2026-14');
+  });
+});
+
+// ── the Monday after a race belongs to the evergreen pass ──
+
+describe('race window', () => {
+  it('covers qualifying Saturday and race Sunday, and releases the Monday', () => {
+    const owned = raceOwnedDates([{ date: '2026-09-13' }], SOCIAL_CONFIG);
+    expect(owned.has('2026-09-12')).toBe(true);  // qualifying
+    expect(owned.has('2026-09-13')).toBe(true);  // race day
+    expect(owned.has('2026-09-14')).toBe(false); // Monday — an evergreen post of its own
   });
 });
