@@ -22,7 +22,7 @@ import path from 'node:path';
 import { ROOT } from './social/sources.mjs';
 import { readConfig, schedulePost, MetricoolError } from './social/publish/metricool.mjs';
 import { appendHistory, readHistory } from './social/history.mjs';
-import { readPending, writePending, queuePending, clearPending, reslotPending } from './social/pending.mjs';
+import { readPending, writePending, queuePending, clearPending, reslotPending, slotOf } from './social/pending.mjs';
 import { SOCIAL_CONFIG, withUtm, localWallClock, imageTypeFor, tiktokAutoAddMusic } from './social/config.mjs';
 
 const cfg = SOCIAL_CONFIG;
@@ -37,6 +37,7 @@ function parseArgs(argv) {
       case '--networks': args.networks = value.split(',').map((n) => n.trim()).filter(Boolean); break;
       case '--via': args.via = value; break;
       case '--dates': args.dates = value.split(',').map((d) => d.trim()).filter(Boolean); break;
+      case '--slots': args.slots = value.split(',').map((d) => d.trim()).filter(Boolean); break;
       case '--confirm': args.confirm = true; break;
       case '--dry-run': args.dryRun = true; break;
       case '--draft': args.draft = true; break;
@@ -69,7 +70,13 @@ Get built social posts to Metricool. Settings: scripts/social/config.mjs
 
   --confirm --dates=YYYY-MM-DD,...
                     mcp route: mark those queued posts as scheduled - moves them
-                    from the pending queue into the history log
+                    from the pending queue into the history log. Confirms EVERY
+                    post on those dates, which is what you want on an ordinary
+                    day (there is only one).
+  --confirm --slots=YYYY-MM-DD:key,...
+                    confirm individual posts instead. A race weekend queues
+                    several for one date (FP1, FP2, qualifying, the race), so
+                    name the slots when only some of them were placed.
 `.trim();
 
 /**
@@ -145,10 +152,14 @@ function confirm(args) {
     console.log('[social] nothing in the pending queue.');
     return;
   }
-  const dates = args.dates?.length ? args.dates : pending.map((p) => p.date);
-  const done = pending.filter((p) => dates.includes(p.date));
+  // Slots name individual posts; dates name every post on a day. Neither given
+  // confirms the lot, which is the old behaviour.
+  const wanted = [...(args.slots || []), ...(args.dates || [])];
+  const done = wanted.length
+    ? pending.filter((p) => wanted.includes(slotOf(p)) || wanted.includes(p.date))
+    : pending;
   if (!done.length) {
-    console.log(`[social] no queued posts match ${dates.join(', ')}.`);
+    console.log(`[social] no queued posts match ${wanted.join(', ')}.`);
     return;
   }
   for (const post of done) {
@@ -162,8 +173,8 @@ function confirm(args) {
       platforms: Object.fromEntries(post.groups.flatMap((g) => g.networks.map((n) => [n, { ok: true, via: 'mcp', draft: post.draft }]))),
     });
   }
-  const left = clearPending(done.map((p) => p.date));
-  console.log(`[social] confirmed ${done.length} post(s): ${done.map((p) => p.date).join(', ')}`);
+  const left = clearPending(done.map(slotOf));
+  console.log(`[social] confirmed ${done.length} post(s): ${done.map(slotOf).join(', ')}`);
   console.log(`[social] ${left.length} still queued.`);
 }
 
@@ -194,7 +205,11 @@ async function main() {
   const baseUrl = (args.baseUrl || process.env.SOCIAL_MEDIA_BASE_URL || 'https://f1gures.app/social').replace(/\/$/, '');
 
   const history = readHistory();
-  const todo = batch.posts.filter((p) => args.force || !history.some((h) => h.date === p.date));
+  // Match on the slot, not the date. Filtering by date alone meant the second
+  // post on any day was silently dropped, so a race weekend could never carry
+  // qualifying AND the race - or FP1 and FP2.
+  const logged = new Set(history.map(slotOf));
+  const todo = batch.posts.filter((p) => args.force || !logged.has(slotOf(p)));
   const alreadyLogged = batch.posts.length - todo.length;
 
   if (!todo.length) {

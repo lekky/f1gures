@@ -26,7 +26,7 @@
 // emoji glyph. Alt text is also kept plain - a screen reader announcing
 // "chequered flag" mid-sentence is noise, not enthusiasm.
 
-import { longDate, dayMonth, ordinal, plural, possessive, clamp } from './format.mjs';
+import { longDate, dayMonth, ordinal, plural, possessive, clamp, lapTime, gapTo } from './format.mjs';
 
 export const SITE = 'https://f1gures.app';
 
@@ -53,6 +53,7 @@ const EMOJI = {
   duel: '\u2694\uFE0F',
   bulb: '\u{1F4A1}',
   chart: '\u{1F4CA}',
+  stopwatch: '\u23F1\uFE0F',  // practice - timed running, not a result
 };
 
 /** Strip a name/word down to a usable hashtag token. */
@@ -161,6 +162,39 @@ const COMPOSERS = {
         tag(race.circuit?.countryName), 'GrandPrix',
       ]),
       alt: `Result card: ${winner.driverName} won the ${race.year} ${race.name}. ${plainRows.join(', ')}.`,
+    };
+  },
+
+  'practice-result'({ race, label, rows, longRun, session }) {
+    const leader = rows[0];
+    const sheet = rows.map((r) => {
+      const gap = gapTo(r.time, leader.time);
+      return `P${r.position} ${r.name} (${r.team})  ${lapTime(r.time)}${gap ? `  ${gap}` : ''}`;
+    });
+    // Practice is not a result, and a headline time is often a low-fuel lap on
+    // softs. The long-run average is the part that actually says something
+    // about Sunday, so it gets its own line rather than being buried.
+    const longLine = longRun
+      ? `Best long run: ${longRun.name}, ${lapTime(longRun.avg)} average over ${plural(longRun.laps, 'lap')} on ${longRun.c === 'S' ? 'softs' : longRun.c === 'M' ? 'mediums' : 'hards'}.`
+      : null;
+    return {
+      kicker: `${race.year} · ${label}`,
+      headline: `${leader.name} quickest in ${label} at the ${race.name}`,
+      body: lines(
+        `${EMOJI.stopwatch} ${leader.name} tops ${label} for ${leader.team}.`,
+        '',
+        ...sheet,
+        '',
+        longLine,
+        longLine ? '' : null,
+        `Every lap, stint and telemetry trace: ${SITE}/races/${race.year}/${race.round}/?session=${session}`,
+      ),
+      tags: tagsFor([
+        tag(race.name), tag(leader.name), tag(leader.team), 'Practice', 'FP',
+      ]),
+      alt: `${label} timesheet for the ${race.year} ${race.name}. ${rows
+        .map((r) => `P${r.position} ${r.name} ${lapTime(r.time)}`)
+        .join(', ')}.`,
     };
   },
 

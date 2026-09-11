@@ -70,6 +70,21 @@ export const recordDoc = (topic) => (topic ? readJson(path.join(ARCHIVE, 'record
 export const trivia = () => readJson(path.join(ROOT, 'src/data/trivia.json'), { facts: [] });
 export const seasonBundle = (year) => readJson(path.join(ROOT, `public/data/${year}.json`));
 
+// ── FastF1 per-session data ──
+//
+// Committed (unlike the archive), because the fetch cannot run in CI - F1's
+// live-timing API refuses GitHub's datacenter IPs, so a local bot writes these
+// and pushes. A missing file therefore means "that session has not been
+// fetched yet", never "something is broken": readJson returns null and the
+// practice angle simply has no candidate.
+export const FASTF1 = path.join(ROOT, 'public/data/fastf1');
+
+export const fastf1Index = (year, round) =>
+  readJson(path.join(FASTF1, String(year), String(round), 'index.json'));
+
+export const fastf1Session = (year, round, id) =>
+  (id ? readJson(path.join(FASTF1, String(year), String(round), `${id}.json`)) : null);
+
 /** Flat list of every record config the hub knows about, with its group label. */
 export function recordConfigs() {
   const out = [];

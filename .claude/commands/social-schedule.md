@@ -46,8 +46,16 @@ The file carries the brand at the top level and the posts under `posts`:
 blogId        Metricool brand id — pass verbatim, never look it up by name
 brandLabel    "F1gures", for the sanity check in step 2
 timezone      IANA zone, e.g. "Europe/London"
+**A date can now hold several posts.** A race weekend runs FP1, FP2, FP3,
+qualifying and the race, and each is its own post with its own card. They are
+told apart by `date` + `key` (the "slot"), not by date alone, so work through
+the list rather than assuming one entry per day.
+
+```
 posts[]
   date          the calendar day  e.g. "2026-09-10"
+  key           the candidate, e.g. "practice-result:2026-14-fp2". With date it
+                forms the slot, which is how step 4 confirms individual posts.
   publishAt     local datetime, NO offset  e.g. "2026-09-10T19:00:00"
   draft         true = park in the calendar, false = let it publish
   tiktokTitle   short title for TikTok (≤90 chars)
@@ -144,8 +152,13 @@ nothing, confirm nothing.
 record what was *really* scheduled — never what was attempted.
 
 ```bash
-node scripts/publish-social-post.mjs --confirm --dates=2026-09-10,2026-09-11
+node scripts/publish-social-post.mjs --confirm --slots=2026-09-11:practice-result:2026-14-fp1,2026-09-11:practice-result:2026-14-fp2
 ```
+
+**Prefer `--slots=` to `--dates=`.** A slot is `<date>:<key>`, straight from the
+queue. `--dates=` still works and confirms *every* post on those days, which is
+right on an ordinary day (there is only one) and wrong on a race weekend where
+only some of the day's posts were placed.
 
 Pass **only the dates that succeeded**. Anything omitted stays queued for next
 time. Then commit both files:

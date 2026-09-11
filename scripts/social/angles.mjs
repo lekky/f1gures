@@ -23,6 +23,7 @@ import {
   racesIndex, raceDoc, driversIndex, driverDoc, teamsIndex, teamDoc,
   circuitsIndex, circuitDoc, recordConfigs, recordDoc, compareSuggestions,
   trivia, seasons, racesByMonthDay, driverIndexMap, circuitIndexMap, seasonBundle,
+  fastf1Index, fastf1Session,
 } from './sources.mjs';
 import { computeStandings } from '../../src/lib/seasonStats.mjs';
 import { circuitProfiles } from '../../src/data/circuitProfiles.js';
@@ -39,6 +40,7 @@ export const ANGLE_WEIGHTS = {
   'race-result': 100,
   'quali-result': 92,
   'sprint-result': 88,
+  'practice-result': 74,
   'race-preview': 70,
   'on-this-day': 34,
   'driver-birthday': 26,
@@ -487,8 +489,88 @@ function triviaCandidates() {
   }));
 }
 
+/**
+ * A practice session that has finished, one candidate per session.
+ *
+ * The only angle whose data is NOT the archive: practice times come from
+ * FastF1, which is committed per round by a local bot because F1's API refuses
+ * CI's datacenter IPs. A session nobody has fetched simply has no candidate -
+ * `hasData` and a missing file both fall through to nothing, which is the right
+ * behaviour for a source that can legitimately be absent.
+ *
+ * Each session is its own key, so FP1 and FP2 are two posts on one Friday
+ * rather than one replacing the other (see slotOf() in pending.mjs).
+ */
+function practiceResultCandidates({ date }) {
+  const out = [];
+  for (const r of racesIndex()) {
+    if (!r.date) continue;
+    // Only the weekend in progress: from the day practice starts to race day.
+    const untilRace = daysBetween(date, r.date);
+    if (untilRace === null || untilRace < 0 || untilRace > 2) continue;
+
+    const idx = fastf1Index(r.year, r.round);
+    for (const sess of idx?.sessions || []) {
+      if (!sess.hasData || !/^fp\d$/.test(sess.id)) continue;
+      // Never post a session before it has run - hasData can land early on a
+      // partially-written file, and the start time is the honest gate.
+      if (sess.start && Date.parse(sess.start) > Date.now()) continue;
+
+      const doc = fastf1Session(r.year, r.round, sess.id);
+      const order = (doc?.order || []).filter((x) => Number(x.t) > 0);
+      if (order.length < 3) continue;
+
+      const byCode = new Map((doc.drivers || []).map((d) => [d.code, d]));
+      const rows = order.slice(0, 5).map((x, i) => ({
+        position: i + 1,
+        code: x.code,
+        time: x.t,
+        // The archive slug, not the three-letter code - it is what resolves a
+        // face image. The code renders an empty plate.
+        ref: byCode.get(x.code)?.ref || null,
+        name: byCode.get(x.code)?.name || x.code,
+        team: byCode.get(x.code)?.team || null,
+        teamId: byCode.get(x.code)?.teamId || null,
+        // FastF1 carries the livery colour per driver, so the card does not
+        // have to resolve it through the season bundle.
+        color: byCode.get(x.code)?.color || null,
+      }));
+
+      // Long-run pace is the part of practice that actually predicts Sunday;
+      // the headline time is often a low-fuel lap on softs.
+      const long = [...(doc.longRuns || [])]
+        .filter((x) => Number(x.avg) > 0 && Number(x.laps) >= 5)
+        .sort((a, b) => a.avg - b.avg)[0] || null;
+      const longRun = long
+        ? { ...long, name: byCode.get(long.code)?.name || long.code, team: byCode.get(long.code)?.team || null }
+        : null;
+
+      out.push({
+        angle: 'practice-result',
+        key: `practice-result:${r.year}-${r.round}-${sess.id}`,
+        // The latest finished session is the one worth posting.
+        weight: 100 - untilRace * 10 + Number(sess.id.slice(2)) * 3,
+        subject: `race:${r.year}-${r.round}`,
+        layout: 'leaderboard',
+        link: `/races/${r.year}/${r.round}/`,
+        data: {
+          race: r,
+          session: sess.id,
+          label: sess.label,
+          rows,
+          longRun,
+          weather: doc.weather || null,
+          leader: rows[0],
+        },
+      });
+    }
+  }
+  return out;
+}
+
 const PROVIDERS = {
   'race-result': raceResultCandidates,
+  'practice-result': practiceResultCandidates,
   'quali-result': qualiResultCandidates,
   'sprint-result': sprintResultCandidates,
   'race-preview': racePreviewCandidates,

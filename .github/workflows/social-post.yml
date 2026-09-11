@@ -49,8 +49,16 @@ on:
     # concurrency group would just queue a second run to do nothing.
     #
     # Cheap to do: this repo is public, so Actions minutes are unmetered, and
-    # a poll run with nothing to do exits before `npm ci` (see "Anything to
-    # do?" below) in a few seconds.
+    # a poll with nothing to post exits after the build pass in well under a
+    # minute.
+    #
+    # There is deliberately no early-exit gate. One briefly existed, skipping
+    # the run when today already had a post - correct while a date held one
+    # post, and wrong the moment a day could hold several. On a race Saturday
+    # FP3 posting in the morning would have blocked qualifying in the
+    # afternoon. Re-deriving "is anything unposted" cheaply would mean
+    # duplicating the angle logic here, and it would be saving seconds of
+    # unmetered compute, so the build pass answers the question instead.
     - cron: '0 0-16,18-22 * * 5,6,0'
     # The two fixed slots, every day of the week:
     #   17:00 UTC catches Europe, the Middle East and Asia-Pacific (a European
@@ -112,67 +120,21 @@ jobs:
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "Running in $MODE mode."
 
-      # A race-weekend poll runs hourly and almost always has nothing to do.
-      # One post per date is the pipeline's rule, so if today is already
-      # claimed - logged in history, or queued and waiting to be placed - a
-      # result built now would be dropped at publish time anyway.
-      #
-      # Checking that here, before `npm ci` and the archive build, turns a
-      # no-op poll from ~45s into a few seconds. Node built-ins only, and it
-      # reads the two committed state files the checkout already has.
-      #
-      # `live` and `daily` deliberately skip this gate: the 23:00 run builds
-      # TOMORROW's evergreen post, so today being claimed says nothing about
-      # whether it has work to do.
-      - name: Anything to do?
-        id: gate
-        if: steps.mode.outputs.mode == 'poll'
-        run: |
-          set -euo pipefail
-          # Quoted heredoc: the shell expands nothing inside it, so the script's
-          # backticks and ${} survive intact. Passing this to `node -e "..."`
-          # does not work - bash reads the backticks as command substitution.
-          cat > "$RUNNER_TEMP/gate.mjs" <<'JS'
-          import fs from 'node:fs';
-          const today = new Date().toISOString().slice(0, 10);
-          const read = (f) => {
-            try { return JSON.parse(fs.readFileSync(f, 'utf8')).posts || []; } catch { return []; }
-          };
-          const taken = [...read('data/social/history.json'), ...read('data/social/pending.json')]
-            .some((p) => p.date === today);
-          console.log(`[social] ${today} ${taken
-            ? 'already has a post (logged or queued) - nothing to poll for.'
-            : 'is unclaimed - checking for a session result.'}`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `work=${taken ? 'no' : 'yes'}\n`);
-          JS
-          node "$RUNNER_TEMP/gate.mjs"
-
-      # Every step from here is skipped on a poll that found today already
-      # claimed. `live`/`daily` have no gate step, so `gate.outputs.work` is
-      # empty for them and the condition passes on the mode check.
-      - name: Skipping
-        if: steps.mode.outputs.mode == 'poll' && steps.gate.outputs.work == 'no'
-        run: echo "Nothing to poll for. Exiting cleanly."
-
       - uses: actions/setup-node@v4
-        if: steps.gate.outputs.work != 'no'
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
-        if: steps.gate.outputs.work != 'no'
         run: npm ci
 
       # The archive is gitignored, so regenerate it. Importer only - no Astro
       # build, no OG images.
       - name: Build archive
-        if: steps.gate.outputs.work != 'no'
         run: npm run build:archive
 
       - name: Build posts
         id: build
-        if: steps.gate.outputs.work != 'no'
         run: |
           set -euo pipefail
           MODE="${{ steps.mode.outputs.mode }}"
@@ -186,7 +148,14 @@ jobs:
             # Pass 1 - results. A podium card is news, so --asap sends it now
             # rather than holding it for config.postTime. Exits in seconds on
             # the ~90% of days with no session result.
-            ARGS=("--angles=race-result,quali-result,sprint-result" "--asap")
+            #
+            # --all, not a draw: a race weekend runs several sessions in a day
+            # and each is its own post, told apart by key rather than date.
+            #
+            # practice-result is the one angle whose data is not the archive -
+            # it comes from FastF1, committed per round by the local bot, so a
+            # session nobody has fetched simply yields no candidate.
+            ARGS=("--angles=practice-result,race-result,quali-result,sprint-result" "--all" "--asap")
             if [ -n "$DATE_IN" ]; then ARGS+=("--date=$DATE_IN"); fi
             node scripts/build-social-post.mjs "${ARGS[@]}"
 
@@ -220,11 +189,11 @@ jobs:
       # A live run on a day with no session result is the normal case, not a
       # failure - stop here rather than uploading an empty directory.
       - name: Nothing to post
-        if: steps.gate.outputs.work != 'no' && steps.build.outputs.count == '0'
+        if: steps.build.outputs.count == '0'
         run: echo "No posts for this run. Exiting cleanly."
 
       - name: Upload cards to the site
-        if: steps.gate.outputs.work != 'no' && steps.build.outputs.count != '0' && inputs.dry_run != true
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
         env:
           SSH_HOST: ${{ secrets.SSH_HOST || secrets.SFTP_HOST }}
           SSH_USER: helloweb
@@ -268,7 +237,7 @@ jobs:
       # On the mcp route this queues the posts; on the api route it schedules
       # them. Which one runs is config.publishVia, not a workflow decision.
       - name: Queue or schedule
-        if: steps.gate.outputs.work != 'no' && steps.build.outputs.count != '0' && inputs.dry_run != true
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
         env:
           METRICOOL_USER_TOKEN: ${{ secrets.METRICOOL_USER_TOKEN }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
@@ -277,14 +246,14 @@ jobs:
         run: node scripts/publish-social-post.mjs
 
       - name: Dry run
-        if: steps.gate.outputs.work != 'no' && steps.build.outputs.count != '0' && inputs.dry_run == true
+        if: steps.build.outputs.count != '0' && inputs.dry_run == true
         run: node scripts/publish-social-post.mjs --dry-run
 
       # The pending queue and the history log are state, not artefacts: the
       # queue is the posts waiting to be scheduled, the log is what stops the
       # feed repeating itself. Both have to go back to the repo.
       - name: Commit the queue and history
-        if: steps.gate.outputs.work != 'no' && steps.build.outputs.count != '0' && inputs.dry_run != true
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
         run: |
           set -euo pipefail
           if git diff --quiet -- data/social/; then
@@ -299,6 +268,6 @@ jobs:
           git push
 
       - name: Next step
-        if: steps.gate.outputs.work != 'no' && steps.build.outputs.count != '0' && inputs.dry_run != true
+        if: steps.build.outputs.count != '0' && inputs.dry_run != true
         run: |
           echo "::notice::${{ steps.build.outputs.count }} post(s) queued in data/social/pending.json. Open a Claude session with the Metricool MCP connected and run /social-schedule to place them."

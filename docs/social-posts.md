@@ -57,7 +57,7 @@ reader announcing "chequered flag" mid-sentence is noise rather than enthusiasm.
 
 ## Angles
 
-Thirteen, in descending topicality. Race-weekend angles outrank everything, so
+Fourteen, in descending topicality. Race-weekend angles outrank everything, so
 the live job covers Saturday's pole and Sunday's podium without extra
 schedules.
 
@@ -76,6 +76,7 @@ schedules.
 | `circuit-spotlight` | Always — circuits with ≥ 5 races | hero |
 | `team-spotlight` | Always — constructors with ≥ 40 races or a win | hero |
 | `trivia` | Always — the hand-verified fact pool | fact |
+| `practice-result` | A practice session has finished and FastF1 has it | leaderboard |
 
 Selection is a **deterministic two-stage weighted draw** seeded by the date:
 pick the angle by topicality, then a candidate within it. Same date + same
@@ -409,3 +410,44 @@ next day does not repeat the same subject.
    not needed.
 4. Add a fixture to `CASES` in `scripts/social/social.test.js`; a test asserts
    every selectable angle has caption coverage, so this is enforced.
+
+
+## Several posts in one day
+
+A post's identity is its **slot** — `date` + `key` — not the date. It used to be
+the date alone, which capped the feed at one post a day: a second queued post
+for a date silently replaced the first, and the publisher dropped anything whose
+date was already in the history log.
+
+A race weekend needs more than that. Friday has FP1 and FP2, Saturday FP3 and
+qualifying, Sunday the race. Each is its own post with its own card.
+
+What that changed:
+
+- `queuePending` replaces by slot, so two sessions on one date both survive.
+- The publisher filters by slot, so the second post of a day is no longer
+  dropped.
+- `clearPending` and `--confirm` take `--slots=`; `--dates=` still works and
+  means "every post on these days".
+- **Card filenames carry the key**, not just the date. They did not, and the
+  second render of a day overwrote the first — both manifest entries pointed at
+  the same image.
+- The result passes run `--all`, building every eligible candidate rather than
+  drawing one, capped at `--max` (3).
+
+The evergreen pass is unchanged: still at most one a day.
+
+## Practice posts
+
+`practice-result` is the only angle whose data is **not** the archive. Practice
+times come from FastF1, which cannot be fetched in CI (F1's API refuses
+datacenter IPs), so a local bot commits `public/data/fastf1/<year>/<round>/`.
+A session nobody has fetched simply has no candidate — a missing file and
+`hasData: false` both fall through to nothing, which is correct for a source
+that can legitimately be absent. **If that machine is off on a Friday, there is
+no practice post.**
+
+The card leads with the timesheet but says `Fastest laps — practice pace, not
+the grid`, and the caption carries the **best long run** — average pace over a
+real stint. A headline practice time is often a low-fuel lap on softs; the long
+run is the part that says something about Sunday.

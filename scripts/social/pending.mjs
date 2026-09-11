@@ -51,14 +51,26 @@ export function writePending(posts, file = pendingPath(), cfg = SOCIAL_CONFIG) {
 }
 
 /**
- * Add posts to the queue, replacing any entry for the same date so a re-run of
- * the build does not double-queue a day.
+ * A post's identity: the date it goes out plus the candidate it was drawn from.
+ *
+ * It used to be the date alone, which meant one post per day full stop - a
+ * second queued post for a date silently replaced the first. A race weekend
+ * wants several (FP1, FP2, qualifying, the race), so the key joins it.
+ *
+ * Derived rather than stored, so queues written before this still resolve.
+ */
+export const slotOf = (p) => `${p?.date}:${p?.key ?? ''}`;
+
+/**
+ * Add posts to the queue, replacing any entry for the same slot so a re-run of
+ * the build does not double-queue the same post. Different sessions on one date
+ * are different slots and all survive.
  */
 export function queuePending(posts, file = pendingPath()) {
   const existing = readPending(file);
-  const dates = new Set(posts.map((p) => p.date));
-  const merged = [...existing.filter((p) => !dates.has(p.date)), ...posts]
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const slots = new Set(posts.map(slotOf));
+  const merged = [...existing.filter((p) => !slots.has(slotOf(p))), ...posts]
+    .sort((a, b) => slotOf(a).localeCompare(slotOf(b)));
   return writePending(merged, file);
 }
 
@@ -88,10 +100,16 @@ export function reslotPending(posts, earliest) {
   return { posts: next, moved };
 }
 
-/** Drop the given dates from the queue - called once they are scheduled. */
-export function clearPending(dates, file = pendingPath()) {
-  const drop = new Set(dates);
-  const kept = readPending(file).filter((p) => !drop.has(p.date));
+/**
+ * Drop the given slots from the queue - called once they are scheduled.
+ *
+ * Accepts a bare date too ("2026-09-11"), which clears every post on that date.
+ * That keeps `--confirm --dates=` working, and it is what a caller means when
+ * it names a day rather than a session.
+ */
+export function clearPending(slots, file = pendingPath()) {
+  const drop = new Set(slots);
+  const kept = readPending(file).filter((p) => !drop.has(slotOf(p)) && !drop.has(p.date));
   writePending(kept, file);
   return kept;
 }

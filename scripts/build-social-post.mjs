@@ -60,7 +60,9 @@ function parseArgs(argv) {
       case '--formats': args.formats = value.split(',').map((f) => f.trim()).filter(Boolean); break;
       case '--include-race-days': args.includeRaceDays = true; break;
       case '--asap': args.asap = true; break;
+      case '--max': args.max = Number(value); break;
       case '--append': args.append = true; break;
+      case '--all': args.all = true; break;
       case '--list': args.list = true; break;
       case '--json': args.json = true; break;
       case '--help': args.help = true; break;
@@ -86,6 +88,11 @@ Build f1gures social posts. Settings live in scripts/social/config.mjs.
   --append              keep whatever is already in the output directory and add
                         to its batch.json, rather than wiping it. Lets one job
                         build a result post and an evergreen one in two passes.
+  --all                 build EVERY eligible candidate for the date instead of
+                        drawing one. What the result passes use: a race weekend
+                        runs several sessions in a day and each is its own post.
+                        Skips anything already posted or queued, and caps at
+                        --max (default 3) so nothing can flood a feed.
   --out=<dir>           output directory (default: .social-out)
   --list                print every candidate for the date, then exit
   --json                print the manifest as JSON only
@@ -106,8 +113,13 @@ async function buildOne({ date, history, angles, key, formats, outDir, timeOfDay
   // the others prefer PNG, so rather than deciding here - where the network is
   // not known - each card is written twice and the publisher picks per network.
   const files = [];
+  // The basename carries the candidate, not just the date. Keying on the date
+  // alone was fine while a day held one post; with several (FP1, FP2,
+  // qualifying, the race) the second render silently overwrote the first and
+  // both manifest entries pointed at the same image.
+  const slug = String(candidate.key).replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
   for (const card of cards) {
-    const base = `${date}-${card.format}`;
+    const base = `${date}-${slug}-${card.format}`;
     fs.writeFileSync(path.join(outDir, `${base}.png`), card.buffer);
     // 4:4:4 chroma: the cards are condensed type and hairline rules on a dark
     // ground, which is exactly what subsampling smears.
@@ -238,6 +250,26 @@ async function main() {
       // Feed each pick straight back in, so tomorrow's draw sees it.
       history.push({ date, angle: post.angle, key: post.key, subject: post.subject });
     }
+  } else if (args.all) {
+    // Every eligible candidate, not a draw. The date is shared, so each post is
+    // told apart by its key - see slotOf() in pending.mjs.
+    const spent = new Set(history.map((p) => `${p.date}:${p.key}`));
+    const usedKeys = new Set(history.map((p) => p.key));
+    const byAngle = collectCandidates(startDate, { only: args.angles || null });
+    const eligible = [...byAngle.values()]
+      .flat()
+      // A session already posted is not news twice, whichever day it went out.
+      .filter((c) => !usedKeys.has(c.key) && !spent.has(`${startDate}:${c.key}`))
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, Number.isFinite(args.max) ? args.max : 3);
+
+    for (const c of eligible) {
+      const post = await buildOne({ date: startDate, history, key: c.key, formats, outDir, timeOfDay });
+      if (!post) continue;
+      posts.push(post);
+      history.push({ date: startDate, angle: post.angle, key: post.key, subject: post.subject });
+    }
+    if (!eligible.length) skipped.push({ date: startDate, reason: 'no unposted candidate' });
   } else {
     const post = await buildOne({ date: startDate, history, angles: args.angles, key: args.key, formats, outDir, timeOfDay });
     if (post) posts.push(post);
