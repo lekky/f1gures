@@ -23,7 +23,7 @@ import { ROOT } from './social/sources.mjs';
 import { readConfig, schedulePost, MetricoolError } from './social/publish/metricool.mjs';
 import { appendHistory, readHistory } from './social/history.mjs';
 import { readPending, writePending, queuePending, clearPending, reslotPending } from './social/pending.mjs';
-import { SOCIAL_CONFIG, withUtm, localWallClock, imageTypeFor } from './social/config.mjs';
+import { SOCIAL_CONFIG, withUtm, localWallClock, imageTypeFor, tiktokAutoAddMusic } from './social/config.mjs';
 
 const cfg = SOCIAL_CONFIG;
 
@@ -212,6 +212,9 @@ async function main() {
     headline: post.headline,
     link: post.link,
     tiktokTitle: post.tiktokTitle,
+    // Queued explicitly rather than left for whoever places the post to
+    // remember: on the mcp route the scheduling happens in another session.
+    tiktokAutoAddMusic: tiktokAutoAddMusic(cfg),
     alt: post.alt,
     draft,
     groups: planFor(post, networks, baseUrl),
@@ -263,6 +266,7 @@ async function main() {
           timezone: post.timezone,
           draft: post.draft,
           tiktokTitle: post.tiktokTitle,
+          tiktokAutoAddMusic: post.tiktokAutoAddMusic,
         });
         for (const n of group.networks) results[n] = { ok: true, id: res.id, draft: post.draft, imageUrl: group.imageUrl };
         anyOk = true;

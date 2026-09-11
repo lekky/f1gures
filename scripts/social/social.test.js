@@ -13,7 +13,7 @@ import { readHistory, appendHistory, hasPostFor } from './history.mjs';
 import { readPending, writePending, queuePending, clearPending, reslotPending } from './pending.mjs';
 import { fitFontSize, alpha, contrastText, metrics, clashesWithAccent, FORMATS, COLORS, RANK_INK } from './cardkit.mjs';
 import { BANDS, splitName, sessionValue } from './card.mjs';
-import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates, localWallClock, imageTypeFor } from './config.mjs';
+import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates, localWallClock, imageTypeFor, tiktokAutoAddMusic } from './config.mjs';
 
 // ── format helpers ──
 
@@ -755,5 +755,49 @@ describe('publish route config', () => {
     // works on every plan, so it is the safe default.
     expect(['mcp', 'api']).toContain(SOCIAL_CONFIG.publishVia);
     expect(SOCIAL_CONFIG.pendingPath).toMatch(/^data\/social\//);
+  });
+});
+
+// ── TikTok music ──
+
+describe('tiktok autoAddMusic', () => {
+  it('defaults on, because a silent photo post reads as broken', () => {
+    expect(tiktokAutoAddMusic()).toBe(true);
+    expect(SOCIAL_CONFIG.tiktok.autoAddMusic).toBe(true);
+  });
+
+  it('can be turned off, and treats an absent config as on', () => {
+    expect(tiktokAutoAddMusic({ tiktok: { autoAddMusic: false } })).toBe(false);
+    expect(tiktokAutoAddMusic({})).toBe(true);
+  });
+});
+
+// ── the one-day render horizon ──
+//
+// The staleness bug this guards: a card is a picture of the archive at render
+// time, so anything rendered more than a day out can post superseded numbers.
+
+describe('render horizon', () => {
+  it('leaves no race between an evergreen render and its post', () => {
+    // The evergreen pass builds one day ahead and skips race day ±1, so the
+    // render→post gap can never span a session.
+    const races = [{ date: '2026-09-13' }];
+    const owned = raceOwnedDates(races, SOCIAL_CONFIG);
+    for (const d of ['2026-09-12', '2026-09-13', '2026-09-14']) {
+      expect(owned.has(d)).toBe(true);
+    }
+    // The day after the window is buildable, and the race is already behind it.
+    expect(owned.has('2026-09-15')).toBe(false);
+  });
+
+  it('keeps batchDays as a manual-backfill knob only', () => {
+    // Guards the regression: if this is ever read by the scheduled path again,
+    // the fortnight-stale posts come back. The workflow passes --days=1.
+    const wf = fs.readFileSync(
+      path.join(process.cwd(), '.github/workflows/social-post.yml'),
+      'utf8',
+    );
+    expect(wf).toContain('--days=1 --append');
+    expect(wf).not.toContain("cron: '0 9 1,15 * *'");
   });
 });

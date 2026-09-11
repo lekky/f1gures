@@ -110,6 +110,7 @@ export async function normalizeImage(cfg, imageUrl) {
  * @param {string}   post.timezone    IANA zone the datetime is expressed in
  * @param {boolean}  post.draft       true = lands in the calendar for review, never auto-publishes
  * @param {string}   [post.tiktokTitle]
+ * @param {boolean}  [post.tiktokAutoAddMusic]  let TikTok attach a library track
  */
 export async function schedulePost(cfg, post) {
   const media = await normalizeImage(cfg, post.imageUrl);
@@ -127,8 +128,13 @@ export async function schedulePost(cfg, post) {
     autoPublish: !post.draft,
   };
 
-  if (post.networks.includes('tiktok') && post.tiktokTitle) {
-    body.tiktokData = { title: post.tiktokTitle };
+  if (post.networks.includes('tiktok')) {
+    // autoAddMusic has to be sent every time - Metricool defaults it to false,
+    // which publishes the photo post silent.
+    body.tiktokData = {
+      ...(post.tiktokTitle ? { title: post.tiktokTitle } : {}),
+      autoAddMusic: post.tiktokAutoAddMusic !== false,
+    };
   }
   if (post.networks.includes('instagram')) {
     body.instagramData = { type: 'POST' };
