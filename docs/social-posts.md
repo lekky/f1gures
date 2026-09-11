@@ -112,17 +112,48 @@ to the result passes and skipped by the evergreen one.
 `config.batchDays` (14) now applies only to a manual `--days=N` dispatch, for
 backfills you are watching.
 
-## One job, two shapes
+## One job, three shapes
 
 A podium cannot be scheduled ahead — it does not exist until the race ends — so
 each run does up to two passes:
 
-| | **daily** (23:00 UTC) | **live** (17:00 UTC) |
-|---|---|---|
-| Pass 1 — results | pole, sprint, podium, `asap` | same |
-| Pass 2 — evergreen | **tomorrow**, ~20h of lead | **today**, catch-up only |
-| Publishes at | `config.postTime` (19:00 London) | same |
-| On a quiet day | one evergreen post | exits in seconds |
+| | **daily** (23:00 UTC) | **live** (17:00 UTC) | **poll** (hourly, Fri–Sun) |
+|---|---|---|---|
+| Pass 1 — results | pole, sprint, podium, `asap` | same | same |
+| Pass 2 — evergreen | **tomorrow**, ~20h of lead | **today**, catch-up only | none |
+| Publishes at | `config.postTime` (19:00 London) | same | `asap` |
+| On a quiet day | one evergreen post | exits in seconds | exits before `npm ci` |
+
+### The race-weekend poll
+
+`0 0-16,18-22 * * 5,6,0` runs the results pass **every hour across Friday,
+Saturday and Sunday**, so a result goes out within the hour instead of waiting
+up to twelve for the next fixed slot. Friday is included because a sprint
+weekend can land a session a day early. Hours 17 and 23 are carved out so the
+poll never collides with the two fixed crons — GitHub fires each matching cron
+as its own run, and the concurrency group would only queue a second run to do
+nothing.
+
+**This is free.** The repo is public, so Actions minutes are unmetered.
+
+A poll almost always has nothing to do, so it checks before spending anything.
+One post per date is the pipeline's rule, so if today is already claimed —
+logged in `history.json`, or queued in `pending.json` and waiting to be placed —
+a result built now would be dropped at publish time anyway. The **Anything to
+do?** step reads those two committed files with Node built-ins and exits before
+`npm ci` and the archive build, turning a no-op poll from ~45s into a few
+seconds.
+
+`live` and `daily` deliberately skip that gate: the 23:00 run builds
+*tomorrow's* evergreen post, so today being claimed says nothing about whether
+it has work to do. The poll also skips pass 2 entirely — it exists to ask "has a
+session finished yet?" and nothing else, and a poll that also built an evergreen
+could claim a day the 23:00 run is about to.
+
+**The floor is about an hour, not minutes**, and CI is not what sets it. On the
+mcp route nothing reaches Metricool until the scheduling Routine runs, and its
+cron is hourly at best. Sub-hourly would mean `publishVia: 'api'`, which needs a
+Metricool plan with REST access.
 
 **17:00 UTC** covers Europe, the Middle East and Asia-Pacific (a European race
 ends ~15:00–16:00 UTC, Suzuka/Melbourne by 07:00 UTC); **23:00 UTC** catches the
