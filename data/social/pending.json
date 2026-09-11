@@ -1,7 +1,88 @@
 {
-  "updatedAt": "2026-09-07T18:21:59.850Z",
+  "updatedAt": "2026-09-11T22:35:13.077Z",
   "blogId": "6692452",
   "brandLabel": "F1gures",
   "timezone": "Europe/London",
-  "posts": []
+  "posts": [
+    {
+      "date": "2026-09-11",
+      "publishAt": "2026-09-11T23:54:49",
+      "timezone": "Europe/London",
+      "angle": "practice-result",
+      "key": "practice-result:2026-14-fp1",
+      "subject": "race:2026-14",
+      "headline": "George Russell quickest in FP1 at the Spanish Grand Prix",
+      "link": "https://f1gures.app/races/2026/14/",
+      "tiktokTitle": "George Russell quickest in FP1 at the Spanish Grand Prix",
+      "tiktokAutoAddMusic": true,
+      "alt": "FP1 timesheet for the 2026 Spanish Grand Prix. P1 George Russell 1:34.077, P2 Kimi Antonelli 1:34.363, P3 Charles Leclerc 1:34.536, P4 Lewis Hamilton 1:34.620, P5 Max Verstappen 1:34.703.",
+      "draft": false,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "⏱️ George Russell tops FP1 for Mercedes.\n\nP1 George Russell (Mercedes)  1:34.077\nP2 Kimi Antonelli (Mercedes)  1:34.363  +0.286\nP3 Charles Leclerc (Ferrari)  1:34.536  +0.459\nP4 Lewis Hamilton (Ferrari)  1:34.620  +0.543\nP5 Max Verstappen (Red Bull Racing)  1:34.703  +0.626\n\nBest long run: Lando Norris, 1:40.134 average over 8 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp1\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #GeorgeRussell #Mercedes #Practice #FP",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-practice-result-2026-14-fp1-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "⏱️ George Russell tops FP1 for Mercedes.\n\nP1 George Russell (Mercedes)  1:34.077\nP2 Kimi Antonelli (Mercedes)  1:34.363  +0.286\nP3 Charles Leclerc (Ferrari)  1:34.536  +0.459\nP4 Lewis Hamilton (Ferrari)  1:34.620  +0.543\nP5 Max Verstappen (Red Bull Racing)  1:34.703  +0.626\n\nBest long run: Lando Norris, 1:40.134 average over 8 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp1&utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #GeorgeRussell #Mercedes #Practice #FP",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-practice-result-2026-14-fp1-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "⏱️ George Russell tops FP1 for Mercedes.\n\nP1 George Russell (Mercedes)  1:34.077\nP2 Kimi Antonelli (Mercedes)  1:34.363  +0.286\nP3 Charles Leclerc (Ferrari)  1:34.536  +0.459\nP4 Lewis Hamilton (Ferrari)  1:34.620  +0.543\nP5 Max Verstappen (Red Bull Racing)  1:34.703  +0.626\n\nBest long run: Lando Norris, 1:40.134 average over 8 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp1\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #GeorgeRussell #Mercedes #Practice #FP",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-practice-result-2026-14-fp1-story.jpg"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-11",
+      "publishAt": "2026-09-11T23:54:48",
+      "timezone": "Europe/London",
+      "angle": "practice-result",
+      "key": "practice-result:2026-14-fp2",
+      "subject": "race:2026-14",
+      "headline": "Kimi Antonelli quickest in FP2 at the Spanish Grand Prix",
+      "link": "https://f1gures.app/races/2026/14/",
+      "tiktokTitle": "Kimi Antonelli quickest in FP2 at the Spanish Grand Prix",
+      "tiktokAutoAddMusic": true,
+      "alt": "FP2 timesheet for the 2026 Spanish Grand Prix. P1 Kimi Antonelli 1:33.662, P2 Charles Leclerc 1:33.775, P3 Lewis Hamilton 1:33.811, P4 Arvid Lindblad 1:33.890, P5 George Russell 1:33.999.",
+      "draft": false,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "⏱️ Kimi Antonelli tops FP2 for Mercedes.\n\nP1 Kimi Antonelli (Mercedes)  1:33.662\nP2 Charles Leclerc (Ferrari)  1:33.775  +0.113\nP3 Lewis Hamilton (Ferrari)  1:33.811  +0.149\nP4 Arvid Lindblad (Racing Bulls)  1:33.890  +0.228\nP5 George Russell (Mercedes)  1:33.999  +0.337\n\nBest long run: Max Verstappen, 1:40.556 average over 7 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp2\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #KimiAntonelli #Mercedes #Practice #FP",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-practice-result-2026-14-fp2-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "⏱️ Kimi Antonelli tops FP2 for Mercedes.\n\nP1 Kimi Antonelli (Mercedes)  1:33.662\nP2 Charles Leclerc (Ferrari)  1:33.775  +0.113\nP3 Lewis Hamilton (Ferrari)  1:33.811  +0.149\nP4 Arvid Lindblad (Racing Bulls)  1:33.890  +0.228\nP5 George Russell (Mercedes)  1:33.999  +0.337\n\nBest long run: Max Verstappen, 1:40.556 average over 7 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp2&utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #KimiAntonelli #Mercedes #Practice #FP",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-practice-result-2026-14-fp2-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "⏱️ Kimi Antonelli tops FP2 for Mercedes.\n\nP1 Kimi Antonelli (Mercedes)  1:33.662\nP2 Charles Leclerc (Ferrari)  1:33.775  +0.113\nP3 Lewis Hamilton (Ferrari)  1:33.811  +0.149\nP4 Arvid Lindblad (Racing Bulls)  1:33.890  +0.228\nP5 George Russell (Mercedes)  1:33.999  +0.337\n\nBest long run: Max Verstappen, 1:40.556 average over 7 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp2\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #KimiAntonelli #Mercedes #Practice #FP",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-11-practice-result-2026-14-fp2-story.jpg"
+        }
+      ]
+    }
+  ]
 }
