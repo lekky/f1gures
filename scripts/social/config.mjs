@@ -110,10 +110,22 @@ export const SOCIAL_CONFIG = {
 
   // ── Race weekends ──────────────────────────────────────────────────────────
   // Result posts (pole, sprint, podium) cannot be scheduled in advance - the
-  // result does not exist yet - so the live job owns the days around a race and
-  // the batch job leaves them alone. Window is in days either side of race day:
-  // -1 = qualifying Saturday, 0 = race day, +1 = the morning after.
-  raceWindow: { before: 1, after: 1 },
+  // result does not exist yet - so the result passes own the days around a race
+  // and the evergreen pass leaves them alone. Window is in days either side of
+  // race day: -1 = qualifying Saturday, 0 = race day.
+  //
+  // `after` is 0, not 1. Holding the Monday back for a late result sounds
+  // prudent and was not: every 2026 race finishes before the same day's last
+  // run (the latest, Austin and Mexico, by ~22:00 UTC; cron drift only ever
+  // runs a job late, never early), so Monday had no result to wait for and no
+  // evergreen post either - and the result angle, which fires for any race
+  // finished in the last three days, refilled it with Sunday's podium a second
+  // time. Monday now gets a post of its own, built Sunday evening.
+  //
+  // A result that genuinely does land on the Monday - a drifted run crossing
+  // midnight UTC - still posts: it is built by that day's own result pass and
+  // replaces the queued evergreen for the date.
+  raceWindow: { before: 1, after: 0 },
 
   // Angles the live job is allowed to post. Everything else is batch-scheduled.
   liveAngles: ['race-result', 'quali-result', 'sprint-result'],

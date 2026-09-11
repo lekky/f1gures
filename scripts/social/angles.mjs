@@ -590,13 +590,25 @@ export function selectFromCandidates(byAngle, { date, history = [] }) {
     remaining.delete(chosenAngle.id);
   }
 
-  // Nothing anywhere is off cooldown. Rather than post nothing, take the
-  // candidate whose key was used longest ago (or never).
+  // Nothing is off angle cooldown. Rather than post nothing, take the candidate
+  // whose key was used longest ago - but never one still inside KEY_COOLDOWN.
+  //
+  // That exclusion is the whole point. Stage 2 hard-blocks a spent key by
+  // zeroing its weight, and without it here the fallback handed the same key
+  // straight back, so the block only held while some other candidate survived.
+  // The evergreen pool is hundreds of candidates and never runs dry, so this
+  // only ever fired on a narrow pool - which is exactly the results-only pass,
+  // where the pool is one race. The Monday after a grand prix therefore
+  // re-posted Sunday's podium, and the Tuesday after it posted it again.
+  //
+  // Posting nothing is the right answer for a result already posted: the news
+  // has gone out. Only the date having no post at all kept that invisible.
   let stalest = null;
   let stalestAge = -1;
   for (const list of byAngle.values()) {
     for (const c of list) {
       const age = daysSince(history, (p) => p.key === c.key, date);
+      if (age < KEY_COOLDOWN_DAYS) continue;
       if (age > stalestAge) {
         stalestAge = age;
         stalest = c;

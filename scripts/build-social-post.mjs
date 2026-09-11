@@ -193,23 +193,32 @@ async function main() {
   // Result posts go out now; evergreen ones wait for the evening slot.
   const timeOfDay = args.asap ? cfg.livePostTime : cfg.postTime;
 
-  const history = readHistory();
+  // Two different questions, so two different lists.
+  //
+  //   logged   - has this DATE already been posted? (the date-skip below)
+  //   history  - has this SUBJECT/KEY been used recently? (the cooldowns)
+  //
+  // The cooldowns must also see posts that are built but not yet placed,
+  // otherwise a result queued on Sunday is not "used" until a Claude session
+  // schedules it, and Monday's run builds the same podium again in the window
+  // between the two. Pending entries and this run's own earlier pass both
+  // count as used.
+  const logged = readHistory();
+  const pendingEntries = readPending().map((p) => ({ date: p.date, angle: p.angle, key: p.key, subject: p.subject }));
+  const history = [...logged, ...pendingEntries, ...carried.map((p) => ({ date: p.date, angle: p.angle, key: p.key, subject: p.subject }))];
   const posts = [];
   const skipped = [];
 
-  // An earlier pass in this same run has already claimed these dates.
-  for (const p of carried) history.push({ date: p.date, angle: p.angle, key: p.key, subject: p.subject });
-
   if (args.days) {
     const owned = args.includeRaceDays ? new Set() : raceOwnedDates(racesIndex(), cfg);
-    const queued = new Set(readPending().map((p) => p.date));
+    const queued = new Set(pendingEntries.map((p) => p.date));
     for (let i = 0; i < args.days; i++) {
       const date = addDays(startDate, i);
       if (owned.has(date)) {
         skipped.push({ date, reason: 'race weekend — the live job owns this day' });
         continue;
       }
-      if (history.some((p) => p.date === date)) {
+      if (logged.some((p) => p.date === date)) {
         skipped.push({ date, reason: 'already posted' });
         continue;
       }
