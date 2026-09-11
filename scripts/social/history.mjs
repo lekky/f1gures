@@ -53,7 +53,18 @@ export function appendHistory(entry, file = HISTORY_PATH) {
   return record;
 }
 
-/** True when this date already has a logged post (guards double-posting). */
+/**
+ * True when this date already has a logged post.
+ *
+ * Still the right question for the evergreen pass, which posts at most one a
+ * day. The result passes ask `hasSlot` instead - a race weekend runs several
+ * sessions and each gets its own post.
+ */
 export function hasPostFor(date, file = HISTORY_PATH) {
   return readHistory(file).some((p) => p.date === date);
+}
+
+/** True when this exact post (date + candidate) has already gone out. */
+export function hasSlot(date, key, file = HISTORY_PATH) {
+  return readHistory(file).some((p) => p.date === date && p.key === key);
 }

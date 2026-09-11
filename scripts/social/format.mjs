@@ -97,3 +97,24 @@ export function titleFromSlug(slug) {
 }
 
 export { MONTHS };
+
+/**
+ * Seconds to a lap time: 93.662 -> "1:33.662".
+ *
+ * FastF1 gives lap times as float seconds. Anything unusable returns '' so a
+ * caller can drop the row rather than print "NaN".
+ */
+export function lapTime(seconds) {
+  const t = Number(seconds);
+  if (!Number.isFinite(t) || t <= 0) return '';
+  const m = Math.floor(t / 60);
+  const rest = (t - m * 60).toFixed(3);
+  return `${m}:${rest.padStart(6, '0')}`;
+}
+
+/** A gap to the leader: 0.286 -> "+0.286". Leader (0) returns ''. */
+export function gapTo(seconds, leaderSeconds) {
+  const d = Number(seconds) - Number(leaderSeconds);
+  if (!Number.isFinite(d) || d <= 0) return '';
+  return `+${d.toFixed(3)}`;
+}

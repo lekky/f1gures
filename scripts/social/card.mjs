@@ -22,7 +22,7 @@ import {
   kickerRow, kicker, chip, footer, statStrip, photoBleed, streakBand, wordmark, wordmarkHeight,
   fitFontSize, alpha, clashesWithAccent, COLORS, GROUNDS, RANK_INK,
 } from './cardkit.mjs';
-import { plural } from './format.mjs';
+import { plural, lapTime } from './format.mjs';
 
 // Every headshot in public/images/drivers is 360x440.
 const FACE_ASPECT = 360 / 440;
@@ -162,7 +162,14 @@ async function leaderboardLayout(m, { kickerText, title, sub, rows, bandWidths, 
       r.img
         ? img(r.img, m.wx(FACE_W[i]), m.v(FACE_H[i]), { objectFit: 'cover', flexShrink: 0, position: 'relative' })
         : div({ position: 'relative', width: m.wx(FACE_W[i]), height: m.v(FACE_H[i]), backgroundColor: COLORS.raised, flexShrink: 0 }),
-      div({ position: 'relative', flexDirection: 'column', marginLeft: m.wx(28), flexGrow: 1, overflow: 'hidden' }, [
+      div({
+        position: 'relative', flexDirection: 'column', marginLeft: m.wx(28),
+        // A gutter, not decoration: the value beside this is Mono and can be
+        // long (a lap time is 8 glyphs at leader size), and without it the name
+        // and the number rendered flush against each other.
+        marginRight: m.wx(28),
+        flexGrow: 1, overflow: 'hidden',
+      }, [
         txt({ fontFamily: 'Display', fontSize: m.f(NAME_SIZE[i]), fontWeight: 700, lineHeight: 0.94 }, String(r.name).toUpperCase()),
         r.sub
           ? txt({
@@ -521,6 +528,28 @@ async function propsFor(candidate, copy, m) {
         footerRight: `${plural(d.age, 'year')} ago`,
       }];
     }
+
+    case 'practice-result':
+      return ['leaderboard', {
+        kickerText: `${d.race.name} · ${d.label}`,
+        title: d.label,
+        // Says plainly what this is. A practice timesheet read as a grid is the
+        // one way this card could mislead.
+        sub: 'Fastest laps — practice pace, not the grid',
+        bandWidths: BANDS.order,
+        leaderTint: alpha(COLORS.accent, 0.16),
+        rows: d.rows.map((r, i) => ({
+          rank: r.position ?? i + 1,
+          name: r.name,
+          sub: r.team || '',
+          driverRef: r.ref || null,
+          // Team colour on the strip; the session leader takes the accent.
+          strip: i === 0 ? COLORS.accent : (r.color || COLORS.line2),
+          value: lapTime(r.time),
+          unit: '',
+        })),
+        footerRight: d.longRun ? `Long run: ${d.longRun.name}` : d.label,
+      }];
 
     case 'record-board':
       return ['leaderboard', {

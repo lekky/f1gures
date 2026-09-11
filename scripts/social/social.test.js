@@ -10,7 +10,7 @@ import {
 } from './angles.mjs';
 import { composeCaption, LIMITS } from './caption.mjs';
 import { readHistory, appendHistory, hasPostFor } from './history.mjs';
-import { readPending, writePending, queuePending, clearPending, reslotPending } from './pending.mjs';
+import { readPending, writePending, queuePending, clearPending, reslotPending, slotOf } from './pending.mjs';
 import { fitFontSize, alpha, contrastText, metrics, clashesWithAccent, FORMATS, COLORS, RANK_INK } from './cardkit.mjs';
 import { BANDS, splitName, sessionValue } from './card.mjs';
 import { SOCIAL_CONFIG, publishAtFor, withUtm, raceOwnedDates, localWallClock, imageTypeFor, tiktokAutoAddMusic } from './config.mjs';
@@ -198,6 +198,19 @@ const CASES = {
   'race-result': { race: RACE, session: 'race', podium: PODIUM, top: PODIUM },
   'quali-result': { race: RACE, session: 'qualifying', podium: PODIUM, top: PODIUM },
   'sprint-result': { race: RACE, session: 'sprint', podium: PODIUM, top: PODIUM },
+  'practice-result': {
+    race: RACE,
+    session: 'fp2',
+    label: 'FP2',
+    rows: [
+      { position: 1, code: 'ANT', ref: 'antonelli', name: 'Kimi Antonelli', team: 'Mercedes', time: 93.662, color: '#27F4D2' },
+      { position: 2, code: 'LEC', ref: 'leclerc', name: 'Charles Leclerc', team: 'Ferrari', time: 93.775, color: '#E80020' },
+      { position: 3, code: 'HAM', ref: 'hamilton', name: 'Lewis Hamilton', team: 'Ferrari', time: 93.811, color: '#E80020' },
+    ],
+    longRun: { code: 'VER', name: 'Max Verstappen', team: 'Red Bull Racing', c: 'S', laps: 7, avg: 100.556 },
+    weather: { airMax: 30.6, trackMax: 53.1, rain: false },
+    leader: { position: 1, name: 'Kimi Antonelli', team: 'Mercedes', time: 93.662 },
+  },
   'race-preview': { race: { ...RACE, circuitRef: 'interlagos' }, circuit: { name: 'Interlagos', location: 'São Paulo', countryName: 'Brazil', raceCount: 40, mostWins: [{ name: 'Alain Prost', count: 6 }] }, lastWinner: { winnerName: 'Nelson Piquet', year: 1990 }, inDays: 1 },
   'on-this-day': { race: RACE, podium: PODIUM, top: PODIUM, age: 35, isFirstWin: false, isFinale: false, champion: null },
   'driver-birthday': { driver: DRIVER, bornYear: 1960, age: 66 },
@@ -886,21 +899,110 @@ describe('workflow schedule', () => {
     expect(s).not.toContain("cron: '0 * * * 5,6,0'");
   });
 
-  it('gates every expensive step behind the poll early-exit', () => {
+  it('runs the poll without an early-exit gate', () => {
     const s = wf();
-    // `count` is an empty string when Build posts is skipped, and '' != '0' is
-    // TRUE - so the upload and queue steps must check the gate as well, or a
-    // skipped poll would upload an empty directory.
-    for (const step of ['Install dependencies', 'Build archive', 'Build posts']) {
-      const at = s.indexOf(`- name: ${step}`);
-      expect(at).toBeGreaterThan(-1);
-      expect(s.slice(at, at + 200)).toContain("if: steps.gate.outputs.work != 'no'");
-    }
-    const guarded = s.match(/steps\.gate\.outputs\.work != 'no' && steps\.build\.outputs\.count/g) || [];
-    expect(guarded.length).toBeGreaterThanOrEqual(5);
+    // A gate keyed on "today already has a post" was correct while a date held
+    // one post and wrong once a day could hold several - on a race Saturday it
+    // would have let FP3 block qualifying. Minutes are unmetered, so the build
+    // pass answers the question instead.
+    expect(s).not.toContain('steps.gate.outputs.work');
+    expect(s).not.toContain('Anything to do?');
+  });
+
+  it('builds every session on a race weekend, not one', () => {
+    const s = wf();
+    expect(s).toContain('--angles=practice-result,race-result,quali-result,sprint-result');
+    expect(s).toContain('"--all"');
   });
 
   it('keeps the evergreen pass off the poll', () => {
     expect(wf()).toContain('if [ "$MODE" != "poll" ]; then');
+  });
+});
+
+
+// ── practice posts ──
+
+describe('practice-result', () => {
+  const d = CASES['practice-result'];
+
+  it('says plainly that practice is not the grid', () => {
+    const copy = composeCaption({ angle: 'practice-result', data: d, link: '/', key: 'k', subject: 's' });
+    // A headline practice time is often a low-fuel lap on softs. The long-run
+    // average is the part that says something about Sunday, so it must survive.
+    expect(copy.caption).toContain('Best long run');
+    expect(copy.caption).toContain('1:40.556');
+    expect(copy.caption).toContain('7 laps');
+  });
+
+  it('formats lap times and gaps, not raw seconds', () => {
+    const copy = composeCaption({ angle: 'practice-result', data: d, link: '/', key: 'k', subject: 's' });
+    expect(copy.caption).toContain('1:33.662');
+    expect(copy.caption).toContain('+0.113');
+    expect(copy.caption).not.toContain('93.662');
+    // The leader has no gap to themselves.
+    expect(copy.caption).not.toContain('+0.000');
+  });
+
+  it('keeps alt text plain and free of pictographs', () => {
+    const copy = composeCaption({ angle: 'practice-result', data: d, link: '/', key: 'k', subject: 's' });
+    expect(copy.alt).toContain('FP2 timesheet');
+    expect(copy.alt).not.toMatch(/\p{Extended_Pictographic}/u);
+  });
+});
+
+// ── one date, several posts ──
+
+describe('slot identity', () => {
+  const tmpFile = () => path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'f1g-slot-')), 'pending.json');
+
+  it('tells two posts on one date apart', () => {
+    const a = { date: '2026-09-11', key: 'practice-result:2026-14-fp1' };
+    const b = { date: '2026-09-11', key: 'practice-result:2026-14-fp2' };
+    expect(slotOf(a)).not.toBe(slotOf(b));
+  });
+
+  it('queues both instead of the second replacing the first', () => {
+    const f = tmpFile();
+    queuePending([
+      { date: '2026-09-11', key: 'practice-result:2026-14-fp1', headline: 'FP1' },
+    ], f);
+    queuePending([
+      { date: '2026-09-11', key: 'practice-result:2026-14-fp2', headline: 'FP2' },
+    ], f);
+    const got = readPending(f);
+    expect(got).toHaveLength(2);
+    expect(got.map((p) => p.headline).sort()).toEqual(['FP1', 'FP2']);
+  });
+
+  it('re-queuing the same slot replaces rather than duplicates', () => {
+    const f = tmpFile();
+    const post = { date: '2026-09-11', key: 'k', headline: 'first' };
+    queuePending([post], f);
+    queuePending([{ ...post, headline: 'rebuilt' }], f);
+    const got = readPending(f);
+    expect(got).toHaveLength(1);
+    expect(got[0].headline).toBe('rebuilt');
+  });
+
+  it('clears one slot and leaves the day\'s others alone', () => {
+    const f = tmpFile();
+    queuePending([
+      { date: '2026-09-11', key: 'a', headline: 'A' },
+      { date: '2026-09-11', key: 'b', headline: 'B' },
+    ], f);
+    const left = clearPending(['2026-09-11:a'], f);
+    expect(left.map((p) => p.headline)).toEqual(['B']);
+  });
+
+  it('still clears a whole day when given a bare date', () => {
+    const f = tmpFile();
+    queuePending([
+      { date: '2026-09-11', key: 'a', headline: 'A' },
+      { date: '2026-09-11', key: 'b', headline: 'B' },
+      { date: '2026-09-12', key: 'c', headline: 'C' },
+    ], f);
+    const left = clearPending(['2026-09-11'], f);
+    expect(left.map((p) => p.headline)).toEqual(['C']);
   });
 });
