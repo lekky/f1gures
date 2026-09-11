@@ -27,18 +27,22 @@ not anchors.
   PR and on pushes to `main`, so the vitest suite (points math, records,
   lineages, compare) runs automatically and shows a green/red `test`
   check on every PR.
-- **Enforcement is blocked by the GitHub plan, not a missing toggle.**
-  This repo is **private on a personal/Free plan**, where GitHub does
-  *not* enforce branch protection rules or rulesets (the ruleset editor
-  shows "won't be enforced on this private repository until you move to a
-  GitHub Team organization account"). So the gate cannot be made a
-  *required* status check as-is — a red suite can still be merged, and
-  `deploy.yml` FTPs `main` straight to production. To get real
-  enforcement: make the repo public (free), or move to GitHub Pro/Team.
-  Until then the gate is advisory — look at the check before merging.
-  Note: adding enforcement would also require a bypass for
-  `github-actions[bot]`, because `refresh-current-season.yml` pushes the
-  season bundle directly to `main` (would otherwise be blocked).
+- **The plan blocker is gone — this is now just an unset toggle.**
+  The entry used to read "blocked by the GitHub plan": the repo was
+  private on a personal/Free plan, where GitHub does not enforce branch
+  protection or rulesets. **The repo is now public** (confirmed via the
+  API: `visibility: public`), and public repos on the Free plan *do* get
+  enforceable branch protection and rulesets. So making `test` a required
+  status check is a settings change, not a plan upgrade.
+  Until someone sets it, the gate stays advisory — a red suite can still
+  be merged and `deploy.yml` publishes `main` straight to production.
+  **Still true:** enforcement needs a bypass for `github-actions[bot]`,
+  because `refresh-current-season.yml` and `social-post.yml` both push to
+  `main` directly (they would otherwise be blocked).
+- **Related, also now false anywhere it survives:** Actions minutes are
+  unmetered on a public repo. Any doc or decision that budgets build
+  minutes (the old fortnightly social batch was sized this way) is
+  reasoning from a constraint that no longer exists.
 - **Also still open (optional):** `ci.yml` runs only the tests. It does
   not run `astro check` (a typecheck) or any linter — the repo has no
   eslint/prettier config and no `astro check` has ever run, so adding it
@@ -338,7 +342,8 @@ Untested but complex and cheap to test:
   `node-version-file`.
 - No `.gitattributes`, so a `core.autocrlf=true` Windows checkout lands
   every text file as CRLF. That broke vitest on two `scripts/*.mjs`
-  suites (issue #305: a `#!/usr/bin/env node` shebang reaches the
+  suites (issue #305: a `#!/usr/bin/env node
+` shebang reaches the
   evaluator as an invalid token). Fixed by dropping the shebangs — nothing
   invokes those scripts as executables; `package.json` and the workflows
   all go through `node scripts/...`. **Do not re-add shebangs to

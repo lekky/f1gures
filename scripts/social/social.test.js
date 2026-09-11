@@ -870,3 +870,37 @@ describe('race window', () => {
     expect(owned.has('2026-09-14')).toBe(false); // Monday — an evergreen post of its own
   });
 });
+
+// ── race-weekend polling ──
+
+describe('workflow schedule', () => {
+  const wf = () => fs.readFileSync(path.join(process.cwd(), '.github/workflows/social-post.yml'), 'utf8');
+
+  it('polls hourly across Fri-Sun without colliding with the fixed slots', () => {
+    const s = wf();
+    // Hours 17 and 23 are carved out: GitHub fires each matching cron as its
+    // own run, so an overlap would queue a second run to do nothing.
+    expect(s).toContain("cron: '0 0-16,18-22 * * 5,6,0'");
+    expect(s).toContain("cron: '0 17 * * *'");
+    expect(s).toContain("cron: '0 23 * * *'");
+    expect(s).not.toContain("cron: '0 * * * 5,6,0'");
+  });
+
+  it('gates every expensive step behind the poll early-exit', () => {
+    const s = wf();
+    // `count` is an empty string when Build posts is skipped, and '' != '0' is
+    // TRUE - so the upload and queue steps must check the gate as well, or a
+    // skipped poll would upload an empty directory.
+    for (const step of ['Install dependencies', 'Build archive', 'Build posts']) {
+      const at = s.indexOf(`- name: ${step}`);
+      expect(at).toBeGreaterThan(-1);
+      expect(s.slice(at, at + 200)).toContain("if: steps.gate.outputs.work != 'no'");
+    }
+    const guarded = s.match(/steps\.gate\.outputs\.work != 'no' && steps\.build\.outputs\.count/g) || [];
+    expect(guarded.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('keeps the evergreen pass off the poll', () => {
+    expect(wf()).toContain('if [ "$MODE" != "poll" ]; then');
+  });
+});
