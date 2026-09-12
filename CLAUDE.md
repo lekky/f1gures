@@ -15,32 +15,46 @@ worktrees — which is why the branch and collision rules below are not optional
 
 ### Starting
 
-1. **Open with a TPO brief (Technical Product Owner), and get it agreed before
-   building anything.** It is the bookend of the closing summary in step 10, and it
-   has the same five parts every time so none of them quietly goes missing:
-   - **What changes** — behaviour a visitor would notice, in their words, not
-     implementation.
-   - **What gets measured** — which GA4 events this adds or touches (`track()` in
-     [src/lib/analytics.js](src/lib/analytics.js)), or one line saying why none: a
-     build script nobody sees, a data fix, something already counted. **Analytics is
-     part of the work, not a follow-up task.** Event names are snake_case; params
-     carry entity refs and F1 search terms, **never PII** — never free-text feedback
-     or emails.
-   - **What it costs** — anything that gets slower, larger, newly depended on, or
-     newly someone else's to run. **Actions minutes are not a cost here** - the
-     repo is public, so they are unmetered; wall-clock still is, and a full
-     build is ~2,300 pages.
-   - **Collisions** — step 2, named so the owner can sequence the sessions.
-   - **Decisions only the owner can make** — explicit and up front, because step 7
-     means there is no review in which to raise them later.
+1. **Open with a TPO brief (Technical Product Owner) — these six sections, in this
+   order — and get it agreed before building anything** (Rachid, 2026-09-12, in
+   chat). It is the bookend of the handover in step 10, and nothing starts until
+   section 6 is answered.
+   1. **What you asked for** — the owner's request, repeated back in their own
+      words. This is the comprehension check and it is first for a reason: a misread
+      ask is cheapest to catch in the line that repeats it, before anything is built
+      on top of it.
+   2. **Why we're doing it** — the benefit, not the mechanism. If this cannot be
+      written without describing the implementation, the value is not understood yet.
+   3. **Analytics events** — which GA4 events this should add or touch (`track()` in
+      [src/lib/analytics.js](src/lib/analytics.js)), or one line saying why none: a
+      build script nobody sees, a data fix, something already counted. **Analytics is
+      part of the work, not a follow-up task.** Event names are snake_case; params
+      carry entity refs and F1 search terms, **never PII** — never free-text feedback
+      or emails.
+   4. **Risks** — what could go wrong or get worse. Anything slower, larger, newly
+      depended on or newly someone else's to run, and **any collision with work
+      already in flight** (step 2's check lands here, so the owner can sequence the
+      sessions). **Actions minutes are not a risk here** — the repo is public, so
+      they are unmetered; wall-clock still is, and a full build is ~2,300 pages.
+   5. **Explicitly out of scope** — what this session will *not* do, named. Adjacent
+      things the ask could be read to include, tempting fixes noticed on the way
+      past, the larger version of the same idea. Naming them is what stops a session
+      quietly widening, and gives the owner the chance to say "actually, do that too".
+   6. **Anything you still need to answer** — the decisions only the owner can make.
+      **Work does not start until these are answered**, because step 7 means there is
+      no review in which to raise them later. Write each one as a plain question with
+      the options and what each would mean in practice — no jargon, no implementation
+      detail, short enough to answer in a line. A decision the owner has to decode is
+      one they cannot make, and a session that buries a question in a paragraph has
+      not asked it. Say "nothing" when there is nothing.
 
-   If the goal is unclear, ask in the brief rather than guessing. A brief the owner
+   If the goal is unclear, ask in section 6 rather than guessing. A brief the owner
    corrects in one line has done its job.
-2. **Collision check, in the brief.** Other sessions are often mid-flight and
+2. **Collision check, feeding section 4.** Other sessions are often mid-flight and
    invisible: `git branch -a` and `git worktree list` (sessions that have not opened
    a PR yet), plus open PRs and issues — `gh pr list` / `gh issue list` locally, or
    the GitHub MCP tools in a web/remote session, where `gh` is not available. Name
-   any overlap so the owner can sequence the work.
+   any overlap under **Risks** so the owner can sequence the work.
 3. **One session = one task = one branch = one PR.** Branch names use the existing
    prefixes: `feat/`, `fix/`, `chore/` (see Conventions). Agree it in the brief.
 4. **Always branch off up-to-date `main`:** `git fetch origin main && git checkout -b
