@@ -93,9 +93,25 @@ correct.** Do not raise a PR to "finish".
    than the fix, fix it** — a one-line correction in a file you already have open is not
    scope creep. What still gets an issue: anything needing an owner decision, anything
    touching code another session owns, anything you cannot verify before merging.
-10. **Close with a TPO-level summary** — what shipped in behaviour terms, what is still
-    open, and any decisions only the owner can make (explicit, never buried in prose).
-    If something failed or was skipped, say so with the evidence.
+10. **Close with a TPO handover — three bullets, always these three, always in this
+    order** (Rachid, 2026-09-12, in chat). Prose is where a handover goes to die: the
+    owner should be able to read the last thing a session says and know whether
+    anything is waiting on them without mining a paragraph for it.
+    - **What I did** — the work in behaviour terms, what a reader of the site would
+      notice, not implementation.
+    - **What changed** — what is actually different now: behaviour, pages, data, the
+      build pipeline, and the state of the branch and the checks **read from the tool
+      rather than assumed** (step 8). Anything that failed or was skipped goes here,
+      with the evidence, not left out.
+    - **What you need to do** — every decision only the owner can make, and every
+      action waiting on them: raise a PR, deploy, change something in a dashboard,
+      answer a question. Say **"nothing"** when there is nothing, so that an empty
+      list is a statement rather than an omission.
+
+    Sub-bullets under any of the three are fine. Detail below them is fine. What is
+    not fine is a handover that leaves the third bullet implied — a session that
+    needed a decision and buried it in prose has not handed over, it has just
+    stopped.
 
 ## Build pipeline
 
