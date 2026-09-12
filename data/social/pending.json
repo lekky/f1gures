@@ -1,48 +1,7 @@
 {
-  "updatedAt": "2026-09-12T12:42:36.725Z",
+  "updatedAt": "2026-09-12T13:10:44.194Z",
   "blogId": "6692452",
   "brandLabel": "F1gures",
   "timezone": "Europe/London",
-  "posts": [
-    {
-      "date": "2026-09-12",
-      "publishAt": "2026-09-12T14:02:15",
-      "timezone": "Europe/London",
-      "angle": "practice-result",
-      "key": "practice-result:2026-14-fp3",
-      "subject": "race:2026-14",
-      "headline": "Kimi Antonelli quickest in FP3 at the Spanish Grand Prix",
-      "link": "https://f1gures.app/races/2026/14/",
-      "tiktokTitle": "Kimi Antonelli quickest in FP3 at the Spanish Grand Prix",
-      "tiktokAutoAddMusic": true,
-      "alt": "FP3 timesheet for the 2026 Spanish Grand Prix. P1 Kimi Antonelli 1:32.797, P2 Charles Leclerc 1:32.963, P3 Oscar Piastri 1:32.986, P4 Lando Norris 1:33.033, P5 Max Verstappen 1:33.172.",
-      "draft": false,
-      "groups": [
-        {
-          "format": "portrait",
-          "caption": "⏱️ Kimi Antonelli tops FP3 for Mercedes.\n\nP1 Kimi Antonelli (Mercedes)  1:32.797\nP2 Charles Leclerc (Ferrari)  1:32.963  +0.166\nP3 Oscar Piastri (McLaren)  1:32.986  +0.189\nP4 Lando Norris (McLaren)  1:33.033  +0.236\nP5 Max Verstappen (Red Bull Racing)  1:33.172  +0.375\n\nBest long run: Fernando Alonso, 1:48.427 average over 7 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp3\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #KimiAntonelli #Mercedes #Practice #FP",
-          "networks": [
-            "instagram"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-12-practice-result-2026-14-fp3-portrait.png"
-        },
-        {
-          "format": "portrait",
-          "caption": "⏱️ Kimi Antonelli tops FP3 for Mercedes.\n\nP1 Kimi Antonelli (Mercedes)  1:32.797\nP2 Charles Leclerc (Ferrari)  1:32.963  +0.166\nP3 Oscar Piastri (McLaren)  1:32.986  +0.189\nP4 Lando Norris (McLaren)  1:33.033  +0.236\nP5 Max Verstappen (Red Bull Racing)  1:33.172  +0.375\n\nBest long run: Fernando Alonso, 1:48.427 average over 7 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp3&utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #KimiAntonelli #Mercedes #Practice #FP",
-          "networks": [
-            "facebook"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-12-practice-result-2026-14-fp3-portrait.png"
-        },
-        {
-          "format": "story",
-          "caption": "⏱️ Kimi Antonelli tops FP3 for Mercedes.\n\nP1 Kimi Antonelli (Mercedes)  1:32.797\nP2 Charles Leclerc (Ferrari)  1:32.963  +0.166\nP3 Oscar Piastri (McLaren)  1:32.986  +0.189\nP4 Lando Norris (McLaren)  1:33.033  +0.236\nP5 Max Verstappen (Red Bull Racing)  1:33.172  +0.375\n\nBest long run: Fernando Alonso, 1:48.427 average over 7 laps on softs.\n\nEvery lap, stint and telemetry trace: https://f1gures.app/races/2026/14/?session=fp3\n\n#F1 #Formula1 #f1gures #SpanishGrandPrix #KimiAntonelli #Mercedes #Practice #FP",
-          "networks": [
-            "tiktok"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-12-practice-result-2026-14-fp3-story.jpg"
-        }
-      ]
-    }
-  ]
+  "posts": []
 }

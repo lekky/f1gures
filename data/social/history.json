@@ -181,6 +181,32 @@
         }
       },
       "postedAt": "2026-09-11T23:10:16.859Z"
+    },
+    {
+      "date": "2026-09-12",
+      "angle": "practice-result",
+      "key": "practice-result:2026-14-fp3",
+      "subject": "race:2026-14",
+      "headline": "Kimi Antonelli quickest in FP3 at the Spanish Grand Prix",
+      "link": "https://f1gures.app/races/2026/14/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-12T13:10:44.186Z"
     }
   ]
 }
