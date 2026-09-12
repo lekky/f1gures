@@ -207,6 +207,32 @@
         }
       },
       "postedAt": "2026-09-12T13:10:44.186Z"
+    },
+    {
+      "date": "2026-09-12",
+      "angle": "quali-result",
+      "key": "quali-result:2026-14",
+      "subject": "race:2026-14",
+      "headline": "Lando Norris takes pole for the Spanish Grand Prix! ⚡",
+      "link": "https://f1gures.app/races/2026/14/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-12T23:09:52.910Z"
     }
   ]
 }
