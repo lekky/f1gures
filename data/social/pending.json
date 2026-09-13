@@ -1,7 +1,48 @@
 {
-  "updatedAt": "2026-09-12T23:09:52.922Z",
+  "updatedAt": "2026-09-13T00:40:38.430Z",
   "blogId": "6692452",
   "brandLabel": "F1gures",
   "timezone": "Europe/London",
-  "posts": []
+  "posts": [
+    {
+      "date": "2026-09-14",
+      "publishAt": "2026-09-14T19:00:00",
+      "timezone": "Europe/London",
+      "angle": "record-board",
+      "key": "record-board:fastest-laps",
+      "subject": "record:fastest-laps",
+      "headline": "Most fastest laps",
+      "link": "https://f1gures.app/records/fastest-laps/",
+      "tiktokTitle": "Most fastest laps",
+      "tiktokAutoAddMusic": true,
+      "alt": "Leaderboard card: Most fastest laps. 1. Lewis Hamilton: 68 fastest laps. 2. Kimi Räikkönen: 42 fastest laps. 3. Sebastian Vettel: 38 fastest laps. 4. Max Verstappen: 37 fastest laps. 5. Fernando Alonso: 25 fastest laps.",
+      "draft": false,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "📊 Most fastest laps. The all-time top five!\n\n1. Lewis Hamilton: 68 fastest laps\n2. Kimi Räikkönen: 42 fastest laps\n3. Sebastian Vettel: 38 fastest laps\n4. Max Verstappen: 37 fastest laps\n5. Fernando Alonso: 25 fastest laps\n\nFull top 50, plus modern and classic era splits: https://f1gures.app/records/fastest-laps/\n\n#F1 #Formula1 #f1gures #F1Records #F1Stats #LewisHamilton #KimiRaikkonen #SebastianVettel",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-14-record-board-fastest-laps-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "📊 Most fastest laps. The all-time top five!\n\n1. Lewis Hamilton: 68 fastest laps\n2. Kimi Räikkönen: 42 fastest laps\n3. Sebastian Vettel: 38 fastest laps\n4. Max Verstappen: 37 fastest laps\n5. Fernando Alonso: 25 fastest laps\n\nFull top 50, plus modern and classic era splits: https://f1gures.app/records/fastest-laps/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #F1Records #F1Stats #LewisHamilton #KimiRaikkonen #SebastianVettel",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-14-record-board-fastest-laps-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "📊 Most fastest laps. The all-time top five!\n\n1. Lewis Hamilton: 68 fastest laps\n2. Kimi Räikkönen: 42 fastest laps\n3. Sebastian Vettel: 38 fastest laps\n4. Max Verstappen: 37 fastest laps\n5. Fernando Alonso: 25 fastest laps\n\nFull top 50, plus modern and classic era splits: https://f1gures.app/records/fastest-laps/\n\n#F1 #Formula1 #f1gures #F1Records #F1Stats #LewisHamilton #KimiRaikkonen #SebastianVettel",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-14-record-board-fastest-laps-story.jpg"
+        }
+      ]
+    }
+  ]
 }
