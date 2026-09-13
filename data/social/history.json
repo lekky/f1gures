@@ -235,6 +235,32 @@
       "postedAt": "2026-09-12T23:09:52.910Z"
     },
     {
+      "date": "2026-09-13",
+      "angle": "race-result",
+      "key": "race-result:2026-14",
+      "subject": "race:2026-14",
+      "headline": "Andrea Kimi Antonelli wins the Spanish Grand Prix! 🏁",
+      "link": "https://f1gures.app/races/2026/14/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-13T23:11:04.684Z"
+    },
+    {
       "date": "2026-09-14",
       "angle": "record-board",
       "key": "record-board:fastest-laps",
