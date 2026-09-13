@@ -233,6 +233,32 @@
         }
       },
       "postedAt": "2026-09-12T23:09:52.910Z"
+    },
+    {
+      "date": "2026-09-14",
+      "angle": "record-board",
+      "key": "record-board:fastest-laps",
+      "subject": "record:fastest-laps",
+      "headline": "Most fastest laps",
+      "link": "https://f1gures.app/records/fastest-laps/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-13T01:11:36.794Z"
     }
   ]
 }
