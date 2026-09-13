@@ -107,23 +107,37 @@ correct.** Do not raise a PR to "finish".
    than the fix, fix it** — a one-line correction in a file you already have open is not
    scope creep. What still gets an issue: anything needing an owner decision, anything
    touching code another session owns, anything you cannot verify before merging.
-10. **Close with a TPO handover — these five sections, in this order** (Rachid,
-    2026-09-12, in chat). Prose is where a handover goes to die: the owner should be
-    able to read the last thing a session says and know what happened and what is
-    waiting on them, without mining a paragraph for it.
+10. **Close with a TPO handover — these six sections, in this order** (Rachid,
+    2026-09-12, in chat; screenshots added 2026-09-13, in chat). Prose is where a
+    handover goes to die: the owner should be able to read the last thing a session
+    says and know what happened and what is waiting on them, without mining a
+    paragraph for it.
     1. **What we changed or fixed** — concise bullets, behaviour a reader of the site
        would notice rather than implementation.
     2. **Why we did it** — concise bullets, the benefit rather than the mechanism. A
        bullet here that only restates section 1 in other words means the work needs a
        better reason or the bullet needs deleting.
-    3. **GitHub issues raised** — each as a link with a succinct why (step 9 wrote
+    3. **Screenshots** — *optional, and only when something visual changed.* Capture
+       the change at **two widths, mobile and desktop**, and attach both — mobile
+       below the 720px breakpoint the CSS actually switches on, so the phone layout in
+       the shot is the one riders get. Serve it with `npm run preview` (production
+       shape) rather than a dev-server screenshot. A visual change described in prose
+       is one the owner has to take on trust, and the session that already has the
+       site running is the only one cheaply placed to show it — so this is part of the
+       work, not a follow-up. Show the page the change is on, in the state that makes
+       it visible; where a before/after is the point, show both. **If the change is
+       theme-sensitive, both widths go in the theme it affects, and say which** — the
+       dark/light parity check before merging is a separate obligation, not something
+       a screenshot discharges. Omit the heading when nothing visual changed, so its
+       presence always means something.
+    4. **GitHub issues raised** — each as a link with a succinct why (step 9 wrote
        them while the file paths were still in context; this is where they surface).
        Say "none" rather than leaving the section out.
-    4. **Next step** — *optional, and only when there is one.* Anything manual now
+    5. **Next step** — *optional, and only when there is one.* Anything manual now
        waiting on a person: a deploy, a new environment variable, a dashboard
        setting, a decision only the owner can make. Omit the heading when there is
        nothing, so its presence always means something.
-    5. **Always finish by asking whether the PR should be raised and merged.** One
+    6. **Always finish by asking whether the PR should be raised and merged.** One
        line, always last, always a question — a session never raises or merges one
        unasked, and green checks are the evidence offered when asking, not
        permission. It is per-PR: a yes does not carry to the next piece of work.
@@ -131,8 +145,9 @@ correct.** Do not raise a PR to "finish".
     Detail and sub-bullets under any section are fine. Report the branch and the
     checks as they actually are, **read from the tool rather than assumed** (step 8);
     anything that failed or was skipped is said plainly, with the evidence. What is
-    not fine is dropping section 5 because the checks are green, or folding section 4
-    into section 1 so a deploy reads as something already done.
+    not fine is dropping section 6 because the checks are green, folding section 5
+    into section 1 so a deploy reads as something already done, or describing a visual
+    change in section 1 instead of showing it in section 3.
 
 ## Build pipeline
 
