@@ -1,48 +1,7 @@
 {
-  "updatedAt": "2026-09-14T00:49:54.168Z",
+  "updatedAt": "2026-09-14T01:11:04.136Z",
   "blogId": "6692452",
   "brandLabel": "F1gures",
   "timezone": "Europe/London",
-  "posts": [
-    {
-      "date": "2026-09-15",
-      "publishAt": "2026-09-15T19:00:00",
-      "timezone": "Europe/London",
-      "angle": "standings-snapshot",
-      "key": "standings-snapshot:2026-14",
-      "subject": "standings:2026",
-      "headline": "After 14 rounds",
-      "link": "https://f1gures.app/standings-drivers/",
-      "tiktokTitle": "After 14 rounds",
-      "tiktokAutoAddMusic": true,
-      "alt": "Standings card: 2026 drivers' championship after 14 rounds. 1. Andrea Kimi Antonelli: 292 pts. 2. George Russell: 211 pts. 3. Lewis Hamilton: 191 pts. 4. Lando Norris: 186 pts. 5. Charles Leclerc: 167 pts.",
-      "draft": false,
-      "groups": [
-        {
-          "format": "portrait",
-          "caption": "The 2026 drivers' championship after the Spanish Grand Prix. 14 of 23 rounds done.\n\n1. Andrea Kimi Antonelli: 292 pts\n2. George Russell: 211 pts\n3. Lewis Hamilton: 191 pts\n4. Lando Norris: 186 pts\n5. Charles Leclerc: 167 pts\n\nAntonelli leads by 81 points! 👑\nLive standings: https://f1gures.app/standings-drivers/\n\n#F1 #Formula1 #f1gures #F12026 #F1Standings #Championship #Antonelli #Russell #Hamilton",
-          "networks": [
-            "instagram"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-15-standings-snapshot-2026-14-portrait.png"
-        },
-        {
-          "format": "portrait",
-          "caption": "The 2026 drivers' championship after the Spanish Grand Prix. 14 of 23 rounds done.\n\n1. Andrea Kimi Antonelli: 292 pts\n2. George Russell: 211 pts\n3. Lewis Hamilton: 191 pts\n4. Lando Norris: 186 pts\n5. Charles Leclerc: 167 pts\n\nAntonelli leads by 81 points! 👑\nLive standings: https://f1gures.app/standings-drivers/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #F12026 #F1Standings #Championship #Antonelli #Russell #Hamilton",
-          "networks": [
-            "facebook"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-15-standings-snapshot-2026-14-portrait.png"
-        },
-        {
-          "format": "story",
-          "caption": "The 2026 drivers' championship after the Spanish Grand Prix. 14 of 23 rounds done.\n\n1. Andrea Kimi Antonelli: 292 pts\n2. George Russell: 211 pts\n3. Lewis Hamilton: 191 pts\n4. Lando Norris: 186 pts\n5. Charles Leclerc: 167 pts\n\nAntonelli leads by 81 points! 👑\nLive standings: https://f1gures.app/standings-drivers/\n\n#F1 #Formula1 #f1gures #F12026 #F1Standings #Championship #Antonelli #Russell #Hamilton",
-          "networks": [
-            "tiktok"
-          ],
-          "imageUrl": "https://f1gures.app/social/2026-09-15-standings-snapshot-2026-14-story.jpg"
-        }
-      ]
-    }
-  ]
+  "posts": []
 }
