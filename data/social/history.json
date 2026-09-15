@@ -311,6 +311,32 @@
         }
       },
       "postedAt": "2026-09-14T01:11:04.124Z"
+    },
+    {
+      "date": "2026-09-16",
+      "angle": "team-spotlight",
+      "key": "team-spotlight:vanwall",
+      "subject": "team:vanwall",
+      "headline": "Vanwall",
+      "link": "https://f1gures.app/teams/vanwall/",
+      "platforms": {
+        "instagram": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "facebook": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        },
+        "tiktok": {
+          "ok": true,
+          "via": "mcp",
+          "draft": false
+        }
+      },
+      "postedAt": "2026-09-15T02:10:38.220Z"
     }
   ]
 }
