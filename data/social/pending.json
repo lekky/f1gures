@@ -1,7 +1,48 @@
 {
-  "updatedAt": "2026-09-14T01:11:04.136Z",
+  "updatedAt": "2026-09-15T01:16:07.644Z",
   "blogId": "6692452",
   "brandLabel": "F1gures",
   "timezone": "Europe/London",
-  "posts": []
+  "posts": [
+    {
+      "date": "2026-09-16",
+      "publishAt": "2026-09-16T19:00:00",
+      "timezone": "Europe/London",
+      "angle": "team-spotlight",
+      "key": "team-spotlight:vanwall",
+      "subject": "team:vanwall",
+      "headline": "Vanwall",
+      "link": "https://f1gures.app/teams/vanwall/",
+      "tiktokTitle": "Vanwall",
+      "tiktokAutoAddMusic": true,
+      "alt": "Constructor card for Vanwall. 1 title · 10 wins · 14 podiums.",
+      "draft": false,
+      "groups": [
+        {
+          "format": "portrait",
+          "caption": "Vanwall. 1954 to 1960, 7 seasons in Formula 1.\n1 title · 10 wins · 14 podiums\nBest season: 1958, 6 wins from 9 races! 🏆\nMost wins for the team: Stirling Moss with 6.\n\nFull team history: https://f1gures.app/teams/vanwall/\n\n#F1 #Formula1 #f1gures #Vanwall #British #F1Teams #F1History",
+          "networks": [
+            "instagram"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-16-team-spotlight-vanwall-portrait.png"
+        },
+        {
+          "format": "portrait",
+          "caption": "Vanwall. 1954 to 1960, 7 seasons in Formula 1.\n1 title · 10 wins · 14 podiums\nBest season: 1958, 6 wins from 9 races! 🏆\nMost wins for the team: Stirling Moss with 6.\n\nFull team history: https://f1gures.app/teams/vanwall/?utm_source=facebook&utm_medium=social&utm_campaign=daily-post\n\n#F1 #Formula1 #f1gures #Vanwall #British #F1Teams #F1History",
+          "networks": [
+            "facebook"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-16-team-spotlight-vanwall-portrait.png"
+        },
+        {
+          "format": "story",
+          "caption": "Vanwall. 1954 to 1960, 7 seasons in Formula 1.\n1 title · 10 wins · 14 podiums\nBest season: 1958, 6 wins from 9 races! 🏆\nMost wins for the team: Stirling Moss with 6.\n\nFull team history: https://f1gures.app/teams/vanwall/\n\n#F1 #Formula1 #f1gures #Vanwall #British #F1Teams #F1History",
+          "networks": [
+            "tiktok"
+          ],
+          "imageUrl": "https://f1gures.app/social/2026-09-16-team-spotlight-vanwall-story.jpg"
+        }
+      ]
+    }
+  ]
 }
